@@ -1,0 +1,56 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      tanstack:
+        patterns:
+          - '@tanstack/*'
+      tauri:
+        patterns:
+          - '@tauri-apps/*'
+      eslint:
+        patterns:
+          - 'eslint*'
+          - 'typescript-eslint'
+          - '@eslint/*'
+      tailwind:
+        patterns:
+          - 'tailwindcss'
+          - '@tailwindcss/*'
+      types:
+        patterns:
+          - '@types/*'
+    ignore:
+      # Pin React majors; React 19 is the active target.
+      - dependency-name: 'react'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'react-dom'
+        update-types: ['version-update:semver-major']
+      # nimicoding projection bumps must be coordinated with sync --apply.
+      - dependency-name: '@nimiplatform/nimi-coding'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: cargo
+    directory: /src-tauri
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    ignore:
+      # Pin Tauri 2 major.
+      - dependency-name: 'tauri'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'tauri-build'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5

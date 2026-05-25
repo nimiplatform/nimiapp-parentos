@@ -1,0 +1,40 @@
+name: Spec change proposal
+description: Propose a change to a ParentOS kernel contract or table
+labels: [spec]
+body:
+  - type: input
+    id: surface
+    attributes:
+      label: Affected kernel surface
+      description: e.g. `.nimi/spec/parentos/kernel/timeline-contract.md#PO-TIME-010` or `.nimi/spec/parentos/kernel/tables/reminder-rules.yaml`
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Proposed change
+      description: What rule/contract is changing and why. Cite the section ID.
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: What product / safety / evidence reason justifies the change.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Implementation impact
+      description: Which code paths, migrations, or generated artifacts will need to follow.
+  - type: checkboxes
+    id: hard_boundaries
+    attributes:
+      label: Hard boundary check
+      description: Confirm the change does not weaken the boundaries called out in AGENTS.md.
+      options:
+        - label: Does not relax the AI boundary (Layer 1 vs Layer 2 split)
+        - label: Does not weaken the P0-always-push nurture-mode invariant
+        - label: Does not introduce cloud / off-device persistence
+        - label: Does not introduce backwards-compat shims or fail-open fallbacks

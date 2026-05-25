@@ -1,0 +1,321 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semver version (e.g. 0.1.0 or v0.1.0)
+        required: true
+        type: string
+      publish:
+        description: Publish to GitHub release (false = dry-run uploads to workflow artifacts)
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref_name || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      version_plain: ${{ steps.resolve.outputs.version_plain }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      publish: ${{ steps.resolve.outputs.publish }}
+    steps:
+      - name: Resolve release version
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_PUBLISH: ${{ inputs.publish }}
+        run: |
+          set -euo pipefail
+
+          semver_regex='^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$'
+
+          if [[ "${EVENT_NAME}" == "push" ]]; then
+            tag="${REF_NAME}"
+            version="${tag}"
+            publish="true"
+          else
+            version="${INPUT_VERSION}"
+            if [[ "${version}" != v* ]]; then
+              version="v${version}"
+            fi
+            tag="${version}"
+            publish="${INPUT_PUBLISH}"
+          fi
+
+          if ! [[ "${version}" =~ ${semver_regex} ]]; then
+            echo "invalid semver version: ${version}" >&2
+            exit 1
+          fi
+
+          version_plain="${version#v}"
+
+          {
+            echo "version=${version}"
+            echo "version_plain=${version_plain}"
+            echo "tag=${tag}"
+            echo "publish=${publish}"
+          } >> "${GITHUB_OUTPUT}"
+
+  release-app:
+    needs: resolve
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            extra_args: "appimage"
+          - platform: macos-latest
+            extra_args: "app"
+          - platform: windows-latest
+            extra_args: "nsis"
+    runs-on: ${{ matrix.platform }}
+    env:
+      RELEASE_VERSION: ${{ needs.resolve.outputs.version_plain }}
+      PUBLISH: ${{ needs.resolve.outputs.publish }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@d15e628ca66d93ee5f352c71671a7bc6a97af5c9 # v6.0.8
+        with:
+          version: 10.32.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Setup Python (knowledge asset generation)
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.1
+        with:
+          workspaces: src-tauri -> target
+          key: ${{ matrix.platform }}
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Resolve macOS signing mode
+        id: macos_signing
+        shell: bash
+        env:
+          MATRIX_PLATFORM: ${{ matrix.platform }}
+          CONFIGURED_MODE: ${{ vars.PARENTOS_MACOS_SIGNING_MODE || 'developer-id' }}
+        run: |
+          set -euo pipefail
+          case "${CONFIGURED_MODE}" in
+            developer-id|ad-hoc) ;;
+            *)
+              echo "PARENTOS_MACOS_SIGNING_MODE must be developer-id or ad-hoc, got: ${CONFIGURED_MODE}" >&2
+              exit 1
+              ;;
+          esac
+
+          if [[ "${MATRIX_PLATFORM}" != 'macos-latest' ]]; then
+            mode='not-applicable'
+            use_ad_hoc='false'
+            require_apple='false'
+          elif [[ "${CONFIGURED_MODE}" == 'ad-hoc' ]]; then
+            mode='ad-hoc'
+            use_ad_hoc='true'
+            require_apple='false'
+          else
+            mode='developer-id'
+            use_ad_hoc='false'
+            require_apple='true'
+          fi
+
+          {
+            echo "mode=${mode}"
+            echo "use_ad_hoc_signing=${use_ad_hoc}"
+            echo "require_apple_credentials=${require_apple}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Validate version sync (package.json / tauri.conf.json / Cargo.toml)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<NODE
+          import { readFileSync } from 'node:fs';
+          const expected = process.env.RELEASE_VERSION;
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+          const tauri = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+          const cargo = readFileSync('src-tauri/Cargo.toml', 'utf8');
+          const cargoVersion = cargo.match(/^version = "([^"]+)"/m)?.[1];
+          const mismatches = [];
+          if (pkg.version !== expected) mismatches.push(\`package.json: \${pkg.version}\`);
+          if (tauri.version !== expected) mismatches.push(\`tauri.conf.json: \${tauri.version}\`);
+          if (cargoVersion !== expected) mismatches.push(\`Cargo.toml: \${cargoVersion}\`);
+          if (mismatches.length > 0) {
+            console.error(\`Version sync failure (expected \${expected}):\`);
+            for (const m of mismatches) console.error(\`  - \${m}\`);
+            process.exit(1);
+          }
+          console.log(\`Version sync OK at \${expected}\`);
+          NODE
+
+      - name: Generate knowledge base + WHO LMS assets
+        shell: bash
+        run: |
+          pnpm generate:knowledge-base
+          pnpm generate:who-lms-assets
+
+      - name: Validate signing inputs
+        shell: bash
+        env:
+          MACOS_SIGNING_MODE: ${{ steps.macos_signing.outputs.mode }}
+          REQUIRE_APPLE_CREDENTIALS: ${{ steps.macos_signing.outputs.require_apple_credentials }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          # TAURI_SIGNING_PRIVATE_KEY is optional for unsigned/no-updater builds.
+          # When present we keep using it; when absent we still build unsigned.
+          if [[ "${REQUIRE_APPLE_CREDENTIALS}" == 'true' ]]; then
+            missing=()
+            [[ -z "${APPLE_CERTIFICATE:-}" ]] && missing+=(APPLE_CERTIFICATE)
+            [[ -z "${APPLE_CERTIFICATE_PASSWORD:-}" ]] && missing+=(APPLE_CERTIFICATE_PASSWORD)
+            [[ -z "${APPLE_SIGNING_IDENTITY:-}" ]] && missing+=(APPLE_SIGNING_IDENTITY)
+            [[ -z "${APPLE_ID:-}" ]] && missing+=(APPLE_ID)
+            [[ -z "${APPLE_PASSWORD:-}" ]] && missing+=(APPLE_PASSWORD)
+            [[ -z "${APPLE_TEAM_ID:-}" ]] && missing+=(APPLE_TEAM_ID)
+            if (( ${#missing[@]} > 0 )); then
+              echo "developer-id macOS signing requires: ${missing[*]}" >&2
+              echo "Either set PARENTOS_MACOS_SIGNING_MODE=ad-hoc, or provide the secrets above." >&2
+              exit 1
+            fi
+          fi
+          if [[ "${MACOS_SIGNING_MODE}" == 'ad-hoc' ]]; then
+            echo "macOS bundle will be ad-hoc signed and not notarized."
+          fi
+
+      - name: Build artifacts (non-macOS)
+        id: tauri_build_non_macos
+        if: matrix.platform != 'macos-latest'
+        uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # action-v0.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: .
+          tauriScript: pnpm tauri
+          tagName: ${{ needs.resolve.outputs.publish == 'true' && needs.resolve.outputs.tag || '' }}
+          releaseName: ${{ needs.resolve.outputs.publish == 'true' && format('ParentOS {0}', needs.resolve.outputs.version) || '' }}
+          releaseBody: ${{ needs.resolve.outputs.publish == 'true' && 'Automated ParentOS bundle built by release workflow. See CHANGELOG.md for release notes.' || '' }}
+          releaseDraft: false
+          prerelease: ${{ contains(needs.resolve.outputs.version, '-') }}
+          args: --config src-tauri/tauri.conf.json --bundles ${{ matrix.extra_args }} --ci
+
+      - name: Build artifacts (macOS ad-hoc)
+        id: tauri_build_macos_ad_hoc
+        if: matrix.platform == 'macos-latest' && steps.macos_signing.outputs.use_ad_hoc_signing == 'true'
+        uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # action-v0.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: '-'
+        with:
+          projectPath: .
+          tauriScript: pnpm tauri
+          tagName: ${{ needs.resolve.outputs.publish == 'true' && needs.resolve.outputs.tag || '' }}
+          releaseName: ${{ needs.resolve.outputs.publish == 'true' && format('ParentOS {0}', needs.resolve.outputs.version) || '' }}
+          releaseBody: ${{ needs.resolve.outputs.publish == 'true' && 'Automated ParentOS bundle built by release workflow. macOS assets use ad-hoc signing and are not Apple notarized.' || '' }}
+          releaseDraft: false
+          prerelease: ${{ contains(needs.resolve.outputs.version, '-') }}
+          args: --config src-tauri/tauri.conf.json --bundles ${{ matrix.extra_args }} --ci
+
+      - name: Build artifacts (macOS Developer ID)
+        id: tauri_build_macos_developer_id
+        if: matrix.platform == 'macos-latest' && steps.macos_signing.outputs.require_apple_credentials == 'true'
+        uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # action-v0.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          projectPath: .
+          tauriScript: pnpm tauri
+          tagName: ${{ needs.resolve.outputs.publish == 'true' && needs.resolve.outputs.tag || '' }}
+          releaseName: ${{ needs.resolve.outputs.publish == 'true' && format('ParentOS {0}', needs.resolve.outputs.version) || '' }}
+          releaseBody: ${{ needs.resolve.outputs.publish == 'true' && 'Automated ParentOS bundle built by release workflow.' || '' }}
+          releaseDraft: false
+          prerelease: ${{ contains(needs.resolve.outputs.version, '-') }}
+          args: --config src-tauri/tauri.conf.json --bundles ${{ matrix.extra_args }} --ci
+
+      - name: Resolve artifact paths
+        id: tauri_build
+        shell: bash
+        env:
+          ARTIFACT_PATHS_NON_MACOS: ${{ steps.tauri_build_non_macos.outputs.artifactPaths }}
+          ARTIFACT_PATHS_MACOS_AD_HOC: ${{ steps.tauri_build_macos_ad_hoc.outputs.artifactPaths }}
+          ARTIFACT_PATHS_MACOS_DEVELOPER_ID: ${{ steps.tauri_build_macos_developer_id.outputs.artifactPaths }}
+        run: |
+          set -euo pipefail
+          artifact_paths="${ARTIFACT_PATHS_NON_MACOS:-${ARTIFACT_PATHS_MACOS_AD_HOC:-${ARTIFACT_PATHS_MACOS_DEVELOPER_ID:-}}}"
+          if [[ -z "${artifact_paths}" ]]; then
+            echo "tauri-action did not report artifact paths" >&2
+            exit 1
+          fi
+          {
+            echo 'artifactPaths<<__PARENTOS_ARTIFACT_PATHS__'
+            printf '%s\n' "${artifact_paths}"
+            echo '__PARENTOS_ARTIFACT_PATHS__'
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Upload artifacts (workflow_dispatch dry-run)
+        if: needs.resolve.outputs.publish != 'true'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: parentos-${{ matrix.platform }}-${{ needs.resolve.outputs.version }}
+          path: ${{ join(fromJSON(steps.tauri_build.outputs.artifactPaths), '\n') }}
+          if-no-files-found: error

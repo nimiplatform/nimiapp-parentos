@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Vite
+.vite/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# nimicoding-managed local + cache + topic surfaces
+.nimi/local/
+.nimi/cache/
+.nimi/topics/
