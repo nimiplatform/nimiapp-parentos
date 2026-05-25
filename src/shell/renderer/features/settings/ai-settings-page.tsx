@@ -8,7 +8,7 @@ import {
   type AppModelConfigSurface,
 } from '@nimiplatform/kit/features/model-config';
 import { Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
-import { applyAIProfileToConfig, type AIConfig } from '@nimiplatform/sdk/mod';
+import { applyAIProfileToConfig, type AIConfig } from '@nimiplatform/sdk/ai';
 import { PARENTOS_AI_SCOPE_REF } from './parentos-ai-config.js';
 import { getParentosAIConfigService } from './parentos-ai-config-service.js';
 import { getParentosRouteModelPickerProvider } from './parentos-route-model-picker-provider.js';

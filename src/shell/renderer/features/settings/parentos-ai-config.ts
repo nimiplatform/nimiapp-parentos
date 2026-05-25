@@ -4,8 +4,8 @@ import type {
   AIScopeRef,
   AIConfig,
   RuntimeRouteBinding,
-} from '@nimiplatform/sdk/mod';
-import { createEmptyAIConfig, parseRuntimeRouteBinding } from '@nimiplatform/sdk/mod';
+} from '@nimiplatform/sdk/ai';
+import { createEmptyAIConfig, parseRuntimeRouteBinding } from '@nimiplatform/sdk/ai';
 import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
 import { isoNow } from '../../bridge/ulid.js';
 

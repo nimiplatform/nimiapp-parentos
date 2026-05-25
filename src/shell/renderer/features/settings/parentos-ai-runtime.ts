@@ -1,4 +1,4 @@
-import type { RuntimeRouteBinding } from '@nimiplatform/sdk/mod';
+import type { RuntimeRouteBinding } from '@nimiplatform/sdk/ai';
 import { getPlatformClient } from '@nimiplatform/sdk';
 import { useAppStore } from '../../app-shell/app-store.js';
 import type { ParentosCapabilityId } from './parentos-ai-config.js';

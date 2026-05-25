@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AIConfig } from '@nimiplatform/sdk/mod';
+import type { AIConfig } from '@nimiplatform/sdk/ai';
 import type { ParentOSRuntimeDefaults as RuntimeDefaults } from '../bridge/index.js';
 
 export type NurtureMode = 'relaxed' | 'balanced' | 'advanced';

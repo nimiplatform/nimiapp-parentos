@@ -7,14 +7,14 @@ import {
   buildRuntimeRouteOptionsSnapshot,
   normalizeRuntimeRouteCapabilityToken,
   runtimeRouteLocalKindSupportsCapability,
-} from '@nimiplatform/sdk/mod';
+} from '@nimiplatform/sdk/ai';
 import type {
   RuntimeCanonicalCapability,
   RuntimeRouteBinding,
   RuntimeRouteConnectorOption,
   RuntimeRouteLocalOption,
   RuntimeRouteOptionsSnapshot,
-} from '@nimiplatform/sdk/mod';
+} from '@nimiplatform/sdk/ai';
 import { useAppStore } from '../app-shell/app-store.js';
 import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
 

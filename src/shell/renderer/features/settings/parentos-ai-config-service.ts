@@ -10,7 +10,7 @@ import {
   type AISchedulingJudgement,
   type AIScopeRef,
   type AISnapshot,
-} from '@nimiplatform/sdk/mod';
+} from '@nimiplatform/sdk/ai';
 import { useAppStore } from '../../app-shell/app-store.js';
 import {
   PARENTOS_AI_SCOPE_REF,
