@@ -64,7 +64,10 @@ export default defineConfig(() => {
       port: 1426,
       strictPort: true,
       fs: {
-        allow: [path.resolve(__dirname)],
+        allow: [
+          path.resolve(__dirname),
+          path.resolve(__dirname, '../../nimi-realm/nimi'),
+        ],
       },
     },
     build: {

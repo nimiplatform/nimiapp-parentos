@@ -101,7 +101,8 @@ pub fn insert_tanner_assessment(
             ))
         }
     };
-    let source_surface = if linked_reminder_state_id.is_some() || linked_reminder_rule_id.is_some() {
+    let source_surface = if linked_reminder_state_id.is_some() || linked_reminder_rule_id.is_some()
+    {
         "reminder"
     } else {
         "profile_detail"
@@ -362,7 +363,8 @@ pub fn insert_fitness_assessment(
             "insert_fitness_assessment requires at least one admitted fitness metric".to_string(),
         );
     }
-    let source_surface = if linked_reminder_state_id.is_some() || linked_reminder_rule_id.is_some() {
+    let source_surface = if linked_reminder_state_id.is_some() || linked_reminder_rule_id.is_some()
+    {
         "reminder"
     } else {
         "profile_detail"
@@ -540,6 +542,6 @@ pub fn delete_fitness_event(event_id: String) -> Result<(), String> {
            AND protocolId IN ('fitness-school-assessment', 'fitness-sport-activity')",
         params![event_id],
     )
-        .map_err(|e| format!("delete_fitness_event: {e}"))?;
+    .map_err(|e| format!("delete_fitness_event: {e}"))?;
     Ok(())
 }

@@ -53,8 +53,8 @@
     "yaml": "^2.9.0"
   },
   "dependencies": {
-    "@nimiplatform/kit": "^0.2.0",
-    "@nimiplatform/sdk": "^0.6.0",
+    "@nimiplatform/kit": "file:../../nimi-realm/nimi/kit",
+    "@nimiplatform/sdk": "file:../../nimi-realm/nimi/sdk",
     "@tanstack/react-query": "^5.100.11",
     "@tanstack/react-virtual": "^3.13.25",
     "@tauri-apps/api": "^2.11.0",
@@ -66,8 +66,13 @@
     "react-dom": "19.2.6",
     "react-i18next": "^16.5.8",
     "react-router-dom": "^7.15.1",
-    "recharts": "^2.15.3",
+    "recharts": "^3.8.1",
     "scheduler": "^0.27.0",
     "zustand": "^5.0.13"
+  },
+  "pnpm": {
+    "overrides": {
+      "@nimiplatform/sdk": "file:../../nimi-realm/nimi/sdk"
+    }
   }
 }

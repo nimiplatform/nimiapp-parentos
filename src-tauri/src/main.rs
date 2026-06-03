@@ -1,17 +1,15 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::Serialize;
-use tauri::Manager;
-
 // Shared modules from kit/shell/tauri crate
 use nimi_shell_tauri::auth_session_commands;
-use nimi_shell_tauri::desktop_paths;
 use nimi_shell_tauri::oauth_commands;
 use nimi_shell_tauri::runtime_bridge;
 use nimi_shell_tauri::runtime_defaults as defaults;
 use nimi_shell_tauri::session_logging;
 
 // App-local modules
+mod app_storage;
 mod attachment_store;
 mod child_avatar;
 mod dropped_file;
@@ -27,19 +25,35 @@ mod test_support;
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ParentOSStorageDirs {
-    nimi_dir: String,
-    nimi_data_dir: String,
+    parentos_data_root: String,
+    parentos_cache_root: String,
+    parentos_temp_root: String,
     parentos_db_path: String,
 }
 
 #[tauri::command]
 fn get_storage_dirs() -> Result<ParentOSStorageDirs, String> {
-    let nimi_dir = desktop_paths::resolve_nimi_dir()?;
-    let nimi_data_dir = desktop_paths::resolve_nimi_data_dir()?;
+    let storage_roots = app_storage::app_storage_roots()?;
+    storage_dirs_from_roots(&storage_roots)
+}
+
+#[tauri::command]
+fn prepare_parentos_app_storage(
+    app: tauri::AppHandle,
+    projection: app_storage::ParentOSAppStorageProjectionInput,
+) -> Result<ParentOSStorageDirs, String> {
+    let storage_roots = app_storage::prepare_app_storage(&app, projection)?;
+    storage_dirs_from_roots(&storage_roots)
+}
+
+fn storage_dirs_from_roots(
+    storage_roots: &app_storage::ParentOSAppStorageRoots,
+) -> Result<ParentOSStorageDirs, String> {
     let parentos_db_path = sqlite::resolve_db_path()?;
     Ok(ParentOSStorageDirs {
-        nimi_dir: nimi_dir.display().to_string(),
-        nimi_data_dir: nimi_data_dir.display().to_string(),
+        parentos_data_root: storage_roots.data_root.display().to_string(),
+        parentos_cache_root: storage_roots.cache_root.display().to_string(),
+        parentos_temp_root: storage_roots.temp_root.display().to_string(),
         parentos_db_path: parentos_db_path.display().to_string(),
     })
 }
@@ -84,59 +98,6 @@ fn load_dotenv_files() {
     }
 }
 
-/// Cloud AI provider configuration resolved from env vars.
-/// Tries providers in priority order: DEEPSEEK, GEMINI, DASHSCOPE.
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct CloudAIConfig {
-    provider_endpoint: String,
-    provider_model: String,
-    provider_api_key: String,
-    provider_type: String,
-    available: bool,
-}
-
-fn env_value_trimmed(key: &str) -> String {
-    std::env::var(key)
-        .ok()
-        .map(|v| v.trim().to_string())
-        .filter(|v| !v.is_empty())
-        .unwrap_or_default()
-}
-
-#[tauri::command]
-fn parentos_cloud_ai_config() -> CloudAIConfig {
-    // Try DeepSeek first
-    let deepseek_key = env_value_trimmed("DEEPSEEK_API_KEY");
-    if !deepseek_key.is_empty() {
-        return CloudAIConfig {
-            provider_endpoint: "https://api.deepseek.com/v1".into(),
-            provider_model: "deepseek-chat".into(),
-            provider_api_key: deepseek_key,
-            provider_type: "openai_compat".into(),
-            available: true,
-        };
-    }
-    // Try Dashscope (Alibaba/Qwen)
-    let dashscope_key = env_value_trimmed("DASHSCOPE_API_KEY");
-    if !dashscope_key.is_empty() {
-        return CloudAIConfig {
-            provider_endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1".into(),
-            provider_model: "qwen-plus".into(),
-            provider_api_key: dashscope_key,
-            provider_type: "openai_compat".into(),
-            available: true,
-        };
-    }
-    CloudAIConfig {
-        provider_endpoint: String::new(),
-        provider_model: String::new(),
-        provider_api_key: String::new(),
-        provider_type: String::new(),
-        available: false,
-    }
-}
-
 fn configure_runtime_bridge_env() {
     if cfg!(debug_assertions) && std::env::var_os("NIMI_RUNTIME_BRIDGE_MODE").is_none() {
         std::env::set_var("NIMI_RUNTIME_BRIDGE_MODE", "RUNTIME");
@@ -151,22 +112,10 @@ fn main() {
     session_logging::log_boot_marker("parentos main() entered");
 
     tauri::Builder::default()
-        .setup(|app| {
-            let nimi_data_dir = desktop_paths::resolve_nimi_data_dir()?;
-            app.state::<tauri::Scopes>()
-                .allow_directory(&nimi_data_dir, true)
-                .map_err(|error| {
-                    format!(
-                        "failed to allow nimi_data_dir in asset scope ({}): {error}",
-                        nimi_data_dir.display()
-                    )
-                })?;
-            Ok(())
-        })
         .invoke_handler(tauri::generate_handler![
             get_storage_dirs,
+            prepare_parentos_app_storage,
             parentos_start_window_drag,
-            parentos_cloud_ai_config,
             defaults::runtime_defaults,
             auth_session_commands::auth_session_load,
             auth_session_commands::auth_session_save,

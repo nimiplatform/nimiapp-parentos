@@ -20,16 +20,29 @@ pub(super) fn apply_v20(conn: &Connection) -> Result<(), String> {
     }
     let existing = existing_orthodontic_appliances_columns(conn)?;
     for (column, ddl) in [
-        ("currentPhase", "ALTER TABLE orthodontic_appliances ADD COLUMN currentPhase TEXT;"),
-        ("phaseStartedAt", "ALTER TABLE orthodontic_appliances ADD COLUMN phaseStartedAt TEXT;"),
-        ("activationIntervalDays", "ALTER TABLE orthodontic_appliances ADD COLUMN activationIntervalDays INTEGER;"),
-        ("nextReviewAgenda", "ALTER TABLE orthodontic_appliances ADD COLUMN nextReviewAgenda TEXT;"),
+        (
+            "currentPhase",
+            "ALTER TABLE orthodontic_appliances ADD COLUMN currentPhase TEXT;",
+        ),
+        (
+            "phaseStartedAt",
+            "ALTER TABLE orthodontic_appliances ADD COLUMN phaseStartedAt TEXT;",
+        ),
+        (
+            "activationIntervalDays",
+            "ALTER TABLE orthodontic_appliances ADD COLUMN activationIntervalDays INTEGER;",
+        ),
+        (
+            "nextReviewAgenda",
+            "ALTER TABLE orthodontic_appliances ADD COLUMN nextReviewAgenda TEXT;",
+        ),
     ] {
         if existing.contains(column) {
             continue;
         }
-        conn.execute_batch(ddl)
-            .map_err(|e| format!("migration v20 add orthodontic_appliances.{column} failed: {e}"))?;
+        conn.execute_batch(ddl).map_err(|e| {
+            format!("migration v20 add orthodontic_appliances.{column} failed: {e}")
+        })?;
     }
     Ok(())
 }

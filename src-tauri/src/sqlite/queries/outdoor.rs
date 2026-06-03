@@ -62,7 +62,8 @@ pub fn insert_outdoor_record(
         )
         .map_err(|e| format!("insert_outdoor_record query child birthDate: {e}"))?;
     let age_months = age_months_at_birth_date(&birth_date, &activity_date)?;
-    let source_surface = if linked_reminder_state_id.is_some() || linked_reminder_rule_id.is_some() {
+    let source_surface = if linked_reminder_state_id.is_some() || linked_reminder_rule_id.is_some()
+    {
         "reminder"
     } else {
         "profile_detail"

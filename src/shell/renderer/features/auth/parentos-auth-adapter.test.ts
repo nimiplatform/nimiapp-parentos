@@ -61,8 +61,8 @@ const {
 } = await import('./parentos-auth-adapter.js');
 
 const PARENTOS_CALLER = {
-  appId: 'app.nimi.parentos',
-  appInstanceId: 'app.nimi.parentos.local-first-party',
+  appId: 'ai.nimi.apps.parentos',
+  appInstanceId: 'ai.nimi.apps.parentos.local-first-party',
   deviceId: 'local-first-party-device',
   mode: AccountCallerMode.LOCAL_FIRST_PARTY_APP,
   scopes: [],

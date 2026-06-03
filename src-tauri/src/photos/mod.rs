@@ -10,7 +10,7 @@
 //!    encode error returns an `Err`; the caller MUST NOT fall back to writing
 //!    the original bytes.
 //! 2. **Path resolution** — every photo file lives under
-//!    `${appLocalData}/parentos/photos/{childId}/{sessionId}/{angle}.jpg`.
+//!    `${appDataRoot}/orthodontic/photos/{childId}/{sessionId}/{angle}.jpg`.
 //!    Path segments are sanitized so a malicious id can never escape the
 //!    photos root.
 //! 3. **File-system lifecycle** — session-level and child-level recursive
@@ -21,9 +21,9 @@
 //! The module is intentionally split into pure helpers (`compress_to_jpeg`,
 //! `is_admitted_*`) and IO helpers (`write_jpeg`, `delete_session_dir_at`).
 //! Production wrappers (`save_session_jpeg`, `delete_session_dir`,
-//! `delete_child_dir`, `read_photo_bytes`) resolve the photos root through
-//! `desktop_paths` before delegating to the pure helpers, which keeps the
-//! tests fully sandboxed in `TempDir`.
+//! `delete_child_dir`, `read_photo_bytes`) resolve the photos root through the
+//! Runtime-owned ParentOS durable data root before delegating to the pure
+//! helpers, which keeps the tests fully sandboxed in `TempDir`.
 
 use std::fs;
 use std::io::Cursor;
@@ -33,9 +33,9 @@ use image::codecs::jpeg::JpegEncoder;
 use image::imageops::FilterType;
 use image::{GenericImageView, ImageReader, Rgb, RgbImage};
 
-use crate::desktop_paths;
+use crate::app_storage;
 
-const PHOTOS_DIR: &str = "parentos/photos";
+const PHOTOS_DIR: &str = "orthodontic/photos";
 const MAX_LONGEST_EDGE: u32 = 1600;
 /// JPEG encode quality (1..=100). 82 balances 5–10× compression against
 /// near-imperceptible quality loss for intra-oral photos.
@@ -43,7 +43,7 @@ const JPEG_QUALITY: u8 = 82;
 
 /// Resolved photos root for this install. Created if missing.
 pub fn resolve_photos_root() -> Result<PathBuf, String> {
-    let root = desktop_paths::resolve_nimi_data_dir()?.join(PHOTOS_DIR);
+    let root = app_storage::data_child_path(PHOTOS_DIR)?;
     fs::create_dir_all(&root)
         .map_err(|e| format!("failed to create photos dir ({}): {e}", root.display()))?;
     Ok(root)
@@ -138,7 +138,9 @@ fn flatten_alpha_on_white(img: &image::DynamicImage) -> RgbImage {
         let alpha = a as f32 / 255.0;
         let blend = |c: u8| -> u8 {
             let c = c as f32 / 255.0;
-            ((c * alpha + (1.0 - alpha)) * 255.0).round().clamp(0.0, 255.0) as u8
+            ((c * alpha + (1.0 - alpha)) * 255.0)
+                .round()
+                .clamp(0.0, 255.0) as u8
         };
         out.put_pixel(x, y, Rgb([blend(r), blend(g), blend(b)]));
     }
@@ -204,11 +206,7 @@ pub fn write_jpeg(
 
 /// Fail-safe recursive delete of `{root}/{childId}/{sessionId}/`. Missing
 /// directory is OK. Any other IO error is fail-close.
-pub fn delete_session_dir_at(
-    root: &Path,
-    child_id: &str,
-    session_id: &str,
-) -> Result<(), String> {
+pub fn delete_session_dir_at(root: &Path, child_id: &str, session_id: &str) -> Result<(), String> {
     let child = sanitize_segment(child_id, "child_id")?;
     let session = sanitize_segment(session_id, "session_id")?;
     let dir = root.join(child).join(session);
@@ -239,7 +237,7 @@ fn delete_dir_fail_safe(dir: &Path) -> Result<(), String> {
 /// `filePath` strings back into Rust).
 ///
 /// Wave B audit follow-up (W4): error strings deliberately omit the
-/// resolved on-disk path. Paths under `${appLocalData}/parentos/photos/`
+/// resolved on-disk path. Paths under `${appDataRoot}/orthodontic/photos/`
 /// embed `childId` + `sessionId`, which would leak through any log a user
 /// later attaches to a support thread. Only the underlying IO kind is
 /// returned; the full path is available to the developer through the
@@ -256,6 +254,27 @@ pub fn read_photo_bytes(path: &Path) -> Result<Vec<u8>, String> {
         return Err("photo path is outside owned photos root".to_string());
     }
     fs::read(&canonical).map_err(|e| format!("failed to read photo bytes: {e}"))
+}
+
+pub fn delete_photo_file(path: &Path) -> Result<(), String> {
+    let root = resolve_photos_root()?;
+    if path.exists() {
+        let canonical_root = root
+            .canonicalize()
+            .map_err(|e| format!("failed to canonicalize photos root: {e}"))?;
+        let canonical = path
+            .canonicalize()
+            .map_err(|e| format!("failed to resolve photo path: {} ({e})", e.kind()))?;
+        if !canonical.starts_with(&canonical_root) {
+            return Err("photo path is outside owned photos root".to_string());
+        }
+        fs::remove_file(&canonical).map_err(|e| format!("failed to delete photo file: {e}"))?;
+        return Ok(());
+    }
+    if path.starts_with(&root) {
+        return Ok(());
+    }
+    Err("photo path is outside owned photos root".to_string())
 }
 
 // ── Production wrappers (resolve root + delegate) ─────────────────────────
@@ -428,8 +447,7 @@ mod tests {
         let jpeg = encode_jpeg(50, 50, ImgRgb([10, 20, 30]));
         let compressed = compress_to_jpeg(&jpeg, "image/jpeg").unwrap();
 
-        let path =
-            write_jpeg(root, "child-A", "sess-A", "front", &compressed).expect("write");
+        let path = write_jpeg(root, "child-A", "sess-A", "front", &compressed).expect("write");
         assert!(path.exists(), "written file must exist on disk");
         assert!(path.ends_with("front.jpg"));
         assert_eq!(fs::read(&path).unwrap(), compressed);
@@ -454,7 +472,11 @@ mod tests {
         delete_child_dir_at(root, "child-A").expect("delete child A");
 
         assert!(!root.join("child-A").exists());
-        assert!(root.join("child-B").join("sess-1").join("front.jpg").exists());
+        assert!(root
+            .join("child-B")
+            .join("sess-1")
+            .join("front.jpg")
+            .exists());
     }
 
     #[test]
@@ -558,7 +580,7 @@ mod tests {
     fn read_photo_bytes_canonicalize_failure_does_not_leak_path() {
         // Wave B audit follow-up (W4). We can't easily exercise the
         // resolve_photos_root branch from a unit test (it goes through
-        // desktop_paths), but the canonicalize error formatter is the
+        // Runtime app storage), but the canonicalize error formatter is the
         // public surface and we can validate its message shape directly.
         // The relevant assertion is that the failure does NOT round-trip
         // the inbound path, which would leak childId/sessionId.

@@ -41,7 +41,7 @@ semantic purpose. Implementation must never collapse them or cross-write.
 | `orthodontic_appliances` | One row per appliance instance attached to a case. Source of truth for `applianceType`, active/paused/completed status, prescribed wear, review cadence, expander activation counters, and clear-aligner per-tray schedule (`totalAligners`, `daysPerAligner`). |
 | `orthodontic_checkins` | Discrete clinical events parent-records. Admitted `checkinType` values are `aligner-change` and `expander-activation`. Daily wear is NOT a checkin (see `orthodontic_unwear_intervals`). Checkins do NOT appear in the dental clinical timeline. |
 | `orthodontic_unwear_intervals` | Event stream of un-wear periods (when a removable appliance was taken out). Source of truth for compliance projection (PO-ORTHO-008). Applies only to `clear-aligner | twin-block | activator | retainer-removable`. |
-| `orthodontic_photo_sessions` | One row per parent-captured photo session (front + side intra-oral). Source of truth for the orthodontic image record (PO-ORTHO-012). Image bytes live in the shared `attachments` table on disk under `${appLocalData}/parentos/photos/...`. Sessions are NOT clinical evidence and NOT input to any AI prompt. |
+| `orthodontic_photo_sessions` | One row per parent-captured photo session (front + side intra-oral). Source of truth for the orthodontic image record (PO-ORTHO-012). Image bytes live in the shared `attachments` table on disk under `${parentosAppDataRoot}/orthodontic/photos/...`, where `parentosAppDataRoot = Runtime.GetAppStorage(ai.nimi.apps.parentos).durableDataRoot`. Sessions are NOT clinical evidence and NOT input to any AI prompt. |
 
 Invariant: review, adjustment, issue, and end events must write to
 `health_record_events` only. A `checkinType` outside the admitted set, a
@@ -460,7 +460,7 @@ Each captured photograph is one row in the shared `attachments` table with:
 - `ownerId = sessionId`
 - `metadataJson = '{"angle":"front"}'` or `'{"angle":"side"}'` — exactly one angle per attachment
 - `filePath` pointing at a file under
-  `${appLocalData}/parentos/photos/${childId}/${sessionId}/${angle}.{ext}`
+  `${parentosAppDataRoot}/orthodontic/photos/${childId}/${sessionId}/${angle}.{ext}`
 - `mimeType` taken from the admitted image set `image/jpeg | image/png | image/webp`
 
 The runtime MUST downsample any incoming bitmap so the longest edge is
@@ -504,14 +504,14 @@ v1 and may NOT be quietly admitted without amending this section.
 - Deleting an `orthodontic_cases` row MUST cascade-delete all
   `orthodontic_photo_sessions` rows for that case, all matching `attachments`
   rows, AND the corresponding files under
-  `${appLocalData}/parentos/photos/${childId}/${sessionId}/`. The directory
+  `${parentosAppDataRoot}/orthodontic/photos/${childId}/${sessionId}/`. The directory
   prune is a fail-safe step that does not error when the directory is missing.
 - Deleting an `orthodontic_photo_sessions` row directly MUST cascade-delete
   its `attachments` rows + the on-disk session directory by the same fail-safe
   contract.
 - Deleting a `children` row cascade-deletes every `orthodontic_photo_sessions`
   and matching `attachments` row through the existing FK chain; the runtime
-  command must also prune `${appLocalData}/parentos/photos/${childId}/`.
+  command must also prune `${parentosAppDataRoot}/orthodontic/photos/${childId}/`.
 - Pause / resume of an appliance does NOT affect photo sessions.
 
 ### AI boundary
@@ -644,7 +644,7 @@ The orthodontic layer must fail closed when:
 - a third photo attachment is inserted with an `angle` that already exists for the same `sessionId` (PO-ORTHO-012)
 - an incoming photo bitmap fails the `≤ 1600 px longest edge` cap or the `image/jpeg quality 82` re-encode step (PO-ORTHO-012)
 - a photo upload is attempted outside the admitted mime set `image/jpeg | image/png | image/webp` (PO-ORTHO-012)
-- deletion of a case / child / session fails to prune the matching files under `${appLocalData}/parentos/photos/...` (PO-ORTHO-012; directory-missing is fail-safe, anything else is fail-close)
+- deletion of a case / child / session fails to prune the matching files under `${parentosAppDataRoot}/orthodontic/photos/...` (PO-ORTHO-012; directory-missing is fail-safe, anything else is fail-close)
 - any code path reads photo bytes, captions, or session metadata into an AI prompt or export payload (PO-ORTHO-012)
 
 ## Phase Exclusions

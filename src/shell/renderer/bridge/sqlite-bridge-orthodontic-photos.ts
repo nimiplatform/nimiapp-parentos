@@ -61,7 +61,8 @@ export interface OrthodonticPhotoAttachmentRow {
   sessionId: string;
   angle: OrthodonticPhotoAngle;
   /**
-   * Absolute on-disk path under `${appLocalData}/parentos/photos/...`. The
+   * Absolute on-disk path under the Runtime-projected ParentOS app data root
+   * at `orthodontic/photos/...`. The
    * renderer MUST NOT pass this back into Tauri's asset protocol or any
    * other read path — bytes must be retrieved via `readOrthodonticPhotoBlob`,
    * which validates the path is inside the owned photos root (PO-ORTHO-012).
@@ -280,8 +281,8 @@ export function deleteOrthodonticPhotoSession(params: { sessionId: string; child
  * Delete a single attachment row + its on-disk file. The dedicated path
  * (vs the generic `deleteAttachment` in `sqlite-bridge-records.ts`)
  * guarantees the photo file is actually removed; the generic path lives
- * under `parentos/attachments/` and silently skips files under
- * `parentos/photos/` (this is the Wave B audit B1 mitigation, the Rust
+ * under `attachments/` and silently skips files under
+ * `orthodontic/photos/` (this is the Wave B audit B1 mitigation, the Rust
  * side will fail-close on misuse).
  */
 export function deleteOrthodonticPhotoAttachment(attachmentId: string) {

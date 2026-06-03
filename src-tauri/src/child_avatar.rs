@@ -4,9 +4,9 @@ use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
 
-use crate::desktop_paths;
+use crate::app_storage;
 
-const CHILD_AVATAR_DIR: &str = "parentos/child-avatar";
+const CHILD_AVATAR_DIR: &str = "children/avatars";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,7 +15,7 @@ pub struct SavedChildAvatar {
 }
 
 fn resolve_avatar_root() -> Result<PathBuf, String> {
-    let root = desktop_paths::resolve_nimi_data_dir()?.join(CHILD_AVATAR_DIR);
+    let root = app_storage::data_child_path(CHILD_AVATAR_DIR)?;
     fs::create_dir_all(&root).map_err(|error| {
         format!(
             "failed to create child avatar dir ({}): {error}",

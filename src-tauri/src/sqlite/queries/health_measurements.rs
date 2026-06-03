@@ -175,7 +175,8 @@ pub fn insert_measurement(
     if !value.is_finite() {
         return Err("insert_measurement requires a finite value".to_string());
     }
-    let source_surface = if linked_reminder_state_id.is_some() || linked_reminder_rule_id.is_some() {
+    let source_surface = if linked_reminder_state_id.is_some() || linked_reminder_rule_id.is_some()
+    {
         "reminder"
     } else {
         legacy_measurement_source_to_surface(source.as_deref())

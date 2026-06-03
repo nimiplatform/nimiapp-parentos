@@ -25,14 +25,14 @@ mod migrations_v17;
 mod migrations_v18;
 #[path = "migrations_v19.rs"]
 mod migrations_v19;
+#[path = "migrations_v2.rs"]
+mod migrations_v2;
 #[path = "migrations_v20.rs"]
 mod migrations_v20;
 #[path = "migrations_v21.rs"]
 mod migrations_v21;
 #[path = "migrations_v22.rs"]
 mod migrations_v22;
-#[path = "migrations_v2.rs"]
-mod migrations_v2;
 #[path = "migrations_v3.rs"]
 mod migrations_v3;
 #[path = "migrations_v4.rs"]
@@ -59,10 +59,10 @@ use migrations_v16::apply_v16;
 use migrations_v17::apply_v17;
 use migrations_v18::apply_v18;
 use migrations_v19::apply_v19;
+use migrations_v2::apply_v2;
 use migrations_v20::apply_v20;
 use migrations_v21::apply_v21;
 use migrations_v22::apply_v22;
-use migrations_v2::apply_v2;
 
 #[cfg(test)]
 pub(super) fn __test_only_apply_v16(conn: &Connection) -> Result<(), String> {

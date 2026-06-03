@@ -58,8 +58,24 @@ pub fn insert_posture_assessment(
           neck, pelvis, knee, adam, cobbAngle, notes, photoPaths, createdAt, updatedAt)
          VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?18)",
         params![
-            assessment_id, child_id, assessed_at, age_months, source, shoulder, scapula, hip, leg,
-            heel, neck, pelvis, knee, adam, cobb_angle, notes, photo_paths, now
+            assessment_id,
+            child_id,
+            assessed_at,
+            age_months,
+            source,
+            shoulder,
+            scapula,
+            hip,
+            leg,
+            heel,
+            neck,
+            pelvis,
+            knee,
+            adam,
+            cobb_angle,
+            notes,
+            photo_paths,
+            now
         ],
     )
     .map_err(|e| format!("insert_posture_assessment: {e}"))?;

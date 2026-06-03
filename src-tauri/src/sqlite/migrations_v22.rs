@@ -104,6 +104,9 @@ mod tests {
                 row.get(0)
             })
             .unwrap();
-        assert_eq!(remaining, 0, "child delete must cascade into posture_assessments");
+        assert_eq!(
+            remaining, 0,
+            "child delete must cascade into posture_assessments"
+        );
     }
 }

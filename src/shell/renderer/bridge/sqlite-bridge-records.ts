@@ -159,7 +159,8 @@ export interface AttachmentRow {
  * For photo-session uploads, use `attachOrthodonticPhoto` from
  * `sqlite-bridge-orthodontic-photos.ts` — that path runs the PO-ORTHO-012
  * codec gate (downsample + JPEG re-encode), enforces the per-angle unique
- * index, and writes to the dedicated `parentos/photos/` storage root. This
+ * index, and writes to the dedicated `orthodontic/photos/` storage root under
+ * the Runtime-projected ParentOS app data root. This
  * generic writer is unaware of all three.
  *
  * Rust also rejects `orthodontic_photo_sessions` here, so a caller cannot
@@ -195,8 +196,8 @@ export function getAttachmentsByOwner(childId: string, ownerTable: string, owner
  * `orthodontic_photo_sessions` (Wave B audit B1 mitigation in
  * `attachment_store.rs`). Callers that hold a photo-session attachment
  * MUST route through `deleteOrthodonticPhotoAttachment` so the on-disk
- * JPEG under `parentos/photos/...` is actually purged; the generic path
- * only knows about `parentos/attachments/` and would orphan the file.
+ * JPEG under `orthodontic/photos/...` is actually purged; the generic path
+ * only knows about `attachments/` and would orphan the file.
  */
 export function deleteAttachment(attachmentId: string) {
   return invoke<void>('delete_attachment', { attachmentId });

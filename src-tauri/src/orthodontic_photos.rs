@@ -16,7 +16,6 @@
 
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
-use std::fs;
 use std::path::Path;
 
 use crate::photos;
@@ -93,7 +92,7 @@ pub fn attach_orthodontic_photo(
     ) {
         Ok(attachment) => Ok(attachment),
         Err(err) => {
-            let _ = fs::remove_file(&dest);
+            let _ = photos::delete_photo_file(&dest);
             Err(err)
         }
     }
@@ -108,7 +107,10 @@ pub fn list_orthodontic_photo_session_bundles(
     let mut bundles = Vec::with_capacity(sessions.len());
     for session in sessions {
         let attachments = list_photo_attachments_for_session(session.session_id.clone())?;
-        bundles.push(OrthodonticPhotoSessionBundle { session, attachments });
+        bundles.push(OrthodonticPhotoSessionBundle {
+            session,
+            attachments,
+        });
     }
     Ok(bundles)
 }
@@ -135,10 +137,8 @@ pub fn delete_orthodontic_photo_session(
     // session directory itself.
     let mut file_errors: Vec<String> = Vec::new();
     for path in &paths {
-        if let Err(err) = fs::remove_file(path) {
-            if err.kind() != std::io::ErrorKind::NotFound {
-                file_errors.push(format!("remove {path}: {err}"));
-            }
+        if let Err(err) = photos::delete_photo_file(Path::new(path)) {
+            file_errors.push(format!("remove {path}: {err}"));
         }
     }
     if let Err(err) = photos::delete_session_dir(&child_id, &session_id) {
@@ -161,9 +161,8 @@ pub fn delete_orthodontic_photo_session(
 #[tauri::command]
 pub fn delete_orthodontic_photo_attachment(attachment_id: String) -> Result<(), String> {
     let file_path = delete_photo_attachment_collecting_path(attachment_id.as_str())?;
-    match fs::remove_file(&file_path) {
+    match photos::delete_photo_file(Path::new(&file_path)) {
         Ok(()) => Ok(()),
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(err) => Err(format!(
             "photo attachment row deleted but file removal failed ({file_path}): {err}"
         )),

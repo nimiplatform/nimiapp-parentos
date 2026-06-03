@@ -4,9 +4,9 @@ use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::desktop_paths;
+use crate::app_storage;
 
-const JOURNAL_AUDIO_DIR: &str = "parentos/journal-audio";
+const JOURNAL_AUDIO_DIR: &str = "journal/audio";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,7 +15,7 @@ pub struct SavedJournalVoiceAudio {
 }
 
 fn resolve_audio_root() -> Result<PathBuf, String> {
-    let root = desktop_paths::resolve_nimi_data_dir()?.join(JOURNAL_AUDIO_DIR);
+    let root = app_storage::data_child_path(JOURNAL_AUDIO_DIR)?;
     fs::create_dir_all(&root).map_err(|error| {
         format!(
             "failed to create journal audio dir ({}): {error}",
@@ -51,7 +51,17 @@ fn extension_for_mime_type(mime_type: &str) -> Result<&'static str, String> {
 
 fn ensure_audio_path_is_owned(path: &Path) -> Result<(), String> {
     let root = resolve_audio_root()?;
-    if path.starts_with(&root) {
+    if path.exists() {
+        let canonical_root = root
+            .canonicalize()
+            .map_err(|error| format!("failed to canonicalize journal audio root: {error}"))?;
+        let canonical_path = path
+            .canonicalize()
+            .map_err(|error| format!("failed to canonicalize journal audio path: {error}"))?;
+        if canonical_path.starts_with(&canonical_root) {
+            return Ok(());
+        }
+    } else if path.starts_with(&root) {
         return Ok(());
     }
     Err(format!(

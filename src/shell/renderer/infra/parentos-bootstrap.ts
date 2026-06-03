@@ -1,6 +1,6 @@
 import {
   clearPlatformClient,
-  createLocalFirstPartyRuntimePlatformClient,
+  createNimiAppRuntimePlatformClient,
   getPlatformClient,
   type PlatformClient,
 } from '@nimiplatform/sdk';
@@ -10,7 +10,7 @@ import {
   type AccountCaller,
   type AccountProjection,
 } from '@nimiplatform/sdk/runtime/browser';
-import type { Runtime } from '@nimiplatform/sdk/runtime';
+import type { Runtime, RuntimeAppStorageProjection } from '@nimiplatform/sdk/runtime';
 import { getParentOSRuntimeDefaults } from '../bridge/index.js';
 import { useAppStore } from '../app-shell/app-store.js';
 import {
@@ -19,6 +19,8 @@ import {
   getChild,
   getChildren,
   getFamily,
+  prepareParentOSAppStorage,
+  type ParentOSAppStorageProjectionInput,
 } from '../bridge/sqlite-bridge.js';
 import { mapChildRow } from '../bridge/mappers.js';
 import { loadPersistedParentosAIConfig } from '../features/settings/parentos-ai-config.js';
@@ -28,9 +30,10 @@ import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
 // first-party Runtime account/session consumer. The caller is fixed; runtime
 // owns refresh-token custody and short-lived access-token projection. No
 // app-owned token surface is admitted.
-export const PARENTOS_RUNTIME_APP_ID = 'app.nimi.parentos';
+export const PARENTOS_RUNTIME_APP_ID = 'ai.nimi.apps.parentos';
 export const PARENTOS_RUNTIME_APP_INSTANCE_ID = `${PARENTOS_RUNTIME_APP_ID}.local-first-party`;
 export const PARENTOS_RUNTIME_DEVICE_ID = 'local-first-party-device';
+export const PARENTOS_RUNTIME_STORAGE_POLICY_REF = 'nimi-data-app-roots';
 
 export const parentosRuntimeAccountCaller: AccountCaller = {
   appId: PARENTOS_RUNTIME_APP_ID,
@@ -72,6 +75,47 @@ export async function loadParentOSRuntimeAccountUser(
     return null;
   }
   return normalizeParentOSAccountProjection(response.accountProjection);
+}
+
+function requireParentOSAppStorageProjection(
+  projection: RuntimeAppStorageProjection,
+): ParentOSAppStorageProjectionInput {
+  if (projection.appId !== PARENTOS_RUNTIME_APP_ID) {
+    throw new Error(
+      `ParentOS storage projection expected ${PARENTOS_RUNTIME_APP_ID}, got ${projection.appId}`,
+    );
+  }
+  if (projection.state !== 'ready') {
+    throw new Error(
+      `ParentOS storage projection requires Runtime ready state, got ${projection.state}`,
+    );
+  }
+  if (projection.storagePolicyRef !== PARENTOS_RUNTIME_STORAGE_POLICY_REF) {
+    throw new Error(
+      `ParentOS storage projection expected storagePolicyRef ${PARENTOS_RUNTIME_STORAGE_POLICY_REF}, got ${projection.storagePolicyRef}`,
+    );
+  }
+  const roots = {
+    durableDataRoot: projection.durableDataRoot.trim(),
+    cacheRoot: projection.cacheRoot.trim(),
+    tempRoot: projection.tempRoot.trim(),
+  };
+  if (!roots.durableDataRoot || !roots.cacheRoot || !roots.tempRoot) {
+    throw new Error('ParentOS storage projection returned an empty Runtime app storage root');
+  }
+  return {
+    appId: projection.appId,
+    state: projection.state,
+    storagePolicyRef: projection.storagePolicyRef,
+    ...roots,
+  };
+}
+
+async function resolveParentOSAppStorageProjection(
+  runtime: Runtime,
+): Promise<ParentOSAppStorageProjectionInput> {
+  const projection = await runtime.appLifecycle.storage({ appId: PARENTOS_RUNTIME_APP_ID });
+  return requireParentOSAppStorageProjection(projection);
 }
 
 export async function runParentOSBootstrap(options: { force?: boolean } = {}): Promise<void> {
@@ -176,9 +220,16 @@ export function syncParentOSLocalDataScope(subjectUserId?: string | null): Promi
 async function buildParentOSPlatformClient(realmBaseUrl: string): Promise<PlatformClient> {
   // PO-SHELL-008 / spec K-ACCSVC-008: type-level rejection of any app-owned
   // token surface. Runtime is the sole owner of access/refresh token custody.
-  return createLocalFirstPartyRuntimePlatformClient({
+  const projection = await createNimiAppRuntimePlatformClient({
+    mode: 'local-first-party',
     appId: PARENTOS_RUNTIME_APP_ID,
+    developerRegistration: import.meta.env.DEV === true,
     realmBaseUrl,
+    runtimeOptions: {
+      protectedAccess: {
+        autoIssueForAi: true,
+      },
+    },
     runtimeTransport: {
       type: 'tauri-ipc',
       commandNamespace: 'runtime_bridge',
@@ -189,6 +240,10 @@ async function buildParentOSPlatformClient(realmBaseUrl: string): Promise<Platfo
       surfaceId: 'parentos.advisor',
     },
   });
+  if (projection.status !== 'ready') {
+    throw new Error(projection.message);
+  }
+  return projection.client;
 }
 
 async function doRunParentOSBootstrap(): Promise<void> {
@@ -200,76 +255,63 @@ async function doRunParentOSBootstrap(): Promise<void> {
     const runtimeDefaults = await getParentOSRuntimeDefaults();
     store.setRuntimeDefaults(runtimeDefaults);
 
-    // Step 2: Construct the local-first-party-runtime platform client. The
-    // SDK helper type-rejects accessToken / refreshToken / sessionStore inputs.
+    // Step 2: Construct and register the local-first-party-runtime platform
+    // client. The SDK helper type-rejects accessToken / refreshToken /
+    // sessionStore inputs.
     clearPlatformClient();
-    const platformClient = await buildParentOSPlatformClient(runtimeDefaults.realm.realmBaseUrl).catch((error) => {
+    const platformClient = await buildParentOSPlatformClient(runtimeDefaults.realm.realmBaseUrl);
+    const runtime = platformClient.runtime;
+
+    // Step 3: Prepare Nimi Data app storage after Runtime has admitted
+    // ai.nimi.apps.parentos. This also grants the Runtime-projected durable data
+    // root to the Tauri asset scope before any saved media can render.
+    const storageProjection = await resolveParentOSAppStorageProjection(runtime);
+    await prepareParentOSAppStorage(storageProjection);
+
+    // Step 4: Resolve the current account from runtime projection. Anonymous /
+    // unavailable / errors must NOT fail bootstrap (PO-SHELL-001) — ParentOS
+    // opens against the anonymous local scope and waits for runtime broker
+    // login to switch.
+    const runtimeAccountUser = await loadParentOSRuntimeAccountUser(runtime).catch((error) => {
       logRendererEvent({
         level: 'warn',
-        area: 'parentos-bootstrap.runtime-client',
-        message: 'action:runtime-platform-client-unavailable',
+        area: 'parentos-bootstrap.account',
+        message: 'action:runtime-account-projection-unavailable',
         flowId,
         details: { error: describeError(error) },
       });
       return null;
     });
-    const runtime = platformClient?.runtime ?? null;
-
-    // Step 3: Resolve the current account from runtime projection. Anonymous /
-    // unavailable / errors must NOT fail bootstrap (PO-SHELL-001) — ParentOS
-    // opens against the anonymous local scope and waits for runtime broker
-    // login to switch.
-    const runtimeAccountUser = runtime
-      ? await loadParentOSRuntimeAccountUser(runtime).catch((error) => {
-          logRendererEvent({
-            level: 'warn',
-            area: 'parentos-bootstrap.account',
-            message: 'action:runtime-account-projection-unavailable',
-            flowId,
-            details: { error: describeError(error) },
-          });
-          return null;
-        })
-      : null;
     if (runtimeAccountUser) {
       store.setAuthSession(runtimeAccountUser);
     } else {
       store.clearAuthSession();
     }
 
-    // Step 4: Local SQLite scope (local-first; anonymous OK).
+    // Step 5: Local SQLite scope (local-first; anonymous OK only after the
+    // Runtime-owned app storage projection is available).
+    await syncParentOSLocalDataScope(runtimeAccountUser?.id ?? null);
+
+    // Step 6: Runtime SDK readiness (non-blocking — core surfaces work without
+    // runtime extras).
     try {
-      await syncParentOSLocalDataScope(runtimeAccountUser?.id ?? null);
+      await runtime.ready();
     } catch (error) {
       logRendererEvent({
         level: 'warn',
-        area: 'bootstrap.local-data',
-        message: 'action:local-data-bootstrap-failed',
+        area: 'bootstrap.runtime',
+        message: 'action:runtime-ready-nonblocking-failed',
         flowId,
         details: { error: describeError(error) },
       });
-    }
-
-    // Step 5: Runtime SDK readiness (non-blocking — core surfaces work without
-    // runtime extras).
-    if (runtime) {
-      try {
-        await runtime.ready();
-      } catch (error) {
-        logRendererEvent({
-          level: 'warn',
-          area: 'bootstrap.runtime',
-          message: 'action:runtime-ready-nonblocking-failed',
-          flowId,
-          details: { error: describeError(error) },
-        });
-      }
     }
 
     store.setBootstrapReady(true);
     store.setBootstrapError(null);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    clearPlatformClient();
+    store.clearAuthSession();
     logRendererEvent({
       level: 'error',
       area: 'bootstrap',

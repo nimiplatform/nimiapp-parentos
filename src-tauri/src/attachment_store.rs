@@ -5,10 +5,10 @@ use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::desktop_paths;
+use crate::app_storage;
 use crate::sqlite::get_conn;
 
-const ATTACHMENTS_DIR: &str = "parentos/attachments";
+const ATTACHMENTS_DIR: &str = "attachments";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -25,7 +25,7 @@ pub struct AttachmentRow {
 }
 
 fn resolve_attachments_root() -> Result<PathBuf, String> {
-    let root = desktop_paths::resolve_nimi_data_dir()?.join(ATTACHMENTS_DIR);
+    let root = app_storage::data_child_path(ATTACHMENTS_DIR)?;
     fs::create_dir_all(&root)
         .map_err(|e| format!("failed to create attachments dir ({}): {e}", root.display()))?;
     Ok(root)
@@ -55,7 +55,17 @@ fn extension_for_mime_type(mime_type: &str) -> Result<&'static str, String> {
 
 fn ensure_path_is_owned(path: &Path) -> Result<(), String> {
     let root = resolve_attachments_root()?;
-    if path.starts_with(&root) {
+    if path.exists() {
+        let canonical_root = root
+            .canonicalize()
+            .map_err(|error| format!("failed to canonicalize attachments root: {error}"))?;
+        let canonical_path = path
+            .canonicalize()
+            .map_err(|error| format!("failed to canonicalize attachment path: {error}"))?;
+        if canonical_path.starts_with(&canonical_root) {
+            return Ok(());
+        }
+    } else if path.starts_with(&root) {
         return Ok(());
     }
     Err(format!(
@@ -220,14 +230,8 @@ pub fn get_attachments_by_owner(
 pub fn delete_attachment(attachment_id: String) -> Result<(), String> {
     let conn = get_conn()?.lock().map_err(|e| e.to_string())?;
 
-    // Wave B audit follow-up (B1): photo-session attachments live under
-    // `parentos/photos/...`, not under `parentos/attachments/`, so the file
-    // sweep below (`ensure_path_is_owned` + `fs::remove_file`) silently
-    // skips them. That would orphan the on-disk JPEG and violate
-    // PO-ORTHO-011 fail-close "deletion fails to prune the matching files".
-    // Force every photo-session attachment through the typed command
-    // `orthodontic_photos::delete_orthodontic_photo_attachment` which knows
-    // how to reach into the photos root.
+    // Photo-session attachments live under `orthodontic/photos/...`, not under
+    // `attachments/`, so the generic sweep is not the authority for them.
     let (file_path, owner_table): (String, String) = conn
         .query_row(
             "SELECT filePath, ownerTable FROM attachments WHERE attachmentId = ?1",
@@ -244,12 +248,17 @@ pub fn delete_attachment(attachment_id: String) -> Result<(), String> {
     }
 
     let candidate = PathBuf::from(file_path.trim());
-    if candidate.is_absolute() {
-        if let Ok(()) = ensure_path_is_owned(&candidate) {
-            if candidate.exists() {
-                let _ = fs::remove_file(&candidate);
-            }
-        }
+    if !candidate.is_absolute() {
+        return Err("attachment path must be absolute".to_string());
+    }
+    ensure_path_is_owned(&candidate)?;
+    if candidate.exists() {
+        fs::remove_file(&candidate).map_err(|error| {
+            format!(
+                "failed to delete attachment file ({}): {error}",
+                candidate.display()
+            )
+        })?;
     }
 
     conn.execute(
@@ -300,8 +309,12 @@ mod tests {
         // Wave A audit follow-up (W2): both must be admitted.
         assert!(is_supported_owner_table("orthodontic_unwear_intervals"));
         assert!(is_supported_owner_table("orthodontic_photo_sessions"));
-        assert!(is_generic_attachment_owner_table("orthodontic_unwear_intervals"));
-        assert!(!is_generic_attachment_owner_table("orthodontic_photo_sessions"));
+        assert!(is_generic_attachment_owner_table(
+            "orthodontic_unwear_intervals"
+        ));
+        assert!(!is_generic_attachment_owner_table(
+            "orthodontic_photo_sessions"
+        ));
 
         assert!(!is_supported_owner_table("dental_records"));
         assert!(!is_supported_owner_table("growth_measurements"));

@@ -2280,8 +2280,6 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 [[package]]
 name = "nimi-shell-tauri"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51e7d76358ef0a746b2f7b3de07fa4f66f10c3b4d0bcfb1e0102949120ec51cc"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
@@ -2296,6 +2294,7 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tokio",
  "tonic",

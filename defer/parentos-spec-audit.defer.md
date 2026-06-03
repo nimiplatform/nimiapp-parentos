@@ -1,7 +1,7 @@
 # ParentOS Spec Audit Defer
 
 Status: `deferred`
-Owner: `app.nimi.parentos`
+Owner: `ai.nimi.apps.parentos`
 Updated At: `2026-04-11`
 Reason: `ParentOS app-local authority formalization, spec realignment, and drift closure are complete for the currently admitted surfaces, but several implementation defects and one checker-hardening follow-up remain outside this audit's allowed edit scope or were intentionally deferred to a dedicated cleanup pass.`
 Evidence Ref:

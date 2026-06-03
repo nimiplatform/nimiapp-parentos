@@ -16,36 +16,42 @@ Governing fact sources:
 
 - `tables/routes.yaml`
 - `tables/nurture-modes.yaml`
+- `tables/local-storage.yaml#storage_layout`
 - `tables/local-storage.yaml#families`
 - `tables/local-storage.yaml#children`
 - `tables/local-storage.yaml#app_settings`
 
 ## PO-SHELL-001 Bootstrap Order
 
-ParentOS is admitted as an active local first-party Runtime account/session consumer. The desktop shell bootstrap MUST construct its platform client through the SDK's `createLocalFirstPartyRuntimePlatformClient` helper, which type-rejects app-owned access tokens, refresh tokens, subject providers, and session stores; RuntimeAccountService is the sole owner of account custody and short-lived access-token projection.
+ParentOS is admitted as an active local first-party Runtime account/session consumer. The desktop shell bootstrap MUST construct its platform client through the SDK's `createNimiAppRuntimePlatformClient` helper in `local-first-party` mode, which type-rejects app-owned access tokens, refresh tokens, subject providers, and session stores; RuntimeAccountService is the sole owner of account custody and short-lived access-token projection.
 
 Caller identity for runtime-account RPCs:
 
 | Field | Value |
 |---|---|
 | `mode` | `ACCOUNT_CALLER_MODE_LOCAL_FIRST_PARTY_APP` |
-| `appId` | `app.nimi.parentos` |
-| `appInstanceId` | `app.nimi.parentos.local-first-party` |
+| `appId` | `ai.nimi.apps.parentos` |
+| `appInstanceId` | `ai.nimi.apps.parentos.local-first-party` |
 | `deviceId` | `local-first-party-device` |
 
+`ai.nimi.apps.parentos` is the canonical Nimi App runtime / Tauri / AIConfig / storage owner id. The retired `app.nimi.parentos` identifier is not admitted by Runtime registration and must not be used as a caller id, storage app id, Tauri identifier, or AIConfig scope owner.
+
 `ACCOUNT_CALLER_MODE_DESKTOP_LAUNCHED_AVATAR` is not admitted for ParentOS — runtime treats that mode as binding-only avatar, not as a first-class account consumer.
+
+Local development builds may set `developerRegistration=true` on `RegisterApp` through the SDK helper so an unshipped ParentOS app can be admitted when the Runtime developer-registration gate is already enabled. Production builds must leave developer registration false and follow normal Nimi App registry admission. ParentOS must not mutate Runtime developer-registration config from app bootstrap; that gate is a Runtime/Desktop developer-mode control, not app-owned policy.
 
 The desktop shell bootstrap path must execute in this order:
 
 1. resolve runtime defaults (realm base URL, transport)
-2. construct the platform client via `createLocalFirstPartyRuntimePlatformClient` (Runtime owns the access token projection; ParentOS does not pass any token material)
-3. resolve the current local storage scope from `runtime.account.getAccountSessionStatus().accountProjection.accountId` when authenticated; use the anonymous local scope when runtime returns `ANONYMOUS` / `UNAVAILABLE`
-4. initialize the SQLite-backed local storage for that scope
-5. load family, child, and app-setting rows from the scoped local storage
-6. derive the active child from persisted local state or the first available child
-7. render shell routes after local prerequisites are ready
+2. construct and register the platform client via `createNimiAppRuntimePlatformClient({ mode: "local-first-party" })` (Runtime owns the access token projection; ParentOS does not pass any token material)
+3. prepare ParentOS Nimi Data storage by resolving `Runtime.GetAppStorage(ai.nimi.apps.parentos)` and granting the returned durable data root to the Tauri asset scope
+4. resolve the current local storage scope from `runtime.account.getAccountSessionStatus().accountProjection.accountId` when authenticated; use the anonymous local scope when runtime returns `ANONYMOUS` / `UNAVAILABLE`
+5. initialize the SQLite-backed local storage for that scope under `tables/local-storage.yaml#storage_layout`
+6. load family, child, and app-setting rows from the scoped local storage
+7. derive the active child from persisted local state or the first available child
+8. render shell routes after local prerequisites are ready
 
-Bootstrap is local-first. ParentOS must not require cloud hydration before local family and child data become usable. Authenticated sessions must switch into that subject's dedicated local database before shell data is hydrated. Runtime account states `anonymous` and `unavailable` must NOT cause bootstrap failure — ParentOS opens against the anonymous local scope and waits for a successful runtime broker login before switching scope.
+Bootstrap is local-first but not Runtime-storage-optional. ParentOS must not require cloud hydration before local family and child data become usable, but Runtime app registration and `Runtime.GetAppStorage(ai.nimi.apps.parentos)` projection are hard prerequisites because local SQLite and user-generated media roots are governed by `tables/local-storage.yaml#storage_layout`. Authenticated sessions must switch into that subject's dedicated local database before shell data is hydrated. Runtime account states `anonymous` and `unavailable` must NOT cause bootstrap failure after the storage projection is available — ParentOS opens against the anonymous local scope and waits for a successful runtime broker login before switching scope. Runtime app registration failure, app-storage projection failure, or SQLite initialization failure MUST fail bootstrap rather than render a shell backed by an unowned path or missing local store.
 
 ## PO-SHELL-008 Account Material Custody Boundary
 
@@ -53,7 +59,7 @@ ParentOS MUST NOT persist, project, or transit access tokens or refresh tokens a
 
 - The desktop shell must not call `applyToken(accessToken, refreshToken)` or any equivalent that takes refresh-token material.
 - The Tauri shared desktop auth-session bridge (`auth_session_load`/`save`/`clear`) must not be invoked from ParentOS bootstrap or login paths.
-- The platform client's `refreshTokenProvider`, `accessTokenProvider`, `accessToken`, `subjectUserIdProvider`, and `sessionStore` inputs are forbidden — `createLocalFirstPartyRuntimePlatformClient` enforces this at the type level.
+- The platform client's `refreshTokenProvider`, `accessTokenProvider`, `accessToken`, `subjectUserIdProvider`, and `sessionStore` inputs are forbidden — `createNimiAppRuntimePlatformClient({ mode: "local-first-party" })` enforces this at the type level.
 - The realm client must not be constructed with a refresh token provider; access tokens, when needed for direct realm calls, are projected from `runtime.account.getAccessToken` (single call, never persisted, never returned to ParentOS surfaces).
 
 Login flows MUST go through the kit's `runtimeAccountBroker` path with the realm OAuth authority endpoints (`R-OAUTH-002`); the kit/Desktop never observes the realm OAuth `code`'s exchanged tokens. The browser-based login `desktopBrowserAuth.runtimeAccountBroker` is the single admitted entry point for ParentOS desktop login.

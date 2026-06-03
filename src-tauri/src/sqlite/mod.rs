@@ -5,12 +5,11 @@ use rusqlite::Connection;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use crate::desktop_paths;
+use crate::app_storage;
 
 static DB_CONN: std::sync::OnceLock<Mutex<Connection>> = std::sync::OnceLock::new();
 static DB_SCOPE: std::sync::OnceLock<Mutex<String>> = std::sync::OnceLock::new();
 
-const LEGACY_DB_FILE_NAME: &str = "parentos.db";
 const ANONYMOUS_DB_SCOPE: &str = "anonymous";
 
 fn db_scope_lock() -> &'static Mutex<String> {
@@ -40,12 +39,25 @@ fn normalize_db_scope(subject_user_id: Option<&str>) -> String {
 }
 
 fn resolve_db_path_for_scope(scope: &str) -> Result<PathBuf, String> {
-    let data_dir = desktop_paths::resolve_nimi_data_dir()?;
+    let sqlite_dir = app_storage::data_child_path("sqlite")?;
+    std::fs::create_dir_all(&sqlite_dir).map_err(|error| {
+        format!(
+            "failed to create ParentOS sqlite dir ({}): {error}",
+            sqlite_dir.display()
+        )
+    })?;
     if scope == ANONYMOUS_DB_SCOPE {
-        return Ok(data_dir.join(LEGACY_DB_FILE_NAME));
+        return Ok(sqlite_dir.join("anonymous.db"));
     }
 
-    Ok(data_dir.join(format!("parentos-{scope}.db")))
+    let accounts_dir = sqlite_dir.join("accounts");
+    std::fs::create_dir_all(&accounts_dir).map_err(|error| {
+        format!(
+            "failed to create ParentOS account sqlite dir ({}): {error}",
+            accounts_dir.display()
+        )
+    })?;
+    Ok(accounts_dir.join(format!("{scope}.db")))
 }
 
 pub fn resolve_db_path() -> Result<PathBuf, String> {
@@ -113,33 +125,45 @@ mod tests {
 
     static TEST_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
 
-    fn test_home_dir(label: &str) -> PathBuf {
+    fn test_app_root(label: &str) -> PathBuf {
         let mut path = std::env::temp_dir();
         path.push(format!(
-            "parentos-sqlite-scope-tests-{label}-{}",
+            "parentos-sqlite-app-storage-tests-{label}-{}",
             std::process::id()
         ));
         path
     }
 
+    fn install_test_storage(label: &str) -> PathBuf {
+        let app_root = test_app_root(label);
+        let data_root = app_root.join("data");
+        let cache_root = app_root.join("cache");
+        let temp_root = app_root.join("tmp");
+        crate::app_storage::install_test_app_storage_roots(
+            data_root.clone(),
+            cache_root,
+            temp_root,
+        )
+        .expect("install test app storage roots");
+        data_root
+    }
+
     #[test]
-    fn db_init_uses_legacy_path_for_anonymous_scope() {
+    fn db_init_uses_anonymous_app_storage_path() {
         let _guard = TEST_MUTEX
             .get_or_init(|| Mutex::new(()))
             .lock()
             .expect("lock sqlite test mutex");
-        let home_dir = test_home_dir("anonymous");
-        std::fs::create_dir_all(&home_dir).expect("create temp home");
-        std::env::set_var("HOME", &home_dir);
+        install_test_storage("anonymous");
 
         let db_path = db_init(None).expect("init anonymous db");
         assert!(
-            db_path.ends_with("parentos.db"),
+            db_path.ends_with("sqlite/anonymous.db"),
             "unexpected path: {db_path}"
         );
         assert!(resolve_db_path()
             .expect("resolve current db path")
-            .ends_with("parentos.db"));
+            .ends_with("sqlite/anonymous.db"));
     }
 
     #[test]
@@ -148,17 +172,15 @@ mod tests {
             .get_or_init(|| Mutex::new(()))
             .lock()
             .expect("lock sqlite test mutex");
-        let home_dir = test_home_dir("account");
-        std::fs::create_dir_all(&home_dir).expect("create temp home");
-        std::env::set_var("HOME", &home_dir);
+        install_test_storage("account");
 
         let anonymous_path = db_init(None).expect("init anonymous db");
         let account_path = db_init(Some("user-123".to_string())).expect("init scoped db");
 
-        assert!(anonymous_path.ends_with("parentos.db"));
+        assert!(anonymous_path.ends_with("sqlite/anonymous.db"));
         assert_ne!(anonymous_path, account_path);
         assert!(
-            account_path.contains("parentos-user-"),
+            account_path.contains("sqlite/accounts/user-"),
             "unexpected scoped path: {account_path}"
         );
         assert_eq!(
