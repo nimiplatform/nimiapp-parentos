@@ -1,4 +1,10 @@
-import type { RuntimeRouteBinding } from '@nimiplatform/sdk/ai';
+import {
+  resolveRuntimeRouteBindingFromSnapshot,
+  runtimeRouteCallTargetFromResolvedBinding,
+  type RuntimeCanonicalCapability,
+  type RuntimeRouteBinding,
+  type RuntimeRouteExecutionCallTarget,
+} from '@nimiplatform/sdk/runtime';
 import { getPlatformClient } from '@nimiplatform/sdk';
 import { useAppStore } from '../../app-shell/app-store.js';
 import type { ParentosCapabilityId } from './parentos-ai-config.js';
@@ -6,51 +12,29 @@ import {
   getParentosAISurfacePolicy,
   type ParentosAISurfaceId,
 } from './parentos-ai-surface-policy.js';
-import { loadParentosRuntimeRouteOptions } from '../../infra/parentos-runtime-route-options.js';
+import {
+  loadParentosRuntimeRouteOptions,
+} from '../../infra/parentos-runtime-route-options.js';
 
 export type ParentosCallParams = {
-  model: string;
+  model?: string;
   route?: 'local' | 'cloud';
   connectorId?: string;
+  localModelId?: string;
 };
 
-/**
- * Resolve AI call parameters from the user's AIConfig binding for a capability.
- *
- * If the user has configured a binding in AI settings, returns the model/route/connectorId
- * from that binding. Otherwise returns `{ model: 'auto' }` to use runtime defaults.
- *
- * Call sites spread the result into SDK calls:
- * ```ts
- * const params = resolveParentosBinding('text.generate');
- * await client.runtime.ai.text.generate({ ...params, input, temperature, ... });
- * ```
- */
-export function resolveParentosBinding(capabilityId: ParentosCapabilityId): ParentosCallParams {
-  const config = useAppStore.getState().aiConfig;
-  if (!config) return { model: 'auto' };
-
-  const binding = config.capabilities.selectedBindings[capabilityId] as RuntimeRouteBinding | null | undefined;
-  if (!binding) return { model: 'auto' };
-
-  const model = binding.model || 'auto';
-  if (binding.source === 'cloud') {
-    return {
-      model,
-      route: 'cloud',
-      connectorId: binding.connectorId || undefined,
-    };
+export function resolveParentosBinding(capabilityId: ParentosCapabilityId): ParentosCallParams | null {
+  const binding = readSelectedParentosRuntimeBinding(capabilityId);
+  if (!binding) {
+    return null;
   }
-  return {
-    model,
-    route: 'local',
-  };
+  return parentosCallParamsFromBinding(binding);
 }
 
 export function buildParentosRuntimeMetadata(surfaceId: ParentosAISurfaceId) {
   return {
     callerKind: 'third-party-app' as const,
-    callerId: 'app.nimi.parentos',
+    callerId: 'ai.nimi.apps.parentos',
     surfaceId,
   };
 }
@@ -73,16 +57,20 @@ export type ParentosSpeechTranscribeParams = ParentosCallParams & {
 };
 
 export type ParentosResolvedTextRuntimeParams = ParentosTextGenerateParams & {
+  model: string;
+  route: 'local' | 'cloud';
   localModelId?: string;
 };
 
 export type ParentosResolvedSpeechTranscribeParams = ParentosSpeechTranscribeParams & {
+  model: string;
+  route: 'local' | 'cloud';
   localModelId?: string;
 };
 
 export const PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS = 180_000;
-const TEXT_IMAGE_INPUT_CAPABILITY = 'text.generate.vision';
-const IMAGE_INPUT_UNSUPPORTED_ERROR_MESSAGE = '当前 AI 智能识别模型不支持图片识别，请在 AI 设置中为“智能识别”单独选择支持视觉输入的模型后重试。';
+const TEXT_IMAGE_INPUT_CAPABILITY = 'text.generate.vision' satisfies ParentosCapabilityId;
+const IMAGE_INPUT_UNSUPPORTED_ERROR_MESSAGE = '当前 AI 智能识别模型未配置，请在 AI 设置中为“智能识别”选择支持视觉输入的模型后重试。';
 
 function getCapabilityParams(capabilityId: ParentosCapabilityId): Record<string, unknown> {
   return (useAppStore.getState().aiConfig?.capabilities.selectedParams?.[capabilityId] || {}) as Record<string, unknown>;
@@ -108,146 +96,95 @@ function readBoolean(value: unknown, fallback: boolean | undefined): boolean | u
   return typeof value === 'boolean' ? value : fallback;
 }
 
-function normalizeModelSelector(value: string): string {
-  return String(value || '').trim();
+function readSelectedParentosRuntimeBinding(capabilityId: ParentosCapabilityId): RuntimeRouteBinding | null {
+  return (useAppStore.getState().aiConfig?.capabilities.selectedBindings?.[capabilityId] || null) as RuntimeRouteBinding | null;
 }
 
-function isQualifiedModelSelector(value: string): boolean {
-  const normalized = normalizeModelSelector(value);
-  return normalized.includes('/');
-}
-
-function inferLocalModelNamespace(provider: unknown): 'llama' | 'media' | 'speech' | 'sidecar' | 'local' {
-  const normalized = String(provider || '').trim().toLowerCase();
-  if (normalized.includes('speech') || normalized.includes('stt') || normalized.includes('tts')) return 'speech';
-  if (normalized.includes('media')) return 'media';
-  if (normalized.includes('sidecar')) return 'sidecar';
-  if (normalized.includes('llama') || normalized.includes('local')) return 'llama';
-  return 'local';
-}
-
-function qualifyRuntimeModel(input: {
-  model: string;
-  route?: 'local' | 'cloud';
-  provider?: unknown;
-}): string {
-  const normalizedModel = normalizeModelSelector(input.model);
-  if (!normalizedModel) {
-    return '';
-  }
-  if (isQualifiedModelSelector(normalizedModel)) {
-    return normalizedModel;
-  }
-  if (input.route === 'cloud') {
-    return `cloud/${normalizedModel}`;
-  }
-  return `${inferLocalModelNamespace(input.provider)}/${normalizedModel}`;
-}
-
-function normalizeRuntimeCapabilityToken(value: unknown): string {
-  const normalized = String(value || '').trim().toLowerCase();
-  if (!normalized) {
-    return '';
-  }
-  if (normalized === 'vision') {
-    return TEXT_IMAGE_INPUT_CAPABILITY;
-  }
-  return normalized;
-}
-
-function supportsImageInput(capabilities: string[] | undefined): boolean {
-  return (capabilities || []).some((capability) => normalizeRuntimeCapabilityToken(capability) === TEXT_IMAGE_INPUT_CAPABILITY);
-}
-
-function matchesLocalBinding(binding: RuntimeRouteBinding, candidate: {
-  localModelId?: string;
-  goRuntimeLocalModelId?: string;
-  model?: string;
-  modelId?: string;
-}): boolean {
-  const bindingLocalModelId = String(binding.localModelId || binding.goRuntimeLocalModelId || '').trim();
-  const candidateLocalModelId = String(candidate.localModelId || candidate.goRuntimeLocalModelId || '').trim();
-  if (bindingLocalModelId && candidateLocalModelId) {
-    return bindingLocalModelId === candidateLocalModelId;
-  }
-  const bindingModel = String(binding.modelId || binding.model || '').trim();
-  const candidateModel = String(candidate.modelId || candidate.model || '').trim();
-  return Boolean(bindingModel) && bindingModel === candidateModel;
-}
-
-function findImageCapableLocalBinding(snapshot: Awaited<ReturnType<typeof loadParentosRuntimeRouteOptions>>) {
-  const localModel = snapshot.local.models.find((candidate) => supportsImageInput(candidate.capabilities));
-  if (!localModel) {
-    return null;
+function parentosCallParamsFromBinding(binding: RuntimeRouteBinding): ParentosCallParams {
+  const model = String(binding.modelId || binding.model || '').trim();
+  if (binding.source === 'cloud') {
+    return {
+      model: model || undefined,
+      route: 'cloud',
+      connectorId: String(binding.connectorId || '').trim() || undefined,
+    };
   }
   return {
-    source: 'local' as const,
-    connectorId: '',
-    model: String(localModel.modelId || localModel.model || '').trim(),
-    modelId: String(localModel.modelId || localModel.model || '').trim() || undefined,
-    provider: String(localModel.provider || localModel.engine || '').trim() || undefined,
-    localModelId: String(localModel.localModelId || '').trim() || undefined,
-    engine: String(localModel.engine || '').trim() || undefined,
-    endpoint: String(localModel.endpoint || '').trim() || undefined,
-    goRuntimeLocalModelId: String(localModel.goRuntimeLocalModelId || '').trim() || undefined,
-    goRuntimeStatus: String(localModel.goRuntimeStatus || '').trim() || undefined,
-  } satisfies RuntimeRouteBinding;
-}
-
-function findImageCapableCloudBinding(snapshot: Awaited<ReturnType<typeof loadParentosRuntimeRouteOptions>>) {
-  for (const connector of snapshot.connectors) {
-    for (const model of connector.models) {
-      const capabilities = connector.modelCapabilities?.[model] || [];
-      if (!supportsImageInput(capabilities)) {
-        continue;
-      }
-      return {
-        source: 'cloud' as const,
-        connectorId: connector.id,
-        model,
-        provider: String(connector.provider || '').trim() || undefined,
-      } satisfies RuntimeRouteBinding;
-    }
-  }
-  return null;
-}
-
-function bindingSupportsImageInput(
-  snapshot: Awaited<ReturnType<typeof loadParentosRuntimeRouteOptions>>,
-  binding: RuntimeRouteBinding | null | undefined,
-): boolean {
-  if (!binding) {
-    return false;
-  }
-  if (binding.source === 'local') {
-    const localModel = snapshot.local.models.find((candidate) => matchesLocalBinding(binding, candidate)) || null;
-    return supportsImageInput(localModel?.capabilities);
-  }
-  const connector = snapshot.connectors.find((candidate) => candidate.id === binding.connectorId) || null;
-  if (!connector) {
-    return false;
-  }
-  return supportsImageInput(connector.modelCapabilities?.[binding.model]);
-}
-
-function createParentosImageInputUnsupportedError(): Error {
-  return new Error(IMAGE_INPUT_UNSUPPORTED_ERROR_MESSAGE);
-}
-
-async function resolveLocalRuntimeModel(capability: ParentosCapabilityId, fallbackModel: string) {
-  const snapshot = await loadParentosRuntimeRouteOptions(capability);
-  const binding = snapshot.selected ?? snapshot.resolvedDefault;
-  const model = qualifyRuntimeModel({
-    model: String(binding?.model || fallbackModel || '').trim(),
+    model: model || undefined,
     route: 'local',
-    provider: binding?.provider || binding?.engine,
-  });
-  if (!model) {
-    throw new Error(`ParentOS ${capability} local model is not configured`);
-  }
+    localModelId: String(binding.localModelId || binding.goRuntimeLocalModelId || '').trim() || undefined,
+  };
+}
+
+function parentosCallParamsFromTarget(target: RuntimeRouteExecutionCallTarget): ParentosCallParams & {
+  model: string;
+  route: 'local' | 'cloud';
+} {
   return {
-    model,
-    localModelId: String(binding?.localModelId || binding?.goRuntimeLocalModelId || '').trim() || undefined,
+    model: target.modelId,
+    route: target.source,
+    connectorId: target.source === 'cloud' ? target.connectorId : undefined,
+    localModelId: target.source === 'local'
+      ? String(target.goRuntimeLocalModelId || target.localModelId || '').trim() || undefined
+      : undefined,
+  };
+}
+
+function createMissingBindingError(capabilityId: ParentosCapabilityId, surfaceId: ParentosAISurfaceId): Error {
+  const capabilityLabel = capabilityId === TEXT_IMAGE_INPUT_CAPABILITY
+    ? '智能识别'
+    : capabilityId === 'audio.transcribe'
+      ? '语音转写'
+      : 'AI 对话';
+  return new Error(`ParentOS ${capabilityLabel}模型未配置，请先在 AI 设置中为 ${surfaceId} 选择模型。`);
+}
+
+function createLocalOnlyBindingError(capabilityId: ParentosCapabilityId, surfaceId: ParentosAISurfaceId): Error {
+  return new Error(`ParentOS ${surfaceId} requires a local ${capabilityId} binding.`);
+}
+
+async function resolveParentosRuntimeTarget(input: {
+  capabilityId: ParentosCapabilityId;
+  routeCapability: RuntimeCanonicalCapability;
+  surfaceId: ParentosAISurfaceId;
+}): Promise<RuntimeRouteExecutionCallTarget> {
+  const selectedBinding = readSelectedParentosRuntimeBinding(input.capabilityId);
+  if (!selectedBinding) {
+    throw input.capabilityId === TEXT_IMAGE_INPUT_CAPABILITY
+      ? new Error(IMAGE_INPUT_UNSUPPORTED_ERROR_MESSAGE)
+      : createMissingBindingError(input.capabilityId, input.surfaceId);
+  }
+
+  const policy = getParentosAISurfacePolicy(input.surfaceId);
+  if (policy.localOnly && selectedBinding.source === 'cloud') {
+    throw createLocalOnlyBindingError(input.capabilityId, input.surfaceId);
+  }
+
+  const snapshot = await loadParentosRuntimeRouteOptions(input.capabilityId);
+  const resolved = resolveRuntimeRouteBindingFromSnapshot({
+    capability: input.routeCapability,
+    binding: selectedBinding,
+    snapshot,
+  });
+  return runtimeRouteCallTargetFromResolvedBinding(resolved);
+}
+
+function resolveParentosTextConfigForCapability(
+  capabilityId: ParentosCapabilityId,
+  defaults: {
+    temperature?: number;
+    topP?: number;
+    maxTokens?: number;
+    timeoutMs?: number;
+  } = {},
+): ParentosTextGenerateParams {
+  const params = getCapabilityParams(capabilityId);
+  return {
+    ...(resolveParentosBinding(capabilityId) || {}),
+    temperature: readFiniteNumber(params.temperature, defaults.temperature),
+    topP: readFiniteNumber(params.topP, defaults.topP),
+    maxTokens: readPositiveInteger(params.maxTokens, defaults.maxTokens),
+    timeoutMs: readPositiveInteger(params.timeoutMs, defaults.timeoutMs),
   };
 }
 
@@ -257,14 +194,7 @@ export function resolveParentosTextGenerateConfig(defaults: {
   maxTokens?: number;
   timeoutMs?: number;
 } = {}): ParentosTextGenerateParams {
-  const params = getCapabilityParams('text.generate');
-  return {
-    ...resolveParentosBinding('text.generate'),
-    temperature: readFiniteNumber(params.temperature, defaults.temperature),
-    topP: readFiniteNumber(params.topP, defaults.topP),
-    maxTokens: readPositiveInteger(params.maxTokens, defaults.maxTokens),
-    timeoutMs: readPositiveInteger(params.timeoutMs, defaults.timeoutMs),
-  };
+  return resolveParentosTextConfigForCapability('text.generate', defaults);
 }
 
 export function resolveParentosTextSurfaceConfig(
@@ -278,43 +208,14 @@ export function resolveParentosTextSurfaceConfig(
 ): ParentosTextGenerateParams {
   const resolved = resolveParentosTextGenerateConfig(defaults);
   const policy = getParentosAISurfacePolicy(surfaceId);
-  if (!policy.localOnly) {
+  if (!policy.localOnly || resolved.route !== 'cloud') {
     return resolved;
   }
   return {
-    ...resolved,
-    model: resolved.route === 'cloud' ? 'auto' : resolved.model,
-    route: 'local',
-    connectorId: undefined,
-  };
-}
-
-function resolveParentosVisionTextSurfaceConfig(
-  surfaceId: ParentosAISurfaceId,
-  defaults: {
-    temperature?: number;
-    topP?: number;
-    maxTokens?: number;
-    timeoutMs?: number;
-  } = {},
-): ParentosTextGenerateParams {
-  const resolved = resolveParentosTextGenerateConfig(defaults);
-  const visionBinding = resolveParentosBinding(TEXT_IMAGE_INPUT_CAPABILITY);
-  const merged = visionBinding.model !== 'auto'
-    ? {
-      ...resolved,
-      ...visionBinding,
-    }
-    : resolved;
-  const policy = getParentosAISurfacePolicy(surfaceId);
-  if (!policy.localOnly) {
-    return merged;
-  }
-  return {
-    ...merged,
-    model: merged.route === 'cloud' ? 'auto' : merged.model,
-    route: 'local',
-    connectorId: undefined,
+    temperature: resolved.temperature,
+    topP: resolved.topP,
+    maxTokens: resolved.maxTokens,
+    timeoutMs: resolved.timeoutMs,
   };
 }
 
@@ -328,26 +229,14 @@ export async function resolveParentosTextRuntimeConfig(
   } = {},
 ): Promise<ParentosResolvedTextRuntimeParams> {
   const resolved = resolveParentosTextSurfaceConfig(surfaceId, defaults);
-  if (resolved.route === 'cloud') {
-    return {
-      ...resolved,
-      model: qualifyRuntimeModel({
-        model: resolved.model,
-        route: 'cloud',
-      }),
-    };
-  }
-  if (resolved.route !== 'local') {
-    return resolved;
-  }
-
-  const local = await resolveLocalRuntimeModel('text.generate', resolved.model);
+  const target = await resolveParentosRuntimeTarget({
+    capabilityId: 'text.generate',
+    routeCapability: 'text.generate',
+    surfaceId,
+  });
   return {
     ...resolved,
-    model: local.model,
-    route: 'local',
-    connectorId: undefined,
-    localModelId: local.localModelId,
+    ...parentosCallParamsFromTarget(target),
   };
 }
 
@@ -360,65 +249,15 @@ export async function resolveParentosImageTextRuntimeConfig(
     timeoutMs?: number;
   } = {},
 ): Promise<ParentosResolvedTextRuntimeParams> {
-  const resolved = resolveParentosVisionTextSurfaceConfig(surfaceId, defaults);
-  const snapshot = await loadParentosRuntimeRouteOptions(TEXT_IMAGE_INPUT_CAPABILITY);
-  const policy = getParentosAISurfacePolicy(surfaceId);
-  const selectedBinding = snapshot.selected;
-
-  const binding: RuntimeRouteBinding | null = (() => {
-    if (selectedBinding?.source === 'local') {
-      return bindingSupportsImageInput(snapshot, selectedBinding)
-        ? selectedBinding
-        : findImageCapableLocalBinding(snapshot);
-    }
-    if (selectedBinding?.source === 'cloud' && !policy.localOnly) {
-      return bindingSupportsImageInput(snapshot, selectedBinding)
-        ? selectedBinding
-        : findImageCapableCloudBinding(snapshot);
-    }
-    return findImageCapableLocalBinding(snapshot)
-      || (!policy.localOnly ? findImageCapableCloudBinding(snapshot) : null);
-  })();
-
-  if (!binding) {
-    throw createParentosImageInputUnsupportedError();
-  }
-
-  if (binding.source === 'cloud') {
-    return {
-      ...resolved,
-      model: qualifyRuntimeModel({
-        model: binding.model,
-        route: 'cloud',
-      }),
-      route: 'cloud',
-      connectorId: binding.connectorId || undefined,
-      localModelId: undefined,
-    };
-  }
-
-  const model = qualifyRuntimeModel({
-    model: binding.model || resolved.model,
-    route: 'local',
-    provider: binding.provider || binding.engine,
+  const resolved = resolveParentosTextConfigForCapability(TEXT_IMAGE_INPUT_CAPABILITY, defaults);
+  const target = await resolveParentosRuntimeTarget({
+    capabilityId: TEXT_IMAGE_INPUT_CAPABILITY,
+    routeCapability: TEXT_IMAGE_INPUT_CAPABILITY,
+    surfaceId,
   });
-  if (model) {
-    return {
-      ...resolved,
-      model,
-      route: 'local',
-      connectorId: undefined,
-      localModelId: String(binding.localModelId || binding.goRuntimeLocalModelId || '').trim() || undefined,
-    };
-  }
-
-  const local = await resolveLocalRuntimeModel(TEXT_IMAGE_INPUT_CAPABILITY, binding.model || resolved.model);
   return {
     ...resolved,
-    model: local.model,
-    route: 'local',
-    connectorId: undefined,
-    localModelId: local.localModelId,
+    ...parentosCallParamsFromTarget(target),
   };
 }
 
@@ -433,7 +272,7 @@ export function resolveParentosSpeechTranscribeConfig(defaults: {
 } = {}): ParentosSpeechTranscribeParams {
   const params = getCapabilityParams('audio.transcribe');
   return {
-    ...resolveParentosBinding('audio.transcribe'),
+    ...(resolveParentosBinding('audio.transcribe') || {}),
     language: readTrimmedString(params.language, defaults.language),
     responseFormat: readTrimmedString(params.responseFormat, defaults.responseFormat),
     timestamps: readBoolean(params.timestamps, defaults.timestamps),
@@ -458,14 +297,17 @@ export function resolveParentosSpeechTranscribeSurfaceConfig(
 ): ParentosSpeechTranscribeParams {
   const resolved = resolveParentosSpeechTranscribeConfig(defaults);
   const policy = getParentosAISurfacePolicy(surfaceId);
-  if (!policy.localOnly) {
+  if (!policy.localOnly || resolved.route !== 'cloud') {
     return resolved;
   }
   return {
-    ...resolved,
-    model: resolved.route === 'cloud' ? 'auto' : resolved.model,
-    route: 'local',
-    connectorId: undefined,
+    language: resolved.language,
+    responseFormat: resolved.responseFormat,
+    timestamps: resolved.timestamps,
+    diarization: resolved.diarization,
+    speakerCount: resolved.speakerCount,
+    prompt: resolved.prompt,
+    timeoutMs: resolved.timeoutMs,
   };
 }
 
@@ -482,26 +324,14 @@ export async function resolveParentosSpeechTranscribeRuntimeConfig(
   } = {},
 ): Promise<ParentosResolvedSpeechTranscribeParams> {
   const resolved = resolveParentosSpeechTranscribeSurfaceConfig(surfaceId, defaults);
-  if (resolved.route === 'cloud') {
-    return {
-      ...resolved,
-      model: qualifyRuntimeModel({
-        model: resolved.model,
-        route: 'cloud',
-      }),
-    };
-  }
-  if (resolved.route !== 'local') {
-    return resolved;
-  }
-
-  const local = await resolveLocalRuntimeModel('audio.transcribe', resolved.model);
+  const target = await resolveParentosRuntimeTarget({
+    capabilityId: 'audio.transcribe',
+    routeCapability: 'audio.transcribe',
+    surfaceId,
+  });
   return {
     ...resolved,
-    model: local.model,
-    route: 'local',
-    connectorId: undefined,
-    localModelId: local.localModelId,
+    ...parentosCallParamsFromTarget(target),
   };
 }
 

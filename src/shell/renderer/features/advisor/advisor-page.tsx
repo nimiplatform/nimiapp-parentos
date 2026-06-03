@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { asNimiError } from '@nimiplatform/sdk/runtime';
+import {
+  assembleAppAiSessionRuntimeTextStream,
+  runAppAiTextGenerate,
+} from '@nimiplatform/sdk/ai-app';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useAppStore, computeAgeMonths, formatAge } from '../../app-shell/app-store.js';
 import { NEEDS_REVIEW_DOMAINS, REVIEWED_DOMAINS } from '../../knowledge-base/index.js';
@@ -453,13 +457,15 @@ export default function AdvisorPage() {
           ...runtimeInput,
           signal: ac.signal,
         });
-        for await (const part of out.stream) {
-          if (part.type === 'delta') {
-            full += part.text;
+        const streamSnapshot = await assembleAppAiSessionRuntimeTextStream(out.stream, {
+          onTextDelta: (_delta, snapshot) => {
+            full = snapshot.text;
             setStreamingContent(full);
-          } else if (part.type === 'error') {
-            throw part.error;
-          }
+          },
+        });
+        full = streamSnapshot.text;
+        if (streamSnapshot.terminal === 'failed') {
+          throw streamSnapshot.error || new Error('ParentOS advisor runtime stream failed');
         }
       } catch (streamErr) {
         if (!shouldRetryAdvisorWithNonStreaming(aiParams.route, full, streamErr)) {
@@ -468,7 +474,15 @@ export default function AdvisorPage() {
         if (ac.signal.aborted) {
           throw new DOMException('The operation was aborted.', 'AbortError');
         }
-        const generated = await rt.ai.text.generate(runtimeInput);
+        const generated = await runAppAiTextGenerate({
+          runtime: {
+            generateText: (request) => rt.ai.text.generate(request),
+          },
+          request: runtimeInput,
+        });
+        if (!generated.ok) {
+          throw generated.error.cause || new Error(generated.error.message);
+        }
         full = generated.text;
         setStreamingContent(full);
       }
@@ -701,7 +715,7 @@ export default function AdvisorPage() {
   };
 
   return (
-    <div className="flex h-full gap-4 px-4" style={{ paddingTop: 16 }}>
+    <div className="advisor-page-shell flex h-full min-h-0 gap-5 px-5 pb-3 pt-4">
       <AdvisorSidebar
         conversations={conversations}
         activeConvId={activeConvId}
@@ -709,7 +723,7 @@ export default function AdvisorPage() {
         onNewConversation={handleNewConversation}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="advisor-main-panel flex min-w-0 flex-1 flex-col overflow-hidden">
         {!activeConvId && pendingJournalContext ? (
           <AdvisorJournalContext
             context={pendingJournalContext}

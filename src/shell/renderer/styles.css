@@ -41,6 +41,74 @@
   border-bottom-right-radius: var(--nimi-radius-xl);
 }
 
+.parentos-ai-model-config :where(button.rounded-xl.border) {
+  min-height: 46px;
+  border-color: var(--nimi-border-subtle);
+  border-radius: var(--nimi-radius-lg);
+  background: color-mix(in srgb, var(--nimi-surface-card) 88%, var(--nimi-surface-panel));
+}
+
+.parentos-ai-model-config :where(button.rounded-xl.border:hover) {
+  border-color: color-mix(in srgb, var(--nimi-action-primary-bg) 36%, var(--nimi-border-subtle));
+}
+
+.parentos-ai-model-config :where(.text-slate-800) {
+  color: var(--nimi-text-primary);
+}
+
+.parentos-ai-model-config :where(.text-slate-400) {
+  color: var(--nimi-text-muted);
+}
+
+.parentos-ai-model-config :where(.text-slate-300) {
+  color: color-mix(in srgb, var(--nimi-text-muted) 70%, transparent);
+}
+
+.parentos-ai-capability-card {
+  border: 1px solid color-mix(in srgb, var(--nimi-border-subtle) 74%, transparent);
+  background: color-mix(in srgb, var(--nimi-surface-card) 94%, var(--nimi-surface-panel));
+}
+
+.parentos-ai-params-panel {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--nimi-text-primary) 4%, transparent);
+}
+
+.parentos-ai-params-panel :where(label, .text-slate-700, .text-slate-600) {
+  color: var(--nimi-text-secondary) !important;
+  letter-spacing: 0 !important;
+}
+
+.parentos-ai-params-panel :where(.text-slate-500, .text-slate-400) {
+  color: var(--nimi-text-muted) !important;
+  letter-spacing: 0 !important;
+}
+
+.parentos-ai-params-panel :where(input[type="range"]) {
+  accent-color: var(--nimi-action-primary-bg);
+}
+
+.parentos-ai-params-panel :where(input:not([type="range"]), textarea, select) {
+  border-color: var(--nimi-border-subtle) !important;
+  border-radius: var(--nimi-radius-md) !important;
+  background: color-mix(in srgb, var(--nimi-surface-card) 88%, var(--nimi-surface-panel)) !important;
+  color: var(--nimi-text-primary) !important;
+  box-shadow: none !important;
+}
+
+.parentos-ai-params-panel :where(input:not([type="range"]):focus, textarea:focus, select:focus) {
+  border-color: color-mix(in srgb, var(--nimi-action-primary-bg) 42%, var(--nimi-border-subtle)) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--nimi-action-primary-bg) 10%, transparent) !important;
+}
+
+.parentos-ai-params-panel :where(textarea) {
+  min-height: 84px;
+}
+
+.parentos-ai-params-panel :where(.uppercase) {
+  letter-spacing: 0 !important;
+}
+
 .parentos-portal-frame {
   bottom: var(--parentos-portal-bottom, auto);
   height: var(--parentos-portal-height, auto);
@@ -354,6 +422,116 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 /* Advisor composer textarea — scrollbar hidden until overflow, subtle on hover */
+.advisor-page-shell {
+  background: transparent;
+}
+
+.advisor-sidebar-panel {
+  border: 1px solid color-mix(in srgb, var(--nimi-border-subtle) 72%, transparent);
+  border-radius: var(--nimi-radius-xl);
+  background: color-mix(in srgb, var(--nimi-surface-card) 64%, transparent);
+  box-shadow: var(--nimi-elevation-base);
+  backdrop-filter: blur(18px);
+}
+
+.advisor-main-panel {
+  border-radius: var(--nimi-radius-xl);
+  background: color-mix(in srgb, var(--nimi-surface-card) 28%, transparent);
+}
+
+.advisor-transcript {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--nimi-text-primary) 8%, transparent) transparent;
+}
+
+.advisor-message-card {
+  max-width: min(760px, 100%);
+  border-radius: var(--nimi-radius-xl);
+  padding: 16px 18px;
+  font-size: 14px;
+  line-height: 1.85;
+  box-shadow: var(--nimi-elevation-base);
+}
+
+.advisor-message-card--user {
+  width: min(680px, 92%);
+  border: 1px solid color-mix(in srgb, var(--nimi-action-primary-bg) 22%, var(--nimi-border-subtle));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--nimi-action-primary-bg) 8%, var(--nimi-surface-card)) 0%,
+    color-mix(in srgb, var(--nimi-surface-card) 92%, transparent) 100%
+  );
+  color: var(--nimi-text-primary);
+}
+
+.advisor-message-card--assistant {
+  width: min(760px, 100%);
+  border: 1px solid color-mix(in srgb, var(--nimi-border-subtle) 70%, transparent);
+  background: color-mix(in srgb, var(--nimi-surface-card) 74%, transparent);
+  color: var(--nimi-text-primary);
+}
+
+.advisor-message-content p {
+  margin: 0;
+}
+
+.advisor-message-content p + p,
+.advisor-message-content ul + p,
+.advisor-message-content p + ul {
+  margin-top: 0.85em;
+}
+
+.advisor-message-content ul {
+  margin-bottom: 0;
+}
+
+.advisor-message-content li {
+  line-height: 1.8;
+}
+
+.advisor-message-content strong {
+  color: var(--nimi-status-success);
+  font-weight: 650;
+}
+
+.advisor-thinking-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--nimi-action-primary-bg);
+  animation: advisor-thinking-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes advisor-thinking-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.advisor-composer-shell {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--nimi-surface-canvas) 52%, transparent) 42%,
+    color-mix(in srgb, var(--nimi-surface-canvas) 78%, transparent) 100%
+  );
+}
+
+.advisor-composer-box {
+  border: 1px solid color-mix(in srgb, var(--nimi-border-subtle) 76%, transparent);
+  border-radius: var(--nimi-radius-xl);
+  background: color-mix(in srgb, var(--nimi-surface-card) 82%, transparent);
+  box-shadow: var(--nimi-elevation-raised);
+  backdrop-filter: blur(18px);
+}
+
 .advisor-composer-textarea {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;

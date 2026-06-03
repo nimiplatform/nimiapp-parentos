@@ -36,6 +36,10 @@ const defaultLocalAIConfig = {
         source: 'local' as const,
         connectorId: '',
         model: 'qwen3',
+        modelId: 'qwen3',
+        localModelId: 'local-qwen3',
+        provider: 'llama',
+        engine: 'llama',
       },
     },
     localProfileRefs: {},
@@ -199,23 +203,32 @@ const {
   loadParentosRuntimeRouteOptionsMock: vi.fn(async () => ({
     capability: 'text.generate',
     selected: null,
-    resolvedDefault: {
-      source: 'local',
-      connectorId: '',
-      model: 'qwen3',
-      modelId: 'qwen3',
-      localModelId: 'local-qwen3',
-      provider: 'llama',
-      engine: 'llama',
-      endpoint: 'http://127.0.0.1:1234/v1',
-      goRuntimeLocalModelId: 'local-qwen3',
-      goRuntimeStatus: 'active',
-    },
     local: {
       defaultEndpoint: 'http://127.0.0.1:1234/v1',
-      models: [],
+      models: [{
+        localModelId: 'local-qwen3',
+        label: 'qwen3',
+        engine: 'llama',
+        model: 'qwen3',
+        modelId: 'qwen3',
+        provider: 'llama',
+        endpoint: 'http://127.0.0.1:1234/v1',
+        status: 'active',
+        goRuntimeLocalModelId: 'local-qwen3',
+        goRuntimeStatus: 'active',
+        capabilities: ['text.generate'],
+      }],
     },
-    connectors: [],
+    connectors: [{
+      id: 'connector-1',
+      label: 'OpenAI',
+      provider: 'openai',
+      models: ['gpt-5.4'],
+      modelCapabilities: {
+        'gpt-5.4': ['text.generate'],
+      },
+      modelProfiles: [],
+    }],
   })),
   generateMock: vi.fn(),
   streamMock: vi.fn(),
@@ -322,13 +335,17 @@ vi.mock('@nimiplatform/sdk', () => ({
   getPlatformClient: () => getPlatformClientMock(),
 }));
 
-vi.mock('@nimiplatform/sdk/runtime', () => ({
-  asNimiError: (err: unknown) => ({
-    reasonCode: (err as Record<string, unknown>)?.reasonCode ?? 'UNKNOWN',
-    message: (err as Record<string, unknown>)?.message ?? '',
-    details: (err as Record<string, unknown>)?.details ?? {},
-  }),
-}));
+vi.mock('@nimiplatform/sdk/runtime', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nimiplatform/sdk/runtime')>();
+  return {
+    ...actual,
+    asNimiError: (err: unknown) => ({
+      reasonCode: (err as Record<string, unknown>)?.reasonCode ?? 'UNKNOWN',
+      message: (err as Record<string, unknown>)?.message ?? '',
+      details: (err as Record<string, unknown>)?.details ?? {},
+    }),
+  };
+});
 
 vi.mock('../../infra/parentos-runtime-route-options.js', () => ({
   loadParentosRuntimeRouteOptions: loadParentosRuntimeRouteOptionsMock,
@@ -385,7 +402,7 @@ describe('AdvisorPage', () => {
     warmLocalAssetMock.mockReset();
     getPlatformClientMock.mockReturnValue({
       runtime: {
-        appId: 'app.nimi.parentos',
+        appId: 'ai.nimi.apps.parentos',
         local: {
           warmLocalAsset: warmLocalAssetMock,
         },

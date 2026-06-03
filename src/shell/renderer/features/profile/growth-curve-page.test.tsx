@@ -67,7 +67,7 @@ const {
   ensureParentosLocalRuntimeReadyMock: vi.fn().mockResolvedValue(undefined),
   buildParentosRuntimeMetadataMock: vi.fn().mockReturnValue({
     callerKind: 'third-party-app',
-    callerId: 'app.nimi.parentos',
+    callerId: 'ai.nimi.apps.parentos',
     surfaceId: 'parentos.profile.summary.growth-insight-test',
   }),
 }));

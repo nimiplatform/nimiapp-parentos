@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import type { LabelProps } from 'recharts';
 import type { MeasurementRow } from '../../bridge/sqlite-bridge.js';
 import {
   GROWTH_STANDARD_LABELS,
@@ -256,10 +257,17 @@ export function GrowthCurveChartPanel({
                       activeDot={false}
                       isAnimationActive={false}
                       connectNulls
-                      label={({ x, y, index, value }: { x: number; y: number; index: number; value: unknown }) =>
-                        value != null && index === merged.length - 1
-                          ? <text x={x + 5} y={y} dy={3} fontSize={8} fill={colors.line} fontWeight={line.key === 'p50' ? 600 : 400} opacity={0.85}>{line.label}</text>
-                          : <g />}
+                      label={(props: LabelProps) => {
+                        const { x, y, index, value } = props;
+                        if (typeof x !== 'number' || typeof y !== 'number' || value == null || index !== merged.length - 1) {
+                          return <g />;
+                        }
+                        return (
+                          <text x={x + 5} y={y} dy={3} fontSize={8} fill={colors.line} fontWeight={line.key === 'p50' ? 600 : 400} opacity={0.85}>
+                            {line.label}
+                          </text>
+                        );
+                      }}
                     />
                   ))}
 

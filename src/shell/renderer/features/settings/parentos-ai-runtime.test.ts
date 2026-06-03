@@ -22,36 +22,83 @@ const {
   loadParentosRuntimeRouteOptionsMock: vi.fn(async (capability: string): Promise<any> => ({
     capability,
     selected: null,
-    resolvedDefault: capability === 'audio.transcribe'
-      ? {
-        source: 'local',
-        connectorId: '',
-        model: 'whisper-large-v3',
-        modelId: 'whisper-large-v3',
-        localModelId: 'local-whisper-large-v3',
-        provider: 'speech',
-        engine: 'speech',
-        endpoint: 'http://127.0.0.1:1234/v1',
-        goRuntimeLocalModelId: 'local-whisper-large-v3',
-        goRuntimeStatus: 'active',
-      }
-      : {
-        source: 'local',
-        connectorId: '',
-        model: 'qwen3',
-        modelId: 'qwen3',
-        localModelId: 'local-qwen3',
-        provider: 'llama',
-        engine: 'llama',
-        endpoint: 'http://127.0.0.1:1234/v1',
-        goRuntimeLocalModelId: 'local-qwen3',
-        goRuntimeStatus: 'active',
-      },
     local: {
       defaultEndpoint: 'http://127.0.0.1:1234/v1',
-      models: [],
+      models: [
+        {
+          localModelId: 'local-qwen3',
+          label: 'qwen3',
+          engine: 'llama',
+          model: 'qwen3',
+          modelId: 'qwen3',
+          provider: 'llama',
+          endpoint: 'http://127.0.0.1:1234/v1',
+          status: 'active',
+          goRuntimeLocalModelId: 'local-qwen3',
+          goRuntimeStatus: 'active',
+          capabilities: ['text.generate'],
+        },
+        {
+          localModelId: 'local-gemma-vision',
+          label: 'gemma-4-vision',
+          engine: 'llama',
+          model: 'gemma-4-vision',
+          modelId: 'gemma-4-vision',
+          provider: 'llama',
+          endpoint: 'http://127.0.0.1:1234/v1',
+          status: 'active',
+          goRuntimeLocalModelId: 'local-gemma-vision',
+          goRuntimeStatus: 'active',
+          capabilities: ['text.generate.vision'],
+        },
+        {
+          localModelId: 'local-whisper-large-v3',
+          label: 'whisper-large-v3',
+          engine: 'speech',
+          model: 'whisper-large-v3',
+          modelId: 'whisper-large-v3',
+          provider: 'speech',
+          endpoint: 'http://127.0.0.1:1234/v1',
+          status: 'active',
+          goRuntimeLocalModelId: 'local-whisper-large-v3',
+          goRuntimeStatus: 'active',
+          capabilities: ['audio.transcribe'],
+        },
+      ],
     },
-    connectors: [],
+    connectors: [
+      {
+        id: 'openai-main',
+        label: 'OpenAI',
+        provider: 'openai',
+        models: ['gpt-5.4', 'gpt-4o-mini-transcribe'],
+        modelCapabilities: {
+          'gpt-5.4': ['text.generate'],
+          'gpt-4o-mini-transcribe': ['audio.transcribe'],
+        },
+        modelProfiles: [],
+      },
+      {
+        id: 'chat-main',
+        label: 'Google',
+        provider: 'google',
+        models: ['gemini-3.1-flash-lite-preview'],
+        modelCapabilities: {
+          'gemini-3.1-flash-lite-preview': ['text.generate'],
+        },
+        modelProfiles: [],
+      },
+      {
+        id: 'vision-main',
+        label: 'Google',
+        provider: 'google',
+        models: ['gemini-3.1-pro-vision'],
+        modelCapabilities: {
+          'gemini-3.1-pro-vision': ['text.generate.vision'],
+        },
+        modelProfiles: [],
+      },
+    ],
   })),
   getPlatformClientMock: vi.fn(() => ({
     runtime: {
@@ -95,6 +142,10 @@ describe('parentos-ai-runtime', () => {
               source: 'local',
               connectorId: '',
               model: 'gemma-4',
+              modelId: 'gemma-4',
+              localModelId: 'local-gemma-4',
+              provider: 'llama',
+              engine: 'llama',
             },
           },
           localProfileRefs: {},
@@ -112,6 +163,7 @@ describe('parentos-ai-runtime', () => {
     expect(resolveParentosTextGenerateConfig({ temperature: 0.7, topP: 0.9, maxTokens: 1024 })).toEqual({
       model: 'gemma-4',
       route: 'local',
+      localModelId: 'local-gemma-4',
       temperature: 0.2,
       topP: 0.9,
       maxTokens: 900,
@@ -129,6 +181,10 @@ describe('parentos-ai-runtime', () => {
               source: 'local',
               connectorId: '',
               model: 'whisper-large-v3',
+              modelId: 'whisper-large-v3',
+              localModelId: 'local-whisper-large-v3',
+              provider: 'speech',
+              engine: 'speech',
             },
           },
           localProfileRefs: {},
@@ -147,6 +203,7 @@ describe('parentos-ai-runtime', () => {
     expect(resolveParentosSpeechTranscribeConfig({ language: 'zh-CN', responseFormat: 'text', timestamps: false })).toEqual({
       model: 'whisper-large-v3',
       route: 'local',
+      localModelId: 'local-whisper-large-v3',
       language: 'zh-CN',
       responseFormat: 'text',
       timestamps: false,
@@ -232,6 +289,10 @@ describe('parentos-ai-runtime', () => {
               source: 'local',
               connectorId: '',
               model: 'qwen3',
+              modelId: 'qwen3',
+              localModelId: 'local-qwen3',
+              provider: 'llama',
+              engine: 'llama',
             },
           },
           localProfileRefs: {},
@@ -253,7 +314,7 @@ describe('parentos-ai-runtime', () => {
     });
   });
 
-  it('reroutes OCR text surfaces to an image-capable local model when the selected local model is text-only', async () => {
+  it('fails closed for OCR when only the generic chat binding is configured', async () => {
     useAppStore.setState({
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
@@ -263,6 +324,10 @@ describe('parentos-ai-runtime', () => {
               source: 'local',
               connectorId: '',
               model: 'qwen3',
+              modelId: 'qwen3',
+              localModelId: 'local-qwen3',
+              provider: 'llama',
+              engine: 'llama',
             },
           },
           localProfileRefs: {},
@@ -271,62 +336,9 @@ describe('parentos-ai-runtime', () => {
         profileOrigin: null,
       },
     });
-    loadParentosRuntimeRouteOptionsMock.mockResolvedValueOnce({
-      capability: 'text.generate',
-      selected: null,
-      resolvedDefault: {
-        source: 'local',
-        connectorId: '',
-        model: 'gemma-4-vision',
-        modelId: 'gemma-4-vision',
-        localModelId: 'local-gemma-vision',
-        provider: 'llama',
-        engine: 'llama',
-      },
-      local: {
-        defaultEndpoint: 'http://127.0.0.1:1234/v1',
-        models: [
-          {
-            localModelId: 'local-qwen3',
-            label: 'qwen3',
-            engine: 'llama',
-            model: 'qwen3',
-            modelId: 'qwen3',
-            provider: 'llama',
-            endpoint: 'http://127.0.0.1:1234/v1',
-            status: 'active',
-            goRuntimeLocalModelId: 'local-qwen3',
-            goRuntimeStatus: 'active',
-            capabilities: ['text.generate'],
-          },
-          {
-            localModelId: 'local-gemma-vision',
-            label: 'gemma-4-vision',
-            engine: 'llama',
-            model: 'gemma-4-vision',
-            modelId: 'gemma-4-vision',
-            provider: 'llama',
-            endpoint: 'http://127.0.0.1:1234/v1',
-            status: 'active',
-            goRuntimeLocalModelId: 'local-gemma-vision',
-            goRuntimeStatus: 'active',
-            capabilities: ['text.generate', 'text.generate.vision'],
-          },
-        ],
-      },
-      connectors: [],
-    } as any);
-
-    await expect(resolveParentosImageTextRuntimeConfig('parentos.profile.checkup-ocr', { maxTokens: 800 })).resolves.toEqual({
-      model: 'llama/gemma-4-vision',
-      route: 'local',
-      connectorId: undefined,
-      temperature: undefined,
-      topP: undefined,
-      maxTokens: 800,
-      timeoutMs: undefined,
-      localModelId: 'local-gemma-vision',
-    });
+    await expect(resolveParentosImageTextRuntimeConfig('parentos.profile.checkup-ocr', { maxTokens: 800 })).rejects.toThrow(
+      '当前 AI 智能识别模型未配置',
+    );
   });
 
   it('fails closed when no image-capable OCR text model is available', async () => {
@@ -339,6 +351,10 @@ describe('parentos-ai-runtime', () => {
               source: 'local',
               connectorId: '',
               model: 'qwen3',
+              modelId: 'qwen3',
+              localModelId: 'local-qwen3',
+              provider: 'llama',
+              engine: 'llama',
             },
           },
           localProfileRefs: {},
@@ -347,31 +363,8 @@ describe('parentos-ai-runtime', () => {
         profileOrigin: null,
       },
     });
-    loadParentosRuntimeRouteOptionsMock.mockResolvedValueOnce({
-      capability: 'text.generate',
-      selected: null,
-      resolvedDefault: undefined,
-      local: {
-        defaultEndpoint: 'http://127.0.0.1:1234/v1',
-        models: [{
-          localModelId: 'local-qwen3',
-          label: 'qwen3',
-          engine: 'llama',
-          model: 'qwen3',
-          modelId: 'qwen3',
-          provider: 'llama',
-          endpoint: 'http://127.0.0.1:1234/v1',
-          status: 'active',
-          goRuntimeLocalModelId: 'local-qwen3',
-          goRuntimeStatus: 'active',
-          capabilities: ['text.generate'],
-        }],
-      },
-      connectors: [],
-    } as any);
-
     await expect(resolveParentosImageTextRuntimeConfig('parentos.profile.checkup-ocr', { maxTokens: 800 })).rejects.toThrow(
-      '当前 AI 智能识别模型不支持图片识别，请在 AI 设置中为“智能识别”单独选择支持视觉输入的模型后重试。',
+      '当前 AI 智能识别模型未配置，请在 AI 设置中为“智能识别”选择支持视觉输入的模型后重试。',
     );
   });
 
@@ -394,7 +387,7 @@ describe('parentos-ai-runtime', () => {
           },
           localProfileRefs: {},
           selectedParams: {
-            'text.generate': {
+            'text.generate.vision': {
               maxTokens: 1200,
             },
           },
@@ -456,6 +449,10 @@ describe('parentos-ai-runtime', () => {
               source: 'local',
               connectorId: '',
               model: 'whisper-large-v3',
+              modelId: 'whisper-large-v3',
+              localModelId: 'local-whisper-large-v3',
+              provider: 'speech',
+              engine: 'speech',
             },
           },
           localProfileRefs: {},
@@ -482,14 +479,10 @@ describe('parentos-ai-runtime', () => {
     });
   });
 
-  it('keeps automatic runtime resolution untouched when no explicit route binding exists', async () => {
-    await expect(resolveParentosTextRuntimeConfig('parentos.advisor', { maxTokens: 1000 })).resolves.toEqual({
-      model: 'auto',
-      temperature: undefined,
-      topP: undefined,
-      maxTokens: 1000,
-      timeoutMs: undefined,
-    });
+  it('fails closed when no explicit route binding exists', async () => {
+    await expect(resolveParentosTextRuntimeConfig('parentos.advisor', { maxTokens: 1000 })).rejects.toThrow(
+      'ParentOS AI 对话模型未配置',
+    );
   });
 
   it('resolves ParentOS text runtime config to a qualified cloud selector when configured', async () => {

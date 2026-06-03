@@ -45,7 +45,7 @@ describe('parentos-ai-config persistence', () => {
         },
         localProfileRefs: {
           'text.generate': {
-            modId: 'core:runtime',
+            targetId: 'core:runtime',
             profileId: 'profile-1',
           },
         },
@@ -82,7 +82,7 @@ describe('parentos-ai-config persistence', () => {
         },
         localProfileRefs: {
           'text.generate': {
-            modId: 'core:runtime',
+            targetId: 'core:runtime',
             profileId: 'profile-1',
           },
         },

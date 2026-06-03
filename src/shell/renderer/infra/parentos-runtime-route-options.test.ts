@@ -35,6 +35,10 @@ describe('parentos-runtime-route-options', () => {
     listConnectorsMock.mockReset();
     listConnectorModelsMock.mockReset();
     logRendererEventMock.mockReset();
+    listLocalAssetsMock.mockResolvedValue({
+      assets: [],
+      nextPageToken: '',
+    });
     listConnectorsMock.mockResolvedValue({
       connectors: [],
     });
@@ -55,15 +59,10 @@ describe('parentos-runtime-route-options', () => {
           jwtAudience: 'nimi-runtime',
         },
         runtime: {
-          localProviderEndpoint: 'http://127.0.0.1:1234/v1',
-          localProviderModel: '',
-          localOpenAiEndpoint: 'http://127.0.0.1:1234/v1',
-          connectorId: '',
           targetType: '',
           targetAccountId: '',
           agentId: '',
           worldId: '',
-          provider: '',
           userConfirmedUpload: false,
         },
       },
@@ -74,7 +73,7 @@ describe('parentos-runtime-route-options', () => {
   it('builds a text.generate snapshot from authoritative runtime/local sources', async () => {
     useAppStore.setState({
       aiConfig: {
-        scopeRef: { kind: 'app', ownerId: 'app.nimi.parentos', surfaceId: 'settings.ai' },
+        scopeRef: { kind: 'app', ownerId: 'ai.nimi.apps.parentos', surfaceId: 'settings.ai' },
         capabilities: {
           selectedBindings: {
             'text.generate': {
@@ -116,18 +115,6 @@ describe('parentos-runtime-route-options', () => {
         goRuntimeLocalModelId: 'local-qwen',
         goRuntimeStatus: 'active',
       },
-      resolvedDefault: {
-        source: 'local',
-        connectorId: '',
-        model: 'qwen3',
-        modelId: 'qwen3',
-        localModelId: 'local-qwen',
-        provider: 'llama',
-        engine: 'llama',
-        endpoint: 'http://127.0.0.1:1234/v1',
-        goRuntimeLocalModelId: 'local-qwen',
-        goRuntimeStatus: 'active',
-      },
       local: {
         defaultEndpoint: 'http://127.0.0.1:1234/v1',
         models: [{
@@ -158,9 +145,8 @@ describe('parentos-runtime-route-options', () => {
     expect(snapshot).toEqual({
       capability: 'audio.transcribe',
       selected: null,
-      resolvedDefault: undefined,
       local: {
-        defaultEndpoint: 'http://127.0.0.1:1234/v1',
+        defaultEndpoint: undefined,
         models: [],
       },
       connectors: [],
@@ -176,6 +162,7 @@ describe('parentos-runtime-route-options', () => {
         engine: 'llama',
         status: 2,
         kind: 1,
+        capabilities: [],
       }],
       nextPageToken: '',
     });
@@ -183,35 +170,25 @@ describe('parentos-runtime-route-options', () => {
 
     expect(snapshot.local.models).toEqual([{
       localModelId: 'local-gemma',
-      label: 'gemma-4-26B-A4B-it-Q8_0',
+      label: 'gemma-4-26b-a4b-it-q8_0',
       engine: 'llama',
       model: 'gemma-4-26b-a4b-it-q8_0',
       modelId: 'gemma-4-26b-a4b-it-q8_0',
       provider: 'llama',
+      providerHints: undefined,
       endpoint: undefined,
       status: 'active',
       goRuntimeLocalModelId: 'local-gemma',
       goRuntimeStatus: 'active',
       capabilities: ['text.generate'],
     }]);
-    expect(snapshot.resolvedDefault).toEqual({
-      source: 'local',
-      connectorId: '',
-      model: 'gemma-4-26b-a4b-it-q8_0',
-      modelId: 'gemma-4-26b-a4b-it-q8_0',
-      localModelId: 'local-gemma',
-      provider: 'llama',
-      engine: 'llama',
-      endpoint: undefined,
-      goRuntimeLocalModelId: 'local-gemma',
-      goRuntimeStatus: 'active',
-    });
+    expect(snapshot.selected).toBeNull();
   });
 
   it('includes cloud connector options and preserves selected cloud bindings', async () => {
     useAppStore.setState({
       aiConfig: {
-        scopeRef: { kind: 'app', ownerId: 'app.nimi.parentos', surfaceId: 'settings.ai' },
+        scopeRef: { kind: 'app', ownerId: 'ai.nimi.apps.parentos', surfaceId: 'settings.ai' },
         capabilities: {
           selectedBindings: {
             'text.generate': {
@@ -263,7 +240,7 @@ describe('parentos-runtime-route-options', () => {
     }]);
   });
 
-  it('preserves multimodal text capability hints for local and cloud OCR routing', async () => {
+  it('loads vision-capable local and cloud options under the canonical vision route', async () => {
     listLocalAssetsMock.mockResolvedValue({
       assets: [{
         localAssetId: 'local-gemma-vision',
@@ -293,18 +270,19 @@ describe('parentos-runtime-route-options', () => {
       nextPageToken: '',
     });
 
-    const snapshot = await loadParentosRuntimeRouteOptions('text.generate');
+    const snapshot = await loadParentosRuntimeRouteOptions('text.generate.vision');
 
-    expect(snapshot.local.models[0]?.capabilities).toEqual(['text.generate.vision', 'text.generate']);
+    expect(snapshot.capability).toBe('text.generate.vision');
+    expect(snapshot.local.models[0]?.capabilities).toEqual(['text.generate.vision']);
     expect(snapshot.connectors[0]?.modelCapabilities).toEqual({
-      'gpt-5.4': ['text.generate.vision', 'text.generate'],
+      'gpt-5.4': ['vision'],
     });
   });
 
   it('loads a dedicated vision snapshot from the standalone OCR binding', async () => {
     useAppStore.setState({
       aiConfig: {
-        scopeRef: { kind: 'app', ownerId: 'app.nimi.parentos', surfaceId: 'settings.ai' },
+        scopeRef: { kind: 'app', ownerId: 'ai.nimi.apps.parentos', surfaceId: 'settings.ai' },
         capabilities: {
           selectedBindings: {
             'text.generate.vision': {
@@ -350,7 +328,7 @@ describe('parentos-runtime-route-options', () => {
 
     const snapshot = await loadParentosRuntimeRouteOptions('text.generate.vision');
 
-    expect(snapshot.capability).toBe('text.generate');
+    expect(snapshot.capability).toBe('text.generate.vision');
     expect(snapshot.selected).toEqual({
       source: 'cloud',
       connectorId: 'vision-main',
@@ -358,7 +336,7 @@ describe('parentos-runtime-route-options', () => {
       provider: 'openai',
     });
     expect(snapshot.local.models).toHaveLength(1);
-    expect(snapshot.local.models[0]?.capabilities).toEqual(['text.generate.vision', 'text.generate']);
+    expect(snapshot.local.models[0]?.capabilities).toEqual(['text.generate.vision']);
     expect(snapshot.connectors[0]?.models).toEqual(['gpt-5.4-vision']);
   });
 });

@@ -1,6 +1,7 @@
 import { Surface } from '@nimiplatform/kit/ui';
 import { useMemo } from 'react';
 import { Area, AreaChart, CartesianGrid, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 import type { SleepRecordRow } from '../../bridge/sqlite-bridge.js';
 import { referenceSleepRange } from './sleep-page-shared.js';
 
@@ -45,7 +46,10 @@ export function SleepTrendChart({
           <ReferenceArea y1={refLo} y2={refHi} fill="var(--nimi-text-primary)" fillOpacity={0.08} />
           <Tooltip
             contentStyle={{ fontSize: 11, borderRadius: 8, border: `1px solid ${'var(--nimi-border-subtle)'}`, boxShadow: 'var(--nimi-elevation-raised)' }}
-            formatter={(value: number) => [`${value}h`, '睡眠时长']}
+            formatter={(value: TooltipValueType | undefined) => {
+              const displayValue = typeof value === 'number' ? `${value}h` : `${value ?? '-'}h`;
+              return [displayValue, '睡眠时长'];
+            }}
           />
           <Area type="monotone" dataKey="hours" stroke={'var(--nimi-action-primary-bg)'} strokeWidth={2} fill="url(#sleepGrad)" dot={{ r: 3, fill: 'var(--nimi-action-primary-bg)' }} />
         </AreaChart>

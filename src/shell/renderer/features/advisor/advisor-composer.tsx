@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, IconButton, Surface, TextareaField } from '@nimiplatform/kit/ui';
+import { Plus, Send, Square } from 'lucide-react';
+import { Button, cn } from '@nimiplatform/kit/ui';
 
 const MIN_HEIGHT = 48;
 const MAX_HEIGHT = 128;
@@ -49,80 +50,47 @@ export function AdvisorComposer({
   };
 
   return (
-    <div className="shrink-0 px-5 pb-5 pt-2">
-      <div className="mx-auto max-w-2xl">
-        {/* Record data link - shown when navigated from a reminder. */}
+    <div className="advisor-composer-shell shrink-0 px-6 pb-5 pt-3">
+      <div className="mx-auto max-w-3xl">
         {recordRoute && (
           <div className="mb-2">
-            <Button asChild tone="secondary" size="sm" leadingIcon={<PlusIcon />}>
-              <Link to={recordRoute}>
-              去记录数据
-              </Link>
+            <Button asChild tone="secondary" size="sm" leadingIcon={<Plus size={14} aria-hidden="true" />}>
+              <Link to={recordRoute}>去记录数据</Link>
             </Button>
           </div>
         )}
 
-        <Surface tone="card" material="glass-thick" elevation="floating" padding="none" className="rounded-xl">
+        <div className="advisor-composer-box">
           <div className="flex items-end gap-2 p-2">
-            <TextareaField
+            <textarea
               ref={textareaRef}
               value={value}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={(event) => onChange(event.target.value)}
               onKeyDown={handleKeyDown}
               onCompositionStart={() => setIsComposing(true)}
               onCompositionEnd={() => setIsComposing(false)}
               placeholder="输入问题..."
               disabled={disabled}
               rows={1}
-              className="min-w-0 flex-1 rounded-xl"
-              textareaClassName="advisor-composer-textarea min-h-[48px] max-h-32 resize-none overflow-y-hidden"
+              className="advisor-composer-textarea min-h-[48px] max-h-32 min-w-0 flex-1 resize-none overflow-y-hidden border-0 bg-transparent px-3 py-3 text-[14px] leading-[1.6] text-[var(--nimi-text-primary)] outline-none placeholder:text-[var(--nimi-text-muted)] disabled:cursor-not-allowed disabled:opacity-60"
             />
-            {isStreaming ? (
-              <IconButton
-                onClick={onStop}
-                tone="danger"
-                size="md"
-                icon={<StopIcon />}
-                aria-label="停止"
-              />
-            ) : (
-              <IconButton
-                onClick={onSend}
-                disabled={!value.trim()}
-                tone="primary"
-                size="md"
-                icon={<SendIcon />}
-                aria-label="发送"
-              />
-            )}
+            <button
+              type="button"
+              onClick={isStreaming ? onStop : onSend}
+              disabled={!isStreaming && !value.trim()}
+              className={cn(
+                'mb-1 flex h-9 w-9 shrink-0 items-center justify-center parentos-radius-10 transition-all',
+                isStreaming
+                  ? 'bg-[color-mix(in_srgb,var(--nimi-status-danger)_12%,var(--nimi-surface-card))] text-[var(--nimi-status-danger)] hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_18%,var(--nimi-surface-card))]'
+                  : 'bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)] hover:shadow-[var(--nimi-elevation-raised)] disabled:cursor-not-allowed disabled:bg-[color-mix(in_srgb,var(--nimi-text-muted)_18%,var(--nimi-surface-card))] disabled:text-[var(--nimi-text-muted)] disabled:shadow-none',
+              )}
+              aria-label={isStreaming ? '停止' : '发送'}
+            >
+              {isStreaming ? <Square size={14} aria-hidden="true" /> : <Send size={15} aria-hidden="true" />}
+            </button>
           </div>
-        </Surface>
+        </div>
       </div>
     </div>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function SendIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="22" y1="2" x2="11" y2="13" />
-      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-  );
-}
-
-function StopIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="6" y="6" width="12" height="12" rx="2" />
-    </svg>
   );
 }

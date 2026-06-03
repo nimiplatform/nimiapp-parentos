@@ -6,11 +6,13 @@ import {
   type AIProfileApplyResult,
   type AIProfilePreviewResult,
   type AIProbeStatus,
-  type AISchedulingEvaluationTarget,
-  type AISchedulingJudgement,
   type AIScopeRef,
   type AISnapshot,
 } from '@nimiplatform/sdk/ai';
+import type {
+  AISchedulingEvaluationTarget,
+  AISchedulingJudgement,
+} from '@nimiplatform/sdk/runtime';
 import { useAppStore } from '../../app-shell/app-store.js';
 import {
   PARENTOS_AI_SCOPE_REF,
@@ -155,8 +157,10 @@ function createAIConfigSurface() {
 
 function createAISnapshotSurface() {
   return {
-    record(scopeRef: AIScopeRef, snapshot: AISnapshot): void {
-      const resolvedScopeRef = isParentosAIScopeRef(scopeRef) ? { ...PARENTOS_AI_SCOPE_REF } : scopeRef;
+    record(snapshot: AISnapshot): void {
+      const resolvedScopeRef = isParentosAIScopeRef(snapshot.scopeRef)
+        ? { ...PARENTOS_AI_SCOPE_REF }
+        : snapshot.scopeRef;
       const normalizedSnapshot = {
         ...snapshot,
         scopeRef: resolvedScopeRef,

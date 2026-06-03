@@ -1,42 +1,9 @@
-import { useEffect, useRef } from 'react';
-import {
-  CanonicalMessageBubble,
-  CanonicalTypingBubble,
-} from '@nimiplatform/kit/features/chat/ui';
-import type { ConversationCanonicalMessage } from '@nimiplatform/kit/features/chat';
+import { Fragment, useEffect, useRef } from 'react';
+import { Square } from 'lucide-react';
+import { cn } from '@nimiplatform/kit/ui';
 import type { AiMessageRow } from '../../bridge/sqlite-bridge.js';
 
 type StreamingState = 'idle' | 'streaming';
-
-function toCanonicalMessage(msg: AiMessageRow): ConversationCanonicalMessage {
-  return {
-    id: msg.messageId,
-    sessionId: 'advisor',
-    targetId: 'advisor',
-    source: 'ai',
-    role: msg.role === 'user' ? 'user' : 'assistant',
-    text: msg.content,
-    createdAt: msg.createdAt,
-    kind: 'text',
-    senderName: msg.role === 'user' ? '你' : '成长顾问',
-    senderKind: msg.role === 'user' ? 'human' : 'ai',
-  };
-}
-
-function toStreamingMessage(content: string): ConversationCanonicalMessage {
-  return {
-    id: '__streaming__',
-    sessionId: 'advisor',
-    targetId: 'advisor',
-    source: 'ai',
-    role: 'assistant',
-    text: content,
-    createdAt: new Date().toISOString(),
-    kind: 'streaming',
-    senderName: '成长顾问',
-    senderKind: 'ai',
-  };
-}
 
 export type AdvisorTranscriptProps = {
   messages: AiMessageRow[];
@@ -45,79 +12,117 @@ export type AdvisorTranscriptProps = {
   onStopGenerating: () => void;
 };
 
-/**
- * Animation styles scoped under `.conversation-root` — subset of
- * kit's ConversationAnimationStyles (which is not publicly exported).
- */
-function AdvisorAnimationStyles() {
+function renderInline(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <strong key={`${part}-${index}`} className="font-semibold text-[var(--nimi-status-success)]">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return <Fragment key={`${part}-${index}`}>{part}</Fragment>;
+  });
+}
+
+function stripBulletPrefix(line: string): string {
+  return line.replace(/^\s*[-*]\s+/, '').replace(/^\s*\d+[.)]\s+/, '');
+}
+
+function isBulletLine(line: string): boolean {
+  return /^\s*[-*]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line);
+}
+
+function AdvisorMessageContent({ content }: { content: string }) {
+  const blocks = content
+    .replace(/\r/g, '')
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
   return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: `
-.conversation-root {
-  --conv-slide-up-duration: 0.32s;
-  --conv-drift-in-duration: 0.38s;
+    <div className="advisor-message-content">
+      {blocks.map((block, blockIndex) => {
+        const lines = block.split('\n').map((line) => line.trim()).filter(Boolean);
+        if (lines.length > 0 && lines.every(isBulletLine)) {
+          return (
+            <ul key={`block-${blockIndex}`} className="my-2 list-disc space-y-1.5 pl-5">
+              {lines.map((line, lineIndex) => (
+                <li key={`${line}-${lineIndex}`}>{renderInline(stripBulletPrefix(line))}</li>
+              ))}
+            </ul>
+          );
+        }
+
+        return (
+          <p key={`block-${blockIndex}`} className="my-2 whitespace-pre-wrap">
+            {lines.map((line, lineIndex) => (
+              <Fragment key={`${line}-${lineIndex}`}>
+                {lineIndex > 0 ? <br /> : null}
+                {renderInline(line)}
+              </Fragment>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
 }
-@keyframes chat-slide-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+
+function AdvisorMessageCard({ message }: { message: AiMessageRow }) {
+  const isUser = message.role === 'user';
+  return (
+    <div className={cn('flex w-full', isUser ? 'justify-end' : 'justify-start')}>
+      <article
+        className={cn(
+          'advisor-message-card',
+          isUser ? 'advisor-message-card--user' : 'advisor-message-card--assistant',
+        )}
+      >
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className="text-[12px] font-semibold text-[var(--nimi-text-muted)]">
+            {isUser ? '你' : '成长顾问'}
+          </span>
+        </div>
+        <AdvisorMessageContent content={message.content} />
+      </article>
+    </div>
+  );
 }
-@keyframes chat-drift-in {
-  from { opacity: 0; transform: translate(8px, 10px); }
-  to { opacity: 1; transform: translate(0, 0); }
+
+function AdvisorStreamingCard({ content }: { content: string }) {
+  return (
+    <div className="flex w-full justify-start">
+      <article className="advisor-message-card advisor-message-card--assistant">
+        <div className="mb-2 text-[12px] font-semibold text-[var(--nimi-text-muted)]">成长顾问</div>
+        <AdvisorMessageContent content={content} />
+        <span className="inline-block animate-pulse text-[var(--nimi-action-primary-bg)]">|</span>
+      </article>
+    </div>
+  );
 }
-@keyframes typing-dot-bounce {
-  0%, 100% { transform: translateY(0); opacity: 0.55; }
-  40% { transform: translateY(-3px); opacity: 1; }
-}
-.conversation-root .lc-typing-bubble {
-  position: relative;
-  border-radius: 22px;
-  border: 1px solid rgba(229,231,235,0.92);
-  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(241,245,249,0.94));
-  box-shadow: 0 12px 32px rgba(15,23,42,0.08);
-}
-.conversation-root .lc-typing-bubble::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(167,243,208,0.1), transparent 65%);
-}
-.conversation-root .lc-typing-label {
-  color: #475569;
-}
-.conversation-root .lc-typing-dot {
-  background: linear-gradient(180deg, rgba(16,185,129,0.9), rgba(20,184,166,0.7));
-}
-.conversation-root p,
-.conversation-root li {
-  line-height: 1.85 !important;
-}
-.conversation-root p + p,
-.conversation-root p + ul,
-.conversation-root p + ol,
-.conversation-root ul + p,
-.conversation-root ol + p,
-.conversation-root p + h1,
-.conversation-root p + h2,
-.conversation-root p + h3 {
-  margin-top: 0.9em;
-}
-.conversation-root strong {
-  color: #047857;
-  font-weight: 600;
-}
-@media (prefers-reduced-motion: reduce) {
-  .conversation-root .lc-typing-bubble,
-  .conversation-root .lc-typing-dot {
-    animation: none !important;
-  }
-}
-`,
-      }}
-    />
+
+function AdvisorThinkingCard({ onStop }: { onStop: () => void }) {
+  return (
+    <div className="flex w-full justify-start">
+      <article className="advisor-message-card advisor-message-card--assistant">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-[13px] text-[var(--nimi-text-muted)]">
+            <span className="advisor-thinking-dot" />
+            <span>AI 正在思考...</span>
+          </div>
+          <button
+            type="button"
+            onClick={onStop}
+            className="inline-flex h-8 items-center gap-1.5 parentos-radius-lg px-2.5 text-[12px] font-medium text-[var(--nimi-status-danger)] transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,transparent)]"
+          >
+            <Square size={12} aria-hidden="true" />
+            停止
+          </button>
+        </div>
+      </article>
+    </div>
   );
 }
 
@@ -127,7 +132,6 @@ export function AdvisorTranscript({
   streamingContent,
   onStopGenerating,
 }: AdvisorTranscriptProps) {
-  const canonicalMessages = messages.map(toCanonicalMessage);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -137,38 +141,19 @@ export function AdvisorTranscript({
   }, [messages, streamingContent]);
 
   return (
-    <div ref={scrollContainerRef} className="conversation-root flex-1 overflow-auto">
-      <AdvisorAnimationStyles />
-      <div className="mx-auto max-w-2xl space-y-3 px-6 pb-4 pt-5">
-        {canonicalMessages.map((msg) => (
-          <CanonicalMessageBubble
-            key={msg.id}
-            message={msg}
-            showTimestamp={false}
-            showAvatar={false}
-            disableRpContent
-          />
+    <div ref={scrollContainerRef} className="advisor-transcript min-h-0 flex-1 overflow-auto">
+      <div className="mx-auto flex max-w-3xl flex-col gap-4 px-6 pb-5 pt-6">
+        {messages.map((message) => (
+          <AdvisorMessageCard key={message.messageId} message={message} />
         ))}
 
-        {/* Streaming with content — show streaming bubble */}
-        {streamingState === 'streaming' && streamingContent && (
-          <CanonicalMessageBubble
-            message={toStreamingMessage(streamingContent)}
-            showTimestamp={false}
-            showAvatar={false}
-            disableRpContent
-          />
-        )}
+        {streamingState === 'streaming' && streamingContent ? (
+          <AdvisorStreamingCard content={streamingContent} />
+        ) : null}
 
-        {/* Streaming without content — show thinking indicator */}
-        {streamingState === 'streaming' && !streamingContent && (
-          <CanonicalTypingBubble
-            agentName="成长顾问"
-            thinkingLabel="AI 正在思考..."
-            stopLabel="停止"
-            onStop={onStopGenerating}
-          />
-        )}
+        {streamingState === 'streaming' && !streamingContent ? (
+          <AdvisorThinkingCard onStop={onStopGenerating} />
+        ) : null}
       </div>
     </div>
   );

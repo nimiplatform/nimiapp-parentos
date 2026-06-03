@@ -98,9 +98,9 @@ export function parentosAISettingsAvailabilityHint(
     return '';
   }
   if (availability.kind === 'daemon-unavailable') {
-    return '当前未检测到 nimi runtime daemon，请确认 runtime 已启动后再使用模型选择器。你仍可手动填写 model id。';
+    return '当前未检测到 nimi runtime daemon，请确认 runtime 已启动后再使用模型选择器。';
   }
-  return `runtime route snapshot 读取失败：${availability.detail}。你仍可手动填写 model id。`;
+  return `runtime route snapshot 读取失败：${availability.detail}。`;
 }
 
 export function parentosAISettingsAvailabilityBannerCopy(
@@ -120,6 +120,6 @@ export function parentosAISettingsAvailabilityBannerCopy(
   }
   return {
     kind: 'error',
-    message: `runtime 路由快照读取失败，模型选择器暂不可用。${availability.detail}`,
+    message: `runtime 路由快照读取失败。${availability.detail}`,
   };
 }

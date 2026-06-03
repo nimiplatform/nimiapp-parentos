@@ -1,11 +1,14 @@
 import type {
-  AIRuntimeLocalProfileRef,
   AIProfileRef,
   AIScopeRef,
   AIConfig,
-  RuntimeRouteBinding,
 } from '@nimiplatform/sdk/ai';
-import { createEmptyAIConfig, parseRuntimeRouteBinding } from '@nimiplatform/sdk/ai';
+import { createEmptyAIConfig } from '@nimiplatform/sdk/ai';
+import {
+  parseRuntimeRouteBinding,
+  type RuntimeLocalProfileRef,
+  type RuntimeRouteBinding,
+} from '@nimiplatform/sdk/runtime';
 import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
 import { isoNow } from '../../bridge/ulid.js';
 
@@ -109,15 +112,15 @@ function normalizeLocalProfileRefs(
     if (!profileRefRecord) {
       continue;
     }
-    const modId = trimString(profileRefRecord.modId);
+    const targetId = trimString(profileRefRecord.targetId || profileRefRecord.modId);
     const profileId = trimString(profileRefRecord.profileId);
-    if (!modId || !profileId) {
+    if (!targetId || !profileId) {
       continue;
     }
     normalized[capabilityId] = {
-      modId,
+      targetId,
       profileId,
-    } satisfies AIRuntimeLocalProfileRef;
+    } satisfies RuntimeLocalProfileRef;
   }
   return normalized;
 }

@@ -6,26 +6,47 @@ import { MemoryRouter } from 'react-router-dom';
 import { TooltipProvider } from '@nimiplatform/kit/ui';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore } from '../../app-shell/app-store.js';
+import { i18n } from '../../i18n/index.js';
+import { PARENTOS_AI_SCOPE_REF, createEmptyParentosAIConfig } from './parentos-ai-config.js';
 import AiSettingsPage from './ai-settings-page.js';
 
 vi.mock('@nimiplatform/sdk', () => ({
   getPlatformClient: () => ({
     runtime: {
-      appId: 'app.nimi.parentos',
+      appId: 'ai.nimi.apps.parentos',
     },
   }),
 }));
 
+vi.mock('./parentos-ai-settings-availability.js', () => ({
+  probeParentosAISettingsAvailability: vi.fn(async () => ({
+    kind: 'ready',
+    status: {
+      running: true,
+      managed: true,
+      launchMode: 'RUNTIME',
+      grpcAddr: '127.0.0.1:46371',
+    },
+  })),
+  parentosAISettingsAvailabilityLabel: () => '运行时已连接',
+  parentosAISettingsAvailabilityBannerCopy: () => null,
+}));
+
 describe('AiSettingsPage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh');
     useAppStore.setState({
       aiConfig: null,
+      bootstrapReady: true,
+      bootstrapError: null,
     });
   });
 
   afterEach(() => {
     useAppStore.setState({
       aiConfig: null,
+      bootstrapReady: false,
+      bootstrapError: null,
     });
   });
 
@@ -49,34 +70,65 @@ describe('AiSettingsPage', () => {
     );
   }
 
-  it('renders the AI settings shell backed by ModelConfigAiModelHub', async () => {
+  it('renders ParentOS-owned AI capability bindings without raw ModelConfig keys', async () => {
     const { container } = renderPage();
 
     await waitFor(() => {
       expect(screen.getByText('AI 模型设置')).toBeTruthy();
     });
 
-    // Three ParentOS capability sections surfaced via the canonical catalog.
-    // Sections come from ModelConfigAiModelHub and resolve to i18n keys
-    // ModelConfig.section.{chat,stt}.title (text.generate + text.generate.vision
-    // both fall in 'chat'; audio.transcribe is in 'stt').
     await waitFor(() => {
-      expect(container.textContent).toContain('ModelConfig.section.chat.title');
-      expect(container.textContent).toContain('ModelConfig.section.stt.title');
+      expect(container.textContent).toContain('ParentOS AI 能力');
+      expect(container.textContent).toContain('AI 对话');
+      expect(container.textContent).toContain('智能识别');
+      expect(container.textContent).toContain('语音转写');
+      expect(container.textContent).not.toContain('ModelConfig.');
     });
   });
 
-  it('renders exactly one ProfileConfigSection (Import AI Profile) at the hub header', async () => {
+  it('does not render the empty AI profile import path', async () => {
     const { container } = renderPage();
 
     await waitFor(() => {
       expect(screen.getByText('AI 模型设置')).toBeTruthy();
     });
 
-    // The hub's import-button variant emits a single Import AI Profile trigger.
     const importTriggers = Array.from(container.querySelectorAll('button'))
-      .filter((button) => button.textContent?.includes('ModelConfig.profile.importLabel'));
-    expect(importTriggers.length).toBe(1);
+      .filter((button) => button.textContent?.includes('导入 AI 预设'));
+    expect(importTriggers.length).toBe(0);
+  });
+
+  it('projects persisted text model binding status', async () => {
+    useAppStore.setState({
+      aiConfig: {
+        ...createEmptyParentosAIConfig(),
+        scopeRef: { ...PARENTOS_AI_SCOPE_REF },
+        capabilities: {
+          selectedBindings: {
+            'text.generate': {
+              source: 'local',
+              connectorId: '',
+              model: 'asset-gemma-4-26b-a4b',
+              modelId: 'asset-gemma-4-26b-a4b',
+              modelLabel: 'local-import/gemma-4-26B-A4B-it-Q8_0',
+              localModelId: 'local-import/gemma-4-26B-A4B-it-Q8_0',
+              engine: 'llama',
+              provider: 'llama',
+            },
+          },
+          localProfileRefs: {},
+          selectedParams: {},
+        },
+      },
+    });
+
+    const { container } = renderPage();
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('local-import/gemma-4-26B-A4B-it-Q8_0');
+      expect(container.textContent).toContain('模型已配置');
+      expect(container.textContent).toContain('1 / 3 已绑定');
+    });
   });
 
   it('enables exactly the three ParentOS canonical capabilities (no image/video/voice/embed/world sections)', async () => {
@@ -87,11 +139,11 @@ describe('AiSettingsPage', () => {
     });
 
     // Sections that must NOT render because their capability ids are not enabled.
-    expect(container.textContent).not.toContain('ModelConfig.section.tts.title');
-    expect(container.textContent).not.toContain('ModelConfig.section.image.title');
-    expect(container.textContent).not.toContain('ModelConfig.section.video.title');
-    expect(container.textContent).not.toContain('ModelConfig.section.voice.title');
-    expect(container.textContent).not.toContain('ModelConfig.section.embed.title');
-    expect(container.textContent).not.toContain('ModelConfig.section.world.title');
+    expect(container.textContent).not.toContain('文本转语音');
+    expect(container.textContent).not.toContain('图像');
+    expect(container.textContent).not.toContain('视频');
+    expect(container.textContent).not.toContain('嵌入');
+    expect(container.textContent).not.toContain('世界');
+    expect(container.textContent).not.toContain('ModelConfig.');
   });
 });

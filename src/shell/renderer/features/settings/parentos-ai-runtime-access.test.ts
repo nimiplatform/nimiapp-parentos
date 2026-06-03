@@ -15,8 +15,8 @@ describe('parentos-ai-runtime access helpers', () => {
     });
   });
 
-  it('falls back to auto when no capability binding exists', () => {
-    expect(resolveParentosBinding('text.generate')).toEqual({ model: 'auto' });
+  it('returns null when no capability binding exists', () => {
+    expect(resolveParentosBinding('text.generate')).toBeNull();
   });
 
   it('returns a local route for local capability bindings', () => {
@@ -104,7 +104,7 @@ describe('parentos-ai-runtime access helpers', () => {
   it('builds stable ParentOS runtime metadata for governed surfaces', () => {
     expect(buildParentosRuntimeMetadata('parentos.advisor')).toEqual({
       callerKind: 'third-party-app',
-      callerId: 'app.nimi.parentos',
+      callerId: 'ai.nimi.apps.parentos',
       surfaceId: 'parentos.advisor',
     });
   });
