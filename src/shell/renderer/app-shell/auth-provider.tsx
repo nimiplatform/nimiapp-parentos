@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { AmbientBackground } from '@nimiplatform/kit/ui';
 import { useAppStore } from './app-store.js';
 import { runParentOSBootstrap } from '../infra/parentos-bootstrap.js';
-import { getPlatformClient } from '@nimiplatform/sdk';
 import { ParentOSLoginPage } from '../features/auth/parentos-login-page.js';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -13,17 +12,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void runParentOSBootstrap();
   }, []);
-
-  useEffect(() => {
-    if (authStatus !== 'unauthenticated') {
-      return;
-    }
-    try {
-      getPlatformClient().realm.clearAuth();
-    } catch {
-      // Platform client may not be ready yet
-    }
-  }, [authStatus]);
 
   if (bootstrapError) {
     return (

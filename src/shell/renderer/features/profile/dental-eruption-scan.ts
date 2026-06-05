@@ -1,11 +1,9 @@
-import { getPlatformClient } from '@nimiplatform/sdk';
-import type { TextMessage } from '@nimiplatform/sdk/runtime';
+import type { NimiMessage } from '@nimiplatform/sdk/contracts';
 import {
-  buildParentosRuntimeMetadata,
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  resolveParentosImageTextRuntimeConfig,
+  runParentosMultimodalTextGenerate,
+  runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
+import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 
 const PRIMARY_FDI = new Set([
   '51', '52', '53', '54', '55',
@@ -165,13 +163,13 @@ function buildScanPrompt(context: { ageMonths: number }): string {
   ].join('\n');
 }
 
-function buildScanInput(imageUrl: string, context: { ageMonths: number }): TextMessage[] {
+function buildScanInput(imageUrl: string, context: { ageMonths: number }): NimiMessage[] {
   return [
     {
       role: 'user',
       content: [
         { type: 'text', text: buildScanPrompt(context) },
-        { type: 'image_url', imageUrl, detail: 'high' },
+        { type: 'data', data: { type: 'image-url', url: imageUrl, detail: 'high' } },
       ],
     },
   ];
@@ -194,25 +192,16 @@ function buildRepairPrompt(raw: string): string {
 }
 
 async function repairDentalEruptionExtraction(input: {
-  client: ReturnType<typeof getPlatformClient>;
-  aiParams: {
-    model: string;
-    route?: 'local' | 'cloud';
-    connectorId?: string;
-    temperature?: number;
-    topP?: number;
-    maxTokens?: number;
-    timeoutMs?: number;
-  };
   raw: string;
 }): Promise<DentalEruptionExtraction> {
-  const repaired = await input.client.runtime.ai.text.generate({
-    ...input.aiParams,
-    temperature: 0,
-    maxTokens: Math.max(input.aiParams.maxTokens ?? 1200, 1200),
-    input: [{ role: 'user', content: buildRepairPrompt(input.raw) }],
-    metadata: buildParentosRuntimeMetadata('parentos.profile.dental-eruption-scan'),
+  const repaired = await runParentosTextGenerate({
+    surfaceId: 'parentos.profile.dental-eruption-scan',
+    messages: [{ role: 'user', content: [{ type: 'text', text: buildRepairPrompt(input.raw) }] }],
+    defaults: { temperature: 0, maxTokens: 1200 },
   });
+  if (!repaired.ok) {
+    throw new Error(repaired.error.message);
+  }
   return parseDentalEruptionExtraction(repaired.text);
 }
 
@@ -257,12 +246,7 @@ export function getDentalScanDisplayMessage(error: unknown): string {
 }
 
 export async function hasDentalScanRuntime() {
-  try {
-    const client = getPlatformClient();
-    return Boolean(client.runtime?.appId && client.runtime?.ai?.text?.generate);
-  } catch {
-    return false;
-  }
+  return hasParentOSNimiClient();
 }
 
 export async function analyzeDentalEruptionImage(input: {
@@ -274,25 +258,12 @@ export async function analyzeDentalEruptionImage(input: {
     throw new Error('dental scan requires an imageUrl');
   }
 
-  const client = getPlatformClient();
-  if (!client.runtime?.ai?.text?.generate) {
-    throw new Error('ParentOS dental scan runtime is unavailable');
-  }
-
   try {
-    const aiParams = await resolveParentosImageTextRuntimeConfig(
-      'parentos.profile.dental-eruption-scan',
-      { temperature: 0, maxTokens: 1200 },
-    );
-    await ensureParentosLocalRuntimeReady({
-      route: aiParams.route,
-      localModelId: aiParams.localModelId,
-      timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-    });
-    const output = await client.runtime.ai.text.generate({
-      ...aiParams,
-      input: buildScanInput(imageUrl, { ageMonths: input.ageMonths }),
-      metadata: buildParentosRuntimeMetadata('parentos.profile.dental-eruption-scan'),
+    const output = await runParentosMultimodalTextGenerate({
+      surfaceId: 'parentos.profile.dental-eruption-scan',
+      capabilityId: 'text.generate.vision',
+      messages: buildScanInput(imageUrl, { ageMonths: input.ageMonths }),
+      defaults: { temperature: 0, maxTokens: 1200 },
     });
 
     try {
@@ -302,16 +273,6 @@ export async function analyzeDentalEruptionImage(input: {
         throw error;
       }
       return await repairDentalEruptionExtraction({
-        client,
-        aiParams: {
-          model: aiParams.model,
-          route: aiParams.route,
-          connectorId: aiParams.connectorId,
-          temperature: aiParams.temperature,
-          topP: aiParams.topP,
-          maxTokens: aiParams.maxTokens,
-          timeoutMs: aiParams.timeoutMs,
-        },
         raw: output.text,
       });
     }

@@ -1,18 +1,15 @@
-import {
-  createEmptyAIConfig,
-  type AIConfig,
-  type AIConfigProbeResult,
-  type AIConfigSDKSurface,
-  type AIProfileApplyResult,
-  type AIProfilePreviewResult,
-  type AIProbeStatus,
-  type AIScopeRef,
-  type AISnapshot,
-} from '@nimiplatform/sdk/ai';
 import type {
-  AISchedulingEvaluationTarget,
-  AISchedulingJudgement,
-} from '@nimiplatform/sdk/runtime';
+  NimiAIConfig,
+  NimiAIProfileApplyResult,
+  NimiAIProfilePreviewResult,
+  NimiAIScopeRef,
+} from '@nimiplatform/sdk/ai';
+import {
+  createEmptyNimiAIConfig,
+  diffNimiAIConfigs,
+  versionNimiAIConfig,
+} from '@nimiplatform/sdk/ai';
+import type { SharedAIConfigService } from '@nimiplatform/kit/core/model-config';
 import { useAppStore } from '../../app-shell/app-store.js';
 import {
   PARENTOS_AI_SCOPE_REF,
@@ -21,16 +18,12 @@ import {
   savePersistedParentosAIConfig,
 } from './parentos-ai-config.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
-type ConfigSubscription = (config: AIConfig) => void;
+
+type ConfigSubscription = (config: NimiAIConfig) => void;
 
 const configSubscriptions = new Set<ConfigSubscription>();
-const snapshotsByExecutionId = new Map<string, AISnapshot>();
-const latestSnapshotByScopeKey = new Map<string, AISnapshot>();
-function scopeKey(scopeRef: AIScopeRef): string {
-  return [scopeRef.kind, scopeRef.ownerId, scopeRef.surfaceId || ''].join(':');
-}
 
-function notifyConfigSubscribers(config: AIConfig): void {
+function notifyConfigSubscribers(config: NimiAIConfig): void {
   for (const callback of configSubscriptions) {
     try {
       callback(config);
@@ -40,86 +33,70 @@ function notifyConfigSubscribers(config: AIConfig): void {
   }
 }
 
-function getConfigForScope(scopeRef: AIScopeRef): AIConfig {
+function getConfigForScope(scopeRef: NimiAIScopeRef): NimiAIConfig {
   if (!isParentosAIScopeRef(scopeRef)) {
-    return createEmptyAIConfig(scopeRef);
+    return createEmptyNimiAIConfig(scopeRef);
   }
   return useAppStore.getState().aiConfig || createEmptyParentosAIConfig();
 }
 
-function commitConfig(config: AIConfig): void {
+function commitConfig(config: NimiAIConfig): void {
   const resolvedConfig = {
     ...config,
     scopeRef: { ...PARENTOS_AI_SCOPE_REF },
-  } satisfies AIConfig;
+    capabilities: {
+      targetRefs: { ...(config.capabilities.targetRefs || {}) },
+      selectedParams: { ...(config.capabilities.selectedParams || {}) },
+    },
+    profileOrigin: config.profileOrigin ?? null,
+  } satisfies NimiAIConfig;
   useAppStore.getState().setAIConfig(resolvedConfig);
   notifyConfigSubscribers(resolvedConfig);
   void savePersistedParentosAIConfig(resolvedConfig).catch(catchLog('ai-config', 'action:save-persisted-ai-config-failed'));
 }
 
-function createAIProfileSurface() {
-  const applyProfile = async (scopeRef: AIScopeRef, profileId: string): Promise<AIProfileApplyResult> => {
-    void scopeRef;
-    return {
-      success: false,
-      config: null,
-      failureReason: `Profile not found: ${profileId}`,
-      probeWarnings: [],
-    };
+function createMissingProfilePreview(
+  scopeRef: NimiAIScopeRef,
+  profileId: string,
+): NimiAIProfilePreviewResult {
+  const before = getConfigForScope(scopeRef);
+  return {
+    before,
+    after: null,
+    outcome: 'invalid_profile',
+    diff: diffNimiAIConfigs(before, null),
+    baseVersion: versionNimiAIConfig(before),
+    probeWarnings: [`Profile not found: ${profileId}`],
   };
+}
 
+function createAIProfileSurface(): SharedAIConfigService['aiProfile'] {
   return {
     async list() {
       return [];
     },
-    async get() {
-      return null;
+    async previewApply(scopeRef: NimiAIScopeRef, profileId: string): Promise<NimiAIProfilePreviewResult> {
+      return createMissingProfilePreview(scopeRef, profileId);
     },
-    validate() {
+    async apply(scopeRef: NimiAIScopeRef, profileId: string): Promise<NimiAIProfileApplyResult> {
       return {
-        valid: true,
-        errors: [],
+        success: false,
+        config: null,
+        failureReason: `Profile not found: ${profileId}`,
+        outcome: 'invalid_profile',
+        probeWarnings: [],
       };
-    },
-    async previewApply(scopeRef: AIScopeRef, profileId: string): Promise<AIProfilePreviewResult> {
-      void scopeRef;
-      throw new Error(`Profile not found: ${profileId}`);
-    },
-    apply: applyProfile,
-
-    async resolveLocalDependencies(): Promise<unknown[]> {
-      return [];
     },
   };
 }
 
-function createAIConfigSurface() {
-  const probeScope = async (scopeRef: AIScopeRef): Promise<AIConfigProbeResult> => {
-    if (!isParentosAIScopeRef(scopeRef)) {
-      return { status: 'unknown', capabilityStatuses: {} };
-    }
-    const config = getConfigForScope(scopeRef);
-    const selectedBindings = config.capabilities.selectedBindings || {};
-    const capabilityStatuses: AIConfigProbeResult['capabilityStatuses'] = {};
-    let allConfigured = true;
-    for (const capability of Object.keys(selectedBindings)) {
-      const binding = selectedBindings[capability];
-      const status: AIProbeStatus = binding?.model ? 'available' : 'unknown';
-      capabilityStatuses[capability] = status;
-      allConfigured = allConfigured && status === 'available';
-    }
-    return {
-      status: allConfigured ? 'available' : 'unknown',
-      capabilityStatuses,
-    };
-  };
-
+function createAIConfigSurface(): SharedAIConfigService['aiConfig'] {
   return {
-    get(scopeRef: AIScopeRef): AIConfig {
+    get(scopeRef: NimiAIScopeRef): NimiAIConfig {
       return getConfigForScope(scopeRef);
     },
 
-    update(scopeRef: AIScopeRef, config: AIConfig): void {
+    update(scopeRef: NimiAIScopeRef, config: NimiAIConfig): void {
       if (!isParentosAIScopeRef(scopeRef)) {
         return;
       }
@@ -129,21 +106,7 @@ function createAIConfigSurface() {
       });
     },
 
-    listScopes(): AIScopeRef[] {
-      return useAppStore.getState().aiConfig ? [{ ...PARENTOS_AI_SCOPE_REF }] : [];
-    },
-
-    probe: probeScope,
-    probeFeasibility: probeScope,
-
-    async probeSchedulingTarget(
-      _scopeRef: AIScopeRef,
-      _target: AISchedulingEvaluationTarget,
-    ): Promise<AISchedulingJudgement | null> {
-      return null;
-    },
-
-    subscribe(scopeRef: AIScopeRef, callback: (config: AIConfig) => void): () => void {
+    subscribe(scopeRef: NimiAIScopeRef, callback: (config: NimiAIConfig) => void): () => void {
       if (!isParentosAIScopeRef(scopeRef)) {
         return () => {};
       }
@@ -155,40 +118,14 @@ function createAIConfigSurface() {
   };
 }
 
-function createAISnapshotSurface() {
-  return {
-    record(snapshot: AISnapshot): void {
-      const resolvedScopeRef = isParentosAIScopeRef(snapshot.scopeRef)
-        ? { ...PARENTOS_AI_SCOPE_REF }
-        : snapshot.scopeRef;
-      const normalizedSnapshot = {
-        ...snapshot,
-        scopeRef: resolvedScopeRef,
-      };
-      snapshotsByExecutionId.set(normalizedSnapshot.executionId, normalizedSnapshot);
-      latestSnapshotByScopeKey.set(scopeKey(resolvedScopeRef), normalizedSnapshot);
-    },
+let parentosAIConfigServiceSingleton: SharedAIConfigService | null = null;
 
-    get(executionId: string): AISnapshot | null {
-      return snapshotsByExecutionId.get(executionId) || null;
-    },
-
-    getLatest(scopeRef: AIScopeRef): AISnapshot | null {
-      return latestSnapshotByScopeKey.get(scopeKey(scopeRef)) || null;
-    },
-  };
-}
-
-let parentosAIConfigServiceSingleton: AIConfigSDKSurface | null = null;
-
-export function getParentosAIConfigService(): AIConfigSDKSurface {
+export function getParentosAIConfigService(): SharedAIConfigService {
   if (!parentosAIConfigServiceSingleton) {
-    const service: AIConfigSDKSurface = {
+    parentosAIConfigServiceSingleton = {
       aiProfile: createAIProfileSurface(),
       aiConfig: createAIConfigSurface(),
-      aiSnapshot: createAISnapshotSurface(),
     };
-    parentosAIConfigServiceSingleton = service;
   }
   return parentosAIConfigServiceSingleton;
 }

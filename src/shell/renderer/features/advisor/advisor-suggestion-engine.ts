@@ -1,9 +1,6 @@
 import { REVIEWED_DOMAINS } from '../../knowledge-base/index.js';
 import {
-  buildParentosRuntimeMetadata,
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  resolveParentosTextRuntimeConfig,
+  runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
 import type { AdvisorSnapshot } from './advisor-boundary.js';
 
@@ -105,38 +102,30 @@ export async function generateAdvisorSuggestions(
   snapshot: AdvisorSnapshot,
   options: { signal?: AbortSignal } = {},
 ): Promise<AdvisorSuggestion[]> {
-  const { getPlatformClient } = await import('@nimiplatform/sdk');
-  const client = getPlatformClient();
-  const rt = client.runtime;
-  if (!rt?.ai?.text?.generate) {
-    throw new Error('runtime not available for suggestion generation');
-  }
-
-  const aiParams = await resolveParentosTextRuntimeConfig('parentos.advisor', {
-    temperature: 0.7,
-    maxTokens: 1024,
-  });
-  await ensureParentosLocalRuntimeReady({
-    route: aiParams.route,
-    localModelId: aiParams.localModelId,
-    timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  });
-
   if (options.signal?.aborted) {
     throw new DOMException('The operation was aborted.', 'AbortError');
   }
 
-  const generated = await rt.ai.text.generate({
-    ...aiParams,
-    system: buildSystemPrompt(),
-    input: [{ role: 'user', content: buildUserPrompt(snapshot) }],
-    metadata: buildParentosRuntimeMetadata('parentos.advisor'),
+  const generated = await runParentosTextGenerate({
+    surfaceId: 'parentos.advisor',
+    messages: [
+      { role: 'system', content: [{ type: 'text', text: buildSystemPrompt() }] },
+      { role: 'user', content: [{ type: 'text', text: buildUserPrompt(snapshot) }] },
+    ],
+    defaults: {
+      temperature: 0.7,
+      maxTokens: 1024,
+    },
+    signal: options.signal,
   });
+  if (!generated.ok) {
+    throw generated.error.cause || new Error(generated.error.message);
+  }
   if (options.signal?.aborted) {
     throw new DOMException('The operation was aborted.', 'AbortError');
   }
 
-  const rawText = generated.text ?? '';
+  const rawText = generated.text;
   let rawItems: string[] = [];
   try {
     const parsed = extractJsonArray(rawText);

@@ -2,8 +2,8 @@
  * ParentOS bootstrap regression tests (PO-SHELL-001 / PO-SHELL-008 / spec
  * K-ACCSVC-008). Locks the local-first-party-runtime contract:
  *
- * - Bootstrap constructs the platform client via `createNimiAppRuntimePlatformClient`,
- *   which type-rejects app-owned access/refresh tokens and session stores.
+ * - Bootstrap constructs the vNext NimiClient via `createNimiClient`, which
+ *   keeps app-owned access/refresh tokens and session stores out of the call.
  * - Authenticated subject for the local SQLite scope comes from the runtime
  *   account projection (`runtime.account.getAccountSessionStatus`), never
  *   from a legacy persisted session bridge.
@@ -20,12 +20,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AccountCallerMode,
   AccountSessionState,
-} from '@nimiplatform/sdk/runtime/browser';
+} from '@nimiplatform/sdk/runtime/generated';
 
 const getRuntimeDefaultsMock = vi.fn();
-const createNimiAppRuntimePlatformClientMock = vi.fn();
-const clearPlatformClientMock = vi.fn();
-const getPlatformClientMock = vi.fn();
+const createNimiClientMock = vi.fn();
+const createRealmFetchTransportMock = vi.fn();
 const prepareParentOSAppStorageMock = vi.fn();
 const dbInitMock = vi.fn();
 const getAppSettingMock = vi.fn();
@@ -38,7 +37,7 @@ const mapChildRowMock = vi.fn();
 const getAccountSessionStatusMock = vi.fn();
 const getAppStorageMock = vi.fn();
 const runtimeReadyMock = vi.fn();
-let currentPlatformClientMock: unknown = null;
+let currentNimiClientMock: unknown = null;
 
 vi.mock('../bridge/index.js', () => ({
   getParentOSRuntimeDefaults: getRuntimeDefaultsMock,
@@ -47,9 +46,8 @@ vi.mock('../bridge/index.js', () => ({
 }));
 
 vi.mock('@nimiplatform/sdk', () => ({
-  createNimiAppRuntimePlatformClient: createNimiAppRuntimePlatformClientMock,
-  clearPlatformClient: clearPlatformClientMock,
-  getPlatformClient: getPlatformClientMock,
+  createNimiClient: createNimiClientMock,
+  createRealmFetchTransport: createRealmFetchTransportMock,
 }));
 
 vi.mock('../bridge/sqlite-bridge.js', () => ({
@@ -115,11 +113,10 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
       parentosRuntimeAccountCaller,
     } = await import('./parentos-bootstrap.js'));
 
-    currentPlatformClientMock = null;
+    currentNimiClientMock = null;
     getRuntimeDefaultsMock.mockReset();
-    createNimiAppRuntimePlatformClientMock.mockReset();
-    clearPlatformClientMock.mockReset();
-    getPlatformClientMock.mockReset();
+    createNimiClientMock.mockReset();
+    createRealmFetchTransportMock.mockReset();
     prepareParentOSAppStorageMock.mockReset();
     dbInitMock.mockReset();
     getAppSettingMock.mockReset();
@@ -149,21 +146,13 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
       realm: { realmBaseUrl: 'https://realm.test', accessToken: '' },
       runtime: { sandboxRoot: '', materialRoot: '', defaultUploadPath: '' },
     });
-    clearPlatformClientMock.mockImplementation(() => {
-      currentPlatformClientMock = null;
-    });
-    getPlatformClientMock.mockImplementation(() => {
-      if (!currentPlatformClientMock) {
-        throw new Error('platform client is not ready; call createPlatformClient() first');
-      }
-      return currentPlatformClientMock;
-    });
-    createNimiAppRuntimePlatformClientMock.mockImplementation(async () => {
-      currentPlatformClientMock = buildPlatformClientMock();
-      return {
-        status: 'ready',
-        client: currentPlatformClientMock,
-      };
+    createRealmFetchTransportMock.mockImplementation((input: unknown) => ({
+      type: 'realm-fetch',
+      input,
+    }));
+    createNimiClientMock.mockImplementation(() => {
+      currentNimiClientMock = buildPlatformClientMock();
+      return currentNimiClientMock;
     });
     runtimeReadyMock.mockResolvedValue(undefined);
     ensureParentosAIConfigFromFirstRunEvidenceMock.mockResolvedValue({
@@ -196,23 +185,51 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
   // Authentication path: runtime account projection drives the scope
   // -------------------------------------------------------------------------
 
-  it('uses the local-first-party-runtime SDK helper and never the legacy createPlatformClient signature', async () => {
+  it('uses the vNext NimiClient constructor without app-owned token custody inputs', async () => {
     getAccountSessionStatusMock.mockResolvedValue({
       state: AccountSessionState.AUTHENTICATED,
       accountProjection: { accountId: 'acct-1', displayName: 'User One' },
     });
     await runParentOSBootstrap();
-    expect(createNimiAppRuntimePlatformClientMock).toHaveBeenCalledTimes(1);
-    const call = createNimiAppRuntimePlatformClientMock.mock.calls[0]![0] as Record<string, unknown>;
-    expect(call.mode).toBe('local-first-party');
+    expect(createRealmFetchTransportMock).toHaveBeenCalledWith({
+      baseUrl: 'https://realm.test',
+      credentials: 'include',
+    });
+    expect(createNimiClientMock).toHaveBeenCalledTimes(1);
+    const call = createNimiClientMock.mock.calls[0]![0] as {
+      appId?: string;
+      runtime?: {
+        appId?: string;
+        transport?: {
+          type?: string;
+          commandNamespace?: string;
+          eventNamespace?: string;
+        };
+      };
+      realm?: unknown;
+      app?: unknown;
+      permissions?: unknown;
+    } & Record<string, unknown>;
     expect(call.appId).toBe('ai.nimi.apps.parentos');
-    expect(call.realmBaseUrl).toBe('https://realm.test');
-    expect(call.developerRegistration).toBe(true);
-    expect(call.runtimeOptions).toEqual({
-      protectedAccess: {
-        autoIssueForAi: true,
+    expect(call.runtime).toEqual(expect.objectContaining({
+      appId: 'ai.nimi.apps.parentos',
+      transport: {
+        type: 'tauri-ipc',
+        commandNamespace: 'runtime_bridge',
+        eventNamespace: 'runtime_bridge',
+      },
+    }));
+    expect(call.realm).toEqual({
+      transport: {
+        type: 'realm-fetch',
+        input: {
+          baseUrl: 'https://realm.test',
+          credentials: 'include',
+        },
       },
     });
+    expect(call.app).toBe(false);
+    expect(call.permissions).toBe(false);
     // PO-SHELL-008: type-level rejection still enforced at runtime — these
     // keys must never appear.
     expect(call).not.toHaveProperty('accessToken');
@@ -291,12 +308,12 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
 
     await runParentOSBootstrap();
 
-    expect(runtimeReadyMock).toHaveBeenCalledTimes(1);
+    expect(runtimeReadyMock).toHaveBeenCalledTimes(2);
     expect(ensureParentosAIConfigFromFirstRunEvidenceMock).toHaveBeenCalledTimes(1);
     expect(ensureParentosAIConfigFromFirstRunEvidenceMock).toHaveBeenCalledWith({
-      platformClient: currentPlatformClientMock,
+      client: currentNimiClientMock,
     });
-    expect(runtimeReadyMock.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(runtimeReadyMock.mock.invocationCallOrder.at(-1)!).toBeLessThan(
       ensureParentosAIConfigFromFirstRunEvidenceMock.mock.invocationCallOrder[0]!,
     );
   });
@@ -320,10 +337,9 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     expect(dbInitMock).toHaveBeenCalledWith(null);
   });
 
-  it('fails bootstrap when runtime client registration is rejected', async () => {
-    createNimiAppRuntimePlatformClientMock.mockResolvedValue({
-      status: 'action-required',
-      message: 'local first-party Runtime account caller registration rejected: 100',
+  it('fails bootstrap when vNext runtime client construction is rejected', async () => {
+    createNimiClientMock.mockImplementation(() => {
+      throw new Error('local first-party Runtime account caller registration rejected: 100');
     });
 
     await runParentOSBootstrap();
@@ -340,18 +356,14 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     expect(dbInitMock).not.toHaveBeenCalled();
   });
 
-  it('retries runtime client registration after a failed bootstrap', async () => {
-    createNimiAppRuntimePlatformClientMock
-      .mockResolvedValueOnce({
-        status: 'action-required',
-        message: 'local first-party Runtime account caller registration rejected: 100',
+  it('retries vNext runtime client construction after a failed bootstrap', async () => {
+    createNimiClientMock
+      .mockImplementationOnce(() => {
+        throw new Error('local first-party Runtime account caller registration rejected: 100');
       })
-      .mockImplementationOnce(async () => {
-        currentPlatformClientMock = buildPlatformClientMock();
-        return {
-          status: 'ready',
-          client: currentPlatformClientMock,
-        };
+      .mockImplementationOnce(() => {
+        currentNimiClientMock = buildPlatformClientMock();
+        return currentNimiClientMock;
       });
     getAccountSessionStatusMock.mockResolvedValue({
       state: AccountSessionState.ANONYMOUS,
@@ -363,12 +375,12 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     expect(useAppStore.getState().bootstrapReady).toBe(false);
     expect(getAccountSessionStatusMock).not.toHaveBeenCalled();
     expect(getAppStorageMock).not.toHaveBeenCalled();
-    expect(createNimiAppRuntimePlatformClientMock).toHaveBeenCalledTimes(1);
+    expect(createNimiClientMock).toHaveBeenCalledTimes(1);
 
     await ensureParentOSRuntimeClientReady();
 
     expect(useAppStore.getState().bootstrapReady).toBe(true);
-    expect(createNimiAppRuntimePlatformClientMock).toHaveBeenCalledTimes(2);
+    expect(createNimiClientMock).toHaveBeenCalledTimes(2);
     expect(getAccountSessionStatusMock).toHaveBeenCalledWith({
       caller: parentosRuntimeAccountCaller,
     });

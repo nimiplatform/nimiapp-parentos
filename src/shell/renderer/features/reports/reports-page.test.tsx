@@ -128,10 +128,6 @@ const {
   getTannerAssessmentsMock: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock('@nimiplatform/sdk', () => ({
-  getPlatformClient: () => ({ runtime: null }),
-}));
-
 vi.mock('../../bridge/sqlite-bridge.js', () => ({
   getGrowthReports: getGrowthReportsMock,
   insertGrowthReport: insertGrowthReportMock,

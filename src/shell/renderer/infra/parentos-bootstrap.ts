@@ -1,16 +1,15 @@
 import {
-  clearPlatformClient,
-  createNimiAppRuntimePlatformClient,
-  getPlatformClient,
-  type PlatformClient,
+  createNimiClient,
+  createRealmFetchTransport,
+  type NimiClient,
 } from '@nimiplatform/sdk';
 import {
   AccountCallerMode,
   AccountSessionState,
   type AccountCaller,
   type AccountProjection,
-} from '@nimiplatform/sdk/runtime/browser';
-import type { Runtime, RuntimeAppStorageProjection } from '@nimiplatform/sdk/runtime';
+} from '@nimiplatform/sdk/runtime/generated';
+import type { NimiRuntimeAppStorageProjection, Runtime } from '@nimiplatform/sdk/runtime';
 import { getParentOSRuntimeDefaults } from '../bridge/index.js';
 import { useAppStore } from '../app-shell/app-store.js';
 import {
@@ -26,6 +25,7 @@ import { mapChildRow } from '../bridge/mappers.js';
 import { loadPersistedParentosAIConfig } from '../features/settings/parentos-ai-config.js';
 import { ensureParentosAIConfigFromFirstRunEvidence } from '../features/settings/parentos-ai-config-bootstrap.js';
 import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
+import { hasParentOSNimiClient, setParentOSNimiClient } from './parentos-nimi-client.js';
 
 // PO-SHELL-001 / PO-SHELL-008: ParentOS is admitted as an active local
 // first-party Runtime account/session consumer. The caller is fixed; runtime
@@ -79,7 +79,7 @@ export async function loadParentOSRuntimeAccountUser(
 }
 
 function requireParentOSAppStorageProjection(
-  projection: RuntimeAppStorageProjection,
+  projection: NimiRuntimeAppStorageProjection,
 ): ParentOSAppStorageProjectionInput {
   if (projection.appId !== PARENTOS_RUNTIME_APP_ID) {
     throw new Error(
@@ -146,24 +146,15 @@ export async function ensureParentOSBootstrapReady(): Promise<void> {
   }
 }
 
-function hasParentOSPlatformClient(): boolean {
-  try {
-    getPlatformClient();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export async function ensureParentOSRuntimeClientReady(): Promise<void> {
   await ensureParentOSBootstrapReady();
-  if (hasParentOSPlatformClient()) {
+  if (hasParentOSNimiClient()) {
     return;
   }
 
   await runParentOSBootstrap({ force: true });
-  if (!hasParentOSPlatformClient()) {
-    throw new Error('ParentOS runtime platform client is unavailable after bootstrap retry');
+  if (!hasParentOSNimiClient()) {
+    throw new Error('ParentOS Nimi client is unavailable after bootstrap retry');
   }
 }
 
@@ -218,33 +209,34 @@ export function syncParentOSLocalDataScope(subjectUserId?: string | null): Promi
   return localDataSyncPromise;
 }
 
-async function buildParentOSPlatformClient(realmBaseUrl: string): Promise<PlatformClient> {
+async function buildParentOSNimiClient(realmBaseUrl: string): Promise<NimiClient> {
   // PO-SHELL-008 / spec K-ACCSVC-008: type-level rejection of any app-owned
   // token surface. Runtime is the sole owner of access/refresh token custody.
-  const projection = await createNimiAppRuntimePlatformClient({
-    mode: 'local-first-party',
+  const client = createNimiClient({
     appId: PARENTOS_RUNTIME_APP_ID,
-    developerRegistration: import.meta.env.DEV === true,
-    realmBaseUrl,
-    runtimeOptions: {
-      protectedAccess: {
-        autoIssueForAi: true,
+    runtime: {
+      appId: PARENTOS_RUNTIME_APP_ID,
+      metadata: {
+        callerId: PARENTOS_RUNTIME_APP_ID,
+        surfaceId: 'parentos.advisor',
+      },
+      transport: {
+        type: 'tauri-ipc',
+        commandNamespace: 'runtime_bridge',
+        eventNamespace: 'runtime_bridge',
       },
     },
-    runtimeTransport: {
-      type: 'tauri-ipc',
-      commandNamespace: 'runtime_bridge',
-      eventNamespace: 'runtime_bridge',
+    realm: {
+      transport: createRealmFetchTransport({
+        baseUrl: realmBaseUrl,
+        credentials: 'include',
+      }),
     },
-    runtimeDefaults: {
-      callerId: PARENTOS_RUNTIME_APP_ID,
-      surfaceId: 'parentos.advisor',
-    },
+    app: false,
+    permissions: false,
   });
-  if (projection.status !== 'ready') {
-    throw new Error(projection.message);
-  }
-  return projection.client;
+  await client.runtime.ready();
+  return client;
 }
 
 async function doRunParentOSBootstrap(): Promise<void> {
@@ -259,9 +251,10 @@ async function doRunParentOSBootstrap(): Promise<void> {
     // Step 2: Construct and register the local-first-party-runtime platform
     // client. The SDK helper type-rejects accessToken / refreshToken /
     // sessionStore inputs.
-    clearPlatformClient();
-    const platformClient = await buildParentOSPlatformClient(runtimeDefaults.realm.realmBaseUrl);
-    const runtime = platformClient.runtime;
+    setParentOSNimiClient(null);
+    const client = await buildParentOSNimiClient(runtimeDefaults.realm.realmBaseUrl);
+    setParentOSNimiClient(client);
+    const runtime = client.runtime;
 
     // Step 3: Prepare Nimi Data app storage after Runtime has admitted
     // ai.nimi.apps.parentos. This also grants the Runtime-projected durable data
@@ -298,7 +291,7 @@ async function doRunParentOSBootstrap(): Promise<void> {
     try {
       await runtime.ready();
       const aiConfigInit = await ensureParentosAIConfigFromFirstRunEvidence({
-        platformClient,
+        client,
       });
       if (aiConfigInit.outcome === 'not-initialized') {
         logRendererEvent({
@@ -326,7 +319,7 @@ async function doRunParentOSBootstrap(): Promise<void> {
     store.setBootstrapError(null);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    clearPlatformClient();
+    setParentOSNimiClient(null);
     store.clearAuthSession();
     logRendererEvent({
       level: 'error',

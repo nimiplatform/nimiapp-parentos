@@ -28,26 +28,20 @@ describe('parentos-ai-config persistence', () => {
     const parsed = parsePersistedParentosAIConfig(JSON.stringify({
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
-        selectedBindings: {
+        targetRefs: {
           'text.generate': {
-            source: 'cloud',
+            kind: 'cloud-connector',
             connectorId: 'connector-1',
-            model: 'gpt-5.4',
+            providerModelId: 'gpt-5.4',
             provider: 'openai',
           },
           'text.generate.vision': {
-            source: 'cloud',
+            kind: 'cloud-connector',
             connectorId: 'connector-vision',
-            model: 'gpt-5.4-vision',
+            providerModelId: 'gpt-5.4-vision',
             provider: 'openai',
           },
           'audio.transcribe': null,
-        },
-        localProfileRefs: {
-          'text.generate': {
-            targetId: 'core:runtime',
-            profileId: 'profile-1',
-          },
         },
         selectedParams: {
           'text.generate': {
@@ -65,26 +59,19 @@ describe('parentos-ai-config persistence', () => {
     expect(parsed).toEqual({
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
-        selectedBindings: {
+        targetRefs: {
           'text.generate': expect.objectContaining({
-            source: 'cloud',
+            kind: 'cloud-connector',
             connectorId: 'connector-1',
-            model: 'gpt-5.4',
+            providerModelId: 'gpt-5.4',
             provider: 'openai',
           }),
           'text.generate.vision': expect.objectContaining({
-            source: 'cloud',
+            kind: 'cloud-connector',
             connectorId: 'connector-vision',
-            model: 'gpt-5.4-vision',
+            providerModelId: 'gpt-5.4-vision',
             provider: 'openai',
           }),
-          'audio.transcribe': null,
-        },
-        localProfileRefs: {
-          'text.generate': {
-            targetId: 'core:runtime',
-            profileId: 'profile-1',
-          },
         },
         selectedParams: {
           'text.generate': {
@@ -108,8 +95,7 @@ describe('parentos-ai-config persistence', () => {
         surfaceId: 'chat',
       },
       capabilities: {
-        selectedBindings: {},
-        localProfileRefs: {},
+        targetRefs: {},
         selectedParams: {},
       },
       profileOrigin: null,
@@ -122,19 +108,17 @@ describe('parentos-ai-config persistence', () => {
     await savePersistedParentosAIConfig({
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
-        selectedBindings: {
+        targetRefs: {
           'text.generate.vision': {
-            source: 'cloud',
+            kind: 'cloud-connector',
             connectorId: 'openai-vision',
-            model: 'gpt-5.4-vision',
+            providerModelId: 'gpt-5.4-vision',
           },
           'audio.transcribe': {
-            source: 'local',
-            connectorId: '',
-            model: 'whisper-large-v3',
+            kind: 'local-runtime',
+            targetId: 'whisper-large-v3',
           },
         },
-        localProfileRefs: {},
         selectedParams: {},
       },
       profileOrigin: null,
@@ -146,19 +130,17 @@ describe('parentos-ai-config persistence', () => {
       JSON.stringify({
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
-          selectedBindings: {
+          targetRefs: {
             'text.generate.vision': {
-              source: 'cloud',
+              kind: 'cloud-connector',
               connectorId: 'openai-vision',
-              model: 'gpt-5.4-vision',
+              providerModelId: 'gpt-5.4-vision',
             },
             'audio.transcribe': {
-              source: 'local',
-              connectorId: '',
-              model: 'whisper-large-v3',
+              kind: 'local-runtime',
+              targetId: 'whisper-large-v3',
             },
           },
-          localProfileRefs: {},
           selectedParams: {},
         },
         profileOrigin: null,
@@ -171,23 +153,22 @@ describe('parentos-ai-config persistence', () => {
     const parsed = parsePersistedParentosAIConfig(JSON.stringify({
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
-        selectedBindings: {
+        targetRefs: {
           'text.generate': {
-            source: 'cloud',
+            kind: 'cloud-connector',
             connectorId: 'openai-main',
-            model: 'gpt-5.4',
+            providerModelId: 'gpt-5.4',
           },
         },
-        localProfileRefs: {},
         selectedParams: {},
       },
       profileOrigin: null,
     }));
 
-    expect(parsed?.capabilities.selectedBindings['text.generate']).toEqual({
-      source: 'cloud',
+    expect(parsed?.capabilities.targetRefs['text.generate']).toEqual({
+      kind: 'cloud-connector',
       connectorId: 'openai-main',
-      model: 'gpt-5.4',
+      providerModelId: 'gpt-5.4',
     });
   });
 });

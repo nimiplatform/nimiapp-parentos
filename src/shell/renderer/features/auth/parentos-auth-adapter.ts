@@ -1,5 +1,4 @@
 import type { AuthPlatformAdapter } from '@nimiplatform/kit/auth';
-import { getPlatformClient } from '@nimiplatform/sdk';
 import { parentosTauriOAuthBridge } from '../../bridge/index.js';
 import {
   ensureParentOSRuntimeClientReady,
@@ -7,6 +6,7 @@ import {
   parentosRuntimeAccountCaller,
   type ParentOSAuthUser,
 } from '../../infra/parentos-bootstrap.js';
+import { getParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 
 const PARENTOS_EMBEDDED_AUTH_UNSUPPORTED =
   'Embedded auth flow is not supported in ParentOS desktop-browser mode.';
@@ -21,12 +21,12 @@ function unsupported<T>(): Promise<T> {
 
 export async function loadCurrentUser(): Promise<ParentOSAuthUser | null> {
   await ensureParentOSRuntimeClientReady();
-  return loadParentOSRuntimeAccountUser(getPlatformClient().runtime);
+  return loadParentOSRuntimeAccountUser(getParentOSNimiClient().runtime);
 }
 
 export async function logoutParentOSRuntimeAccount(): Promise<void> {
   await ensureParentOSRuntimeClientReady();
-  await getPlatformClient().runtime.account.logout({
+  await getParentOSNimiClient().runtime.account.logout({
     caller: parentosRuntimeAccountCaller,
     reason: 'parentos_logout',
   });
@@ -80,7 +80,7 @@ export function createParentOSRuntimeAccountBrowserBroker() {
   return {
     begin: async (input: { callbackUrl: string; baseUrl?: string; timeoutMs: number }) => {
       await ensureParentOSRuntimeClientReady();
-      const response = await getPlatformClient().runtime.account.beginLogin({
+      const response = await getParentOSNimiClient().runtime.account.beginLogin({
         caller: parentosRuntimeAccountCaller,
         redirectUri: input.callbackUrl,
         callbackOrigin: new URL(input.callbackUrl).origin,
@@ -117,7 +117,7 @@ export function createParentOSRuntimeAccountBrowserBroker() {
       await ensureParentOSRuntimeClientReady();
       // R-OAUTH / K-ACCSVC-008: code-only proof envelope; runtime owns the
       // token exchange and refresh-token custody.
-      const response = await getPlatformClient().runtime.account.completeLogin({
+      const response = await getParentOSNimiClient().runtime.account.completeLogin({
         caller: parentosRuntimeAccountCaller,
         loginAttemptId: input.loginAttemptId,
         code: input.code,

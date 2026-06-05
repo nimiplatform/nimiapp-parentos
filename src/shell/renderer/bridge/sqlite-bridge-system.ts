@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { RuntimeAppStorageProjection } from '@nimiplatform/sdk/runtime';
+import type { NimiRuntimeAppStorageProjection } from '@nimiplatform/sdk/runtime';
 
 export type ParentOSAppStorageProjectionInput = Pick<
-  RuntimeAppStorageProjection,
+  NimiRuntimeAppStorageProjection,
   'appId' | 'state' | 'storagePolicyRef' | 'durableDataRoot' | 'cacheRoot' | 'tempRoot'
 >;
 

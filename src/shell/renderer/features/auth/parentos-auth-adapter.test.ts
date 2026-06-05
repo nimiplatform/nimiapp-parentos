@@ -20,7 +20,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AccountCallerMode,
   AccountSessionState,
-} from '@nimiplatform/sdk/runtime/browser';
+} from '@nimiplatform/sdk/runtime/generated';
 
 const mockGetAccountSessionStatus = vi.fn();
 const mockBeginLogin = vi.fn();
@@ -33,15 +33,17 @@ vi.mock('../../bridge/index.js', () => ({
 }));
 
 vi.mock('../../infra/parentos-bootstrap.js', async () => {
-  const actual = await import('../../infra/parentos-bootstrap.js');
+  const actual = await vi.importActual<typeof import('../../infra/parentos-bootstrap.js')>(
+    '../../infra/parentos-bootstrap.js',
+  );
   return {
     ...actual,
     ensureParentOSRuntimeClientReady: mockEnsureRuntimeClient,
   };
 });
 
-vi.mock('@nimiplatform/sdk', () => ({
-  getPlatformClient: () => ({
+vi.mock('../../infra/parentos-nimi-client.js', () => ({
+  getParentOSNimiClient: () => ({
     runtime: {
       account: {
         getAccountSessionStatus: mockGetAccountSessionStatus,

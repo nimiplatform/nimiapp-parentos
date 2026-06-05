@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   RoutePolicy,
   ScenarioType,
-} from '@nimiplatform/sdk/runtime';
+} from '@nimiplatform/sdk/runtime/generated';
 import { PARENTOS_AI_SCOPE_REF, createEmptyParentosAIConfig } from './parentos-ai-config.js';
 import { ensureParentosAIConfigFromFirstRunEvidence } from './parentos-ai-config-bootstrap.js';
 
@@ -66,10 +66,10 @@ function verifiedFirstRunEvidenceRef() {
   };
 }
 
-function firstRunReadyPlatformClient() {
+function firstRunReadyNimiClient() {
   return {
     runtime: {
-      local: {
+      generated: {
         getProductControlRecord: async () => ({
           json: JSON.stringify({
             path: 'D:\\nimi\\product-control.json',
@@ -116,7 +116,7 @@ describe('parentos-ai-config-bootstrap', () => {
   it('initializes ParentOS text.generate and audio.transcribe from verified first-run evidence', async () => {
     let savedConfig = null as ReturnType<typeof createEmptyParentosAIConfig> | null;
     const result = await ensureParentosAIConfigFromFirstRunEvidence({
-      platformClient: firstRunReadyPlatformClient() as never,
+      client: firstRunReadyNimiClient() as never,
       loadConfig: () => createEmptyParentosAIConfig(),
       saveConfig: (next) => {
         savedConfig = next;
@@ -130,18 +130,18 @@ describe('parentos-ai-config-bootstrap', () => {
       'audio.transcribe',
     ]);
     expect(savedConfig?.scopeRef).toEqual(PARENTOS_AI_SCOPE_REF);
-    expect(savedConfig?.capabilities.selectedBindings['text.generate']).toEqual(expect.objectContaining({
-      source: 'local',
-      model: 'asset:text',
-      engine: 'llama.cpp.cpu',
-      runtimeExecutionEvidenceRef: 'execution_evidence_ready',
-    }));
-    expect(savedConfig?.capabilities.selectedBindings['audio.transcribe']).toEqual(expect.objectContaining({
-      source: 'local',
-      model: 'asset:stt',
-      engine: 'speech.qwen3-asr.python',
-      runtimeExecutionEvidenceRef: 'execution_evidence_ready',
-    }));
+    expect(savedConfig?.capabilities.targetRefs['text.generate']).toEqual({
+      kind: 'local-runtime',
+      targetId: 'local',
+      profileId: 'runtime-baseline:ready',
+      readinessRef: 'execution_evidence_ready',
+    });
+    expect(savedConfig?.capabilities.targetRefs['audio.transcribe']).toEqual({
+      kind: 'local-runtime',
+      targetId: 'speech',
+      profileId: 'runtime-baseline:ready',
+      readinessRef: 'execution_evidence_ready',
+    });
   });
 
   it('does not overwrite existing ParentOS first-run bindings', async () => {
@@ -150,28 +150,26 @@ describe('parentos-ai-config-bootstrap', () => {
     const existing = {
       ...createEmptyParentosAIConfig(),
       capabilities: {
-        selectedBindings: {
+        targetRefs: {
           'text.generate': {
-            source: 'cloud',
+            kind: 'cloud-connector',
             connectorId: 'connector-openai',
-            model: 'gpt-runtime',
             provider: 'openai',
+            providerModelId: 'gpt-runtime',
           },
           'audio.transcribe': {
-            source: 'local',
-            connectorId: '',
-            model: 'existing-stt',
+            kind: 'local-runtime',
+            targetId: 'existing-stt',
           },
         },
-        localProfileRefs: {},
         selectedParams: {},
       },
     } satisfies ReturnType<typeof createEmptyParentosAIConfig>;
 
     const result = await ensureParentosAIConfigFromFirstRunEvidence({
-      platformClient: {
+      client: {
         runtime: {
-          local: {
+          generated: {
             getProductControlRecord: async () => {
               productControlRead = true;
               throw new Error('should not read product control');
@@ -192,6 +190,11 @@ describe('parentos-ai-config-bootstrap', () => {
     }
     expect(productControlRead).toBe(false);
     expect(saved).toBe(false);
-    expect(result.config.capabilities.selectedBindings['text.generate']?.model).toBe('gpt-runtime');
+    expect(result.config.capabilities.targetRefs['text.generate']).toEqual({
+      kind: 'cloud-connector',
+      connectorId: 'connector-openai',
+      provider: 'openai',
+      providerModelId: 'gpt-runtime',
+    });
   });
 });

@@ -1,12 +1,9 @@
-import { getPlatformClient } from '@nimiplatform/sdk';
-import type { TextMessage } from '@nimiplatform/sdk/runtime';
+import type { NimiMessage } from '@nimiplatform/sdk/contracts';
 import type { ObservationDimension } from '../../knowledge-base/index.js';
 import {
-  buildParentosRuntimeMetadata,
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  resolveParentosTextRuntimeConfig,
+  runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
+import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 
 export interface JournalTagSuggestion {
   dimensionId: string | null;
@@ -71,7 +68,7 @@ function buildPrompt(
 function buildInput(
   draftText: string,
   candidateDimensions: ReturnType<typeof normalizeCandidateDimensions>,
-): TextMessage[] {
+): NimiMessage[] {
   return [
     {
       role: 'user',
@@ -146,12 +143,7 @@ export function parseJournalTagSuggestion(
 }
 
 export async function hasJournalTaggingRuntime() {
-  try {
-    const client = getPlatformClient();
-    return Boolean(client.runtime?.appId && client.runtime?.ai?.text?.generate);
-  } catch {
-    return false;
-  }
+  return hasParentOSNimiClient();
 }
 
 export async function suggestJournalTags(input: {
@@ -161,22 +153,14 @@ export async function suggestJournalTags(input: {
   const draftText = normalizeDraftText(input.draftText);
   const candidateDimensions = normalizeCandidateDimensions(input.candidateDimensions);
 
-  const client = getPlatformClient();
-  if (!client.runtime?.ai?.text?.generate) {
-    throw new Error('ParentOS journal AI tagging runtime is unavailable');
+  const output = await runParentosTextGenerate({
+    surfaceId: 'parentos.journal.ai-tagging',
+    messages: buildInput(draftText, candidateDimensions),
+    defaults: { temperature: 0, maxTokens: 1024 },
+  });
+  if (!output.ok) {
+    throw new Error(output.error.message);
   }
-
-  const aiParams = await resolveParentosTextRuntimeConfig('parentos.journal.ai-tagging', { temperature: 0, maxTokens: 1024 });
-  await ensureParentosLocalRuntimeReady({
-    route: aiParams.route,
-    localModelId: aiParams.localModelId,
-    timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  });
-  const output = await client.runtime.ai.text.generate({
-    ...aiParams,
-    input: buildInput(draftText, candidateDimensions),
-    metadata: buildParentosRuntimeMetadata('parentos.journal.ai-tagging'),
-  });
 
   return parseJournalTagSuggestion(output.text, input.candidateDimensions);
 }

@@ -1,145 +1,88 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAppStore } from '../app-shell/app-store.js';
+import {
+  ConnectorKind,
+  ConnectorStatus,
+  LocalAssetKind,
+  LocalAssetStatus,
+} from '@nimiplatform/sdk/runtime/generated';
 
 const listLocalAssetsMock = vi.fn();
 const listConnectorsMock = vi.fn();
 const listConnectorModelsMock = vi.fn();
-const logRendererEventMock = vi.fn();
+const getParentOSNimiClientMock = vi.fn();
 
-vi.mock('@nimiplatform/sdk', () => ({
-  getPlatformClient: () => ({
-    runtime: {
-      local: {
-        listLocalAssets: listLocalAssetsMock,
-      },
-    },
-    domains: {
-      runtimeAdmin: {
-        listConnectors: listConnectorsMock,
-        listConnectorModels: listConnectorModelsMock,
-      },
-    },
-  }),
+vi.mock('./parentos-nimi-client.js', () => ({
+  getParentOSNimiClient: () => getParentOSNimiClientMock(),
 }));
 
-vi.mock('./telemetry/renderer-log.js', () => ({
-  describeError: (error: unknown) => ({ message: error instanceof Error ? error.message : String(error || '') }),
-  logRendererEvent: logRendererEventMock,
-}));
-
-const { loadParentosRuntimeRouteOptions } = await import('./parentos-runtime-route-options.js');
+const {
+  loadParentosRuntimeRouteOptions,
+  normalizeParentosRuntimeRouteCapability,
+} = await import('./parentos-runtime-route-options.js');
 
 describe('parentos-runtime-route-options', () => {
   beforeEach(() => {
     listLocalAssetsMock.mockReset();
     listConnectorsMock.mockReset();
     listConnectorModelsMock.mockReset();
-    logRendererEventMock.mockReset();
+    getParentOSNimiClientMock.mockReset();
     listLocalAssetsMock.mockResolvedValue({
       assets: [],
       nextPageToken: '',
     });
     listConnectorsMock.mockResolvedValue({
       connectors: [],
+      nextPageToken: '',
     });
     listConnectorModelsMock.mockResolvedValue({
       models: [],
       nextPageToken: '',
     });
-    useAppStore.setState({
-      runtimeDefaults: {
-        webBaseUrl: '',
-        realm: {
-          realmBaseUrl: 'http://localhost:3002',
-          realtimeUrl: '',
-          accessToken: '',
-          jwksUrl: 'http://localhost:3002/api/auth/jwks',
-          revocationUrl: 'http://localhost:3002/api/auth/sessions/introspect',
-          jwtIssuer: 'http://localhost:3002',
-          jwtAudience: 'nimi-runtime',
+    getParentOSNimiClientMock.mockReturnValue({
+      runtime: {
+        local: {
+          listLocalAssets: listLocalAssetsMock,
         },
-        runtime: {
-          targetType: '',
-          targetAccountId: '',
-          agentId: '',
-          worldId: '',
-          userConfirmedUpload: false,
+        connectors: {
+          listConnectors: listConnectorsMock,
+          listConnectorModels: listConnectorModelsMock,
         },
       },
-      aiConfig: null,
     });
   });
 
-  it('builds a text.generate snapshot from authoritative runtime/local sources', async () => {
-    useAppStore.setState({
-      aiConfig: {
-        scopeRef: { kind: 'app', ownerId: 'ai.nimi.apps.parentos', surfaceId: 'settings.ai' },
-        capabilities: {
-          selectedBindings: {
-            'text.generate': {
-              source: 'local',
-              connectorId: '',
-              model: 'qwen3',
-            },
-          },
-          localProfileRefs: {},
-          selectedParams: {},
-        },
-        profileOrigin: null,
-      },
-    });
+  it('normalizes ParentOS capability aliases before delegating to SDK host options', async () => {
     listLocalAssetsMock.mockResolvedValue({
       assets: [{
         localAssetId: 'local-qwen',
         assetId: 'qwen3',
         engine: 'llama',
-        status: 'active',
+        status: LocalAssetStatus.ACTIVE,
+        kind: LocalAssetKind.CHAT,
         endpoint: 'http://127.0.0.1:1234/v1',
-        capabilities: ['chat'],
+        capabilities: [],
       }],
       nextPageToken: '',
     });
-    const snapshot = await loadParentosRuntimeRouteOptions('text.generate');
 
-    expect(snapshot).toEqual({
-      capability: 'text.generate',
-      selected: {
-        source: 'local',
-        connectorId: '',
-        model: 'qwen3',
-        modelId: 'qwen3',
-        localModelId: 'local-qwen',
-        provider: 'llama',
-        engine: 'llama',
-        endpoint: 'http://127.0.0.1:1234/v1',
-        goRuntimeLocalModelId: 'local-qwen',
-        goRuntimeStatus: 'active',
-      },
-      local: {
-        defaultEndpoint: 'http://127.0.0.1:1234/v1',
-        models: [{
-          localModelId: 'local-qwen',
-          label: 'qwen3',
-          engine: 'llama',
-          model: 'qwen3',
-          modelId: 'qwen3',
-          provider: 'llama',
-          endpoint: 'http://127.0.0.1:1234/v1',
-          status: 'active',
-          goRuntimeLocalModelId: 'local-qwen',
-          goRuntimeStatus: 'active',
-          capabilities: ['text.generate'],
-        }],
-      },
-      connectors: [],
-    });
+    const snapshot = await loadParentosRuntimeRouteOptions('chat');
+
+    expect(snapshot.capability).toBe('text.generate');
+    expect(snapshot.selected).toBeNull();
+    expect(snapshot.local.models).toEqual([expect.objectContaining({
+      localModelId: 'local-qwen',
+      model: 'qwen3',
+      engine: 'llama',
+      status: 'active',
+      capabilities: ['text.generate'],
+    })]);
+    expect(listLocalAssetsMock).toHaveBeenCalledWith(expect.objectContaining({
+      statusFilter: LocalAssetStatus.UNSPECIFIED,
+      kindFilter: LocalAssetKind.UNSPECIFIED,
+    }), undefined);
   });
 
-  it('does not fabricate options when runtime exposes no matching assets or connectors', async () => {
-    listLocalAssetsMock.mockResolvedValue({
-      assets: [],
-      nextPageToken: '',
-    });
+  it('does not fabricate options when Runtime exposes no matching assets or connectors', async () => {
     const snapshot = await loadParentosRuntimeRouteOptions('audio.transcribe');
 
     expect(snapshot).toEqual({
@@ -153,63 +96,15 @@ describe('parentos-runtime-route-options', () => {
     });
   });
 
-  it('maps numeric local asset kinds to capability-compatible local models', async () => {
-    listLocalAssetsMock.mockResolvedValue({
-      assets: [{
-        localAssetId: 'local-gemma',
-        assetId: 'gemma-4-26b-a4b-it-q8_0',
-        logicalModelId: 'gemma-4-26B-A4B-it-Q8_0',
-        engine: 'llama',
-        status: 2,
-        kind: 1,
-        capabilities: [],
-      }],
-      nextPageToken: '',
-    });
-    const snapshot = await loadParentosRuntimeRouteOptions('text.generate');
-
-    expect(snapshot.local.models).toEqual([{
-      localModelId: 'local-gemma',
-      label: 'gemma-4-26b-a4b-it-q8_0',
-      engine: 'llama',
-      model: 'gemma-4-26b-a4b-it-q8_0',
-      modelId: 'gemma-4-26b-a4b-it-q8_0',
-      provider: 'llama',
-      providerHints: undefined,
-      endpoint: undefined,
-      status: 'active',
-      goRuntimeLocalModelId: 'local-gemma',
-      goRuntimeStatus: 'active',
-      capabilities: ['text.generate'],
-    }]);
-    expect(snapshot.selected).toBeNull();
-  });
-
-  it('includes cloud connector options and preserves selected cloud bindings', async () => {
-    useAppStore.setState({
-      aiConfig: {
-        scopeRef: { kind: 'app', ownerId: 'ai.nimi.apps.parentos', surfaceId: 'settings.ai' },
-        capabilities: {
-          selectedBindings: {
-            'text.generate': {
-              source: 'cloud',
-              connectorId: 'openai-main',
-              model: 'gpt-5.4',
-            },
-          },
-          localProfileRefs: {},
-          selectedParams: {},
-        },
-        profileOrigin: null,
-      },
-    });
+  it('includes cloud connector models through the vNext Runtime connector boundary', async () => {
     listConnectorsMock.mockResolvedValue({
       connectors: [{
         connectorId: 'openai-main',
         label: 'OpenAI',
         provider: 'openai',
-        kind: 2,
+        kind: ConnectorKind.REMOTE_MANAGED,
       }],
+      nextPageToken: '',
     });
     listConnectorModelsMock.mockResolvedValue({
       models: [{
@@ -222,13 +117,15 @@ describe('parentos-runtime-route-options', () => {
 
     const snapshot = await loadParentosRuntimeRouteOptions('text.generate');
 
-    expect(snapshot.selected).toEqual({
-      source: 'cloud',
+    expect(listConnectorsMock).toHaveBeenCalledWith(expect.objectContaining({
+      kindFilter: ConnectorKind.REMOTE_MANAGED,
+      statusFilter: ConnectorStatus.ACTIVE,
+    }), undefined);
+    expect(listConnectorModelsMock).toHaveBeenCalledWith(expect.objectContaining({
       connectorId: 'openai-main',
-      model: 'gpt-5.4',
-      provider: 'openai',
-    });
-    expect(snapshot.connectors).toEqual([{
+      forceRefresh: false,
+    }), undefined);
+    expect(snapshot.connectors).toEqual([expect.objectContaining({
       id: 'openai-main',
       label: 'OpenAI',
       provider: 'openai',
@@ -236,107 +133,36 @@ describe('parentos-runtime-route-options', () => {
       modelCapabilities: {
         'gpt-5.4': ['text.generate'],
       },
-      modelProfiles: [],
-    }]);
+    })]);
   });
 
-  it('loads vision-capable local and cloud options under the canonical vision route', async () => {
+  it('keeps the vision route as the canonical text.generate.vision capability', async () => {
+    expect(normalizeParentosRuntimeRouteCapability('vision')).toBe('text.generate.vision');
     listLocalAssetsMock.mockResolvedValue({
       assets: [{
         localAssetId: 'local-gemma-vision',
         assetId: 'gemma-4-vision',
-        logicalModelId: 'gemma-4-vision',
         engine: 'llama',
-        status: 'active',
-        kind: 1,
+        status: LocalAssetStatus.ACTIVE,
+        kind: LocalAssetKind.CHAT,
         capabilities: ['text.generate.vision'],
       }],
       nextPageToken: '',
     });
-    listConnectorsMock.mockResolvedValue({
-      connectors: [{
-        connectorId: 'openai-main',
-        label: 'OpenAI',
-        provider: 'openai',
-        kind: 2,
-      }],
-    });
-    listConnectorModelsMock.mockResolvedValue({
-      models: [{
-        available: true,
-        modelId: 'gpt-5.4',
-        capabilities: ['vision'],
-      }],
-      nextPageToken: '',
-    });
 
-    const snapshot = await loadParentosRuntimeRouteOptions('text.generate.vision');
+    const snapshot = await loadParentosRuntimeRouteOptions('vision');
 
     expect(snapshot.capability).toBe('text.generate.vision');
-    expect(snapshot.local.models[0]?.capabilities).toEqual(['text.generate.vision']);
-    expect(snapshot.connectors[0]?.modelCapabilities).toEqual({
-      'gpt-5.4': ['vision'],
-    });
+    expect(snapshot.local.models).toEqual([expect.objectContaining({
+      localModelId: 'local-gemma-vision',
+      model: 'gemma-4-vision',
+      capabilities: ['text.generate.vision'],
+    })]);
   });
 
-  it('loads a dedicated vision snapshot from the standalone OCR binding', async () => {
-    useAppStore.setState({
-      aiConfig: {
-        scopeRef: { kind: 'app', ownerId: 'ai.nimi.apps.parentos', surfaceId: 'settings.ai' },
-        capabilities: {
-          selectedBindings: {
-            'text.generate.vision': {
-              source: 'cloud',
-              connectorId: 'vision-main',
-              model: 'gpt-5.4-vision',
-            },
-          },
-          localProfileRefs: {},
-          selectedParams: {},
-        },
-        profileOrigin: null,
-      },
-    });
-    listLocalAssetsMock.mockResolvedValue({
-      assets: [{
-        localAssetId: 'local-gemma-vision',
-        assetId: 'gemma-4-vision',
-        logicalModelId: 'gemma-4-vision',
-        engine: 'llama',
-        status: 'active',
-        kind: 1,
-        capabilities: ['text.generate.vision'],
-      }],
-      nextPageToken: '',
-    });
-    listConnectorsMock.mockResolvedValue({
-      connectors: [{
-        connectorId: 'vision-main',
-        label: 'OpenAI',
-        provider: 'openai',
-        kind: 2,
-      }],
-    });
-    listConnectorModelsMock.mockResolvedValue({
-      models: [{
-        available: true,
-        modelId: 'gpt-5.4-vision',
-        capabilities: ['vision'],
-      }],
-      nextPageToken: '',
-    });
-
-    const snapshot = await loadParentosRuntimeRouteOptions('text.generate.vision');
-
-    expect(snapshot.capability).toBe('text.generate.vision');
-    expect(snapshot.selected).toEqual({
-      source: 'cloud',
-      connectorId: 'vision-main',
-      model: 'gpt-5.4-vision',
-      provider: 'openai',
-    });
-    expect(snapshot.local.models).toHaveLength(1);
-    expect(snapshot.local.models[0]?.capabilities).toEqual(['text.generate.vision']);
-    expect(snapshot.connectors[0]?.models).toEqual(['gpt-5.4-vision']);
+  it('fails closed for unsupported ParentOS route capability tokens', () => {
+    expect(() => normalizeParentosRuntimeRouteCapability('image.generate')).toThrow(
+      'ParentOS runtime route capability is unsupported',
+    );
   });
 });

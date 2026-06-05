@@ -17,8 +17,9 @@ import {
   type ModelConfigI18nFormatter,
   type ModelConfigProjectionStatus,
 } from '@nimiplatform/kit/features/model-config';
+import { summarizeTargetRef } from '@nimiplatform/kit/core/model-config';
 import { Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
-import type { AIConfig } from '@nimiplatform/sdk/ai';
+import type { NimiAIConfig, NimiAICapabilityRequirementDeclaration } from '@nimiplatform/sdk/ai';
 import { useAppStore } from '../../app-shell/app-store.js';
 import {
   PARENTOS_AI_SCOPE_REF,
@@ -52,22 +53,35 @@ const CAPABILITY_TITLE_KEYS: Record<string, ParentosCapabilityId> = {
   'ModelConfig.capability.audioTranscribe.detail': 'audio.transcribe',
 };
 
-function bindingDisplayLabel(config: AIConfig, capabilityId: ParentosCapabilityId): string | null {
-  const binding = config.capabilities.selectedBindings?.[capabilityId] || null;
-  if (!binding) {
+function targetDisplayLabel(config: NimiAIConfig, capabilityId: ParentosCapabilityId): string | null {
+  const targetRef = config.capabilities.targetRefs?.[capabilityId] || null;
+  if (!targetRef) {
     return null;
   }
-  return String(
-    binding.modelLabel
-    || binding.model
-    || binding.modelId
-    || binding.localModelId
-    || '',
-  ).trim() || null;
+  const summary = summarizeTargetRef(targetRef);
+  return [summary.label, summary.detail].filter(Boolean).join(' · ') || null;
+}
+
+function createParentosAIRequirementDeclaration(): NimiAICapabilityRequirementDeclaration {
+  return {
+    requirementId: 'parentos.ai.capabilities',
+    scopeRef: PARENTOS_AI_SCOPE_REF,
+    requiredSlices: PARENTOS_CAPABILITIES.map((capability) => ({
+      requirementSliceId: `parentos.${capability.id}`,
+      capability: capability.routeCapability,
+      profileSliceRef: `parentos.${capability.id}`,
+      readinessPolicy: 'required',
+      runtimeDescriptor: {
+        sliceId: `parentos.${capability.id}`,
+        providerCapability: capability.routeCapability,
+      },
+    })),
+    setupProjectionPolicy: 'sdk-ai-config-setup-projection',
+  };
 }
 
 function parentosCapabilityProjection(input: {
-  config: AIConfig;
+  config: NimiAIConfig;
   capabilityId: ParentosCapabilityId;
   runtimeReady: boolean;
   runtimeDetail: string | null;
@@ -83,8 +97,8 @@ function parentosCapabilityProjection(input: {
     };
   }
 
-  const bindingLabel = bindingDisplayLabel(input.config, input.capabilityId);
-  if (!bindingLabel) {
+  const targetLabel = targetDisplayLabel(input.config, input.capabilityId);
+  if (!targetLabel) {
     return {
       supported: false,
       tone: 'attention',
@@ -99,7 +113,7 @@ function parentosCapabilityProjection(input: {
     tone: 'ready',
     badgeLabel: '已绑定',
     title: '模型已配置',
-    detail: bindingLabel,
+    detail: targetLabel,
   };
 }
 
@@ -117,7 +131,7 @@ export default function AiSettingsPage() {
   const providerCache = useMemo(() => createParentosRuntimeModelPickerProviderCache(), []);
   const [availability, setAvailability] = useState<ParentosAISettingsAvailability | null>(null);
   const [availabilityRefreshKey, setAvailabilityRefreshKey] = useState(0);
-  const [aiConfig, setAIConfig] = useState<AIConfig>(() => (
+  const [aiConfig, setAIConfig] = useState<NimiAIConfig>(() => (
     aiConfigService.aiConfig.get(PARENTOS_AI_SCOPE_REF)
   ));
 
@@ -146,7 +160,7 @@ export default function AiSettingsPage() {
   const runtimeStatusReady = runtimeReady && availability?.kind === 'ready';
   const bannerCopy = parentosAISettingsAvailabilityBannerCopy(availability);
   const configuredCount = PARENTOS_ENABLED_CAPABILITIES.filter((capabilityId) => (
-    Boolean(bindingDisplayLabel(aiConfig, capabilityId))
+    Boolean(targetDisplayLabel(aiConfig, capabilityId))
   )).length;
 
   const translateModelConfig = useMemo<ModelConfigI18nFormatter>(() => (
@@ -166,7 +180,7 @@ export default function AiSettingsPage() {
   const surface: AppModelConfigSurface = useMemo(() => ({
     scopeRef: PARENTOS_AI_SCOPE_REF,
     aiConfigService,
-    enabledCapabilities: PARENTOS_ENABLED_CAPABILITIES,
+    requirementDeclaration: createParentosAIRequirementDeclaration(),
     providerResolver: (routeCapability: string) => (
       runtimeReady ? providerCache(routeCapability) : null
     ),
@@ -178,7 +192,6 @@ export default function AiSettingsPage() {
         runtimeDetail: runtimeStatusLabel,
       })
     ),
-    runtimeReady,
     runtimeNotReadyLabel: runtimeStatusLabel,
     i18n: { t: translateModelConfig },
   }), [

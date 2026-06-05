@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { asNimiError } from '@nimiplatform/sdk/runtime';
-import {
-  assembleAppAiSessionRuntimeTextStream,
-  runAppAiTextGenerate,
-} from '@nimiplatform/sdk/ai-app';
+import type { NimiMessage } from '@nimiplatform/sdk/contracts';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useAppStore, computeAgeMonths, formatAge } from '../../app-shell/app-store.js';
 import { NEEDS_REVIEW_DOMAINS, REVIEWED_DOMAINS } from '../../knowledge-base/index.js';
@@ -31,11 +27,10 @@ import {
   type AdvisorPromptStrategy,
 } from './advisor-boundary.js';
 import {
-  buildParentosRuntimeMetadata,
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  resolveParentosTextRuntimeConfig,
+  runParentosTextGenerate,
+  streamParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
+import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { AdvisorSidebar } from './advisor-sidebar.js';
 import { AdvisorTranscript } from './advisor-transcript.js';
@@ -246,10 +241,7 @@ function shouldAppendAdvisorSources(strategy: AdvisorPromptStrategy, domains: st
   return strategy === 'reviewed-advice' && domains.length > 0;
 }
 
-function shouldRetryAdvisorWithNonStreaming(route: 'local' | 'cloud' | undefined, streamedText: string, error: unknown) {
-  if (route !== 'cloud') {
-    return false;
-  }
+function shouldRetryAdvisorWithNonStreaming(streamedText: string, error: unknown) {
   if (streamedText.trim()) {
     return false;
   }
@@ -257,15 +249,21 @@ function shouldRetryAdvisorWithNonStreaming(route: 'local' | 'cloud' | undefined
 }
 
 function buildAdvisorRuntimeFailureNote(error: unknown) {
-  const normalized = asNimiError(error, { source: 'runtime' });
-  const providerMessage = typeof normalized.details?.provider_message === 'string'
-    ? normalized.details.provider_message.trim()
+  const record = error && typeof error === 'object' ? error as {
+    message?: unknown;
+    code?: unknown;
+    reasonCode?: unknown;
+    details?: { provider_message?: unknown } | null;
+  } : null;
+  const reasonCode = String(record?.reasonCode || record?.code || 'RUNTIME_AI_FAILED').trim();
+  const providerMessage = typeof record?.details?.provider_message === 'string'
+    ? record.details.provider_message.trim()
     : '';
-  const detail = providerMessage || String(normalized.message || '').trim();
+  const detail = providerMessage || String(record?.message || error || '').trim();
   if (detail) {
-    return `补充说明：运行时响应失败（${normalized.reasonCode}：${detail}），已退回本地结构化事实。`;
+    return `补充说明：运行时响应失败（${reasonCode}：${detail}），已退回本地结构化事实。`;
   }
-  return `补充说明：运行时响应失败（${normalized.reasonCode}），已退回本地结构化事实。`;
+  return `补充说明：运行时响应失败（${reasonCode}），已退回本地结构化事实。`;
 }
 
 export default function AdvisorPage() {
@@ -424,61 +422,57 @@ export default function AdvisorPage() {
     setStreamingState('streaming');
     setStreamingContent('');
     try {
-      const { getPlatformClient } = await import('@nimiplatform/sdk');
-      const client = getPlatformClient();
-      const rt = client.runtime;
       const ac = new AbortController();
       abortRef.current = ac;
-      const aiParams = await resolveParentosTextRuntimeConfig('parentos.advisor', { temperature: 0.5, maxTokens: 4096 });
-      await ensureParentosLocalRuntimeReady({
-        route: aiParams.route,
-        localModelId: aiParams.localModelId,
-        timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-      });
-      const runtimeInput = {
-        ...aiParams,
-        input: [{
-          role: 'user' as const,
-          content: buildAdvisorRuntimeInput(strategy, params.question, domains, snapshot),
-        }],
-        system: buildAdvisorSystemPrompt(
-          activeChild.displayName,
-          params.ageMonthsAtRequest,
-          activeChild.gender,
-          activeChild.nurtureMode,
-          strategy,
-          domains,
-        ),
-        metadata: buildParentosRuntimeMetadata('parentos.advisor'),
-      };
+      const messages: NimiMessage[] = [
+        {
+          role: 'system',
+          content: [{
+            type: 'text',
+            text: buildAdvisorSystemPrompt(
+              activeChild.displayName,
+              params.ageMonthsAtRequest,
+              activeChild.gender,
+              activeChild.nurtureMode,
+              strategy,
+              domains,
+            ),
+          }],
+        },
+        {
+          role: 'user',
+          content: [{
+            type: 'text',
+            text: buildAdvisorRuntimeInput(strategy, params.question, domains, snapshot),
+          }],
+        },
+      ];
       let full = '';
       try {
-        const out = await rt.ai.text.stream({
-          ...runtimeInput,
+        const streamResult = await streamParentosTextGenerate({
+          surfaceId: 'parentos.advisor',
+          messages,
+          defaults: { temperature: 0.5, maxTokens: 4096 },
           signal: ac.signal,
-        });
-        const streamSnapshot = await assembleAppAiSessionRuntimeTextStream(out.stream, {
-          onTextDelta: (_delta, snapshot) => {
-            full = snapshot.text;
+        }, {
+          onDelta: (delta) => {
+            full += delta;
             setStreamingContent(full);
           },
         });
-        full = streamSnapshot.text;
-        if (streamSnapshot.terminal === 'failed') {
-          throw streamSnapshot.error || new Error('ParentOS advisor runtime stream failed');
-        }
+        full = streamResult.text;
       } catch (streamErr) {
-        if (!shouldRetryAdvisorWithNonStreaming(aiParams.route, full, streamErr)) {
+        if (!shouldRetryAdvisorWithNonStreaming(full, streamErr)) {
           throw streamErr;
         }
         if (ac.signal.aborted) {
           throw new DOMException('The operation was aborted.', 'AbortError');
         }
-        const generated = await runAppAiTextGenerate({
-          runtime: {
-            generateText: (request) => rt.ai.text.generate(request),
-          },
-          request: runtimeInput,
+        const generated = await runParentosTextGenerate({
+          surfaceId: 'parentos.advisor',
+          messages,
+          defaults: { temperature: 0.5, maxTokens: 4096 },
+          signal: ac.signal,
         });
         if (!generated.ok) {
           throw generated.error.cause || new Error(generated.error.message);
@@ -522,11 +516,7 @@ export default function AdvisorPage() {
 
   useEffect(() => {
     async function checkRuntime() {
-      try {
-        const { getPlatformClient } = await import('@nimiplatform/sdk');
-        const client = getPlatformClient();
-        setRuntimeAvailable(Boolean(client.runtime?.appId && client.runtime?.ai?.text?.stream));
-      } catch { setRuntimeAvailable(false); }
+      setRuntimeAvailable(hasParentOSNimiClient());
     }
     checkRuntime();
   }, []);

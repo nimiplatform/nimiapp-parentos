@@ -1,16 +1,25 @@
-import { getPlatformClient } from '@nimiplatform/sdk';
 import {
   createRuntimeRouteModelPickerProviderCache,
   type RouteModelPickerDataProvider,
-  type RuntimeRouteModelPickerClient,
 } from '@nimiplatform/kit/features/model-picker/runtime';
+import {
+  createNimiRuntimeRouteOptionsHostDeps,
+  listNimiRuntimeRouteOptionsWithHost,
+} from '@nimiplatform/sdk/runtime';
 import { normalizeParentosRuntimeRouteCapability } from '../../infra/parentos-runtime-route-options.js';
+import { getParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 
 export function createParentosRuntimeModelPickerProviderCache(): (
   capability: string,
 ) => RouteModelPickerDataProvider | null {
   const resolveRuntimeRouteModelPickerProvider = createRuntimeRouteModelPickerProviderCache({
-    getClient: async () => getPlatformClient() as RuntimeRouteModelPickerClient,
+    loadOptions: async (input) => {
+      const client = getParentOSNimiClient();
+      return listNimiRuntimeRouteOptionsWithHost(
+        input,
+        createNimiRuntimeRouteOptionsHostDeps(client.runtime),
+      );
+    },
     unavailableMessage: 'ParentOS runtime route catalog is unavailable.',
   });
 

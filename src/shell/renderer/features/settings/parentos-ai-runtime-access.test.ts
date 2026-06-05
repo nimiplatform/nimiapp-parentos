@@ -24,14 +24,12 @@ describe('parentos-ai-runtime access helpers', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
-          selectedBindings: {
+          targetRefs: {
             'text.generate': {
-              source: 'local',
-              connectorId: '',
-              model: 'qwen3',
+              kind: 'local-runtime',
+              targetId: 'qwen3',
             },
           },
-          localProfileRefs: {},
           selectedParams: {},
         },
         profileOrigin: null,
@@ -41,6 +39,7 @@ describe('parentos-ai-runtime access helpers', () => {
     expect(resolveParentosBinding('text.generate')).toEqual({
       model: 'qwen3',
       route: 'local',
+      localModelId: 'qwen3',
     });
   });
 
@@ -49,14 +48,13 @@ describe('parentos-ai-runtime access helpers', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
-          selectedBindings: {
+          targetRefs: {
             'text.generate': {
-              source: 'cloud',
+              kind: 'cloud-connector',
               connectorId: 'openai-main',
-              model: 'gpt-5.4',
+              providerModelId: 'gpt-5.4',
             },
           },
-          localProfileRefs: {},
           selectedParams: {},
         },
         profileOrigin: null,
@@ -75,19 +73,18 @@ describe('parentos-ai-runtime access helpers', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
-          selectedBindings: {
+          targetRefs: {
             'text.generate': {
-              source: 'cloud',
+              kind: 'cloud-connector',
               connectorId: 'openai-main',
-              model: 'gpt-5.4-mini',
+              providerModelId: 'gpt-5.4-mini',
             },
             'text.generate.vision': {
-              source: 'cloud',
+              kind: 'cloud-connector',
               connectorId: 'openai-vision',
-              model: 'gpt-5.4-vision',
+              providerModelId: 'gpt-5.4-vision',
             },
           },
-          localProfileRefs: {},
           selectedParams: {},
         },
         profileOrigin: null,
@@ -114,14 +111,13 @@ describe('parentos-ai-runtime access helpers', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
-          selectedBindings: {
+          targetRefs: {
             'text.generate': {
-              source: 'cloud',
+              kind: 'cloud-connector',
               connectorId: 'openai-main',
-              model: 'gpt-5.4',
+              providerModelId: 'gpt-5.4',
             },
           },
-          localProfileRefs: {},
           selectedParams: {},
         },
         profileOrigin: null,

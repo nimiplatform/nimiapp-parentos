@@ -4,16 +4,13 @@ import { computeAgeMonthsAt } from '../../app-shell/app-store.js';
 import { insertMedicalEvent, getMedicalEvents, updateMedicalEvent } from '../../bridge/sqlite-bridge.js';
 import type { MedicalEventRow } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
-import { getPlatformClient } from '@nimiplatform/sdk';
 
 import { readImageFileAsDataUrl } from './checkup-ocr.js';
 import { EVENT_TYPE_LABELS, LAB_ITEMS, parseLabReport, type LabReportData } from './medical-events-page-shared.js';
 import {
-  buildParentosRuntimeMetadata,
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  resolveParentosTextRuntimeConfig,
+  runParentosMultimodalTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
+import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import type {
   MedicalEventsChildContext,
   MedicalEventsFormMedication,
@@ -78,8 +75,7 @@ export function useMedicalEventsFormState(
     setOcrImageName(file.name);
     try {
       const imageUrl = await readImageFileAsDataUrl(file);
-      const client = getPlatformClient();
-      if (!client.runtime?.ai?.text?.generate) {
+      if (!hasParentOSNimiClient()) {
         setOcrError('AI 运行时不可用，请确认已启动');
         return;
       }
@@ -102,22 +98,17 @@ export function useMedicalEventsFormState(
         '- 仅输出 JSON，不要输出其他内容。',
       ].join('\n');
 
-      const ocrParams = await resolveParentosTextRuntimeConfig('parentos.medical.ocr-intake', { temperature: 0, maxTokens: 1000 });
-      await ensureParentosLocalRuntimeReady({
-        route: ocrParams.route,
-        localModelId: ocrParams.localModelId,
-        timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-      });
-      const output = await client.runtime.ai.text.generate({
-        ...ocrParams,
-        input: [{
+      const output = await runParentosMultimodalTextGenerate({
+        surfaceId: 'parentos.medical.ocr-intake',
+        capabilityId: 'text.generate.vision',
+        messages: [{
           role: 'user',
           content: [
             { type: 'text', text: prompt },
-            { type: 'image_url', imageUrl, detail: 'high' },
+            { type: 'data', data: { type: 'image-url', url: imageUrl, detail: 'high' } },
           ],
         }],
-        metadata: buildParentosRuntimeMetadata('parentos.medical.ocr-intake'),
+        defaults: { temperature: 0, maxTokens: 1000 },
       });
 
       const jsonMatch = output.text.match(/\{[\s\S]*\}/);

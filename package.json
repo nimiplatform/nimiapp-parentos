@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "@nimiplatform/kit": "file:../../nimi-realm/nimi/kit",
-    "@nimiplatform/sdk": "file:../../nimi-realm/nimi/sdk",
+    "@nimiplatform/sdk": "file:../../nimi-realm/nimi/sdks/typescript",
     "@tanstack/react-query": "^5.100.11",
     "@tanstack/react-virtual": "^3.13.25",
     "@tauri-apps/api": "^2.11.0",
@@ -72,7 +72,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@nimiplatform/sdk": "file:../../nimi-realm/nimi/sdk"
+      "@nimiplatform/sdk": "file:../../nimi-realm/nimi/sdks/typescript"
     }
   }
 }

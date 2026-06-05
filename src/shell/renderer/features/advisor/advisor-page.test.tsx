@@ -31,18 +31,12 @@ const messageStore: StoredMessage[] = [];
 const defaultLocalAIConfig = {
   scopeRef: { kind: 'app' as const, ownerId: 'ai.nimi.apps.parentos', surfaceId: 'app' },
   capabilities: {
-    selectedBindings: {
+    targetRefs: {
       'text.generate': {
-        source: 'local' as const,
-        connectorId: '',
-        model: 'qwen3',
-        modelId: 'qwen3',
-        localModelId: 'local-qwen3',
-        provider: 'llama',
-        engine: 'llama',
+        kind: 'local-runtime' as const,
+        targetId: 'local-qwen3',
       },
     },
-    localProfileRefs: {},
     selectedParams: {},
   },
   profileOrigin: null,
@@ -64,7 +58,7 @@ const {
   generateMock,
   streamMock,
   warmLocalAssetMock,
-  getPlatformClientMock,
+  getParentOSNimiClientMock,
 } = vi.hoisted(() => ({
   createConversationMock: vi.fn(async (params: {
     conversationId: string;
@@ -233,7 +227,7 @@ const {
   generateMock: vi.fn(),
   streamMock: vi.fn(),
   warmLocalAssetMock: vi.fn(async () => ({})),
-  getPlatformClientMock: vi.fn(),
+  getParentOSNimiClientMock: vi.fn(),
 }));
 
 vi.mock('@nimiplatform/kit/features/chat/ui', () => {
@@ -331,10 +325,6 @@ vi.mock('../../bridge/sqlite-bridge.js', () => ({
   getOutdoorGoal: getOutdoorGoalMock,
 }));
 
-vi.mock('@nimiplatform/sdk', () => ({
-  getPlatformClient: () => getPlatformClientMock(),
-}));
-
 vi.mock('@nimiplatform/sdk/runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nimiplatform/sdk/runtime')>();
   return {
@@ -346,6 +336,97 @@ vi.mock('@nimiplatform/sdk/runtime', async (importOriginal) => {
     }),
   };
 });
+
+vi.mock('@nimiplatform/sdk/ai', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nimiplatform/sdk/ai')>();
+  function normalizeTestMessageContent(content: unknown): string {
+    if (typeof content === 'string') {
+      return content;
+    }
+    if (Array.isArray(content)) {
+      return content.map((part) => {
+        if (part && typeof part === 'object' && 'text' in part) {
+          return String((part as { text?: unknown }).text ?? '');
+        }
+        return JSON.stringify(part);
+      }).join('\n');
+    }
+    return String(content ?? '');
+  }
+
+  function projectTestMessages(messages: Array<{ role: string; content: unknown }>) {
+    return messages.map((message) => ({
+      ...message,
+      content: normalizeTestMessageContent(message.content),
+    }));
+  }
+
+  function streamErrorEvent(error: unknown) {
+    const detail = error as { reasonCode?: string; message?: string };
+    return {
+      type: 'error' as const,
+      code: detail.reasonCode ?? 'UNKNOWN',
+      message: detail.message ?? String(error),
+      cause: error,
+    };
+  }
+
+  return {
+    ...actual,
+    createNimiRuntimeAIModel: (input: {
+      model: { modelId: string; providerId?: string };
+      routePolicy?: string;
+      connectorId?: string;
+      metadata?: Record<string, string>;
+    }) => ({
+      model: input.model,
+      async generateText(request: { messages: Array<{ role: string; content: string }>; parameters?: unknown }) {
+        return generateMock({
+          route: input.routePolicy,
+          model: input.model.modelId,
+          connectorId: input.connectorId,
+          metadata: input.metadata,
+          input: projectTestMessages(request.messages),
+          parameters: request.parameters,
+        });
+      },
+      async streamText(request: { messages: Array<{ role: string; content: string }>; parameters?: unknown }) {
+        const call = {
+          route: input.routePolicy,
+          model: input.model.modelId,
+          connectorId: input.connectorId,
+          metadata: input.metadata,
+          input: projectTestMessages(request.messages),
+          parameters: request.parameters,
+        };
+        return (async function* stream() {
+          yield { type: 'start' as const };
+          let output;
+          try {
+            output = await streamMock(call);
+          } catch (error) {
+            yield streamErrorEvent(error);
+            return;
+          }
+          for await (const event of output.stream) {
+            if (event.type === 'delta') {
+              yield { type: 'text-delta' as const, text: event.text };
+            } else if (event.type === 'error') {
+              yield streamErrorEvent(event.error);
+              return;
+            }
+          }
+          yield { type: 'done' as const, finishReason: 'stop', usage: {} };
+        })();
+      },
+    }),
+  };
+});
+
+vi.mock('../../infra/parentos-nimi-client.js', () => ({
+  getParentOSNimiClient: () => getParentOSNimiClientMock(),
+  hasParentOSNimiClient: () => true,
+}));
 
 vi.mock('../../infra/parentos-runtime-route-options.js', () => ({
   loadParentosRuntimeRouteOptions: loadParentosRuntimeRouteOptionsMock,
@@ -400,17 +481,20 @@ describe('AdvisorPage', () => {
     generateMock.mockReset();
     streamMock.mockReset();
     warmLocalAssetMock.mockReset();
-    getPlatformClientMock.mockReturnValue({
+    generateMock.mockResolvedValue({
+      text: JSON.stringify([
+        '最近睡眠节律稳定吗？',
+        '户外活动还够吗？',
+        '敏感期要注意什么？',
+      ]),
+      finishReason: 'stop',
+      usage: {},
+    });
+    getParentOSNimiClientMock.mockReturnValue({
       runtime: {
         appId: 'ai.nimi.apps.parentos',
         local: {
           warmLocalAsset: warmLocalAssetMock,
-        },
-        ai: {
-          text: {
-            generate: generateMock,
-            stream: streamMock,
-          },
         },
       },
     });
@@ -478,9 +562,10 @@ describe('AdvisorPage', () => {
       input: Array<{ role: string; content: string }>;
     };
     expect(streamInput.route).toBe('local');
-    expect(streamInput.model).toBe('llama/qwen3');
-    expect(streamInput.input[0]?.content).toContain('澄清型回答策略');
-    expect(streamInput.input[0]?.content).toContain('当前本地记录概况');
+    expect(streamInput.model).toBe('local-qwen3');
+    const promptText = streamInput.input.map((message) => message.content).join('\n');
+    expect(promptText).toContain('当前策略：unknown-clarifier');
+    expect(promptText).toContain('已审核领域');
     expect(warmLocalAssetMock).toHaveBeenCalledWith({
       localAssetId: 'local-qwen3',
       timeoutMs: 180000,
@@ -672,12 +757,13 @@ describe('AdvisorPage', () => {
       metadata: { surfaceId: string };
     };
     expect(streamInput.route).toBe('local');
-    expect(streamInput.model).toBe('llama/qwen3');
+    expect(streamInput.model).toBe('local-qwen3');
     expect(streamInput.metadata.surfaceId).toBe('parentos.advisor');
-    expect(streamInput.input[0]?.content).toContain('请仅基于以下 ParentOS 本地结构化快照回答');
-    expect(streamInput.input[0]?.content).toContain('问题：最近睡眠怎么样？');
-    expect(streamInput.input[0]?.content).toContain('已判定领域：sleep');
-    expect(streamInput.input[0]?.content).toContain('"childId":"child-1"');
+    const promptText = streamInput.input.map((message) => message.content).join('\n');
+    expect(promptText).toContain('当前策略：reviewed-advice');
+    expect(promptText).toContain('问题：最近睡眠怎么样？');
+    expect(promptText).toContain('已判定领域：sleep');
+    expect(promptText).toContain('"childId":"child-1"');
 
     await waitFor(() => {
       expect(screen.getByText(/来源：sleep:/)).toBeTruthy();
@@ -735,13 +821,15 @@ describe('AdvisorPage', () => {
   });
 
   it('surfaces normalized runtime error details in the fallback note', async () => {
-    streamMock.mockRejectedValue({
+    const runtimeError = {
       reasonCode: ReasonCode.AI_PROVIDER_UNAVAILABLE,
       message: 'provider request failed',
       details: {
         provider_message: 'dial tcp 127.0.0.1:8321: connect: connection refused',
       },
-    });
+    };
+    streamMock.mockRejectedValue(runtimeError);
+    generateMock.mockRejectedValue(runtimeError);
 
     renderAdvisorPage();
 
@@ -766,14 +854,13 @@ describe('AdvisorPage', () => {
       aiConfig: {
         scopeRef: { kind: 'app', ownerId: 'ai.nimi.apps.parentos', surfaceId: 'app' },
         capabilities: {
-          selectedBindings: {
+          targetRefs: {
             'text.generate': {
-              source: 'cloud',
+              kind: 'cloud-connector',
               connectorId: 'connector-1',
-              model: 'gpt-5.4',
+              providerModelId: 'gpt-5.4',
             },
           },
-          localProfileRefs: {},
           selectedParams: {},
         },
         profileOrigin: null,
@@ -827,7 +914,7 @@ describe('AdvisorPage', () => {
       connectorId?: string;
     };
     expect(streamInput.route).toBe('cloud');
-    expect(streamInput.model).toBe('cloud/gpt-5.4');
+    expect(streamInput.model).toBe('gpt-5.4');
     expect(streamInput.connectorId).toBe('connector-1');
 
     const generateInput = generateMock.mock.calls[1]?.[0] as {
@@ -836,7 +923,7 @@ describe('AdvisorPage', () => {
       connectorId?: string;
     };
     expect(generateInput.route).toBe('cloud');
-    expect(generateInput.model).toBe('cloud/gpt-5.4');
+    expect(generateInput.model).toBe('gpt-5.4');
     expect(generateInput.connectorId).toBe('connector-1');
     expect(warmLocalAssetMock).not.toHaveBeenCalled();
 

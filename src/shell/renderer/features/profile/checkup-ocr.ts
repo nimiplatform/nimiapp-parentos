@@ -1,11 +1,9 @@
-import { getPlatformClient } from '@nimiplatform/sdk';
-import type { TextMessage } from '@nimiplatform/sdk/runtime';
+import type { NimiMessage } from '@nimiplatform/sdk/contracts';
 import {
-  buildParentosRuntimeMetadata,
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  resolveParentosImageTextRuntimeConfig,
+  runParentosMultimodalTextGenerate,
+  runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
+import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import type { GrowthTypeId } from '../../knowledge-base/gen/growth-standards.gen.js';
 
 const SUPPORTED_IMPORT_TYPES = [
@@ -195,13 +193,13 @@ function buildOCRPrompt(): string {
   ].join('\n');
 }
 
-function buildOCRInput(imageUrl: string): TextMessage[] {
+function buildOCRInput(imageUrl: string): NimiMessage[] {
   return [
     {
       role: 'user',
       content: [
         { type: 'text', text: buildOCRPrompt() },
-        { type: 'image_url', imageUrl, detail: 'high' },
+        { type: 'data', data: { type: 'image-url', url: imageUrl, detail: 'high' } },
       ],
     },
   ];
@@ -231,25 +229,16 @@ function buildOCRRepairPrompt(raw: string): string {
 }
 
 async function repairOCRMeasurementExtraction(input: {
-  client: ReturnType<typeof getPlatformClient>;
-  aiParams: {
-    model: string;
-    route?: 'local' | 'cloud';
-    connectorId?: string;
-    temperature?: number;
-    topP?: number;
-    maxTokens?: number;
-    timeoutMs?: number;
-  };
   raw: string;
 }): Promise<OCRMeasurementExtraction> {
-  const repaired = await input.client.runtime.ai.text.generate({
-    ...input.aiParams,
-    temperature: 0,
-    maxTokens: Math.max(input.aiParams.maxTokens ?? 800, 800),
-    input: [{ role: 'user', content: buildOCRRepairPrompt(input.raw) }],
-    metadata: buildParentosRuntimeMetadata('parentos.profile.checkup-ocr'),
+  const repaired = await runParentosTextGenerate({
+    surfaceId: 'parentos.profile.checkup-ocr',
+    messages: [{ role: 'user', content: [{ type: 'text', text: buildOCRRepairPrompt(input.raw) }] }],
+    defaults: { temperature: 0, maxTokens: 800 },
   });
+  if (!repaired.ok) {
+    throw new Error(repaired.error.message);
+  }
 
   return parseOCRMeasurementExtraction(repaired.text);
 }
@@ -297,12 +286,7 @@ export function getCheckupOCRDisplayMessage(error: unknown): string {
 }
 
 export async function hasCheckupOCRRuntime() {
-  try {
-    const client = getPlatformClient();
-    return Boolean(client.runtime?.appId && client.runtime?.ai?.text?.generate);
-  } catch {
-    return false;
-  }
+  return hasParentOSNimiClient();
 }
 
 export async function analyzeCheckupSheetOCR(input: {
@@ -313,22 +297,12 @@ export async function analyzeCheckupSheetOCR(input: {
     throw new Error('checkup OCR requires an imageUrl');
   }
 
-  const client = getPlatformClient();
-  if (!client.runtime?.ai?.text?.generate) {
-    throw new Error('ParentOS checkup OCR runtime is unavailable');
-  }
-
   try {
-    const aiParams = await resolveParentosImageTextRuntimeConfig('parentos.profile.checkup-ocr', { temperature: 0, maxTokens: 800 });
-    await ensureParentosLocalRuntimeReady({
-      route: aiParams.route,
-      localModelId: aiParams.localModelId,
-      timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-    });
-    const output = await client.runtime.ai.text.generate({
-      ...aiParams,
-      input: buildOCRInput(imageUrl),
-      metadata: buildParentosRuntimeMetadata('parentos.profile.checkup-ocr'),
+    const output = await runParentosMultimodalTextGenerate({
+      surfaceId: 'parentos.profile.checkup-ocr',
+      capabilityId: 'text.generate.vision',
+      messages: buildOCRInput(imageUrl),
+      defaults: { temperature: 0, maxTokens: 800 },
     });
 
     try {
@@ -339,16 +313,6 @@ export async function analyzeCheckupSheetOCR(input: {
       }
 
       return await repairOCRMeasurementExtraction({
-        client,
-        aiParams: {
-          model: aiParams.model,
-          route: aiParams.route,
-          connectorId: aiParams.connectorId,
-          temperature: aiParams.temperature,
-          topP: aiParams.topP,
-          maxTokens: aiParams.maxTokens,
-          timeoutMs: aiParams.timeoutMs,
-        },
         raw: output.text,
       });
     }

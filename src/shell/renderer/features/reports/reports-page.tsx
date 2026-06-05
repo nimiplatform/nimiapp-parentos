@@ -11,6 +11,7 @@ import {
 } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
+import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import { generateNarrativeReportForPeriod } from './narrative-prompt.js';
 import { MonthlyLetterViewer } from './reports-monthly-letter.js';
 import {
@@ -87,15 +88,8 @@ function buildNarrativeTitle(childName: string, reportType: GrowthReportType) {
   }
 }
 
-async function getAvailableReportsRuntime() {
-  try {
-    const { getPlatformClient } = await import('@nimiplatform/sdk');
-    const client = getPlatformClient();
-    if (!client.runtime?.appId || !client.runtime.ai?.text?.stream) return null;
-    return client.runtime;
-  } catch {
-    return null;
-  }
+async function hasAvailableReportsRuntime() {
+  return hasParentOSNimiClient();
 }
 
 function reportBadgeLabel(c: ParsedReportContent): string {
@@ -305,14 +299,14 @@ export default function ReportsPage() {
     try {
       const now = isoNow();
       const reportType = deriveReportType(periodPreset);
-      const runtime = await getAvailableReportsRuntime();
+      const runtimeAvailable = await hasAvailableReportsRuntime();
       const [measurements, milestones, vaccines, journalEntries, reminderStates] = await Promise.all([
         getMeasurements(activeChild.childId), getMilestoneRecords(activeChild.childId),
         getVaccineRecords(activeChild.childId), getJournalEntries(activeChild.childId, 200), getReminderStates(activeChild.childId),
       ]);
       let report: ReturnType<typeof buildStructuredGrowthReport> | Awaited<ReturnType<typeof generateNarrativeReportForPeriod>> | null = null;
 
-      if (runtime) {
+      if (runtimeAvailable) {
         try {
           const [sleepRecords, dentalRecords, allergyRecords, medicalEvents, fitnessAssessments, tannerAssessments] = await Promise.all([
             getSleepRecords(activeChild.childId), getDentalRecords(activeChild.childId), getAllergyRecords(activeChild.childId),
@@ -334,7 +328,6 @@ export default function ReportsPage() {
               fitnessAssessments,
               tannerAssessments,
             },
-            runtime,
             reportType,
           });
           report = {

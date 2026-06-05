@@ -17,8 +17,6 @@ const {
   updateMeasurementMock,
   deleteMeasurementMock,
   saveTextFileViaDialogMock,
-  textGenerateMock,
-  getPlatformClientMock,
   resolveParentosTextRuntimeConfigMock,
   ensureParentosLocalRuntimeReadyMock,
   buildParentosRuntimeMetadataMock,
@@ -53,11 +51,6 @@ const {
   updateMeasurementMock: vi.fn().mockResolvedValue(undefined),
   deleteMeasurementMock: vi.fn().mockResolvedValue(undefined),
   saveTextFileViaDialogMock: vi.fn().mockResolvedValue('/tmp/growth_history.csv'),
-  textGenerateMock: vi.fn().mockResolvedValue({
-    text: '{"insight":"观察到孩子身高处于参考区间内，倾向于稳定增长。"}',
-    finishReason: 'stop',
-  }),
-  getPlatformClientMock: vi.fn(),
   resolveParentosTextRuntimeConfigMock: vi.fn().mockResolvedValue({
     model: 'test-model',
     route: 'local',
@@ -72,10 +65,6 @@ const {
   }),
 }));
 
-getPlatformClientMock.mockImplementation(() => ({
-  runtime: { ai: { text: { generate: textGenerateMock } } },
-}));
-
 vi.mock('../../bridge/sqlite-bridge.js', () => ({
   getMeasurements: getMeasurementsMock,
   insertMeasurement: insertMeasurementMock,
@@ -87,10 +76,6 @@ vi.mock('../../bridge/sqlite-bridge.js', () => ({
   upsertReminderState: vi.fn().mockResolvedValue(undefined),
   getAppSetting: vi.fn().mockResolvedValue(null),
   setAppSetting: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock('@nimiplatform/sdk', () => ({
-  getPlatformClient: getPlatformClientMock,
 }));
 
 vi.mock('../settings/parentos-ai-runtime.js', () => ({
@@ -142,15 +127,6 @@ describe('GrowthCurvePage', () => {
     updateMeasurementMock.mockClear();
     deleteMeasurementMock.mockClear();
     saveTextFileViaDialogMock.mockClear();
-    textGenerateMock.mockReset();
-    textGenerateMock.mockResolvedValue({
-      text: '{"insight":"观察到孩子身高处于参考区间内，倾向于稳定增长。"}',
-      finishReason: 'stop',
-    });
-    getPlatformClientMock.mockReset();
-    getPlatformClientMock.mockImplementation(() => ({
-      runtime: { ai: { text: { generate: textGenerateMock } } },
-    }));
     resolveParentosTextRuntimeConfigMock.mockResolvedValue({
       model: 'test-model',
       route: 'local',

@@ -1,10 +1,6 @@
 import { computeAgeMonthsAt, formatAge, type ChildProfile } from '../../app-shell/app-store.js';
-import type { TextStreamInput, TextStreamOutput } from '@nimiplatform/sdk/runtime';
 import {
-  buildParentosRuntimeMetadata,
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  resolveParentosTextRuntimeConfig,
+  runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
 import type {
   AllergyRecordRow, DentalRecordRow, FitnessAssessmentRow, JournalEntryRow,
@@ -465,23 +461,14 @@ function buildFallbackProfessionalBody(id: string, snap: Snapshot): string {
 
 /* ── Full Generation Pipeline ── */
 
-type RuntimeAI = {
-  ai: {
-    text: {
-      stream: (input: TextStreamInput) => Promise<TextStreamOutput>;
-    };
-  };
-};
-
 export async function generateNarrativeReportForPeriod(input: {
   child: ChildProfile;
   period: ReportPeriod;
   data: AllDomainData;
-  runtime: RuntimeAI;
   reportType: GrowthReportType;
   signal?: AbortSignal;
 }): Promise<BuiltStructuredGrowthReport> {
-  const { child, period, data, runtime, reportType, signal } = input;
+  const { child, period, data, reportType, signal } = input;
   const now = isoNow();
   const ageMonthsStart = computeAgeMonthsAt(child.birthDate, period.start);
   const ageMonthsEnd = computeAgeMonthsAt(child.birthDate, period.end);
@@ -490,27 +477,20 @@ export async function generateNarrativeReportForPeriod(input: {
   const periodLabel = buildReportLabel(reportType, period);
   const monthLabel = periodLabel;
 
-  const aiParams = await resolveParentosTextRuntimeConfig('parentos.report', { temperature: 0.7, maxTokens: 2048 });
-  await ensureParentosLocalRuntimeReady({
-    route: aiParams.route,
-    localModelId: aiParams.localModelId,
-    timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  });
-  const out = await runtime.ai.text.stream({
-    ...aiParams,
-    input: [{ role: 'user', content: buildReportUserMessage(child.displayName, periodLabel, snapshot) }],
-    system: buildReportSystemPrompt(child.displayName),
+  const generated = await runParentosTextGenerate({
+    surfaceId: 'parentos.report',
+    messages: [
+      { role: 'system', content: [{ type: 'text', text: buildReportSystemPrompt(child.displayName) }] },
+      { role: 'user', content: [{ type: 'text', text: buildReportUserMessage(child.displayName, periodLabel, snapshot) }] },
+    ],
+    defaults: { temperature: 0.7, maxTokens: 2048 },
     signal,
-    metadata: buildParentosRuntimeMetadata('parentos.report'),
   });
-
-  let full = '';
-  for await (const p of out.stream) {
-    if (p.type === 'delta' && p.text) full += p.text;
-    else if (p.type === 'error') throw p.error;
+  if (!generated.ok) {
+    throw generated.error.cause || new Error(generated.error.message);
   }
 
-  const aiOutput = parseAiReportResponse(full);
+  const aiOutput = parseAiReportResponse(generated.text);
   const filteredSections = safetyFilterSections(aiOutput.sections);
   const opening = safetyFilterString(aiOutput.opening, `${child.displayName}这个月在稳稳地长大。`);
   const closingMessage = safetyFilterString(aiOutput.closingMessage, `${child.displayName}的本月在持续积累，值得被看见。`);
@@ -582,13 +562,12 @@ export async function generateNarrativeReportForPeriod(input: {
 }
 
 export async function generateNarrativeReport(
-  child: ChildProfile, period: ReportPeriod, data: AllDomainData, runtime: RuntimeAI, signal?: AbortSignal,
+  child: ChildProfile, period: ReportPeriod, data: AllDomainData, signal?: AbortSignal,
 ): Promise<BuiltStructuredGrowthReport> {
   return generateNarrativeReportForPeriod({
     child,
     period,
     data,
-    runtime,
     reportType: 'monthly',
     signal,
   });

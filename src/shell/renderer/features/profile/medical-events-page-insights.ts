@@ -4,16 +4,12 @@ import type { MedicalEventRow } from '../../bridge/sqlite-bridge.js';
 import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
 import { isoNow } from '../../bridge/ulid.js';
 import { computeAgeMonths } from '../../app-shell/app-store.js';
-import { getPlatformClient } from '@nimiplatform/sdk';
 
 import { analyzeMedicalEvents } from '../../engine/smart-alerts.js';
 import type { MedicalAnalysis } from '../../engine/smart-alerts.js';
 import { filterAIResponse } from '../../engine/ai-safety-filter.js';
 import {
-  buildParentosRuntimeMetadata,
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  resolveParentosTextRuntimeConfig,
+  runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
 import { EVENT_TYPE_LABELS, SEVERITY_LABELS } from './medical-events-page-shared.js';
 import type { MedicalEventsChildContext } from './medical-events-page-types.js';
@@ -83,18 +79,14 @@ export function useMedicalEventsInsights(
         `常去医院：${analysis.frequentHospitals.join('、') || '未记录'}`,
       ].join('\n');
 
-      const client = getPlatformClient();
-      const insightParams = await resolveParentosTextRuntimeConfig('parentos.medical.smart-insight', { temperature: 0.3, maxTokens: 600 });
-      await ensureParentosLocalRuntimeReady({
-        route: insightParams.route,
-        localModelId: insightParams.localModelId,
-        timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
+      const output = await runParentosTextGenerate({
+        surfaceId: 'parentos.medical.smart-insight',
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
+        defaults: { temperature: 0.3, maxTokens: 600 },
       });
-      const output = await client.runtime.ai.text.generate({
-        ...insightParams,
-        input: [{ role: 'user', content: prompt }],
-        metadata: buildParentosRuntimeMetadata('parentos.medical.smart-insight'),
-      });
+      if (!output.ok) {
+        throw output.error.cause || new Error(output.error.message);
+      }
 
       const filtered = filterAIResponse(output.text);
       const text = filtered.safe ? filtered.filtered : '数据已记录，建议持续更新就医信息以获取更精准的健康分析。';
@@ -132,18 +124,14 @@ export function useMedicalEventsInsights(
         event.notes ? `备注：${event.notes}` : '',
       ].filter(Boolean).join('\n');
 
-      const client = getPlatformClient();
-      const eventParams = await resolveParentosTextRuntimeConfig('parentos.medical.event-analysis', { temperature: 0.3, maxTokens: 300 });
-      await ensureParentosLocalRuntimeReady({
-        route: eventParams.route,
-        localModelId: eventParams.localModelId,
-        timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
+      const output = await runParentosTextGenerate({
+        surfaceId: 'parentos.medical.event-analysis',
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
+        defaults: { temperature: 0.3, maxTokens: 300 },
       });
-      const output = await client.runtime.ai.text.generate({
-        ...eventParams,
-        input: [{ role: 'user', content: prompt }],
-        metadata: buildParentosRuntimeMetadata('parentos.medical.event-analysis'),
-      });
+      if (!output.ok) {
+        throw output.error.cause || new Error(output.error.message);
+      }
 
       const filtered = filterAIResponse(output.text);
       setEventAiResult((prev) => ({

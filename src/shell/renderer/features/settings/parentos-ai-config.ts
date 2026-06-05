@@ -1,18 +1,15 @@
 import type {
-  AIProfileRef,
-  AIScopeRef,
-  AIConfig,
+  NimiAIConfig,
+  NimiAIConfigTargetRef,
+  NimiAIProfileOriginRef,
+  NimiAIScopeRef,
 } from '@nimiplatform/sdk/ai';
-import { createEmptyAIConfig } from '@nimiplatform/sdk/ai';
-import {
-  parseRuntimeRouteBinding,
-  type RuntimeLocalProfileRef,
-  type RuntimeRouteBinding,
-} from '@nimiplatform/sdk/runtime';
+import { createEmptyNimiAIConfig } from '@nimiplatform/sdk/ai';
+import type { NimiJsonValue } from '@nimiplatform/sdk/contracts';
 import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
 import { isoNow } from '../../bridge/ulid.js';
 
-export const PARENTOS_AI_SCOPE_REF: AIScopeRef = {
+export const PARENTOS_AI_SCOPE_REF: NimiAIScopeRef = {
   kind: 'app',
   ownerId: 'ai.nimi.apps.parentos',
   surfaceId: 'parentos.ai',
@@ -48,43 +45,44 @@ export const PARENTOS_CAPABILITIES: Array<{
   },
 ];
 
-export function createEmptyParentosAIConfig(): AIConfig {
-  return createEmptyAIConfig(PARENTOS_AI_SCOPE_REF);
+type UnknownObject = { readonly [key: string]: unknown };
+
+export function createEmptyParentosAIConfig(): NimiAIConfig {
+  return createEmptyNimiAIConfig(PARENTOS_AI_SCOPE_REF);
 }
 
-export function isParentosAIScopeRef(scopeRef: AIScopeRef | null | undefined): boolean {
+export function isParentosAIScopeRef(scopeRef: NimiAIScopeRef | null | undefined): boolean {
   return scopeRef?.kind === PARENTOS_AI_SCOPE_REF.kind
     && scopeRef?.ownerId === PARENTOS_AI_SCOPE_REF.ownerId
     && scopeRef?.surfaceId === PARENTOS_AI_SCOPE_REF.surfaceId;
 }
 
-export function bindingFromConfig(config: AIConfig, capabilityId: ParentosCapabilityId): RuntimeRouteBinding | null {
-  const binding = (config.capabilities.selectedBindings[capabilityId] || null) as RuntimeRouteBinding | null;
-  if (!binding) {
-    return null;
-  }
-  return normalizeBindingForParentosConfig(binding);
+export function targetRefFromConfig(
+  config: NimiAIConfig,
+  capabilityId: ParentosCapabilityId,
+): NimiAIConfigTargetRef | null {
+  return config.capabilities.targetRefs?.[capabilityId] ?? null;
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
+function asObject(value: unknown): UnknownObject | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value as UnknownObject;
 }
 
 function trimString(value: unknown): string {
   return String(value ?? '').trim();
 }
 
-function normalizeScopeRef(value: unknown): AIScopeRef | null {
-  const record = asRecord(value);
-  if (!record) {
+function normalizeScopeRef(value: unknown): NimiAIScopeRef | null {
+  const object = asObject(value);
+  if (!object) {
     return null;
   }
-  const kind = trimString(record.kind);
-  const ownerId = trimString(record.ownerId);
-  const surfaceId = trimString(record.surfaceId);
+  const kind = trimString(object.kind);
+  const ownerId = trimString(object.ownerId);
+  const surfaceId = trimString(object.surfaceId);
   if (
     kind !== PARENTOS_AI_SCOPE_REF.kind
     || ownerId !== PARENTOS_AI_SCOPE_REF.ownerId
@@ -95,108 +93,136 @@ function normalizeScopeRef(value: unknown): AIScopeRef | null {
   return { ...PARENTOS_AI_SCOPE_REF };
 }
 
-function normalizeLocalProfileRefs(
-  value: unknown,
-): AIConfig['capabilities']['localProfileRefs'] {
-  const record = asRecord(value);
-  if (!record) {
+function normalizeJsonValue(value: unknown): NimiJsonValue | undefined {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+  if (Array.isArray(value)) {
+    const next: NimiJsonValue[] = [];
+    for (const item of value) {
+      const normalized = normalizeJsonValue(item);
+      if (normalized !== undefined) {
+        next.push(normalized);
+      }
+    }
+    return next;
+  }
+  const object = asObject(value);
+  if (!object) {
+    return undefined;
+  }
+  const next: { [key: string]: NimiJsonValue } = {};
+  for (const [key, item] of Object.entries(object)) {
+    const normalizedKey = trimString(key);
+    if (!normalizedKey) {
+      continue;
+    }
+    const normalized = normalizeJsonValue(item);
+    if (normalized !== undefined) {
+      next[normalizedKey] = normalized;
+    }
+  }
+  return next;
+}
+
+function normalizeSelectedParams(value: unknown): NimiAIConfig['capabilities']['selectedParams'] {
+  const object = asObject(value);
+  if (!object) {
     return {};
   }
-  const normalized: AIConfig['capabilities']['localProfileRefs'] = {};
-  for (const [capabilityId, profileRefValue] of Object.entries(record)) {
-    if (profileRefValue == null) {
-      normalized[capabilityId] = null;
-      continue;
+  const normalized: { [capabilityId: string]: NimiJsonValue } = {};
+  for (const [capabilityId, paramsValue] of Object.entries(object)) {
+    const key = trimString(capabilityId);
+    const params = normalizeJsonValue(paramsValue);
+    if (key && params !== undefined) {
+      normalized[key] = params;
     }
-    const profileRefRecord = asRecord(profileRefValue);
-    if (!profileRefRecord) {
-      continue;
-    }
-    const targetId = trimString(profileRefRecord.targetId || profileRefRecord.modId);
-    const profileId = trimString(profileRefRecord.profileId);
-    if (!targetId || !profileId) {
-      continue;
-    }
-    normalized[capabilityId] = {
-      targetId,
-      profileId,
-    } satisfies RuntimeLocalProfileRef;
   }
   return normalized;
 }
 
-function normalizeSelectedParams(
-  value: unknown,
-): AIConfig['capabilities']['selectedParams'] {
-  const record = asRecord(value);
-  if (!record) {
+function normalizeTargetRef(value: unknown): NimiAIConfigTargetRef | null {
+  const object = asObject(value);
+  if (!object) {
+    return null;
+  }
+  const kind = trimString(object.kind);
+  if (kind === 'cloud-connector') {
+    const connectorId = trimString(object.connectorId);
+    const providerModelId = trimString(object.providerModelId);
+    const provider = trimString(object.provider);
+    if (!connectorId || !providerModelId) {
+      return null;
+    }
+    return {
+      kind,
+      connectorId,
+      providerModelId,
+      ...(provider ? { provider } : {}),
+    };
+  }
+  if (kind === 'local-runtime') {
+    const targetId = trimString(object.targetId);
+    const profileId = trimString(object.profileId);
+    const readinessRef = trimString(object.readinessRef);
+    if (!targetId && !profileId && !readinessRef) {
+      return null;
+    }
+    return {
+      kind,
+      ...(targetId ? { targetId } : {}),
+      ...(profileId ? { profileId } : {}),
+      ...(readinessRef ? { readinessRef } : {}),
+    };
+  }
+  if (kind === 'profile-slice') {
+    const sourceProfileId = trimString(object.sourceProfileId);
+    const sliceId = trimString(object.sliceId);
+    if (!sourceProfileId || !sliceId) {
+      return null;
+    }
+    return { kind, sourceProfileId, sliceId };
+  }
+  return null;
+}
+
+function normalizeTargetRefs(value: unknown): NimiAIConfig['capabilities']['targetRefs'] {
+  const object = asObject(value);
+  if (!object) {
     return {};
   }
-  const normalized: AIConfig['capabilities']['selectedParams'] = {};
-  for (const [capabilityId, paramsValue] of Object.entries(record)) {
-    const paramsRecord = asRecord(paramsValue);
-    if (!paramsRecord) {
-      continue;
+  const normalized: { [capabilityId: string]: NimiAIConfigTargetRef } = {};
+  for (const [capabilityId, targetRefValue] of Object.entries(object)) {
+    const key = trimString(capabilityId);
+    const targetRef = normalizeTargetRef(targetRefValue);
+    if (key && targetRef) {
+      normalized[key] = targetRef;
     }
-    normalized[capabilityId] = { ...paramsRecord };
   }
   return normalized;
 }
 
-function normalizeSelectedBindings(
-  value: unknown,
-): AIConfig['capabilities']['selectedBindings'] {
-  const record = asRecord(value);
-  if (!record) {
-    return {};
-  }
-  const normalized: AIConfig['capabilities']['selectedBindings'] = {};
-  for (const [capabilityId, bindingValue] of Object.entries(record)) {
-    if (bindingValue === null) {
-      normalized[capabilityId] = null;
-      continue;
-    }
-    const binding = parseRuntimeRouteBinding(bindingValue);
-    if (!binding) {
-      continue;
-    }
-    normalized[capabilityId] = normalizeBindingForParentosConfig(binding);
-  }
-  return normalized;
-}
-
-function normalizeBindingForParentosConfig(binding: RuntimeRouteBinding): RuntimeRouteBinding {
-  const source = binding.source === 'cloud' ? 'cloud' : 'local';
-  return {
-    ...binding,
-    source,
-    connectorId: source === 'cloud' ? trimString(binding.connectorId) : '',
-    model: trimString(binding.model),
-  };
-}
-
-function normalizeProfileOrigin(value: unknown): AIProfileRef | null {
+function normalizeProfileOrigin(value: unknown): NimiAIProfileOriginRef | null {
   if (value == null) {
     return null;
   }
-  const record = asRecord(value);
-  if (!record) {
+  const object = asObject(value);
+  if (!object) {
     return null;
   }
-  const profileId = trimString(record.profileId);
-  const title = trimString(record.title);
-  const appliedAt = trimString(record.appliedAt);
+  const profileId = trimString(object.profileId);
+  const title = trimString(object.title);
+  const appliedAt = trimString(object.appliedAt);
   if (!profileId || !title || !appliedAt) {
     return null;
   }
-  return {
-    profileId,
-    title,
-    appliedAt,
-  };
+  return { profileId, title, appliedAt };
 }
 
-export function parsePersistedParentosAIConfig(value: unknown): AIConfig | null {
+export function parsePersistedParentosAIConfig(value: unknown): NimiAIConfig | null {
   let parsedValue = value;
   if (typeof parsedValue === 'string') {
     const raw = trimString(parsedValue);
@@ -210,33 +236,28 @@ export function parsePersistedParentosAIConfig(value: unknown): AIConfig | null 
     }
   }
 
-  const record = asRecord(parsedValue);
-  if (!record) {
+  const object = asObject(parsedValue);
+  if (!object) {
     return null;
   }
 
-  const scopeRef = normalizeScopeRef(record.scopeRef);
-  if (!scopeRef) {
-    return null;
-  }
-
-  const capabilitiesRecord = asRecord(record.capabilities);
-  if (!capabilitiesRecord) {
+  const scopeRef = normalizeScopeRef(object.scopeRef);
+  const capabilities = asObject(object.capabilities);
+  if (!scopeRef || !capabilities) {
     return null;
   }
 
   return {
     scopeRef,
     capabilities: {
-      selectedBindings: normalizeSelectedBindings(capabilitiesRecord.selectedBindings),
-      localProfileRefs: normalizeLocalProfileRefs(capabilitiesRecord.localProfileRefs),
-      selectedParams: normalizeSelectedParams(capabilitiesRecord.selectedParams),
+      targetRefs: normalizeTargetRefs(capabilities.targetRefs),
+      selectedParams: normalizeSelectedParams(capabilities.selectedParams),
     },
-    profileOrigin: normalizeProfileOrigin(record.profileOrigin),
+    profileOrigin: normalizeProfileOrigin(object.profileOrigin),
   };
 }
 
-export async function loadPersistedParentosAIConfig(): Promise<AIConfig | null> {
+export async function loadPersistedParentosAIConfig(): Promise<NimiAIConfig | null> {
   try {
     const raw = await getAppSetting(PARENTOS_AI_CONFIG_SETTING_KEY);
     return parsePersistedParentosAIConfig(raw);
@@ -245,7 +266,7 @@ export async function loadPersistedParentosAIConfig(): Promise<AIConfig | null> 
   }
 }
 
-export async function savePersistedParentosAIConfig(config: AIConfig): Promise<void> {
+export async function savePersistedParentosAIConfig(config: NimiAIConfig): Promise<void> {
   const normalized = parsePersistedParentosAIConfig(config);
   if (!normalized) {
     throw new Error('ParentOS AI config is invalid');

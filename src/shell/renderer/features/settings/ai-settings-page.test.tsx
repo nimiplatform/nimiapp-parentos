@@ -10,14 +10,6 @@ import { i18n } from '../../i18n/index.js';
 import { PARENTOS_AI_SCOPE_REF, createEmptyParentosAIConfig } from './parentos-ai-config.js';
 import AiSettingsPage from './ai-settings-page.js';
 
-vi.mock('@nimiplatform/sdk', () => ({
-  getPlatformClient: () => ({
-    runtime: {
-      appId: 'ai.nimi.apps.parentos',
-    },
-  }),
-}));
-
 vi.mock('./parentos-ai-settings-availability.js', () => ({
   probeParentosAISettingsAvailability: vi.fn(async () => ({
     kind: 'ready',
@@ -104,19 +96,12 @@ describe('AiSettingsPage', () => {
         ...createEmptyParentosAIConfig(),
         scopeRef: { ...PARENTOS_AI_SCOPE_REF },
         capabilities: {
-          selectedBindings: {
+          targetRefs: {
             'text.generate': {
-              source: 'local',
-              connectorId: '',
-              model: 'asset-gemma-4-26b-a4b',
-              modelId: 'asset-gemma-4-26b-a4b',
-              modelLabel: 'local-import/gemma-4-26B-A4B-it-Q8_0',
-              localModelId: 'local-import/gemma-4-26B-A4B-it-Q8_0',
-              engine: 'llama',
-              provider: 'llama',
+              kind: 'local-runtime',
+              targetId: 'local-import/gemma-4-26B-A4B-it-Q8_0',
             },
           },
-          localProfileRefs: {},
           selectedParams: {},
         },
       },

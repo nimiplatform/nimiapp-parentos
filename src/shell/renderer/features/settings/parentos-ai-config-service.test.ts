@@ -38,6 +38,7 @@ describe('parentos-ai-config-service', () => {
     expect(result).toEqual({
       success: false,
       config: null,
+      outcome: 'invalid_profile',
       failureReason: 'Profile not found: family-advisor',
       probeWarnings: [],
     });

@@ -1,13 +1,11 @@
+import type { NimiClient } from '@nimiplatform/sdk';
+import type { NimiAIConfig, NimiAIScopeRef } from '@nimiplatform/sdk/ai';
 import {
-  getPlatformClient,
-  getRuntimeProductControlRecord,
-  type PlatformClient,
-} from '@nimiplatform/sdk';
-import type { AIConfig, AIScopeRef } from '@nimiplatform/sdk/ai';
-import {
-  projectFirstRunExecutionEvidenceToAIConfigBindings,
+  getNimiRuntimeProductControlRecord,
+  projectNimiFirstRunExecutionEvidenceToAIConfigTargets,
 } from '@nimiplatform/sdk/runtime';
 import { useAppStore } from '../../app-shell/app-store.js';
+import { getParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import {
   PARENTOS_AI_SCOPE_REF,
   createEmptyParentosAIConfig,
@@ -28,11 +26,11 @@ type ParentosFirstRunCapabilityId = typeof PARENTOS_FIRST_RUN_CAPABILITIES[numbe
 export type ParentosFirstRunAIConfigInitOutcome =
   | {
       outcome: 'already-bound';
-      config: AIConfig;
+      config: NimiAIConfig;
     }
   | {
       outcome: 'initialized';
-      config: AIConfig;
+      config: NimiAIConfig;
       initializedCapabilities: ParentosFirstRunCapabilityId[];
       executionEvidenceRef: string;
       runtimeBaselineRef: string;
@@ -49,43 +47,42 @@ export type ParentosFirstRunAIConfigInitOutcome =
     };
 
 export type ParentosFirstRunAIConfigInitOptions = {
-  readonly scopeRef?: AIScopeRef;
-  readonly platformClient?: PlatformClient;
-  readonly getPlatformClient?: () => PlatformClient;
-  readonly loadConfig?: (scopeRef: AIScopeRef) => AIConfig | null | Promise<AIConfig | null>;
-  readonly saveConfig?: (next: AIConfig, scopeRef: AIScopeRef) => AIConfig | Promise<AIConfig>;
+  readonly scopeRef?: NimiAIScopeRef;
+  readonly client?: NimiClient;
+  readonly getClient?: () => NimiClient;
+  readonly loadConfig?: (scopeRef: NimiAIScopeRef) => NimiAIConfig | null | Promise<NimiAIConfig | null>;
+  readonly saveConfig?: (next: NimiAIConfig, scopeRef: NimiAIScopeRef) => NimiAIConfig | Promise<NimiAIConfig>;
 };
 
 function detailFromError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function readBinding(config: AIConfig, capabilityId: ParentosFirstRunCapabilityId) {
-  return config.capabilities.selectedBindings[capabilityId] || null;
+function readTargetRef(config: NimiAIConfig, capabilityId: ParentosFirstRunCapabilityId) {
+  return config.capabilities.targetRefs[capabilityId] || null;
 }
 
-function ensureAIConfigShape(config: AIConfig | null | undefined, scopeRef: AIScopeRef): AIConfig {
+function ensureAIConfigShape(config: NimiAIConfig | null | undefined, scopeRef: NimiAIScopeRef): NimiAIConfig {
   const resolved = config ?? createEmptyParentosAIConfig();
   return {
     ...resolved,
     scopeRef,
     capabilities: {
-      selectedBindings: { ...(resolved.capabilities.selectedBindings || {}) },
-      localProfileRefs: { ...(resolved.capabilities.localProfileRefs || {}) },
+      targetRefs: { ...(resolved.capabilities.targetRefs || {}) },
       selectedParams: { ...(resolved.capabilities.selectedParams || {}) },
     },
     profileOrigin: resolved.profileOrigin ?? null,
   };
 }
 
-async function loadParentosAIConfigForBootstrap(scopeRef: AIScopeRef): Promise<AIConfig> {
+async function loadParentosAIConfigForBootstrap(scopeRef: NimiAIScopeRef): Promise<NimiAIConfig> {
   return ensureAIConfigShape(
     useAppStore.getState().aiConfig || await loadPersistedParentosAIConfig(),
     scopeRef,
   );
 }
 
-async function saveParentosAIConfigFromBootstrap(next: AIConfig, _scopeRef: AIScopeRef): Promise<AIConfig> {
+async function saveParentosAIConfigFromBootstrap(next: NimiAIConfig, _scopeRef: NimiAIScopeRef): Promise<NimiAIConfig> {
   await savePersistedParentosAIConfig(next);
   useAppStore.getState().setAIConfig(next);
   return next;
@@ -100,18 +97,18 @@ export async function ensureParentosAIConfigFromFirstRunEvidence(
   const config = ensureAIConfigShape(await loadConfig(scopeRef), scopeRef);
 
   const missingCapabilities = PARENTOS_FIRST_RUN_CAPABILITIES.filter(
-    (capabilityId) => !readBinding(config, capabilityId),
+    (capabilityId) => !readTargetRef(config, capabilityId),
   );
   if (missingCapabilities.length === 0) {
     return { outcome: 'already-bound', config };
   }
 
-  const platformClient = options.platformClient
-    ?? (options.getPlatformClient ? options.getPlatformClient() : getPlatformClient());
+  const client = options.client
+    ?? (options.getClient ? options.getClient() : getParentOSNimiClient());
 
   let recordProjection;
   try {
-    recordProjection = await getRuntimeProductControlRecord(platformClient.runtime);
+    recordProjection = await getNimiRuntimeProductControlRecord(client.runtime.generated);
   } catch (error) {
     return {
       outcome: 'not-initialized',
@@ -134,7 +131,7 @@ export async function ensureParentosAIConfigFromFirstRunEvidence(
 
   let resolvedEvidence;
   try {
-    resolvedEvidence = await platformClient.runtime.local.resolveFirstRunExecutionEvidence({
+    resolvedEvidence = await client.runtime.generated.resolveFirstRunExecutionEvidence({
       executionEvidenceRef,
       expectedRuntimeBaselineRef: runtimeBaselineRef,
       expectedDataRootRef: '',
@@ -156,9 +153,9 @@ export async function ensureParentosAIConfigFromFirstRunEvidence(
     };
   }
 
-  let projectedBindings;
+  let projectedTargets;
   try {
-    projectedBindings = projectFirstRunExecutionEvidenceToAIConfigBindings(resolvedEvidence.ref);
+    projectedTargets = projectNimiFirstRunExecutionEvidenceToAIConfigTargets(resolvedEvidence.ref);
   } catch (error) {
     return {
       outcome: 'not-initialized',
@@ -167,7 +164,7 @@ export async function ensureParentosAIConfigFromFirstRunEvidence(
     };
   }
 
-  const projectedByCapability = new Map(projectedBindings.map((item) => [item.capability, item.binding]));
+  const projectedByCapability = new Map(projectedTargets.map((item) => [item.capability, item.targetRef]));
   if (!projectedByCapability.get('text.generate')) {
     return {
       outcome: 'not-initialized',
@@ -176,17 +173,17 @@ export async function ensureParentosAIConfigFromFirstRunEvidence(
     };
   }
 
-  const nextBindings = { ...config.capabilities.selectedBindings };
+  const nextTargetRefs = { ...config.capabilities.targetRefs };
   const initializedCapabilities: ParentosFirstRunCapabilityId[] = [];
   for (const capabilityId of PARENTOS_FIRST_RUN_CAPABILITIES) {
-    if (nextBindings[capabilityId]) {
+    if (nextTargetRefs[capabilityId]) {
       continue;
     }
-    const binding = projectedByCapability.get(capabilityId);
-    if (!binding) {
+    const targetRef = projectedByCapability.get(capabilityId);
+    if (!targetRef) {
       continue;
     }
-    nextBindings[capabilityId] = binding;
+    nextTargetRefs[capabilityId] = targetRef;
     initializedCapabilities.push(capabilityId);
   }
 
@@ -194,11 +191,11 @@ export async function ensureParentosAIConfigFromFirstRunEvidence(
     return { outcome: 'already-bound', config };
   }
 
-  const next: AIConfig = {
+  const next: NimiAIConfig = {
     ...config,
     capabilities: {
       ...config.capabilities,
-      selectedBindings: nextBindings,
+      targetRefs: nextTargetRefs,
     },
   };
 

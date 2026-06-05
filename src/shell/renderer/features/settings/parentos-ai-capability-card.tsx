@@ -15,22 +15,25 @@ import {
   DEFAULT_AUDIO_TRANSCRIBE_PARAMS,
   DEFAULT_TEXT_GENERATE_PARAMS,
   TextGenerateParamsEditor,
-  bindingToPickerSelection,
   createAudioTranscribeEditorCopy,
   createTextGenerateEditorCopy,
   parseAudioTranscribeParams,
   parseTextGenerateParams,
-  pickerSelectionToBinding,
   type AppModelConfigSurface,
   type AudioTranscribeParamsState,
   type ModelConfigProjectionStatus,
-  type ModelConfigRouteBinding,
   type TextGenerateParamsState,
 } from '@nimiplatform/kit/features/model-config';
+import {
+  applyModelConfigCapabilityPatch,
+  readModelConfigTargetRef,
+  summarizeTargetRef,
+} from '@nimiplatform/kit/core/model-config';
 import { ModelPickerModal } from '@nimiplatform/kit/features/model-picker/ui';
 import type { RouteModelPickerDataProvider, RouteModelPickerSelection } from '@nimiplatform/kit/features/model-picker';
 import { buttonVariants, cn } from '@nimiplatform/kit/ui';
-import type { AIConfig } from '@nimiplatform/sdk/ai';
+import type { NimiAIConfig, NimiAIConfigTargetRef } from '@nimiplatform/sdk/ai';
+import type { NimiJsonValue } from '@nimiplatform/sdk/contracts';
 import type { ParentosCapabilityId } from './parentos-ai-config.js';
 
 export type ParentosAICapabilityDescriptor = {
@@ -44,52 +47,45 @@ export type ParentosAICapabilityCardProps = {
   capability: ParentosAICapabilityDescriptor;
   icon: LucideIcon;
   surface: AppModelConfigSurface;
-  config: AIConfig;
+  config: NimiAIConfig;
   status: ModelConfigProjectionStatus;
 };
 
-function readBinding(config: AIConfig, capabilityId: ParentosCapabilityId): ModelConfigRouteBinding | null {
-  const binding = config.capabilities.selectedBindings?.[capabilityId] || null;
-  if (!binding) {
-    return null;
-  }
-  return {
-    ...binding,
-    source: binding.source === 'cloud' ? 'cloud' : 'local',
-    connectorId: binding.source === 'cloud' ? binding.connectorId : '',
-    model: String(binding.model || binding.modelId || '').trim(),
-  };
+function readTargetRef(config: NimiAIConfig, capabilityId: ParentosCapabilityId): NimiAIConfigTargetRef | null {
+  return readModelConfigTargetRef(config, capabilityId) as NimiAIConfigTargetRef | null;
 }
 
-function bindingLabel(binding: ModelConfigRouteBinding | null): string | null {
-  if (!binding) {
+function targetRefLabel(targetRef: NimiAIConfigTargetRef | null): string | null {
+  if (!targetRef) {
     return null;
   }
-  return String(
-    binding.modelLabel
-    || binding.model
-    || binding.modelId
-    || binding.localModelId
-    || '',
-  ).trim() || null;
+  const summary = summarizeTargetRef(targetRef);
+  return [summary.label, summary.detail].filter(Boolean).join(' · ') || null;
 }
 
-function bindingSourceLabel(binding: ModelConfigRouteBinding | null): string {
-  if (!binding) {
+function targetSourceLabel(targetRef: NimiAIConfigTargetRef | null): string {
+  if (!targetRef) {
     return '未绑定';
   }
-  if (binding.source === 'cloud') {
-    return binding.provider || binding.connectorId || 'Cloud';
+  if (targetRef.kind === 'cloud-connector') {
+    return targetRef.provider || targetRef.connectorId || 'Cloud';
   }
-  return binding.engine || binding.provider || 'Local Runtime';
+  if (targetRef.kind === 'local-runtime') {
+    return targetRef.profileId || targetRef.readinessRef || 'Local Runtime';
+  }
+  return 'Profile slice';
 }
 
-function readParams(config: AIConfig, capabilityId: ParentosCapabilityId): Record<string, unknown> {
+function isJsonObject(value: NimiJsonValue | undefined): value is { readonly [key: string]: NimiJsonValue } {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function readParams(config: NimiAIConfig, capabilityId: ParentosCapabilityId): { readonly [key: string]: NimiJsonValue } {
   const raw = config.capabilities.selectedParams?.[capabilityId];
-  return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  return isJsonObject(raw) ? raw : {};
 }
 
-function hasConfiguredParams(params: Record<string, unknown>): boolean {
+function hasConfiguredParams(params: { readonly [key: string]: NimiJsonValue }): boolean {
   return Object.values(params).some((value) => {
     if (Array.isArray(value)) {
       return value.length > 0;
@@ -102,29 +98,15 @@ function commitCapabilityPatch(
   surface: AppModelConfigSurface,
   capabilityId: ParentosCapabilityId,
   patch: {
-    binding?: ModelConfigRouteBinding | null;
-    params?: Record<string, unknown>;
+    targetRef?: NimiAIConfigTargetRef | null;
+    params?: NimiJsonValue;
   },
 ): void {
   const current = surface.aiConfigService.aiConfig.get(surface.scopeRef);
-  const nextBindings = { ...current.capabilities.selectedBindings };
-  const nextParams = { ...current.capabilities.selectedParams };
-
-  if (Object.prototype.hasOwnProperty.call(patch, 'binding')) {
-    nextBindings[capabilityId] = patch.binding ?? null;
-  }
-  if (patch.params) {
-    nextParams[capabilityId] = patch.params;
-  }
-
-  surface.aiConfigService.aiConfig.update(surface.scopeRef, {
-    ...current,
-    capabilities: {
-      ...current.capabilities,
-      selectedBindings: nextBindings,
-      selectedParams: nextParams,
-    },
-  });
+  surface.aiConfigService.aiConfig.update(
+    surface.scopeRef,
+    applyModelConfigCapabilityPatch(current, capabilityId, patch),
+  );
 }
 
 function statusClasses(status: ModelConfigProjectionStatus): string {
@@ -135,7 +117,7 @@ function statusClasses(status: ModelConfigProjectionStatus): string {
 
 function CapabilityParamsEditor(props: {
   capabilityId: ParentosCapabilityId;
-  config: AIConfig;
+  config: NimiAIConfig;
   surface: AppModelConfigSurface;
 }) {
   const params = readParams(props.config, props.capabilityId);
@@ -170,6 +152,56 @@ function CapabilityParamsEditor(props: {
   );
 }
 
+function targetRefToPickerSelection(targetRef: NimiAIConfigTargetRef | null): Partial<RouteModelPickerSelection> | undefined {
+  if (!targetRef) {
+    return undefined;
+  }
+  if (targetRef.kind === 'cloud-connector') {
+    return {
+      source: 'cloud',
+      connectorId: targetRef.connectorId,
+      model: targetRef.providerModelId,
+      provider: targetRef.provider,
+      modelId: targetRef.providerModelId,
+    };
+  }
+  if (targetRef.kind === 'local-runtime') {
+    const model = targetRef.targetId || targetRef.profileId || targetRef.readinessRef || '';
+    return {
+      source: 'local',
+      connectorId: '',
+      model,
+      localModelId: targetRef.targetId,
+      modelId: targetRef.targetId,
+    };
+  }
+  return undefined;
+}
+
+function pickerSelectionToTargetRef(selection: RouteModelPickerSelection): NimiAIConfigTargetRef {
+  if (selection.source === 'cloud') {
+    const connectorId = selection.connectorId.trim();
+    const providerModelId = (selection.modelId || selection.model).trim();
+    if (!connectorId || !providerModelId) {
+      throw new Error('ParentOS cloud model selection is incomplete.');
+    }
+    return {
+      kind: 'cloud-connector',
+      connectorId,
+      providerModelId,
+      ...(selection.provider ? { provider: selection.provider } : {}),
+    };
+  }
+  const targetId = (selection.localModelId || selection.modelId || selection.model).trim();
+  if (!targetId) {
+    throw new Error('ParentOS local model selection is incomplete.');
+  }
+  return {
+    kind: 'local-runtime',
+    targetId,
+  };
+}
+
 export function ParentosAICapabilityCard({
   capability,
   icon: CapabilityIcon,
@@ -179,20 +211,20 @@ export function ParentosAICapabilityCard({
 }: ParentosAICapabilityCardProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [paramsOpen, setParamsOpen] = useState(false);
-  const binding = readBinding(config, capability.id);
-  const modelLabel = bindingLabel(binding);
+  const targetRef = readTargetRef(config, capability.id);
+  const modelLabel = targetRefLabel(targetRef);
   const params = readParams(config, capability.id);
   const paramsConfigured = hasConfiguredParams(params);
   const provider = useMemo(
     () => surface.providerResolver(capability.routeCapability) as RouteModelPickerDataProvider | null,
     [capability.routeCapability, surface],
   );
-  const selection = useMemo(() => bindingToPickerSelection(binding), [binding]);
-  const SourceIcon = binding?.source === 'cloud' ? Cloud : Monitor;
+  const selection = useMemo(() => targetRefToPickerSelection(targetRef), [targetRef]);
+  const SourceIcon = targetRef?.kind === 'cloud-connector' ? Cloud : Monitor;
 
   const handleSelect = (pickerSelection: RouteModelPickerSelection) => {
     commitCapabilityPatch(surface, capability.id, {
-      binding: pickerSelectionToBinding(pickerSelection),
+      targetRef: pickerSelectionToTargetRef(pickerSelection),
     });
   };
 
@@ -241,7 +273,7 @@ export function ParentosAICapabilityCard({
                 {modelLabel || (provider ? '选择 Runtime 模型' : surface.runtimeNotReadyLabel || 'Runtime 未就绪')}
               </span>
               {modelLabel ? (
-                <span className="mt-0.5 block truncate text-[11px] text-[var(--nimi-text-muted)]">{bindingSourceLabel(binding)}</span>
+                <span className="mt-0.5 block truncate text-[11px] text-[var(--nimi-text-muted)]">{targetSourceLabel(targetRef)}</span>
               ) : null}
             </span>
             <ChevronRight size={15} className="shrink-0 text-[var(--nimi-text-muted)]" aria-hidden="true" />
@@ -265,10 +297,10 @@ export function ParentosAICapabilityCard({
                 aria-hidden="true"
               />
             </button>
-            {binding ? (
+            {targetRef ? (
               <button
                 type="button"
-                onClick={() => commitCapabilityPatch(surface, capability.id, { binding: null })}
+                onClick={() => commitCapabilityPatch(surface, capability.id, { targetRef: null })}
                 className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'h-8 min-h-8 gap-1.5 px-2.5 text-[12px] text-[var(--nimi-text-muted)]')}
               >
                 <X size={13} aria-hidden="true" />

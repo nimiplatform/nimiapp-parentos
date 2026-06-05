@@ -7,15 +7,11 @@ import { Button, Surface } from '@nimiplatform/kit/ui';
  * Falls back gracefully when the AI runtime is unavailable.
  */
 import { useState, useEffect, useCallback } from 'react';
-import { getPlatformClient } from '@nimiplatform/sdk';
 import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
 import { isoNow } from '../../bridge/ulid.js';
 import { filterAIResponse } from '../../engine/ai-safety-filter.js';
 import {
-  buildParentosRuntimeMetadata,
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  resolveParentosTextRuntimeConfig,
+  runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
 
 interface AISummaryCardProps {
@@ -135,14 +131,7 @@ export function AISummaryCard(props: AISummaryCardProps) {
     setLoading(true);
     setError(false);
     try {
-      const client = getPlatformClient();
       const surfaceId = `parentos.profile.summary.${domain}` as const;
-      const aiParams = await resolveParentosTextRuntimeConfig(surfaceId, { temperature: 0.3, maxTokens: 400 });
-      await ensureParentosLocalRuntimeReady({
-        route: aiParams.route,
-        localModelId: aiParams.localModelId,
-        timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-      });
       // Prompt asks for 2-4 sentence Chinese summary (~80-200 tokens). The
       // user's global text.generate maxTokens can be set very low in AI
       // settings, which would starve this surface and produce a mid-sentence
@@ -150,14 +139,22 @@ export function AISummaryCard(props: AISummaryCardProps) {
       // and auto-retry with a larger budget if the first attempt is cut off.
       const SUMMARY_MIN_MAX_TOKENS = 512;
       const SUMMARY_RETRY_MAX_TOKENS = 1536;
-      const runGenerate = async (budget: number) => client.runtime.ai.text.generate({
-        ...aiParams,
-        maxTokens: budget,
-        input: [{ role: 'user', content: buildPrompt(props) }],
-        metadata: buildParentosRuntimeMetadata(surfaceId),
-      });
+      const runGenerate = async (budget: number) => {
+        const result = await runParentosTextGenerate({
+          surfaceId,
+          messages: [{ role: 'user', content: [{ type: 'text', text: buildPrompt(props) }] }],
+          defaults: { temperature: 0.3, maxTokens: budget },
+        });
+        if (!result.ok) {
+          throw result.error.cause || new Error(result.error.message);
+        }
+        return {
+          text: result.text,
+          finishReason: result.result.finishReason,
+        };
+      };
 
-      const firstBudget = Math.max(aiParams.maxTokens ?? 0, SUMMARY_MIN_MAX_TOKENS);
+      const firstBudget = SUMMARY_MIN_MAX_TOKENS;
       let output = await runGenerate(firstBudget);
       // If the model hit the token cap or text looks mid-sentence, retry
       // once with a much larger budget so low global settings can't starve

@@ -1,10 +1,7 @@
-import { getPlatformClient } from '@nimiplatform/sdk';
 import {
-  buildParentosRuntimeMetadata,
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  resolveParentosSpeechTranscribeRuntimeConfig,
+  runParentosSpeechTranscribe,
 } from '../settings/parentos-ai-runtime.js';
+import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 
 export interface VoiceObservationTranscription {
   transcript: string;
@@ -27,23 +24,13 @@ function toArtifactMetadata(
 }
 
 export async function hasVoiceTranscriptionRuntime() {
-  try {
-    const client = getPlatformClient();
-    return Boolean(client.runtime?.appId && client.runtime.media?.stt?.transcribe);
-  } catch {
-    return false;
-  }
+  return hasParentOSNimiClient();
 }
 
 export async function transcribeVoiceObservation(input: {
   audioBlob: Blob;
   mimeType: string;
 }): Promise<VoiceObservationTranscription> {
-  const client = getPlatformClient();
-  if (!client.runtime?.media?.stt?.transcribe) {
-    throw new Error('ParentOS voice transcription runtime is unavailable');
-  }
-
   const mimeType = input.mimeType.trim();
   if (!mimeType) {
     throw new Error('voice observation transcription requires a mimeType');
@@ -54,20 +41,14 @@ export async function transcribeVoiceObservation(input: {
     throw new Error('voice observation transcription requires audio bytes');
   }
 
-  const aiParams = await resolveParentosSpeechTranscribeRuntimeConfig('parentos.journal.voice-observation', {
-    language: 'zh-CN',
-    responseFormat: 'text',
-  });
-  await ensureParentosLocalRuntimeReady({
-    route: aiParams.route,
-    localModelId: aiParams.localModelId,
-    timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
-  });
-  const output = await client.runtime.media.stt.transcribe({
-    ...aiParams,
-    audio: { kind: 'bytes', bytes: audioBytes },
+  const output = await runParentosSpeechTranscribe({
+    surfaceId: 'parentos.journal.voice-observation',
+    audioBytes,
     mimeType,
-    metadata: buildParentosRuntimeMetadata('parentos.journal.voice-observation'),
+    defaults: {
+      language: 'zh-CN',
+      responseFormat: 'text',
+    },
   });
 
   const transcript = output.text.trim();

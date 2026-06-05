@@ -1,43 +1,47 @@
-import { getPlatformClient } from '@nimiplatform/sdk';
 import {
-  listRuntimeRouteOptions,
-  normalizeRuntimeRouteCapabilityToken,
-  type RuntimeCanonicalCapability,
-  type RuntimeRouteBinding,
-  type RuntimeRouteOptionsSnapshot,
+  createNimiRuntimeRouteOptionsHostDeps,
+  listNimiRuntimeRouteOptionsWithHost,
+  normalizeNimiRuntimeRouteCapabilityToken,
+  type NimiRuntimeCanonicalCapability,
+  type NimiRuntimeRouteOptionsSnapshot,
 } from '@nimiplatform/sdk/runtime';
-import { useAppStore } from '../app-shell/app-store.js';
+import { getParentOSNimiClient } from './parentos-nimi-client.js';
 
 export type ParentosRuntimeRouteCapability =
-  | RuntimeCanonicalCapability
+  | 'text.generate'
+  | 'text.generate.vision'
+  | 'audio.transcribe'
   | 'chat'
   | 'vision'
   | 'stt';
 
+const PARENTOS_ROUTE_CAPABILITY_ALIASES: Record<string, NimiRuntimeCanonicalCapability> = {
+  'text.generate': 'text.generate',
+  chat: 'text.generate',
+  'text.generate.vision': 'text.generate.vision',
+  vision: 'text.generate.vision',
+  'audio.transcribe': 'audio.transcribe',
+  stt: 'audio.transcribe',
+};
+
 export function normalizeParentosRuntimeRouteCapability(
   capability: unknown,
-): RuntimeCanonicalCapability {
-  const normalized = normalizeRuntimeRouteCapabilityToken(capability);
-  if (!normalized) {
+): NimiRuntimeCanonicalCapability {
+  const normalized = normalizeNimiRuntimeRouteCapabilityToken(capability);
+  const canonical = normalized ? PARENTOS_ROUTE_CAPABILITY_ALIASES[normalized] : null;
+  if (!canonical) {
     throw new Error(`ParentOS runtime route capability is unsupported: ${String(capability || '')}`);
   }
-  return normalized;
-}
-
-export function readParentosSelectedRuntimeRouteBinding(
-  capability: ParentosRuntimeRouteCapability,
-): RuntimeRouteBinding | null {
-  const normalized = normalizeParentosRuntimeRouteCapability(capability);
-  const binding = useAppStore.getState().aiConfig?.capabilities.selectedBindings?.[normalized] || null;
-  return binding as RuntimeRouteBinding | null;
+  return canonical;
 }
 
 export async function loadParentosRuntimeRouteOptions(
   capability: ParentosRuntimeRouteCapability,
-): Promise<RuntimeRouteOptionsSnapshot> {
+): Promise<NimiRuntimeRouteOptionsSnapshot> {
   const normalized = normalizeParentosRuntimeRouteCapability(capability);
-  return listRuntimeRouteOptions(getPlatformClient(), {
-    capability: normalized,
-    selectedBinding: readParentosSelectedRuntimeRouteBinding(normalized),
-  });
+  const client = getParentOSNimiClient();
+  return listNimiRuntimeRouteOptionsWithHost(
+    { capability: normalized },
+    createNimiRuntimeRouteOptionsHostDeps(client.runtime),
+  );
 }

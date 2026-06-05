@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AIConfig } from '@nimiplatform/sdk/ai';
+import type { NimiAIConfig } from '@nimiplatform/sdk/ai';
 import type { ParentOSRuntimeDefaults as RuntimeDefaults } from '../bridge/index.js';
 
 export type NurtureMode = 'relaxed' | 'balanced' | 'advanced';
@@ -62,8 +62,8 @@ interface AppState {
   familyId: string | null;
   setFamilyId: (id: string | null) => void;
 
-  aiConfig: AIConfig | null;
-  setAIConfig: (config: AIConfig) => void;
+  aiConfig: NimiAIConfig | null;
+  setAIConfig: (config: NimiAIConfig) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
