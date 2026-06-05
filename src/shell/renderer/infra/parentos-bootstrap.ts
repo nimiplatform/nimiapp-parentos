@@ -24,6 +24,7 @@ import {
 } from '../bridge/sqlite-bridge.js';
 import { mapChildRow } from '../bridge/mappers.js';
 import { loadPersistedParentosAIConfig } from '../features/settings/parentos-ai-config.js';
+import { ensureParentosAIConfigFromFirstRunEvidence } from '../features/settings/parentos-ai-config-bootstrap.js';
 import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
 
 // PO-SHELL-001 / PO-SHELL-008: ParentOS is admitted as an active local
@@ -296,6 +297,21 @@ async function doRunParentOSBootstrap(): Promise<void> {
     // runtime extras).
     try {
       await runtime.ready();
+      const aiConfigInit = await ensureParentosAIConfigFromFirstRunEvidence({
+        platformClient,
+      });
+      if (aiConfigInit.outcome === 'not-initialized') {
+        logRendererEvent({
+          level: 'warn',
+          area: 'parentos-bootstrap.ai-config',
+          message: 'action:first-run-ai-config-init-skipped',
+          flowId,
+          details: {
+            reason: aiConfigInit.reason,
+            detail: aiConfigInit.detail,
+          },
+        });
+      }
     } catch (error) {
       logRendererEvent({
         level: 'warn',

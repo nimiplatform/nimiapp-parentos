@@ -120,7 +120,7 @@ pub fn db_init(subject_user_id: Option<String>) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::{db_init, resolve_db_path};
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::sync::{Mutex, OnceLock};
 
     static TEST_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
@@ -148,6 +148,11 @@ mod tests {
         data_root
     }
 
+    fn is_anonymous_sqlite_path(path: impl AsRef<Path>) -> bool {
+        path.as_ref()
+            .ends_with(Path::new("sqlite").join("anonymous.db"))
+    }
+
     #[test]
     fn db_init_uses_anonymous_app_storage_path() {
         let _guard = TEST_MUTEX
@@ -158,12 +163,12 @@ mod tests {
 
         let db_path = db_init(None).expect("init anonymous db");
         assert!(
-            db_path.ends_with("sqlite/anonymous.db"),
+            is_anonymous_sqlite_path(&db_path),
             "unexpected path: {db_path}"
         );
         assert!(resolve_db_path()
             .expect("resolve current db path")
-            .ends_with("sqlite/anonymous.db"));
+            .ends_with(Path::new("sqlite").join("anonymous.db")));
     }
 
     #[test]
@@ -177,10 +182,19 @@ mod tests {
         let anonymous_path = db_init(None).expect("init anonymous db");
         let account_path = db_init(Some("user-123".to_string())).expect("init scoped db");
 
-        assert!(anonymous_path.ends_with("sqlite/anonymous.db"));
+        assert!(is_anonymous_sqlite_path(&anonymous_path));
         assert_ne!(anonymous_path, account_path);
+        let account_path_buf = PathBuf::from(&account_path);
         assert!(
-            account_path.contains("sqlite/accounts/user-"),
+            account_path_buf
+                .parent()
+                .is_some_and(|parent| parent.ends_with(Path::new("sqlite").join("accounts")))
+                && account_path_buf
+                    .file_name()
+                    .and_then(|file_name| file_name.to_str())
+                    .is_some_and(
+                        |file_name| file_name.starts_with("user-") && file_name.ends_with(".db")
+                    ),
             "unexpected scoped path: {account_path}"
         );
         assert_eq!(

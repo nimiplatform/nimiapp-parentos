@@ -14,7 +14,7 @@ import { isoNow } from '../../bridge/ulid.js';
 
 export const PARENTOS_AI_SCOPE_REF: AIScopeRef = {
   kind: 'app',
-  ownerId: 'parentos',
+  ownerId: 'ai.nimi.apps.parentos',
   surfaceId: 'parentos.ai',
 };
 

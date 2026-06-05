@@ -33,6 +33,7 @@ const getChildMock = vi.fn();
 const getFamilyMock = vi.fn();
 const getChildrenMock = vi.fn();
 const loadPersistedParentosAIConfigMock = vi.fn();
+const ensureParentosAIConfigFromFirstRunEvidenceMock = vi.fn();
 const mapChildRowMock = vi.fn();
 const getAccountSessionStatusMock = vi.fn();
 const getAppStorageMock = vi.fn();
@@ -66,6 +67,10 @@ vi.mock('../bridge/mappers.js', () => ({
 
 vi.mock('../features/settings/parentos-ai-config.js', () => ({
   loadPersistedParentosAIConfig: loadPersistedParentosAIConfigMock,
+}));
+
+vi.mock('../features/settings/parentos-ai-config-bootstrap.js', () => ({
+  ensureParentosAIConfigFromFirstRunEvidence: ensureParentosAIConfigFromFirstRunEvidenceMock,
 }));
 
 let useAppStore: typeof import('../app-shell/app-store.js').useAppStore;
@@ -122,6 +127,7 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     getFamilyMock.mockReset();
     getChildrenMock.mockReset();
     loadPersistedParentosAIConfigMock.mockReset();
+    ensureParentosAIConfigFromFirstRunEvidenceMock.mockReset();
     mapChildRowMock.mockReset();
     getAccountSessionStatusMock.mockReset();
     getAppStorageMock.mockReset();
@@ -160,6 +166,10 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
       };
     });
     runtimeReadyMock.mockResolvedValue(undefined);
+    ensureParentosAIConfigFromFirstRunEvidenceMock.mockResolvedValue({
+      outcome: 'already-bound',
+      config: {},
+    });
     getAppStorageMock.mockResolvedValue({
       appId: 'ai.nimi.apps.parentos',
       state: 'ready',
@@ -271,6 +281,24 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     expect(useAppStore.getState().bootstrapReady).toBe(true);
     expect(useAppStore.getState().auth.status).toBe('unauthenticated');
     expect(dbInitMock).toHaveBeenCalledWith(null);
+  });
+
+  it('initializes ParentOS AIConfig from first-run evidence after Runtime readiness', async () => {
+    getAccountSessionStatusMock.mockResolvedValue({
+      state: AccountSessionState.ANONYMOUS,
+      accountProjection: null,
+    });
+
+    await runParentOSBootstrap();
+
+    expect(runtimeReadyMock).toHaveBeenCalledTimes(1);
+    expect(ensureParentosAIConfigFromFirstRunEvidenceMock).toHaveBeenCalledTimes(1);
+    expect(ensureParentosAIConfigFromFirstRunEvidenceMock).toHaveBeenCalledWith({
+      platformClient: currentPlatformClientMock,
+    });
+    expect(runtimeReadyMock.mock.invocationCallOrder[0]).toBeLessThan(
+      ensureParentosAIConfigFromFirstRunEvidenceMock.mock.invocationCallOrder[0]!,
+    );
   });
 
   it('proceeds to the anonymous local scope when runtime account state is UNAVAILABLE', async () => {

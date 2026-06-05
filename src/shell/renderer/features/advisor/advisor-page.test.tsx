@@ -29,7 +29,7 @@ type StoredMessage = {
 const conversationStore: StoredConversation[] = [];
 const messageStore: StoredMessage[] = [];
 const defaultLocalAIConfig = {
-  scopeRef: { kind: 'app' as const, ownerId: 'parentos', surfaceId: 'app' },
+  scopeRef: { kind: 'app' as const, ownerId: 'ai.nimi.apps.parentos', surfaceId: 'app' },
   capabilities: {
     selectedBindings: {
       'text.generate': {
@@ -764,7 +764,7 @@ describe('AdvisorPage', () => {
   it('retries cloud advisor chat with generate when the stream fails before any text arrives', async () => {
     useAppStore.setState({
       aiConfig: {
-        scopeRef: { kind: 'app', ownerId: 'parentos', surfaceId: 'app' },
+        scopeRef: { kind: 'app', ownerId: 'ai.nimi.apps.parentos', surfaceId: 'app' },
         capabilities: {
           selectedBindings: {
             'text.generate': {
