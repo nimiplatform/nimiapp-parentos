@@ -93,7 +93,7 @@ export type ParentosResolvedSpeechTranscribeParams = ParentosSpeechTranscribePar
   localModelId?: string;
 };
 
-export interface ParentosTextGenerateInput {
+export interface ParentosTextGenerationInput {
   readonly surfaceId: ParentosAISurfaceId;
   readonly capabilityId?: Extract<ParentosCapabilityId, 'text.generate' | 'text.generate.vision'>;
   readonly messages: readonly NimiMessage[];
@@ -440,7 +440,7 @@ function routePolicyName(routePolicy: unknown): string | undefined {
   return undefined;
 }
 
-function buildTextRequest(input: ParentosTextGenerateInput, params: ParentosResolvedTextRuntimeParams) {
+function buildTextRequest(input: ParentosTextGenerationInput, params: ParentosResolvedTextRuntimeParams) {
   const model = toModelRef(params);
   return {
     model,
@@ -456,7 +456,7 @@ function buildTextRequest(input: ParentosTextGenerateInput, params: ParentosReso
 }
 
 export async function runParentosTextGenerate(
-  input: ParentosTextGenerateInput,
+  input: ParentosTextGenerationInput,
 ): Promise<NimiTextGenerateResult> {
   const params = input.capabilityId === TEXT_IMAGE_INPUT_CAPABILITY
     ? await resolveParentosImageTextRuntimeConfig(input.surfaceId, input.defaults)
@@ -482,7 +482,7 @@ export async function runParentosTextGenerate(
 }
 
 export async function streamParentosTextGenerate(
-  input: ParentosTextGenerateInput,
+  input: ParentosTextGenerationInput,
   handlers: Parameters<typeof streamNimiTextResponse>[1] = {},
 ): Promise<NimiTextStreamResponseResult> {
   const params = await resolveParentosTextRuntimeConfig(input.surfaceId, input.defaults);
@@ -591,7 +591,7 @@ function toRuntimeChatMessages(messages: readonly NimiMessage[]): {
   };
 }
 
-function buildTextScenarioRequest(input: ParentosTextGenerateInput, params: ParentosResolvedTextRuntimeParams): ExecuteScenarioRequest {
+function buildTextScenarioRequest(input: ParentosTextGenerationInput, params: ParentosResolvedTextRuntimeParams): ExecuteScenarioRequest {
   const messages = toRuntimeChatMessages(input.messages);
   return {
     head: {
@@ -630,7 +630,7 @@ function textFromScenarioResponse(response: ExecuteScenarioResponse): string {
   return output.textGenerate.text;
 }
 
-export async function runParentosMultimodalTextGenerate(input: ParentosTextGenerateInput): Promise<{
+export async function runParentosMultimodalTextGenerate(input: ParentosTextGenerationInput): Promise<{
   readonly text: string;
   readonly response: ExecuteScenarioResponse;
 }> {
