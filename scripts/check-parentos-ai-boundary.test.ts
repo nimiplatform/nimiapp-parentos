@@ -4,6 +4,7 @@ import {
   findAdvisorBoundaryErrors,
   findProfileBoundaryErrors,
   findReportsBoundaryErrors,
+  findRuntimeHelperBoundaryErrors,
   findSettingsPrivacyErrors,
 } from './check-parentos-ai-boundary.js';
 
@@ -14,7 +15,7 @@ describe('check-parentos-ai-boundary', () => {
       reportFiles: [
         {
           path: 'features/reports/narrative-prompt.ts',
-          content: "filterAIResponse(); resolveParentosTextRuntimeConfig('parentos.report'); ensureParentosLocalRuntimeReady(); runtime.ai.text.stream({ metadata: buildParentosRuntimeMetadata('parentos.report') });",
+          content: "filterAIResponse(); runParentosTextGenerate({ surfaceId: 'parentos.report' });",
         },
       ],
     });
@@ -37,7 +38,7 @@ describe('check-parentos-ai-boundary', () => {
       expect.arrayContaining([
         'features/reports/unsafe.ts uses report runtime without the parentos.report surface marker',
         'features/reports/unsafe.ts uses report runtime without AI safety filtering',
-        'features/reports/unsafe.ts must resolve report runtime params through the governed surface helper',
+        'features/reports/unsafe.ts must use the governed ParentOS text runtime helper',
       ]),
     );
   });
@@ -48,32 +49,26 @@ describe('check-parentos-ai-boundary', () => {
       profileFiles: [
         {
           path: '/repo/src/shell/renderer/features/profile/ai-summary-card.tsx',
-          content: 'const surfaceId = `parentos.profile.summary.${domain}`; dataContext; filterAIResponse(); resolveParentosTextRuntimeConfig(surfaceId); ensureParentosLocalRuntimeReady(); runtime.ai.text.generate({ metadata: buildParentosRuntimeMetadata(surfaceId) });',
+          content: 'const surfaceId = `parentos.profile.summary.${domain}`; dataContext; filterAIResponse(); runParentosTextGenerate({ surfaceId });',
         },
         {
           path: '/repo/src/shell/renderer/features/profile/checkup-ocr.ts',
-          content: 'parseOCRMeasurementExtraction(output.text); resolveParentosTextRuntimeConfig(\'parentos.profile.checkup-ocr\'); ensureParentosLocalRuntimeReady(); runtime.ai.text.generate({ input:[{role:"user", content:[{ type: \'image_url\', imageUrl }]}], metadata: buildParentosRuntimeMetadata(\'parentos.profile.checkup-ocr\') });',
+          content: 'parseOCRMeasurementExtraction(output.text); runParentosMultimodalTextGenerate({ surfaceId: \'parentos.profile.checkup-ocr\', messages:[{ role:"user", content:[{ type: \'data\', data: { type: \'image-url\', url: imageUrl }}]}] });',
         },
         {
           path: '/repo/src/shell/renderer/features/profile/medical-events-page-insights.ts',
           content: [
             'filterAIResponse(text);',
-            "resolveParentosTextRuntimeConfig('parentos.medical.smart-insight');",
-            'ensureParentosLocalRuntimeReady();',
-            "runtime.ai.text.generate({ metadata: buildParentosRuntimeMetadata('parentos.medical.smart-insight') });",
-            "resolveParentosTextRuntimeConfig('parentos.medical.event-analysis');",
-            'ensureParentosLocalRuntimeReady();',
-            "runtime.ai.text.generate({ metadata: buildParentosRuntimeMetadata('parentos.medical.event-analysis') });",
+            "runParentosTextGenerate({ surfaceId: 'parentos.medical.smart-insight' });",
+            "runParentosTextGenerate({ surfaceId: 'parentos.medical.event-analysis' });",
           ].join('\n'),
         },
         {
           path: '/repo/src/shell/renderer/features/profile/medical-events-page-form-state.ts',
           content: [
             'JSON.parse(output.text);',
-            "const image = { type: 'image_url', imageUrl };",
-            "resolveParentosTextRuntimeConfig('parentos.medical.ocr-intake');",
-            'ensureParentosLocalRuntimeReady();',
-            "runtime.ai.text.generate({ metadata: buildParentosRuntimeMetadata('parentos.medical.ocr-intake') });",
+            "const image = { type: 'image-url', imageUrl };",
+            "runParentosMultimodalTextGenerate({ surfaceId: 'parentos.medical.ocr-intake' });",
           ].join('\n'),
         },
       ],
@@ -114,11 +109,9 @@ describe('check-parentos-ai-boundary', () => {
         'buildAdvisorGenericRuntimeUserMessage',
         'buildStructuredAdvisorFallback',
         'appendAdvisorSources',
-        "resolveParentosTextRuntimeConfig('parentos.advisor')",
-        'ensureParentosLocalRuntimeReady',
-        "buildParentosRuntimeMetadata('parentos.advisor')",
+        "surfaceId: 'parentos.advisor'",
         'contextSnapshot: snapshotJson',
-        'runtime.ai.text.stream',
+        'streamParentosTextGenerate',
         'buildAdvisorRuntimeInput(',
         'shouldAppendAdvisorSources(',
         '运行时响应触发了安全过滤',
@@ -131,6 +124,26 @@ describe('check-parentos-ai-boundary', () => {
         "return 'needs-review-descriptive';",
       ].join('\n'),
     });
+
+    expect(errors).toEqual([]);
+  });
+
+  it('requires governed runtime helpers to own binding, warmup, metadata, and fallback policy', () => {
+    const errors = findRuntimeHelperBoundaryErrors([
+      'export async function runParentosTextGenerate',
+      'export async function streamParentosTextGenerate',
+      'resolveParentosTextRuntimeConfig(input.surfaceId',
+      'ensureParentosLocalRuntimeReady({',
+      'createNimiRuntimeAIModel({',
+      'runNimiTextGenerate({',
+      'streamNimiTextResponse({',
+      'metadata: toParentosCoreMetadata(input.surfaceId',
+      'FallbackPolicy.DENY',
+      'export async function runParentosSpeechTranscribe',
+      'resolveParentosSpeechTranscribeRuntimeConfig(input.surfaceId',
+      'scenarioType: ScenarioType.SPEECH_TRANSCRIBE',
+      'metadata: buildParentosRuntimeMetadata(input.surfaceId)',
+    ].join('\n'));
 
     expect(errors).toEqual([]);
   });

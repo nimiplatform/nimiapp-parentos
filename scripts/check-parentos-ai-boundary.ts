@@ -42,9 +42,20 @@ function relativeToRoot(path: string, rootPath: string) {
 }
 
 function fileHasRuntimeCall(content: string) {
+  return hasTextRuntimePath(content) || hasSpeechRuntimePath(content);
+}
+
+function hasTextRuntimePath(content: string) {
   return content.includes('runtime.ai.text.generate')
     || content.includes('runtime.ai.text.stream')
-    || content.includes('media.stt.transcribe');
+    || content.includes('runParentosTextGenerate')
+    || content.includes('streamParentosTextGenerate')
+    || content.includes('runParentosMultimodalTextGenerate');
+}
+
+function hasSpeechRuntimePath(content: string) {
+  return content.includes('media.stt.transcribe')
+    || content.includes('runParentosSpeechTranscribe');
 }
 
 function hasSurfaceMarker(content: string, surfaceId: string) {
@@ -53,6 +64,13 @@ function hasSurfaceMarker(content: string, surfaceId: string) {
     || content.includes(`buildParentosRuntimeMetadata('${surfaceId}')`)
     || content.includes(`buildParentosRuntimeMetadata("${surfaceId}")`)
     || content.includes(`buildParentosRuntimeMetadata(\`${surfaceId}\`)`);
+}
+
+function hasImageInputMarker(content: string) {
+  return content.includes("type: 'image-url'")
+    || content.includes('type: "image-url"')
+    || content.includes("type: 'image_url'")
+    || content.includes('type: "image_url"');
 }
 
 export function collectTsFiles(dir: string): string[] {
@@ -143,7 +161,7 @@ export function findReportsBoundaryErrors(input: {
   }
 
   for (const file of input.reportFiles) {
-    const usesRuntime = file.content.includes('runtime.ai.text.generate') || file.content.includes('runtime.ai.text.stream');
+    const usesRuntime = hasTextRuntimePath(file.content);
     if (!usesRuntime) continue;
 
     if (!hasSurfaceMarker(file.content, 'parentos.report')) {
@@ -154,11 +172,8 @@ export function findReportsBoundaryErrors(input: {
       errors.push(`${file.path} uses report runtime without AI safety filtering`);
     }
 
-    if (!file.content.includes("resolveParentosTextRuntimeConfig('parentos.report'")) {
-      errors.push(`${file.path} must resolve report runtime params through the governed surface helper`);
-    }
-    if (!file.content.includes('ensureParentosLocalRuntimeReady')) {
-      errors.push(`${file.path} must warm governed local runtime assets before report generation`);
+    if (!file.content.includes('runParentosTextGenerate')) {
+      errors.push(`${file.path} must use the governed ParentOS text runtime helper`);
     }
   }
 
@@ -168,19 +183,16 @@ export function findReportsBoundaryErrors(input: {
 export function findJournalBoundaryErrors(journalAiSource: string) {
   const errors: string[] = [];
 
-  if (!journalAiSource.includes('runtime.ai.text.generate')) {
-    errors.push('journal AI tagging is missing runtime.ai.text.generate extraction path');
+  if (!hasTextRuntimePath(journalAiSource)) {
+    errors.push('journal AI tagging is missing governed text.generate extraction path');
   }
 
   if (journalAiSource.includes('runtime.ai.text.stream')) {
     errors.push('journal AI tagging must stay on closed-set extraction only');
   }
 
-  if (!journalAiSource.includes("resolveParentosTextRuntimeConfig('parentos.journal.ai-tagging'")) {
-    errors.push('journal AI tagging must resolve runtime params through the governed local surface helper');
-  }
-  if (!journalAiSource.includes('ensureParentosLocalRuntimeReady')) {
-    errors.push('journal AI tagging must warm governed local runtime assets before extraction');
+  if (!journalAiSource.includes('runParentosTextGenerate')) {
+    errors.push('journal AI tagging must dispatch through the governed ParentOS text runtime helper');
   }
 
   if (!hasSurfaceMarker(journalAiSource, 'parentos.journal.ai-tagging')) {
@@ -204,9 +216,7 @@ export function findVoiceBoundaryErrors(voiceObservationSource: string) {
   const errors: string[] = [];
 
   for (const marker of [
-    'media.stt.transcribe',
-    "resolveParentosSpeechTranscribeRuntimeConfig('parentos.journal.voice-observation'",
-    'ensureParentosLocalRuntimeReady',
+    'runParentosSpeechTranscribe',
     'missing transcript text',
   ]) {
     if (!voiceObservationSource.includes(marker)) {
@@ -243,15 +253,12 @@ export function findProfileBoundaryErrors(input: {
   );
 
   const summaryFile = relFiles.get('src/shell/renderer/features/profile/ai-summary-card.tsx');
-  if (summaryFile?.content.includes('runtime.ai.text.generate')) {
+  if (summaryFile && hasTextRuntimePath(summaryFile.content)) {
     if (!summaryFile.content.includes('parentos.profile.summary.')) {
       errors.push('ai-summary-card.tsx is missing the parentos.profile.summary.* surface marker');
     }
-    if (!summaryFile.content.includes('resolveParentosTextRuntimeConfig(surfaceId')) {
-      errors.push('ai-summary-card.tsx must resolve runtime params through the governed surface helper');
-    }
-    if (!summaryFile.content.includes('ensureParentosLocalRuntimeReady')) {
-      errors.push('ai-summary-card.tsx must warm governed local runtime assets before summary generation');
+    if (!summaryFile.content.includes('runParentosTextGenerate')) {
+      errors.push('ai-summary-card.tsx must use the governed ParentOS text runtime helper');
     }
     if (!summaryFile.content.includes('filterAIResponse')) {
       errors.push('ai-summary-card.tsx uses runtime summaries without AI safety filtering');
@@ -262,20 +269,17 @@ export function findProfileBoundaryErrors(input: {
   }
 
   const checkupOcrFile = relFiles.get('src/shell/renderer/features/profile/checkup-ocr.ts');
-  if (checkupOcrFile?.content.includes('runtime.ai.text.generate')) {
+  if (checkupOcrFile && hasTextRuntimePath(checkupOcrFile.content)) {
     if (!hasSurfaceMarker(checkupOcrFile.content, 'parentos.profile.checkup-ocr')) {
       errors.push('checkup-ocr.ts is missing the parentos.profile.checkup-ocr surface marker');
     }
     if (
-      !checkupOcrFile.content.includes("resolveParentosTextRuntimeConfig('parentos.profile.checkup-ocr'")
-      && !checkupOcrFile.content.includes("resolveParentosImageTextRuntimeConfig('parentos.profile.checkup-ocr'")
+      !checkupOcrFile.content.includes('runParentosTextGenerate')
+      && !checkupOcrFile.content.includes('runParentosMultimodalTextGenerate')
     ) {
-      errors.push('checkup-ocr.ts must resolve runtime params through the governed surface helper');
+      errors.push('checkup-ocr.ts must use governed ParentOS runtime helpers');
     }
-    if (!checkupOcrFile.content.includes('ensureParentosLocalRuntimeReady')) {
-      errors.push('checkup-ocr.ts must warm governed local runtime assets before OCR generation');
-    }
-    if (!checkupOcrFile.content.includes("type: 'image_url'")) {
+    if (!hasImageInputMarker(checkupOcrFile.content)) {
       errors.push('checkup-ocr.ts must keep image OCR on the explicit image_url input path');
     }
     if (!checkupOcrFile.content.includes('parseOCRMeasurementExtraction')) {
@@ -284,17 +288,17 @@ export function findProfileBoundaryErrors(input: {
   }
 
   const dentalEruptionScanFile = relFiles.get('src/shell/renderer/features/profile/dental-eruption-scan.ts');
-  if (dentalEruptionScanFile?.content.includes('runtime.ai.text.generate')) {
+  if (dentalEruptionScanFile && hasTextRuntimePath(dentalEruptionScanFile.content)) {
     if (!hasSurfaceMarker(dentalEruptionScanFile.content, 'parentos.profile.dental-eruption-scan')) {
       errors.push('dental-eruption-scan.ts is missing the parentos.profile.dental-eruption-scan surface marker');
     }
-    if (!/resolveParentosImageTextRuntimeConfig\(\s*['"]parentos\.profile\.dental-eruption-scan['"]/.test(dentalEruptionScanFile.content)) {
-      errors.push('dental-eruption-scan.ts must resolve runtime params through the governed image-text surface helper');
+    if (
+      !dentalEruptionScanFile.content.includes('runParentosTextGenerate')
+      && !dentalEruptionScanFile.content.includes('runParentosMultimodalTextGenerate')
+    ) {
+      errors.push('dental-eruption-scan.ts must use governed ParentOS runtime helpers');
     }
-    if (!dentalEruptionScanFile.content.includes('ensureParentosLocalRuntimeReady')) {
-      errors.push('dental-eruption-scan.ts must warm governed local runtime assets before image extraction');
-    }
-    if (!dentalEruptionScanFile.content.includes("type: 'image_url'")) {
+    if (!hasImageInputMarker(dentalEruptionScanFile.content)) {
       errors.push('dental-eruption-scan.ts must keep image extraction on the explicit image_url input path');
     }
     if (!dentalEruptionScanFile.content.includes('parseDentalEruptionExtraction')) {
@@ -303,7 +307,7 @@ export function findProfileBoundaryErrors(input: {
   }
 
   const medicalInsightsFile = relFiles.get('src/shell/renderer/features/profile/medical-events-page-insights.ts');
-  if (medicalInsightsFile?.content.includes('runtime.ai.text.generate')) {
+  if (medicalInsightsFile && hasTextRuntimePath(medicalInsightsFile.content)) {
     for (const surfaceId of [
       'parentos.medical.smart-insight',
       'parentos.medical.event-analysis',
@@ -312,11 +316,8 @@ export function findProfileBoundaryErrors(input: {
         errors.push(`medical-events-page-insights.ts is missing the ${surfaceId} surface marker`);
       }
     }
-    if (!medicalInsightsFile.content.includes('resolveParentosTextRuntimeConfig(')) {
-      errors.push('medical-events-page-insights.ts must resolve runtime params through the governed surface helper');
-    }
-    if (!medicalInsightsFile.content.includes('ensureParentosLocalRuntimeReady')) {
-      errors.push('medical-events-page-insights.ts must warm governed local runtime assets before generation');
+    if (!medicalInsightsFile.content.includes('runParentosTextGenerate')) {
+      errors.push('medical-events-page-insights.ts must use the governed ParentOS text runtime helper');
     }
     if (!medicalInsightsFile.content.includes('filterAIResponse')) {
       errors.push('medical-events-page-insights.ts uses medical AI summaries without AI safety filtering');
@@ -324,17 +325,14 @@ export function findProfileBoundaryErrors(input: {
   }
 
   const medicalFormStateFile = relFiles.get('src/shell/renderer/features/profile/medical-events-page-form-state.ts');
-  if (medicalFormStateFile?.content.includes('runtime.ai.text.generate')) {
+  if (medicalFormStateFile && hasTextRuntimePath(medicalFormStateFile.content)) {
     if (!hasSurfaceMarker(medicalFormStateFile.content, 'parentos.medical.ocr-intake')) {
       errors.push('medical-events-page-form-state.ts is missing the parentos.medical.ocr-intake surface marker');
     }
-    if (!medicalFormStateFile.content.includes("resolveParentosTextRuntimeConfig('parentos.medical.ocr-intake'")) {
-      errors.push('medical-events-page-form-state.ts must resolve runtime params through the governed surface helper');
+    if (!medicalFormStateFile.content.includes('runParentosMultimodalTextGenerate')) {
+      errors.push('medical-events-page-form-state.ts must use the governed ParentOS multimodal runtime helper');
     }
-    if (!medicalFormStateFile.content.includes('ensureParentosLocalRuntimeReady')) {
-      errors.push('medical-events-page-form-state.ts must warm governed local runtime assets before OCR intake');
-    }
-    if (!medicalFormStateFile.content.includes("type: 'image_url'")) {
+    if (!hasImageInputMarker(medicalFormStateFile.content)) {
       errors.push('medical-events-page-form-state.ts OCR intake must keep explicit image_url input');
     }
     if (!medicalFormStateFile.content.includes('JSON.parse')) {
@@ -371,18 +369,14 @@ export function findAdvisorBoundaryErrors(input: {
     }
   }
 
-  const hasReviewedDomainRuntimePath =
-    input.advisorPageSource.includes('runtime.ai.text.stream')
-    || input.advisorPageSource.includes('rt.ai.text.stream');
+  const hasReviewedDomainRuntimePath = hasTextRuntimePath(input.advisorPageSource);
 
   if (!hasReviewedDomainRuntimePath) {
     errors.push('advisor-page.tsx is missing reviewed-domain runtime generation path');
   }
 
   for (const marker of [
-    "resolveParentosTextRuntimeConfig('parentos.advisor'",
-    'ensureParentosLocalRuntimeReady',
-    "buildParentosRuntimeMetadata('parentos.advisor')",
+    "surfaceId: 'parentos.advisor'",
     'contextSnapshot: snapshotJson',
     'buildAdvisorRuntimeInput(',
     'shouldAppendAdvisorSources(',
@@ -402,6 +396,32 @@ export function findAdvisorBoundaryErrors(input: {
   ]) {
     if (!input.advisorBoundarySource.includes(marker)) {
       errors.push(`advisor-boundary.ts is missing advisor prompt-strategy marker: ${marker}`);
+    }
+  }
+
+  return errors;
+}
+
+export function findRuntimeHelperBoundaryErrors(parentosAiRuntimeSource: string) {
+  const errors: string[] = [];
+
+  for (const marker of [
+    'export async function runParentosTextGenerate',
+    'export async function streamParentosTextGenerate',
+    'resolveParentosTextRuntimeConfig(input.surfaceId',
+    'ensureParentosLocalRuntimeReady({',
+    'createNimiRuntimeAIModel({',
+    'runNimiTextGenerate({',
+    'streamNimiTextResponse({',
+    'metadata: toParentosCoreMetadata(input.surfaceId',
+    'FallbackPolicy.DENY',
+    'export async function runParentosSpeechTranscribe',
+    'resolveParentosSpeechTranscribeRuntimeConfig(input.surfaceId',
+    'scenarioType: ScenarioType.SPEECH_TRANSCRIBE',
+    'metadata: buildParentosRuntimeMetadata(input.surfaceId)',
+  ]) {
+    if (!parentosAiRuntimeSource.includes(marker)) {
+      errors.push(`parentos-ai-runtime.ts is missing governed helper marker: ${marker}`);
     }
   }
 
@@ -513,6 +533,7 @@ export function runAiBoundaryCheck() {
       rootPath: ROOT,
       admittedRuntimeFiles: [
         'src/shell/renderer/features/advisor/advisor-page.tsx',
+        'src/shell/renderer/features/advisor/advisor-suggestion-engine.ts',
       ],
       label: 'advisor',
     }),
@@ -526,6 +547,10 @@ export function runAiBoundaryCheck() {
     profileFiles,
     rootPath: ROOT,
   });
+
+  const runtimeHelperErrors = findRuntimeHelperBoundaryErrors(
+    readFileSync(resolve(SRC, 'features/settings/parentos-ai-runtime.ts'), 'utf-8'),
+  );
 
   const aiSettingsSurfacePaths = [
     resolve(SRC, 'features/settings/ai-settings-page.tsx'),
@@ -570,6 +595,7 @@ export function runAiBoundaryCheck() {
     voiceErrors,
     advisorErrors,
     profileErrors,
+    runtimeHelperErrors,
     settingsErrors,
     reviewed,
     needsReview,
@@ -624,6 +650,13 @@ if (isMainModule()) {
     pass('profile AI surfaces stay inside admitted local summary and OCR boundaries');
   } else {
     for (const message of result.profileErrors) fail(message);
+  }
+
+  console.log('\n=== Runtime Helper Boundary ===\n');
+  if (result.runtimeHelperErrors.length === 0) {
+    pass('ParentOS runtime helper owns binding resolution, local warmup, metadata, and fail-closed fallback policy');
+  } else {
+    for (const message of result.runtimeHelperErrors) fail(message);
   }
 
   console.log('\n=== Settings / Privacy Consistency ===\n');
