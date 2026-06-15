@@ -35,6 +35,7 @@ import { buttonVariants, cn } from '@nimiplatform/kit/ui';
 import type { NimiAIConfig, NimiAIConfigTargetRef } from '@nimiplatform/sdk/ai';
 import type { NimiJsonValue } from '@nimiplatform/sdk/contracts';
 import type { ParentosCapabilityId } from './parentos-ai-config.js';
+import { commitParentosAIConfig } from './parentos-ai-config-service.js';
 
 export type ParentosAICapabilityDescriptor = {
   id: ParentosCapabilityId;
@@ -101,12 +102,11 @@ function commitCapabilityPatch(
     targetRef?: NimiAIConfigTargetRef | null;
     params?: NimiJsonValue;
   },
-): void {
+): Promise<void> {
   const current = surface.aiConfigService.aiConfig.get(surface.scopeRef);
-  surface.aiConfigService.aiConfig.update(
-    surface.scopeRef,
+  return commitParentosAIConfig(
     applyModelConfigCapabilityPatch(current, capabilityId, patch),
-  );
+  ).then(() => undefined);
 }
 
 function statusClasses(status: ModelConfigProjectionStatus): string {
@@ -119,6 +119,7 @@ function CapabilityParamsEditor(props: {
   capabilityId: ParentosCapabilityId;
   config: NimiAIConfig;
   surface: AppModelConfigSurface;
+  onCommit: (patch: { params?: NimiJsonValue }) => void;
 }) {
   const params = readParams(props.config, props.capabilityId);
   const t = props.surface.i18n.t;
@@ -129,11 +130,7 @@ function CapabilityParamsEditor(props: {
       <AudioTranscribeParamsEditor
         copy={createAudioTranscribeEditorCopy(t)}
         params={parsed}
-        onParamsChange={(next: AudioTranscribeParamsState) => commitCapabilityPatch(
-          props.surface,
-          props.capabilityId,
-          { params: { ...DEFAULT_AUDIO_TRANSCRIBE_PARAMS, ...next } },
-        )}
+        onParamsChange={(next: AudioTranscribeParamsState) => props.onCommit({ params: { ...DEFAULT_AUDIO_TRANSCRIBE_PARAMS, ...next } })}
       />
     );
   }
@@ -143,11 +140,7 @@ function CapabilityParamsEditor(props: {
     <TextGenerateParamsEditor
       copy={createTextGenerateEditorCopy(t)}
       params={parsed}
-      onParamsChange={(next: TextGenerateParamsState) => commitCapabilityPatch(
-        props.surface,
-        props.capabilityId,
-        { params: { ...DEFAULT_TEXT_GENERATE_PARAMS, ...next } },
-      )}
+      onParamsChange={(next: TextGenerateParamsState) => props.onCommit({ params: { ...DEFAULT_TEXT_GENERATE_PARAMS, ...next } })}
     />
   );
 }
@@ -211,6 +204,8 @@ export function ParentosAICapabilityCard({
 }: ParentosAICapabilityCardProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [paramsOpen, setParamsOpen] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const [commitError, setCommitError] = useState<string | null>(null);
   const targetRef = readTargetRef(config, capability.id);
   const modelLabel = targetRefLabel(targetRef);
   const params = readParams(config, capability.id);
@@ -222,10 +217,29 @@ export function ParentosAICapabilityCard({
   const selection = useMemo(() => targetRefToPickerSelection(targetRef), [targetRef]);
   const SourceIcon = targetRef?.kind === 'cloud-connector' ? Cloud : Monitor;
 
+  const handleCommit = async (patch: {
+    targetRef?: NimiAIConfigTargetRef | null;
+    params?: NimiJsonValue;
+  }) => {
+    setCommitting(true);
+    setCommitError(null);
+    try {
+      await commitCapabilityPatch(surface, capability.id, patch);
+    } catch (error) {
+      setCommitError(error instanceof Error ? error.message : String(error || 'AI 配置保存失败'));
+    } finally {
+      setCommitting(false);
+    }
+  };
+
   const handleSelect = (pickerSelection: RouteModelPickerSelection) => {
-    commitCapabilityPatch(surface, capability.id, {
-      targetRef: pickerSelectionToTargetRef(pickerSelection),
-    });
+    try {
+      void handleCommit({
+        targetRef: pickerSelectionToTargetRef(pickerSelection),
+      });
+    } catch (error) {
+      setCommitError(error instanceof Error ? error.message : String(error || 'AI 配置保存失败'));
+    }
   };
 
   return (
@@ -254,13 +268,13 @@ export function ParentosAICapabilityCard({
           <button
             type="button"
             onClick={() => provider && setPickerOpen(true)}
-            disabled={!provider}
+            disabled={!provider || committing}
             className={cn(
               'flex min-h-[50px] w-full items-center gap-3 parentos-radius-lg border px-3.5 py-2.5 text-left transition-all',
               modelLabel
                 ? 'border-[var(--nimi-border-subtle)] bg-[color-mix(in_srgb,var(--nimi-surface-card)_90%,var(--nimi-surface-panel))]'
                 : 'border-dashed border-[color-mix(in_srgb,var(--nimi-border-strong)_55%,transparent)] bg-[color-mix(in_srgb,var(--nimi-surface-card)_66%,transparent)]',
-              provider ? 'hover:border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_36%,var(--nimi-border-subtle))]' : 'cursor-not-allowed opacity-60',
+              provider && !committing ? 'hover:border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_36%,var(--nimi-border-subtle))]' : 'cursor-not-allowed opacity-60',
             )}
           >
             {modelLabel ? (
@@ -270,7 +284,7 @@ export function ParentosAICapabilityCard({
             ) : null}
             <span className="min-w-0 flex-1">
               <span className={cn('block truncate text-[13px] font-semibold', modelLabel ? 'text-[var(--nimi-text-primary)]' : 'text-[var(--nimi-text-muted)]')}>
-                {modelLabel || (provider ? '选择 Runtime 模型' : surface.runtimeNotReadyLabel || 'Runtime 未就绪')}
+                {committing ? '保存中...' : modelLabel || (provider ? '选择 Runtime 模型' : surface.runtimeNotReadyLabel || 'Runtime 未就绪')}
               </span>
               {modelLabel ? (
                 <span className="mt-0.5 block truncate text-[11px] text-[var(--nimi-text-muted)]">{targetSourceLabel(targetRef)}</span>
@@ -300,8 +314,9 @@ export function ParentosAICapabilityCard({
             {targetRef ? (
               <button
                 type="button"
-                onClick={() => commitCapabilityPatch(surface, capability.id, { targetRef: null })}
-                className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'h-8 min-h-8 gap-1.5 px-2.5 text-[12px] text-[var(--nimi-text-muted)]')}
+                onClick={() => void handleCommit({ targetRef: null })}
+                disabled={committing}
+                className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'h-8 min-h-8 gap-1.5 px-2.5 text-[12px] text-[var(--nimi-text-muted)] disabled:opacity-50')}
               >
                 <X size={13} aria-hidden="true" />
                 清除绑定
@@ -311,7 +326,12 @@ export function ParentosAICapabilityCard({
 
           {paramsOpen ? (
             <div className="parentos-ai-params-panel parentos-radius-lg border border-[var(--nimi-border-subtle)] bg-[color-mix(in_srgb,var(--nimi-surface-card)_82%,var(--nimi-surface-panel))] p-4">
-              <CapabilityParamsEditor capabilityId={capability.id} config={config} surface={surface} />
+              <CapabilityParamsEditor
+                capabilityId={capability.id}
+                config={config}
+                surface={surface}
+                onCommit={(patch) => void handleCommit(patch)}
+              />
             </div>
           ) : status.title || status.detail ? (
             <div className="text-[12px] leading-[1.6] text-[var(--nimi-text-muted)]">
@@ -319,6 +339,11 @@ export function ParentosAICapabilityCard({
                 {status.title}
               </span>
               {status.detail ? <span className="ml-2">{status.detail}</span> : null}
+            </div>
+          ) : null}
+          {commitError ? (
+            <div className="parentos-radius-lg border border-[color-mix(in_srgb,var(--nimi-status-danger)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))] px-3 py-2 text-[12px] leading-[1.5] text-[var(--nimi-status-danger)]">
+              {commitError}
             </div>
           ) : null}
         </div>

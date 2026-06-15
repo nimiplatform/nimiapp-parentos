@@ -1,13 +1,14 @@
 import type {
   NimiAIConfig,
-  NimiAIProfileApplyResult,
-  NimiAIProfilePreviewResult,
+  NimiAIConfigStore,
+  NimiAIHostSurface,
   NimiAIScopeRef,
 } from '@nimiplatform/sdk/ai';
 import {
   createEmptyNimiAIConfig,
-  diffNimiAIConfigs,
-  versionNimiAIConfig,
+  createNimiAIConfigSubscriptionRegistry,
+  createNimiAIHostSurface,
+  validateNimiAIConfig,
 } from '@nimiplatform/sdk/ai';
 import type { SharedAIConfigService } from '@nimiplatform/kit/core/model-config';
 import { useAppStore } from '../../app-shell/app-store.js';
@@ -15,22 +16,16 @@ import {
   PARENTOS_AI_SCOPE_REF,
   createEmptyParentosAIConfig,
   isParentosAIScopeRef,
+  parsePersistedParentosAIConfig,
   savePersistedParentosAIConfig,
 } from './parentos-ai-config.js';
-import { catchLog } from '../../infra/telemetry/catch-log.js';
 
 type ConfigSubscription = (config: NimiAIConfig) => void;
 
-const configSubscriptions = new Set<ConfigSubscription>();
+const configSubscriptions = createNimiAIConfigSubscriptionRegistry();
 
 function notifyConfigSubscribers(config: NimiAIConfig): void {
-  for (const callback of configSubscriptions) {
-    try {
-      callback(config);
-    } catch {
-      // Subscriber failures must not break config writes.
-    }
-  }
+  configSubscriptions.notify(config);
 }
 
 function getConfigForScope(scopeRef: NimiAIScopeRef): NimiAIConfig {
@@ -40,7 +35,11 @@ function getConfigForScope(scopeRef: NimiAIScopeRef): NimiAIConfig {
   return useAppStore.getState().aiConfig || createEmptyParentosAIConfig();
 }
 
-function commitConfig(config: NimiAIConfig): void {
+function normalizeParentosAIConfig(config: NimiAIConfig): NimiAIConfig {
+  const validation = validateNimiAIConfig(config);
+  if (!validation.valid) {
+    throw new Error(`ParentOS AI config validation failed: ${validation.errors.join('; ')}`);
+  }
   const resolvedConfig = {
     ...config,
     scopeRef: { ...PARENTOS_AI_SCOPE_REF },
@@ -50,41 +49,68 @@ function commitConfig(config: NimiAIConfig): void {
     },
     profileOrigin: config.profileOrigin ?? null,
   } satisfies NimiAIConfig;
-  useAppStore.getState().setAIConfig(resolvedConfig);
-  notifyConfigSubscribers(resolvedConfig);
-  void savePersistedParentosAIConfig(resolvedConfig).catch(catchLog('ai-config', 'action:save-persisted-ai-config-failed'));
+  const normalized = parsePersistedParentosAIConfig(resolvedConfig);
+  if (!normalized) {
+    throw new Error('ParentOS AI config is invalid for the ParentOS app scope');
+  }
+  return normalized;
 }
 
-function createMissingProfilePreview(
-  scopeRef: NimiAIScopeRef,
-  profileId: string,
-): NimiAIProfilePreviewResult {
-  const before = getConfigForScope(scopeRef);
-  return {
-    before,
-    after: null,
-    outcome: 'invalid_profile',
-    diff: diffNimiAIConfigs(before, null),
-    baseVersion: versionNimiAIConfig(before),
-    probeWarnings: [`Profile not found: ${profileId}`],
-  };
+async function commitConfig(config: NimiAIConfig): Promise<NimiAIConfig> {
+  const resolvedConfig = normalizeParentosAIConfig(config);
+  await savePersistedParentosAIConfig(resolvedConfig);
+  useAppStore.getState().setAIConfig(resolvedConfig);
+  notifyConfigSubscribers(resolvedConfig);
+  return resolvedConfig;
+}
+
+const parentosAIConfigStore: NimiAIConfigStore = {
+  has(scopeRef: NimiAIScopeRef): boolean {
+    return isParentosAIScopeRef(scopeRef) && Boolean(useAppStore.getState().aiConfig);
+  },
+  load(scopeRef: NimiAIScopeRef): NimiAIConfig {
+    return getConfigForScope(scopeRef);
+  },
+  loadOrNull(scopeRef: NimiAIScopeRef): NimiAIConfig | null {
+    return this.has(scopeRef) ? getConfigForScope(scopeRef) : null;
+  },
+  save(config: NimiAIConfig): NimiAIConfig {
+    return normalizeParentosAIConfig(config);
+  },
+  listScopeRefs(): readonly NimiAIScopeRef[] {
+    return useAppStore.getState().aiConfig ? [{ ...PARENTOS_AI_SCOPE_REF }] : [];
+  },
+};
+
+function createParentosAIHostSurface(): NimiAIHostSurface {
+  return createNimiAIHostSurface({
+    profiles: [],
+    configStore: parentosAIConfigStore,
+    subscriptions: configSubscriptions,
+  });
+}
+
+export async function commitParentosAIConfig(config: NimiAIConfig): Promise<NimiAIConfig> {
+  return commitConfig(config);
 }
 
 function createAIProfileSurface(): SharedAIConfigService['aiProfile'] {
   return {
     async list() {
-      return [];
+      return [...await createParentosAIHostSurface().aiProfile.list()];
     },
-    async previewApply(scopeRef: NimiAIScopeRef, profileId: string): Promise<NimiAIProfilePreviewResult> {
-      return createMissingProfilePreview(scopeRef, profileId);
+    async previewApply(scopeRef, profileId, options) {
+      return createParentosAIHostSurface().aiProfile.previewApply(scopeRef, profileId, options);
     },
-    async apply(scopeRef: NimiAIScopeRef, profileId: string): Promise<NimiAIProfileApplyResult> {
+    async apply(scopeRef, profileId, options) {
+      const result = await createParentosAIHostSurface().aiProfile.apply(scopeRef, profileId, options);
+      if (!result.success || !result.config) {
+        return result;
+      }
+      const saved = await commitConfig(result.config);
       return {
-        success: false,
-        config: null,
-        failureReason: `Profile not found: ${profileId}`,
-        outcome: 'invalid_profile',
-        probeWarnings: [],
+        ...result,
+        config: saved,
       };
     },
   };
@@ -96,11 +122,11 @@ function createAIConfigSurface(): SharedAIConfigService['aiConfig'] {
       return getConfigForScope(scopeRef);
     },
 
-    update(scopeRef: NimiAIScopeRef, config: NimiAIConfig): void {
+    async update(scopeRef: NimiAIScopeRef, config: NimiAIConfig): Promise<void> {
       if (!isParentosAIScopeRef(scopeRef)) {
         return;
       }
-      commitConfig({
+      await commitConfig({
         ...config,
         scopeRef: { ...PARENTOS_AI_SCOPE_REF },
       });
@@ -110,10 +136,7 @@ function createAIConfigSurface(): SharedAIConfigService['aiConfig'] {
       if (!isParentosAIScopeRef(scopeRef)) {
         return () => {};
       }
-      configSubscriptions.add(callback);
-      return () => {
-        configSubscriptions.delete(callback);
-      };
+      return configSubscriptions.subscribe(scopeRef, callback as ConfigSubscription);
     },
   };
 }

@@ -18,11 +18,13 @@ const {
 
 const {
   getParentosAIConfigService,
+  commitParentosAIConfig,
 } = await import('./parentos-ai-config-service.js');
 
 describe('parentos-ai-config-service', () => {
   beforeEach(() => {
     mockSetAppSetting.mockReset();
+    mockSetAppSetting.mockResolvedValue(undefined);
     useAppStore.setState({ aiConfig: null });
   });
 
@@ -33,16 +35,66 @@ describe('parentos-ai-config-service', () => {
   });
 
   it('fails closed when applying an unknown profile', async () => {
-    const result = await getParentosAIConfigService().aiProfile.apply(PARENTOS_AI_SCOPE_REF, 'family-advisor');
+    const result = await getParentosAIConfigService().aiProfile.apply(PARENTOS_AI_SCOPE_REF, 'family-advisor', {
+      requirementDeclarations: [],
+    });
 
     expect(result).toEqual({
       success: false,
       config: null,
       outcome: 'invalid_profile',
-      failureReason: 'Profile not found: family-advisor',
-      probeWarnings: [],
+      failureReason: 'invalid_profile',
+      probeWarnings: ['AI profile not found: family-advisor'],
     });
     expect(useAppStore.getState().aiConfig).toBe(null);
     expect(mockSetAppSetting).not.toHaveBeenCalled();
+  });
+
+  it('commits AI config only after SQLite persistence succeeds', async () => {
+    const unsubscribe = vi.fn();
+    const next = {
+      scopeRef: PARENTOS_AI_SCOPE_REF,
+      capabilities: {
+        targetRefs: {
+          'text.generate': {
+            kind: 'local-runtime',
+            targetId: 'local-model',
+          },
+        },
+        selectedParams: {},
+      },
+      profileOrigin: null,
+    } as const;
+
+    getParentosAIConfigService().aiConfig.subscribe(PARENTOS_AI_SCOPE_REF, unsubscribe);
+    const saved = await commitParentosAIConfig(next);
+
+    expect(saved.capabilities.targetRefs['text.generate']).toEqual({
+      kind: 'local-runtime',
+      targetId: 'local-model',
+    });
+    expect(mockSetAppSetting).toHaveBeenCalledTimes(1);
+    expect(useAppStore.getState().aiConfig).toEqual(saved);
+    expect(unsubscribe).toHaveBeenCalledWith(saved);
+  });
+
+  it('does not mutate the live AI config when SQLite persistence fails', async () => {
+    mockSetAppSetting.mockRejectedValue(new Error('sqlite unavailable'));
+    const next = {
+      scopeRef: PARENTOS_AI_SCOPE_REF,
+      capabilities: {
+        targetRefs: {
+          'text.generate': {
+            kind: 'local-runtime',
+            targetId: 'local-model',
+          },
+        },
+        selectedParams: {},
+      },
+      profileOrigin: null,
+    } as const;
+
+    await expect(commitParentosAIConfig(next)).rejects.toThrow('sqlite unavailable');
+    expect(useAppStore.getState().aiConfig).toBe(null);
   });
 });

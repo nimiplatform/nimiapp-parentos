@@ -4,7 +4,7 @@ use std::sync::{OnceLock, RwLock};
 use serde::Deserialize;
 use tauri::Manager;
 
-pub const PARENTOS_APP_ID: &str = "ai.nimi.apps.parentos";
+pub const PARENTOS_APP_ID: &str = "nimi.parentos";
 
 const STORAGE_POLICY_REF: &str = "nimi-data-app-roots";
 const READY_STORAGE_STATE: &str = "ready";
@@ -195,9 +195,14 @@ mod tests {
     }
 
     #[test]
+    fn parentos_app_storage_owner_is_canonical_nimi_app_id() {
+        assert_eq!(PARENTOS_APP_ID, "nimi.parentos");
+    }
+
+    #[test]
     fn rejects_projection_for_another_app() {
         let mut projection = ready_projection();
-        projection.app_id = "app.nimi.other".to_string();
+        projection.app_id = "nimi.other".to_string();
         assert!(roots_from_projection(&projection).is_err());
     }
 

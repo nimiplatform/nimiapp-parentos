@@ -42,8 +42,8 @@ export function resolveParentosBinding(capabilityId: ParentosCapabilityId): Pare
 
 export function buildParentosRuntimeMetadata(surfaceId: ParentosAISurfaceId): CoreMetadata {
   return {
-    callerKind: 'third-party-app',
-    callerId: 'ai.nimi.apps.parentos',
+    callerKind: 'developer-registered-local-app',
+    callerId: 'nimi.parentos',
     surfaceId,
   };
 }
@@ -580,6 +580,10 @@ function toRuntimeChatMessages(messages: readonly NimiMessage[]): {
       content: text,
       name: String(message.name || ''),
       parts,
+      toolCalls: [],
+      toolCallId: '',
+      toolResults: [],
+      toolApprovalResponses: [],
     });
   }
   if (conversation.length === 0) {
@@ -615,6 +619,14 @@ function buildTextScenarioRequest(input: ParentosTextGenerationInput, params: Pa
           temperature: Number(params.temperature ?? 0),
           topP: Number(params.topP ?? 0),
           maxTokens: Number(params.maxTokens ?? 0),
+          toolChoice: 0,
+          toolChoiceName: '',
+          topK: 0,
+          presencePenalty: 0,
+          frequencyPenalty: 0,
+          stop: [],
+          seed: '',
+          includeRawChunks: false,
         },
       },
     },

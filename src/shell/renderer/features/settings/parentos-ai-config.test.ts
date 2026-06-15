@@ -87,7 +87,7 @@ describe('parentos-ai-config persistence', () => {
     });
   });
 
-  it('returns null when the persisted scope does not match ParentOS', async () => {
+  it('fails closed when a persisted config exists under the ParentOS key but has the wrong scope', async () => {
     mockGetAppSetting.mockResolvedValue(JSON.stringify({
       scopeRef: {
         kind: 'app',
@@ -101,7 +101,13 @@ describe('parentos-ai-config persistence', () => {
       profileOrigin: null,
     }));
 
-    await expect(loadPersistedParentosAIConfig()).resolves.toBeNull();
+    await expect(loadPersistedParentosAIConfig()).rejects.toThrow('Persisted ParentOS AI config is invalid');
+  });
+
+  it('fails closed when app setting storage cannot be read', async () => {
+    mockGetAppSetting.mockRejectedValue(new Error('sqlite read failed'));
+
+    await expect(loadPersistedParentosAIConfig()).rejects.toThrow('sqlite read failed');
   });
 
   it('persists the normalized config into app settings', async () => {

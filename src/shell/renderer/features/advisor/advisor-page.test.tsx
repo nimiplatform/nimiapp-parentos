@@ -29,7 +29,7 @@ type StoredMessage = {
 const conversationStore: StoredConversation[] = [];
 const messageStore: StoredMessage[] = [];
 const defaultLocalAIConfig = {
-  scopeRef: { kind: 'app' as const, ownerId: 'ai.nimi.apps.parentos', surfaceId: 'app' },
+  scopeRef: { kind: 'app' as const, ownerId: 'nimi.parentos', surfaceId: 'app' },
   capabilities: {
     targetRefs: {
       'text.generate': {
@@ -492,7 +492,7 @@ describe('AdvisorPage', () => {
     });
     getParentOSNimiClientMock.mockReturnValue({
       runtime: {
-        appId: 'ai.nimi.apps.parentos',
+        appId: 'nimi.parentos',
         local: {
           warmLocalAsset: warmLocalAssetMock,
         },
@@ -852,7 +852,7 @@ describe('AdvisorPage', () => {
   it('retries cloud advisor chat with generate when the stream fails before any text arrives', async () => {
     useAppStore.setState({
       aiConfig: {
-        scopeRef: { kind: 'app', ownerId: 'ai.nimi.apps.parentos', surfaceId: 'app' },
+        scopeRef: { kind: 'app', ownerId: 'nimi.parentos', surfaceId: 'app' },
         capabilities: {
           targetRefs: {
             'text.generate': {

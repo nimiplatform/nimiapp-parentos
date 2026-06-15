@@ -63,10 +63,10 @@ const {
 } = await import('./parentos-auth-adapter.js');
 
 const PARENTOS_CALLER = {
-  appId: 'ai.nimi.apps.parentos',
-  appInstanceId: 'ai.nimi.apps.parentos.local-first-party',
-  deviceId: 'local-first-party-device',
-  mode: AccountCallerMode.LOCAL_FIRST_PARTY_APP,
+  appId: 'nimi.parentos',
+  appInstanceId: 'nimi.parentos.local-developer',
+  deviceId: 'parentos-local-developer-device',
+  mode: AccountCallerMode.LOCAL_DEVELOPER_APP,
   scopes: [],
 };
 
@@ -93,6 +93,11 @@ describe('parentos-auth-adapter (PO-SHELL-008)', () => {
     ).rejects.toThrow(/does not own.*token custody/i);
   });
 
+  it('does not expose a social OAuth token-exchange bridge in desktop-browser mode', () => {
+    const adapter = createParentOSDesktopBrowserAuthAdapter();
+    expect(adapter).not.toHaveProperty('oauthBridge');
+  });
+
   it('loadCurrentUser derives the user from runtime.account.getAccountSessionStatus', async () => {
     mockGetAccountSessionStatus.mockResolvedValue({
       state: AccountSessionState.AUTHENTICATED,
@@ -114,13 +119,9 @@ describe('parentos-auth-adapter (PO-SHELL-008)', () => {
     await expect(loadCurrentUser()).resolves.toBeNull();
   });
 
-  it('logoutParentOSRuntimeAccount routes through runtime.account.logout with the parentos caller', async () => {
-    mockLogout.mockResolvedValue({ accepted: true });
-    await logoutParentOSRuntimeAccount();
-    expect(mockLogout).toHaveBeenCalledWith({
-      caller: PARENTOS_CALLER,
-      reason: 'parentos_logout',
-    });
+  it('logoutParentOSRuntimeAccount fails closed without Runtime account-control RPC', async () => {
+    await expect(logoutParentOSRuntimeAccount()).rejects.toThrow(/cannot own Runtime account logout/);
+    expect(mockLogout).not.toHaveBeenCalled();
   });
 });
 

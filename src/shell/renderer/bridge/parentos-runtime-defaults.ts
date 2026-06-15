@@ -1,4 +1,3 @@
-import { getRuntimeDefaults } from '@nimiplatform/kit/shell/renderer/bridge';
 import type { ParentOSRuntimeDefaults } from './parentos-types.js';
 
 function readEnv(name: string): string {
@@ -34,9 +33,7 @@ function resolveWebBaseUrl(): string {
 }
 
 export async function getParentOSRuntimeDefaults(): Promise<ParentOSRuntimeDefaults> {
-  const shared = await getRuntimeDefaults();
   return {
-    ...shared,
     webBaseUrl: resolveWebBaseUrl(),
   };
 }

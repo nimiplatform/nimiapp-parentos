@@ -6,7 +6,7 @@
 
 - **App name (Chinese)**: 成长底稿
 - **App name (English)**: ParentOS
-- **App ID**: `ai.nimi.apps.parentos`
+- **App ID**: `nimi.parentos`
 - **One-line**: AI 驱动的儿童成长操作系统——会主动告诉家长这个阶段孩子最该关注什么。
 - **Status**: Pre-Alpha, not yet launched.
 

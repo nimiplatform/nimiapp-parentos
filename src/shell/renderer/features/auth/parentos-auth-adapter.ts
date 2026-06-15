@@ -1,5 +1,4 @@
 import type { AuthPlatformAdapter } from '@nimiplatform/kit/auth';
-import { parentosTauriOAuthBridge } from '../../bridge/index.js';
 import {
   ensureParentOSRuntimeClientReady,
   loadParentOSRuntimeAccountUser,
@@ -14,6 +13,9 @@ const PARENTOS_EMBEDDED_AUTH_UNSUPPORTED =
 const PARENTOS_TOKEN_PROXY_FORBIDDEN =
   'ParentOS does not own access/refresh token custody (PO-SHELL-008 / spec K-ACCSVC-008). '
   + 'Runtime is the sole owner — login through the desktop browser broker.';
+const PARENTOS_ACCOUNT_CONTROL_FORBIDDEN =
+  'ParentOS is a developer-registered local app and cannot own Runtime account logout. '
+  + 'Use the first-party Desktop account surface.';
 
 function unsupported<T>(): Promise<T> {
   return Promise.reject(new Error(PARENTOS_EMBEDDED_AUTH_UNSUPPORTED));
@@ -26,10 +28,7 @@ export async function loadCurrentUser(): Promise<ParentOSAuthUser | null> {
 
 export async function logoutParentOSRuntimeAccount(): Promise<void> {
   await ensureParentOSRuntimeClientReady();
-  await getParentOSNimiClient().runtime.account.logout({
-    caller: parentosRuntimeAccountCaller,
-    reason: 'parentos_logout',
-  });
+  throw new Error(PARENTOS_ACCOUNT_CONTROL_FORBIDDEN);
 }
 
 /**
@@ -59,7 +58,6 @@ export function createParentOSDesktopBrowserAuthAdapter(): AuthPlatformAdapter {
     clearPersistedSession: async () => {
       await logoutParentOSRuntimeAccount();
     },
-    oauthBridge: parentosTauriOAuthBridge,
     syncAfterLogin: async () => {},
   };
 }

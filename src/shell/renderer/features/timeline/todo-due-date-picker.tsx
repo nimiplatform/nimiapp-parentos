@@ -35,17 +35,7 @@ export function TodoDueDatePicker({ value, onChange, maxDate = '2100-12-31' }: T
   const wrapRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const parsedMax = maxDate ? parseDateValue(maxDate) : null;
-  const [displayMonth, setDisplayMonth] = useState(() => {
-    const base = value ? parseDateValue(value) : new Date();
-    return new Date(base.getFullYear(), base.getMonth(), 1, 12, 0, 0, 0);
-  });
   const active = Boolean(value) && value !== getLocalToday();
-
-  useEffect(() => {
-    if (!value) return;
-    const parsed = parseDateValue(value);
-    setDisplayMonth(new Date(parsed.getFullYear(), parsed.getMonth(), 1, 12, 0, 0, 0));
-  }, [value]);
 
   useEffect(() => {
     if (!mounted || open) return;
@@ -107,9 +97,7 @@ export function TodoDueDatePicker({ value, onChange, maxDate = '2100-12-31' }: T
             anchorRef={wrapRef}
             open={open}
             value={value}
-            displayMonth={displayMonth}
             maxDate={parsedMax}
-            onDisplayMonthChange={setDisplayMonth}
             onChange={(next) => {
               const clamped = clampToMax(parseDateValue(next), parsedMax);
               onChange(formatDateValue(clamped));

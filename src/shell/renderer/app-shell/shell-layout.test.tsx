@@ -12,6 +12,9 @@ const { setAppSettingMock } = vi.hoisted(() => ({
 const { syncParentOSLocalDataScopeMock } = vi.hoisted(() => ({
   syncParentOSLocalDataScopeMock: vi.fn().mockResolvedValue(undefined),
 }));
+const { logoutParentOSRuntimeAccountMock } = vi.hoisted(() => ({
+  logoutParentOSRuntimeAccountMock: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('../bridge/sqlite-bridge.js', () => ({
   setAppSetting: setAppSettingMock,
@@ -19,10 +22,16 @@ vi.mock('../bridge/sqlite-bridge.js', () => ({
 vi.mock('../infra/parentos-bootstrap.js', () => ({
   syncParentOSLocalDataScope: syncParentOSLocalDataScopeMock,
 }));
+vi.mock('../features/auth/parentos-auth-adapter.js', () => ({
+  logoutParentOSRuntimeAccount: logoutParentOSRuntimeAccountMock,
+}));
 
 describe('ShellLayout', () => {
   beforeEach(() => {
     syncParentOSLocalDataScopeMock.mockReset();
+    syncParentOSLocalDataScopeMock.mockResolvedValue(undefined);
+    logoutParentOSRuntimeAccountMock.mockReset();
+    logoutParentOSRuntimeAccountMock.mockResolvedValue(undefined);
     useAppStore.setState({
       bootstrapReady: true,
       familyId: 'family-1',
@@ -139,8 +148,28 @@ describe('ShellLayout', () => {
     fireEvent.click(await screen.findByRole('button', { name: '退出登录' }));
 
     await waitFor(() => {
+      expect(logoutParentOSRuntimeAccountMock).toHaveBeenCalledTimes(1);
       expect(syncParentOSLocalDataScopeMock).toHaveBeenCalledWith(null);
     });
     expect(useAppStore.getState().auth.user).toBeNull();
+  });
+
+  it('keeps the runtime-projected auth session when Runtime logout fails', async () => {
+    logoutParentOSRuntimeAccountMock.mockRejectedValue(new Error('runtime refused logout'));
+
+    render(
+      <MemoryRouter>
+        <ShellLayout>
+          <div>APP_CONTENT</div>
+        </ShellLayout>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '打开账号菜单' }));
+    fireEvent.click(await screen.findByRole('button', { name: '退出登录' }));
+
+    expect(await screen.findByText('runtime refused logout')).toBeTruthy();
+    expect(syncParentOSLocalDataScopeMock).not.toHaveBeenCalled();
+    expect(useAppStore.getState().auth.user?.id).toBe('user-1');
   });
 });

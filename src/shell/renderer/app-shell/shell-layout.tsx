@@ -158,6 +158,8 @@ function AccountAvatarMenu() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const openMenu = () => { setMounted(true); requestAnimationFrame(() => setOpen(true)); };
@@ -175,12 +177,22 @@ function AccountAvatarMenu() {
   }, [open]);
 
   const handleLogout = async () => {
-    closeMenu();
     // PO-SHELL-008: revoke through Runtime account custody (single source of
-    // truth). No legacy app-local session storage to clear.
-    try { await logoutParentOSRuntimeAccount(); } catch { /* best-effort */ }
-    clearAuth();
-    void syncParentOSLocalDataScope(null);
+    // truth). Local auth projection is cleared only after Runtime accepts logout.
+    setLogoutError(null);
+    setLoggingOut(true);
+    try {
+      await logoutParentOSRuntimeAccount();
+      closeMenu();
+      clearAuth();
+      void syncParentOSLocalDataScope(null);
+    } catch (error) {
+      setMounted(true);
+      setOpen(true);
+      setLogoutError(error instanceof Error ? error.message : String(error || '退出登录失败'));
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   const displayName = authUser?.displayName || '用户';
@@ -246,12 +258,18 @@ function AccountAvatarMenu() {
 
           {/* ── Logout ── */}
           <div className="px-1.5 py-1.5">
+            {logoutError ? (
+              <div className="mx-1.5 mb-1.5 rounded-lg border border-[color-mix(in_srgb,var(--nimi-status-danger)_28%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))] px-2.5 py-2 text-[12px] leading-[1.5] text-[var(--nimi-status-danger)]">
+                {logoutError}
+              </div>
+            ) : null}
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] text-[var(--nimi-status-danger)] transition-all hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,transparent)]"
+              disabled={loggingOut}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] text-[var(--nimi-status-danger)] transition-all hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <LogOut size={18} strokeWidth={1.8} className="text-[var(--nimi-status-danger)]" />
-              退出登录
+              {loggingOut ? '退出中...' : '退出登录'}
             </button>
           </div>
         </Surface>

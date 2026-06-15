@@ -11,7 +11,7 @@ import { isoNow } from '../../bridge/ulid.js';
 
 export const PARENTOS_AI_SCOPE_REF: NimiAIScopeRef = {
   kind: 'app',
-  ownerId: 'ai.nimi.apps.parentos',
+  ownerId: 'nimi.parentos',
   surfaceId: 'parentos.ai',
 };
 
@@ -258,12 +258,15 @@ export function parsePersistedParentosAIConfig(value: unknown): NimiAIConfig | n
 }
 
 export async function loadPersistedParentosAIConfig(): Promise<NimiAIConfig | null> {
-  try {
-    const raw = await getAppSetting(PARENTOS_AI_CONFIG_SETTING_KEY);
-    return parsePersistedParentosAIConfig(raw);
-  } catch {
+  const raw = await getAppSetting(PARENTOS_AI_CONFIG_SETTING_KEY);
+  if (raw == null || (typeof raw === 'string' && !raw.trim())) {
     return null;
   }
+  const parsed = parsePersistedParentosAIConfig(raw);
+  if (!parsed) {
+    throw new Error('Persisted ParentOS AI config is invalid');
+  }
+  return parsed;
 }
 
 export async function savePersistedParentosAIConfig(config: NimiAIConfig): Promise<void> {

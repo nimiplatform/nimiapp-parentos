@@ -28,7 +28,6 @@ vi.mock('../../bridge/index.js', () => ({
   parentosTauriOAuthBridge: {
     hasTauriInvoke: vi.fn(() => true),
     oauthListenForCode: vi.fn(),
-    oauthTokenExchange: vi.fn(),
     openExternalUrl: vi.fn(),
     focusMainWindow: vi.fn(),
   },
@@ -42,22 +41,6 @@ describe('ParentOSLoginPage', () => {
     useAppStore.setState({
       runtimeDefaults: {
         webBaseUrl: 'http://localhost:3000',
-        realm: {
-          realmBaseUrl: 'http://localhost:3002',
-          realtimeUrl: '',
-          accessToken: '',
-          jwksUrl: 'http://localhost:3002/api/auth/jwks',
-          revocationUrl: 'http://localhost:3002/api/auth/sessions/introspect',
-          jwtIssuer: 'http://localhost:3002',
-          jwtAudience: 'nimi-runtime',
-        },
-        runtime: {
-          targetType: '',
-          targetAccountId: '',
-          agentId: '',
-          worldId: '',
-          userConfirmedUpload: false,
-        },
       },
     });
   });
@@ -83,5 +66,15 @@ describe('ParentOSLoginPage', () => {
       desktopBrowserAuth?: { runtimeAccountBroker?: unknown };
     };
     expect(props.desktopBrowserAuth?.runtimeAccountBroker).toBeDefined();
+  });
+
+  it('PO-SHELL-008: passes a code-only desktop bridge with no token exchange surface', () => {
+    render(<ParentOSLoginPage />);
+
+    const props = desktopShellAuthPageSpy.mock.calls[0]?.[0] as {
+      desktopBrowserAuth?: { bridge?: Record<string, unknown> };
+    };
+    expect(props.desktopBrowserAuth?.bridge).toBeDefined();
+    expect(props.desktopBrowserAuth?.bridge).not.toHaveProperty('oauthTokenExchange');
   });
 });

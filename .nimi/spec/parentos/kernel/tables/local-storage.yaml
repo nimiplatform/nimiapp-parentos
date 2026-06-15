@@ -1,9 +1,9 @@
 schema_version: 1
 
 storage_layout:
-  app_id: ai.nimi.apps.parentos
-  authority: Runtime.GetAppStorage(ai.nimi.apps.parentos)
-  durable_data_root_binding: parentosAppDataRoot = Runtime.GetAppStorage(ai.nimi.apps.parentos).durableDataRoot
+  app_id: nimi.parentos
+  authority: Runtime.GetAppStorage(nimi.parentos)
+  durable_data_root_binding: parentosAppDataRoot = Runtime.GetAppStorage(nimi.parentos).durableDataRoot
   storage_policy_ref: nimi-data-app-roots
   sqlite:
     anonymous_database: "${parentosAppDataRoot}/sqlite/anonymous.db"
@@ -15,7 +15,7 @@ storage_layout:
     journal_audio: "${parentosAppDataRoot}/journal/audio/{childId}/{entryId}.{ext}"
     child_avatars: "${parentosAppDataRoot}/children/avatars/{childId}.{ext}"
   constraints:
-    - "ParentOS MUST resolve durable data, cache, and temp roots through Runtime.GetAppStorage(ai.nimi.apps.parentos); app code MUST NOT concatenate <nimi_data>/apps/ai.nimi.apps.parentos or write directly under the selected nimi_data root."
+    - "ParentOS MUST resolve durable data, cache, and temp roots through Runtime.GetAppStorage(nimi.parentos); app code MUST NOT concatenate <nimi_data>/apps/nimi.parentos or write directly under the selected nimi_data root."
     - "All SQLite database files and user-generated media files MUST live under parentosAppDataRoot and must be rejected when path canonicalization escapes the Runtime-projected root."
     - "Because ParentOS is pre-launch, this storage layout is hard-cut; direct writes under the selected nimi_data root are not admitted storage roots."
 
@@ -1105,7 +1105,7 @@ constraints:
   - "Child deletion cascades through all child-scoped tables: growth_measurements, milestone_records, reminder_states, vaccine_records, posture_assessments, journal_entries, ai_conversations, growth_reports, dental_records, allergy_records, sleep_records, medical_events, tanner_assessments, fitness_assessments, outdoor_records, vision_followup_settings, health_record_events, health_record_values, attachments, custom_todos, orthodontic_cases, orthodontic_appliances, orthodontic_checkins, orthodontic_unwear_intervals, orthodontic_photo_sessions."
   - "vision_followup_settings.cadenceMonths is constrained to the integer range 1..36 at the bridge boundary; values outside this range must fail-close. customNextDate must be ISO 8601 YYYY-MM-DD when present."
   - "orthodontic_cases deletion cascades to orthodontic_appliances, orthodontic_checkins, orthodontic_unwear_intervals, and orthodontic_photo_sessions. orthodontic_appliances deletion cascades to orthodontic_checkins, orthodontic_unwear_intervals, and orthodontic_photo_sessions (when pinned via applianceId)."
-  - "orthodontic_photo_sessions deletion cascades to its attachments rows AND the on-disk session directory under ${parentosAppDataRoot}/orthodontic/photos/{childId}/{sessionId}/, where parentosAppDataRoot = Runtime.GetAppStorage(ai.nimi.apps.parentos).durableDataRoot (PO-ORTHO-012). The attachments-row purge and file purge run inside the same Tauri command transaction; the FK chain does not cascade attachments because attachments is the unified owner-polymorphic table with no per-owner FK back."
+  - "orthodontic_photo_sessions deletion cascades to its attachments rows AND the on-disk session directory under ${parentosAppDataRoot}/orthodontic/photos/{childId}/{sessionId}/, where parentosAppDataRoot = Runtime.GetAppStorage(nimi.parentos).durableDataRoot (PO-ORTHO-012). The attachments-row purge and file purge run inside the same Tauri command transaction; the FK chain does not cascade attachments because attachments is the unified owner-polymorphic table with no per-owner FK back."
   - "orthodontic_unwear_intervals enforces at most one open interval (endAt IS NULL) per applianceId via a partial unique index, per orthodontic-contract.md#PO-ORTHO-005a."
   - "orthodontic_checkins.checkinType is restricted to aligner-change | expander-activation; legacy wear-daily / retention-wear were permanently retired by migration v15 (PO-ORTHO-005b)."
   - "children.allergies JSON array remains as a quick-access summary; allergy_records is the structured source of truth."

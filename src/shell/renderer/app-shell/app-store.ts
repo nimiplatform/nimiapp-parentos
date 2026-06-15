@@ -35,9 +35,8 @@ export interface ChildProfile {
 interface AppState {
   // PO-SHELL-008 / spec K-ACCSVC-008: ParentOS does not own access or refresh
   // tokens. The `auth` slice tracks only the runtime-projected account
-  // identity. Short-lived access tokens, when needed for a direct realm call,
-  // are pulled from `runtime.account.getAccessToken` at call time and never
-  // persisted in this store.
+  // identity. Non-first-party local app auth uses Runtime app sessions and
+  // scoped/protected metadata, not raw Realm access-token projection.
   auth: {
     status: AuthStatus;
     user: AuthUser | null;

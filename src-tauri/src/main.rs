@@ -2,10 +2,8 @@
 
 use serde::Serialize;
 // Shared modules from kit/shell/tauri crate
-use nimi_shell_tauri::auth_session_commands;
 use nimi_shell_tauri::oauth_commands;
 use nimi_shell_tauri::runtime_bridge;
-use nimi_shell_tauri::runtime_defaults as defaults;
 use nimi_shell_tauri::session_logging;
 
 // App-local modules
@@ -116,22 +114,12 @@ fn main() {
             get_storage_dirs,
             prepare_parentos_app_storage,
             parentos_start_window_drag,
-            defaults::runtime_defaults,
-            auth_session_commands::auth_session_load,
-            auth_session_commands::auth_session_save,
-            auth_session_commands::auth_session_clear,
             oauth_commands::open_external_url,
-            oauth_commands::oauth_token_exchange,
             oauth_commands::oauth_listen_for_code,
             runtime_bridge::runtime_bridge_unary,
             runtime_bridge::runtime_bridge_stream_open,
             runtime_bridge::runtime_bridge_stream_close,
             runtime_bridge::runtime_bridge_status,
-            runtime_bridge::runtime_bridge_start,
-            runtime_bridge::runtime_bridge_stop,
-            runtime_bridge::runtime_bridge_restart,
-            runtime_bridge::runtime_bridge_config_get,
-            runtime_bridge::runtime_bridge_config_set,
             session_logging::log_renderer_event,
             journal_audio::save_journal_voice_audio,
             journal_audio::delete_journal_voice_audio,

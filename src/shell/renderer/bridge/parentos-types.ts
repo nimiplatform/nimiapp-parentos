@@ -1,5 +1,3 @@
-import type { RuntimeDefaults as SharedRuntimeDefaults } from '@nimiplatform/kit/shell/renderer/bridge';
-
-export type ParentOSRuntimeDefaults = SharedRuntimeDefaults & {
+export type ParentOSRuntimeDefaults = {
   webBaseUrl: string;
 };
