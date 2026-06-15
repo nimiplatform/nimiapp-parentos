@@ -5,18 +5,18 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@nimiplatform/sdk': link:../../nimi-realm/nimi/sdks/typescript
+  '@nimiplatform/sdk': link:../../nimi/sdks/typescript
 
 importers:
 
   .:
     dependencies:
       '@nimiplatform/kit':
-        specifier: link:../../nimi-realm/nimi/kit
-        version: link:../../nimi-realm/nimi/kit
+        specifier: link:../../nimi/kit
+        version: link:../../nimi/kit
       '@nimiplatform/sdk':
-        specifier: link:../../nimi-realm/nimi/sdks/typescript
-        version: link:../../nimi-realm/nimi/sdks/typescript
+        specifier: link:../../nimi/sdks/typescript
+        version: link:../../nimi/sdks/typescript
       '@radix-ui/react-avatar':
         specifier: ^1.1.10
         version: 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)

@@ -54,8 +54,8 @@
     "yaml": "^2.9.0"
   },
   "dependencies": {
-    "@nimiplatform/kit": "link:../../nimi-realm/nimi/kit",
-    "@nimiplatform/sdk": "link:../../nimi-realm/nimi/sdks/typescript",
+    "@nimiplatform/kit": "link:../../nimi/kit",
+    "@nimiplatform/sdk": "link:../../nimi/sdks/typescript",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-popover": "^1.1.14",
@@ -89,7 +89,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@nimiplatform/sdk": "link:../../nimi-realm/nimi/sdks/typescript"
+      "@nimiplatform/sdk": "link:../../nimi/sdks/typescript"
     }
   }
 }

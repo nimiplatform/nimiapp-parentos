@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 const require = createRequire(import.meta.url);
-const nimiRepoRoot = path.resolve(__dirname, '../../nimi-realm/nimi');
+const nimiRepoRoot = path.resolve(__dirname, '../../nimi');
 const nimiSdkSourceRoot = path.resolve(nimiRepoRoot, 'sdks/typescript');
 const nimiKitSourceRoot = path.resolve(nimiRepoRoot, 'kit');
 
