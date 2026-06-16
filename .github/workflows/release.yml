@@ -234,7 +234,7 @@ jobs:
       - name: Build artifacts (non-macOS)
         id: tauri_build_non_macos
         if: matrix.platform != 'macos-latest'
-        uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # action-v0.6.1
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # action-v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -252,7 +252,7 @@ jobs:
       - name: Build artifacts (macOS ad-hoc)
         id: tauri_build_macos_ad_hoc
         if: matrix.platform == 'macos-latest' && steps.macos_signing.outputs.use_ad_hoc_signing == 'true'
-        uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # action-v0.6.1
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # action-v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -271,7 +271,7 @@ jobs:
       - name: Build artifacts (macOS Developer ID)
         id: tauri_build_macos_developer_id
         if: matrix.platform == 'macos-latest' && steps.macos_signing.outputs.require_apple_credentials == 'true'
-        uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # action-v0.6.1
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # action-v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
