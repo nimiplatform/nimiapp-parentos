@@ -148,6 +148,7 @@ describe('ChildrenSettingsPage', () => {
       expect(createFamily).toHaveBeenCalledTimes(1);
       expect(createChild).toHaveBeenCalledTimes(1);
       expect(useAppStore.getState().children).toHaveLength(1);
+      expect(useAppStore.getState().activeChildId).toBe(useAppStore.getState().children[0]?.childId);
     });
 
     const profiles = useAppStore.getState().children[0]?.recorderProfiles;

@@ -130,6 +130,7 @@ export default function ChildrenSettingsPage() {
     if (!form.displayName || !form.birthDate) return;
     const now = isoNow();
     const childId = ulid();
+    const shouldEnterDashboard = !fromProfile && (openAddForm || children.length === 0);
     try {
       let fid = familyId;
       if (!fid) { fid = ulid(); await createFamily(fid, '我的家庭', now); setFamilyId(fid); }
@@ -143,7 +144,9 @@ export default function ChildrenSettingsPage() {
         allergies: parseCsvList(form.allergies), medicalNotes: parseCsvList(form.medicalNotes),
         recorderProfiles: serializeRecorder(form.recorder), now,
       });
+      setActiveChildId(childId);
       await refreshChildren(fid); resetForm();
+      if (shouldEnterDashboard) navigate('/timeline', { replace: true });
     } catch { /* bridge */ }
   };
 

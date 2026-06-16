@@ -98,7 +98,7 @@ export function WelcomePage() {
 
       <div
         className={cn(
-          'relative min-w-0 flex-1 overflow-y-auto px-5 pb-8 pt-8 sm:px-8 lg:px-[60px] lg:pb-10 lg:pt-[72px]',
+          'relative min-w-0 flex-1 overflow-y-auto px-5 pb-8 pt-4 sm:px-8 sm:pt-5 lg:px-[60px] lg:pb-10 lg:pt-8',
           showIntro ? 'pointer-events-none opacity-0' : 'opacity-100',
         )}
         aria-hidden={showIntro}

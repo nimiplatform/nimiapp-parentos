@@ -286,6 +286,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
   const { children: childList, activeChildId, setActiveChildId } = useAppStore();
   const location = useLocation();
   const isProfileDetailPage = /^\/profile\/[^/]+/.test(location.pathname);
+  const hasActiveChild = childList.some((child) => child.childId === activeChildId);
 
   useEffect(() => {
     const now = isoNow();
@@ -307,9 +308,10 @@ export function ShellLayout({ children }: { children: ReactNode }) {
   return (
     <AmbientBackground variant="mesh" className="isolate flex h-full overflow-hidden">
       {/* Sidebar — transparent, shares global bg */}
-      <nav
-        className="relative z-30 flex w-[62px] shrink-0 flex-col items-center overflow-visible bg-transparent pt-32 pb-5"
-      >
+      {hasActiveChild ? (
+        <nav
+          className="relative z-30 flex w-[62px] shrink-0 flex-col items-center overflow-visible bg-transparent pt-32 pb-5"
+        >
         <div className="flex flex-1 flex-col items-center gap-1">
           {navItems.map((item) => {
             const label = t(item.labelKey);
@@ -337,8 +339,9 @@ export function ShellLayout({ children }: { children: ReactNode }) {
           })}
         </div>
 
-        <div className="mt-auto" />
-      </nav>
+          <div className="mt-auto" />
+        </nav>
+      ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
@@ -348,7 +351,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
         >
           <div className="flex min-w-0 items-center gap-2">
             <h1 className="text-[18px] font-semibold text-[var(--nimi-text-primary)]">ParentOS</h1>
-            {childList.length > 0 && activeChildId ? (
+            {hasActiveChild ? (
               <>
                 <span className="select-none text-[var(--nimi-border-strong)]" aria-hidden="true">/</span>
                 <ChildSwitcherBreadcrumb

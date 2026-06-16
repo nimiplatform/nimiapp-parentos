@@ -137,6 +137,25 @@ describe('ShellLayout', () => {
     expect(main?.className).toContain('z-0');
   });
 
+  it('hides shell navigation until a child profile is active', () => {
+    useAppStore.setState({
+      activeChildId: null,
+      children: [],
+    });
+
+    const { container } = render(
+      <MemoryRouter>
+        <ShellLayout>
+          <div>APP_CONTENT</div>
+        </ShellLayout>
+      </MemoryRouter>,
+    );
+
+    expect(container.querySelector('nav')).toBeNull();
+    expect(container.querySelector('a[href="/reports"]')).toBeNull();
+    expect(screen.getByTestId('shell-main-drag-region')).toBeTruthy();
+  });
+
   it('syncs ParentOS local data scope back to anonymous on logout', async () => {
     render(
       <MemoryRouter>
