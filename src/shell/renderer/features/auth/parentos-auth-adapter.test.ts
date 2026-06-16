@@ -225,7 +225,7 @@ describe('createParentOSRuntimeAccountBrowserBroker (R-OAUTH-* / K-ACCSVC-008)',
 });
 
 describe('parentos-login-page wiring (PO-SHELL-008)', () => {
-  it('login page passes runtimeAccountBroker to DesktopShellAuthPage', async () => {
+  it('login page passes runtimeAccountBroker to ShellAuthPage', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const url = await import('node:url');

@@ -32,7 +32,7 @@ export async function logoutParentOSRuntimeAccount(): Promise<void> {
 }
 
 /**
- * Adapter for the kit's `<DesktopShellAuthPage>` in ParentOS desktop-browser
+ * Adapter for the kit's `<ShellAuthPage>` in ParentOS desktop-browser
  * mode. Account/session truth is owned by RuntimeAccountService; this adapter
  * intentionally rejects every app-owned token surface so a regression that
  * tries to flow a bearer or refresh token through the kit fails fast.

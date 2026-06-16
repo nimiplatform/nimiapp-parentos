@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DesktopShellAuthPage } from '@nimiplatform/kit/auth';
+import { ShellAuthPage } from '@nimiplatform/kit/auth';
 import '@nimiplatform/kit/auth/styles.css';
 import { useAppStore } from '../../app-shell/app-store.js';
 import {
@@ -8,6 +8,7 @@ import {
 } from './parentos-auth-adapter.js';
 import { parentosTauriOAuthBridge } from '../../bridge/index.js';
 import { syncParentOSLocalDataScope } from '../../infra/parentos-bootstrap.js';
+import parentosLogoUrl from '../../../../../src-tauri/icons/icon.png';
 
 export function ParentOSLoginPage() {
   const adapter = useMemo(() => createParentOSDesktopBrowserAuthAdapter(), []);
@@ -15,7 +16,7 @@ export function ParentOSLoginPage() {
   const webBaseUrl = useAppStore((s) => s.runtimeDefaults?.webBaseUrl || '');
 
   return (
-    <DesktopShellAuthPage
+    <ShellAuthPage
       adapter={adapter}
       session={{
         mode: 'desktop-browser',
@@ -44,10 +45,27 @@ export function ParentOSLoginPage() {
           }
         },
       }}
+      branding={{
+        networkLabel: 'ParentOS',
+        logo: parentosLogoUrl,
+        logoAltText: 'ParentOS Logo',
+      }}
+      appearance={{
+        theme: 'desktop',
+        shellClassName: 'absolute inset-0 z-10 flex flex-col items-center justify-center p-0',
+        contentClassName: '',
+        footerPlacement: 'inside-content',
+      }}
       desktopBrowserAuth={{
         baseUrl: webBaseUrl || undefined,
         bridge: parentosTauriOAuthBridge,
+        hintVisibility: 'hover-or-status',
         runtimeAccountBroker,
+      }}
+      copy={{
+        desktopLogoHintText: '授权失败。点击 logo 重试。',
+        desktopAuthOpenMessage: '已打开浏览器，请在网页完成授权登录。',
+        desktopAuthSuccessMessage: '网页登录授权成功，已登录。',
       }}
       testIds={{
         screen: 'parentos-login-page',
