@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ChildrenSettingsPage from './children-settings-page.js';
@@ -66,9 +67,9 @@ vi.mock('../../bridge/ulid.js', () => {
   };
 });
 
-function renderPage() {
+function renderPage(initialEntries: ComponentProps<typeof MemoryRouter>['initialEntries'] = ['/settings/children']) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <ChildrenSettingsPage />
     </MemoryRouter>,
   );
@@ -152,6 +153,13 @@ describe('ChildrenSettingsPage', () => {
     const profiles = useAppStore.getState().children[0]?.recorderProfiles;
     expect(profiles).toHaveLength(1);
     expect(profiles![0]!.name).toBe('爸爸');
+  });
+
+  it('opens the add child form directly from the welcome create-profile intent', () => {
+    renderPage([{ pathname: '/settings/children', state: { intent: 'add-child' } }]);
+
+    expect(screen.getByRole('heading', { name: '添加孩子' })).toBeTruthy();
+    expect(screen.queryByText('还没有添加孩子')).toBeNull();
   });
 
   it('deletes a child with confirmation', async () => {

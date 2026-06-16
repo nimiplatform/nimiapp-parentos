@@ -19,3 +19,5 @@ src-tauri/gen/schemas/
 .nimi/local/
 .nimi/cache/
 .nimi/topics/
+
+outputs/

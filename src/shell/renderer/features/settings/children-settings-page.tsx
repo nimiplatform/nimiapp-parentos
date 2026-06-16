@@ -75,14 +75,21 @@ function serializeRecorder(recorder: RecorderProfile) {
 
 const MODE_LABELS: Record<string, string> = { relaxed: '轻松养', balanced: '均衡养', advanced: '进阶养' };
 
+type ChildrenSettingsLocationState = {
+  from?: 'profile';
+  intent?: 'add-child';
+} | null;
+
 /* ── page ─────────────────────────────────────────────────── */
 
 export default function ChildrenSettingsPage() {
   const { activeChildId, children, familyId, setActiveChildId, setChildren, setFamilyId } = useAppStore();
   const location = useLocation();
   const navigate = useNavigate();
-  const fromProfile = (location.state as { from?: string } | null)?.from === 'profile';
-  const [showForm, setShowForm] = useState(false);
+  const locationState = location.state as ChildrenSettingsLocationState;
+  const fromProfile = locationState?.from === 'profile';
+  const openAddForm = locationState?.intent === 'add-child';
+  const [showForm, setShowForm] = useState(openAddForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingChildId, setDeletingChildId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -96,6 +103,14 @@ export default function ChildrenSettingsPage() {
     setEditingId(null);
     if (fromProfile) navigate('/profile');
   };
+
+  useEffect(() => {
+    if (!openAddForm) return;
+    setForm(EMPTY_FORM);
+    setEditingId(null);
+    setDeletingChildId(null);
+    setShowForm(true);
+  }, [openAddForm, location.key]);
 
   const refreshChildren = async (fid: string | null) => {
     if (!fid) return;
