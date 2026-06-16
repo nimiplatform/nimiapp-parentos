@@ -38,6 +38,7 @@ import {
 import { mapChildRow } from '../bridge/mappers.js';
 import { loadPersistedParentosAIConfig } from '../features/settings/parentos-ai-config.js';
 import { ensureParentosAIConfigFromFirstRunEvidence } from '../features/settings/parentos-ai-config-bootstrap.js';
+import { loadAndApplyPersistedAppLanguage } from '../i18n/app-language.js';
 import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
 import { hasParentOSNimiClient, setParentOSNimiClient } from './parentos-nimi-client.js';
 
@@ -206,6 +207,8 @@ async function loadScopedLocalData(subjectUserId?: string | null): Promise<void>
   store.clearLocalData();
 
   await dbInit(subjectUserId);
+
+  await loadAndApplyPersistedAppLanguage();
 
   const persistedAIConfig = await loadPersistedParentosAIConfig();
   if (persistedAIConfig) {

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { SelectField, Surface, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, type NurtureMode } from '../../app-shell/app-store.js';
 import { NURTURE_MODES, REMINDER_DOMAINS } from '../../knowledge-base/index.js';
@@ -6,9 +7,6 @@ import { updateChild } from '../../bridge/sqlite-bridge.js';
 import { isoNow } from '../../bridge/ulid.js';
 
 /* ── labels ─────────────────────────────────────────────────── */
-
-const P1_LABELS: Record<string, string> = { push: '主动推送', silent: '静默记录', hidden: '隐藏' };
-const DIGEST_LABELS: Record<string, string> = { realtime: '实时', daily: '每日汇总', weekly: '每周汇总' };
 
 const MODE_META: Record<string, {
   emoji: string;
@@ -53,19 +51,11 @@ const FALLBACK_MODE_META = {
   domainRowClassName: 'parentos-domain-row-advanced-active',
 };
 
-const DOMAIN_LABELS: Record<string, string> = {
-  'bone-age': '骨龄评估', career: '职业启蒙', checkup: '体检', dental: '口腔',
-  digital: '数字素养', emotional: '情绪管理', growth: '生长发育', hygiene: '卫生习惯',
-  independence: '独立能力', interest: '兴趣培养', language: '语言发展', nutrition: '营养膳食',
-  relationship: '人际关系', safety: '安全防护', sensitivity: '敏感期', sexuality: '性教育',
-  sleep: '睡眠', vaccine: '疫苗接种', values: '价值观', vision: '视力',
-};
-
-const DOMAIN_GROUPS: Array<{ label: string; emoji: string; iconClassName: string; domains: string[] }> = [
-  { label: '身体健康', emoji: '💪', iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-info)_12%,var(--nimi-surface-card))]', domains: ['growth', 'nutrition', 'sleep', 'checkup', 'vaccine', 'dental', 'vision', 'bone-age'] },
-  { label: '心智发展', emoji: '🧠', iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_12%,var(--nimi-surface-card))]', domains: ['language', 'emotional', 'sensitivity', 'independence'] },
-  { label: '社会能力', emoji: '🤝', iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))]', domains: ['relationship', 'values', 'sexuality', 'safety', 'hygiene'] },
-  { label: '兴趣与规划', emoji: '🌟', iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-warning)_10%,var(--nimi-surface-card))]', domains: ['interest', 'career', 'digital'] },
+const DOMAIN_GROUPS: Array<{ labelKey: string; emoji: string; iconClassName: string; domains: string[] }> = [
+  { labelKey: 'Settings.nurtureMode.domainGroups.health', emoji: '💪', iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-info)_12%,var(--nimi-surface-card))]', domains: ['growth', 'nutrition', 'sleep', 'checkup', 'vaccine', 'dental', 'vision', 'bone-age'] },
+  { labelKey: 'Settings.nurtureMode.domainGroups.mind', emoji: '🧠', iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_12%,var(--nimi-surface-card))]', domains: ['language', 'emotional', 'sensitivity', 'independence'] },
+  { labelKey: 'Settings.nurtureMode.domainGroups.social', emoji: '🤝', iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))]', domains: ['relationship', 'values', 'sexuality', 'safety', 'hygiene'] },
+  { labelKey: 'Settings.nurtureMode.domainGroups.planning', emoji: '🌟', iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-warning)_10%,var(--nimi-surface-card))]', domains: ['interest', 'career', 'digital'] },
 ];
 
 /* ================================================================
@@ -73,6 +63,7 @@ const DOMAIN_GROUPS: Array<{ label: string; emoji: string; iconClassName: string
    ================================================================ */
 
 export default function NurtureModeSettingsPage() {
+  const { t } = useTranslation();
   const { activeChildId, children, setChildren } = useAppStore();
   const child = children.find((c) => c.childId === activeChildId);
 
@@ -80,8 +71,8 @@ export default function NurtureModeSettingsPage() {
     return (
       <div className="h-full overflow-y-auto bg-transparent">
         <div className="mx-auto max-w-3xl px-6 pb-6 pt-[86px]">
-          <Link to="/settings" className="text-[14px] text-[var(--nimi-text-muted)] hover:underline">← 返回设置</Link>
-          <p className="mt-6 text-[14px] text-[var(--nimi-text-muted)]">请先选择一个孩子</p>
+          <Link to="/settings" className="text-[14px] text-[var(--nimi-text-muted)] hover:underline">{t('Settings.common.backToSettings')}</Link>
+          <p className="mt-6 text-[14px] text-[var(--nimi-text-muted)]">{t('Settings.common.noActiveChild')}</p>
         </div>
       </div>
     );
@@ -146,24 +137,27 @@ export default function NurtureModeSettingsPage() {
 
         <Link to="/settings" className="mb-5 inline-flex items-center gap-1 text-[14px] text-[var(--nimi-text-muted)] hover:underline">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
-          返回设置
+          {t('Settings.common.backToSettings')}
         </Link>
 
         {/* ── Header ─────────────────────────────────────── */}
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-[var(--nimi-text-primary)]">{child.displayName} 的养育模式</h1>
+          <h1 className="text-xl font-bold text-[var(--nimi-text-primary)]">{t('Settings.nurtureMode.childTitle', { name: child.displayName })}</h1>
           <p className="mt-0.5 text-[14px] text-[var(--nimi-text-muted)]">
-            控制提醒频率和内容深度，底线安全规则在任何模式下均不降级
+            {t('Settings.nurtureMode.subtitle')}
           </p>
         </div>
 
         {/* ── Global mode selector ───────────────────────── */}
         <Surface tone="card" material="solid" elevation="base" padding="lg" className="mb-5 parentos-radius-xl p-5">
-          <h2 className="mb-4 text-[16px] font-bold text-[var(--nimi-text-primary)]">全局模式</h2>
+          <h2 className="mb-4 text-[16px] font-bold text-[var(--nimi-text-primary)]">{t('Settings.nurtureMode.globalMode')}</h2>
           <div className="grid grid-cols-3 gap-3">
             {NURTURE_MODES.map((m) => {
               const active = child.nurtureMode === m.modeId;
               const meta = MODE_META[m.modeId] ?? FALLBACK_MODE_META;
+              const modeName = t(`Settings.nurtureMode.modes.${m.modeId}.displayName`, { defaultValue: m.displayName });
+              const modeSubtitle = t(`Settings.nurtureMode.modes.${m.modeId}.subtitle`, { defaultValue: m.subtitle });
+              const modeDescription = t(`Settings.nurtureMode.modes.${m.modeId}.description`, { defaultValue: m.description });
               return (
                 <button key={m.modeId} onClick={() => void handleModeChange(m.modeId)}
                   className={cn(
@@ -180,18 +174,22 @@ export default function NurtureModeSettingsPage() {
                       {meta.emoji}
                     </div>
                     <div>
-                      <h3 className={cn('text-[14px] font-semibold text-[var(--nimi-text-primary)]', active && meta.textClassName)}>{m.displayName}</h3>
-                      <p className="text-[12px] text-[var(--nimi-text-muted)]">{m.subtitle}</p>
+                      <h3 className={cn('text-[14px] font-semibold text-[var(--nimi-text-primary)]', active && meta.textClassName)}>{modeName}</h3>
+                      <p className="text-[12px] text-[var(--nimi-text-muted)]">{modeSubtitle}</p>
                     </div>
                   </div>
                   {/* Description */}
-                  <p className="mb-3 text-[13px] leading-[1.6] text-[var(--nimi-text-secondary)]">{m.description}</p>
+                  <p className="mb-3 text-[13px] leading-[1.6] text-[var(--nimi-text-secondary)]">{modeDescription}</p>
                   {/* Parameters */}
                   <div className="space-y-1.5">
                     {[
-                      `一般提醒：${P1_LABELS[m.parameters.reminderBehavior.P1] ?? m.parameters.reminderBehavior.P1}`,
-                      `每日最多 ${m.parameters.pushFrequency.maxDailyPush} 条`,
-                      `汇总：${DIGEST_LABELS[m.parameters.pushFrequency.digestMode] ?? m.parameters.pushFrequency.digestMode}`,
+                      t('Settings.nurtureMode.parameter.generalReminder', {
+                        value: t(`Settings.nurtureMode.reminderBehavior.${m.parameters.reminderBehavior.P1}`, { defaultValue: m.parameters.reminderBehavior.P1 }),
+                      }),
+                      t('Settings.nurtureMode.parameter.maxDailyPush', { count: m.parameters.pushFrequency.maxDailyPush }),
+                      t('Settings.nurtureMode.parameter.digest', {
+                        value: t(`Settings.nurtureMode.digestMode.${m.parameters.pushFrequency.digestMode}`, { defaultValue: m.parameters.pushFrequency.digestMode }),
+                      }),
                     ].map((line) => (
                       <p key={line} className="flex items-center gap-1.5 text-[12px] leading-[1.6] text-[var(--nimi-text-muted)]">
                         <span className={cn('h-1 w-1 shrink-0 rounded-full bg-[var(--nimi-border-strong)]', active && meta.dotClassName)} />
@@ -209,30 +207,32 @@ export default function NurtureModeSettingsPage() {
         <Surface tone="card" material="solid" elevation="base" padding="lg" className="parentos-radius-xl p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">按领域自定义</h2>
-              <p className="mt-0.5 text-[13px] text-[var(--nimi-text-muted)]">可为不同领域设置不同的养育模式</p>
+              <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{t('Settings.nurtureMode.domainOverrides')}</h2>
+              <p className="mt-0.5 text-[13px] text-[var(--nimi-text-muted)]">{t('Settings.nurtureMode.domainOverridesDesc')}</p>
             </div>
             {overrideCount > 0 && (
               <span className="rounded-full bg-[var(--nimi-surface-active)] px-2.5 py-1 text-[12px] font-medium text-[var(--nimi-action-primary-bg)]">
-                {overrideCount} 项自定义
+                {t('Settings.nurtureMode.overrideCount', { count: overrideCount })}
               </span>
             )}
           </div>
 
           <div className="space-y-5">
             {DOMAIN_GROUPS.map((group) => {
-              const globalLabel = NURTURE_MODES.find((m) => m.modeId === child.nurtureMode)?.displayName ?? child.nurtureMode;
+              const globalLabel = t(`Settings.nurtureMode.modes.${child.nurtureMode}.displayName`, {
+                defaultValue: NURTURE_MODES.find((m) => m.modeId === child.nurtureMode)?.displayName ?? child.nurtureMode,
+              });
               const validDomains = group.domains.filter((d) => REMINDER_DOMAINS.includes(d));
               if (validDomains.length === 0) return null;
 
               return (
-                <div key={group.label}>
+                <div key={group.labelKey}>
                   {/* Group header */}
                   <div className="mb-2.5 flex items-center gap-2">
                     <div className={cn('flex h-[28px] w-[28px] items-center justify-center parentos-radius-sm text-[16px]', group.iconClassName)}>
                       {group.emoji}
                     </div>
-                    <h3 className="text-[14px] font-bold text-[var(--nimi-text-primary)]">{group.label}</h3>
+                    <h3 className="text-[14px] font-bold text-[var(--nimi-text-primary)]">{t(group.labelKey)}</h3>
                   </div>
                   {/* Domain rows */}
                   <div className="space-y-1.5">
@@ -245,15 +245,15 @@ export default function NurtureModeSettingsPage() {
                             'flex items-center justify-between parentos-radius-lg px-4 py-2.5 transition-all',
                             override ? overrideMeta?.domainRowClassName ?? FALLBACK_MODE_META.domainRowClassName : 'parentos-domain-row-idle',
                           )}>
-                          <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{DOMAIN_LABELS[domain] ?? domain}</span>
+                          <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{t(`Settings.domains.${domain}`, { defaultValue: domain })}</span>
                           <SelectField
                             value={override ?? ''}
                             onValueChange={(v) => void handleDomainOverride(domain, v ? v as NurtureMode : null)}
-                            placeholder={`跟随全局（${globalLabel}）`}
+                            placeholder={t('Settings.nurtureMode.followGlobal', { mode: globalLabel })}
                             options={[
-                              { value: 'relaxed', label: '🌿 轻松养' },
-                              { value: 'balanced', label: '⚖️ 均衡养' },
-                              { value: 'advanced', label: '🔬 进阶养' },
+                              { value: 'relaxed', label: `🌿 ${t('Settings.nurtureMode.modes.relaxed.displayName')}` },
+                              { value: 'balanced', label: `⚖️ ${t('Settings.nurtureMode.modes.balanced.displayName')}` },
+                              { value: 'advanced', label: `🔬 ${t('Settings.nurtureMode.modes.advanced.displayName')}` },
                             ]}
                             className="w-[220px] whitespace-nowrap"
                           />

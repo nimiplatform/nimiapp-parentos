@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ShellLayout } from './shell-layout.js';
 import { useAppStore } from './app-store.js';
+import { i18n } from '../i18n/index.js';
 
 const { setAppSettingMock } = vi.hoisted(() => ({
   setAppSettingMock: vi.fn().mockResolvedValue(undefined),
@@ -27,7 +28,8 @@ vi.mock('../features/auth/parentos-auth-adapter.js', () => ({
 }));
 
 describe('ShellLayout', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh');
     syncParentOSLocalDataScopeMock.mockReset();
     syncParentOSLocalDataScopeMock.mockResolvedValue(undefined);
     logoutParentOSRuntimeAccountMock.mockReset();

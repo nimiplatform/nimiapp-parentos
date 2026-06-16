@@ -34,6 +34,178 @@
     "verifyAndLogin": "Verify and login",
     "selectWalletHint": "Select a wallet to connect"
   },
+  "Shell": {
+    "navigation": {
+      "timeline": "Home",
+      "profile": "Profile",
+      "journal": "Journal",
+      "advisor": "Advisor",
+      "reports": "Reports",
+      "settings": "Settings"
+    },
+    "age": {
+      "months_one": "{{count}} month",
+      "months_other": "{{count}} months",
+      "years_one": "{{count}} year",
+      "years_other": "{{count}} years",
+      "yearsMonths": "{{years}} years {{months}} months"
+    },
+    "childSwitcher": {
+      "ariaLabel": "Switch child",
+      "addFamilyMember": "Add family member"
+    },
+    "account": {
+      "openMenu": "Open account menu",
+      "unnamedUser": "User",
+      "logout": "Log out",
+      "loggingOut": "Logging out...",
+      "logoutFailed": "Log out failed"
+    }
+  },
+  "Settings": {
+    "title": "Settings",
+    "other": "Other",
+    "common": {
+      "backToSettings": "Back to settings",
+      "loading": "Loading...",
+      "noActiveChild": "Select a child first",
+      "addChildFirst": "Add a child first"
+    },
+    "account": {
+      "unnamedUser": "Unnamed user",
+      "logout": "Log out",
+      "loggingOut": "Logging out...",
+      "logoutFailed": "Log out failed"
+    },
+    "language": {
+      "title": "Interface language",
+      "desc": "Switch ParentOS interface copy globally.",
+      "ariaLabel": "Choose interface language",
+      "saveFailed": "Language setting could not be saved"
+    },
+    "sections": {
+      "children": {
+        "label": "Child management",
+        "desc": "Add, edit, and delete child profiles"
+      },
+      "nurtureMode": {
+        "label": "Nurture mode",
+        "desc": "Relaxed, balanced, or advanced by domain"
+      },
+      "reminders": {
+        "label": "Reminder management",
+        "desc": "View and manage custom reminder frequencies"
+      },
+      "ai": {
+        "label": "AI model settings",
+        "desc": "Configure models for chat, transcription, and other AI capabilities"
+      }
+    },
+    "nurtureMode": {
+      "childTitle": "{{name}}'s nurture mode",
+      "subtitle": "Controls reminder cadence and content depth. Baseline safety rules never weaken.",
+      "globalMode": "Global mode",
+      "domainOverrides": "Customize by domain",
+      "domainOverridesDesc": "Use a different nurture mode for specific domains",
+      "overrideCount_one": "{{count}} custom override",
+      "overrideCount_other": "{{count}} custom overrides",
+      "followGlobal": "Follow global ({{mode}})",
+      "domainGroups": {
+        "health": "Physical health",
+        "mind": "Cognitive development",
+        "social": "Social ability",
+        "planning": "Interests and planning"
+      },
+      "modes": {
+        "relaxed": {
+          "displayName": "Relaxed",
+          "subtitle": "Low interruption",
+          "description": "Push only essential items and reduce daily reminder noise."
+        },
+        "balanced": {
+          "displayName": "Balanced",
+          "subtitle": "Standard rhythm",
+          "description": "Balance stage reminders, health records, and observation prompts."
+        },
+        "advanced": {
+          "displayName": "Advanced",
+          "subtitle": "High detail",
+          "description": "Expose more domain detail and analysis cues for high-effort tracking."
+        }
+      },
+      "reminderBehavior": {
+        "push": "Push",
+        "silent": "Silent record",
+        "hidden": "Hidden"
+      },
+      "digestMode": {
+        "realtime": "Realtime",
+        "daily": "Daily digest",
+        "weekly": "Weekly digest"
+      },
+      "parameter": {
+        "generalReminder": "General reminders: {{value}}",
+        "maxDailyPush_one": "Daily limit: {{count}} push",
+        "maxDailyPush_other": "Daily limit: {{count}} pushes",
+        "digest": "Digest: {{value}}"
+      }
+    },
+    "reminders": {
+      "title": "Reminder management",
+      "desc": "View and manage reminder rules with custom frequencies",
+      "emptyTitle": "All reminders use default frequencies",
+      "emptyDesc": "Use “adjust frequency” on the home or reminders page to customize them",
+      "defaultInterval": "Default: every {{months}} months →",
+      "disabled": "Disabled",
+      "overrideInterval": "Every {{months}} months",
+      "restoreDefault": "Restore default"
+    },
+    "domains": {
+      "bone-age": "Bone age",
+      "career": "Career exposure",
+      "checkup": "Checkups",
+      "dental": "Dental",
+      "digital": "Digital literacy",
+      "emotional": "Emotional regulation",
+      "fitness": "Fitness",
+      "growth": "Growth",
+      "hygiene": "Hygiene",
+      "independence": "Independence",
+      "interest": "Interests",
+      "language": "Language",
+      "nutrition": "Nutrition",
+      "posture": "Posture",
+      "relationship": "Relationships",
+      "safety": "Safety",
+      "sensitivity": "Sensitive periods",
+      "sexuality": "Sex education",
+      "sleep": "Sleep",
+      "tanner": "Puberty",
+      "vaccine": "Vaccines",
+      "values": "Values",
+      "vision": "Vision"
+    },
+    "info": {
+      "privacy": {
+        "label": "Data and privacy",
+        "desc": "All data stays local and is not uploaded to the cloud"
+      },
+      "about": {
+        "label": "About",
+        "desc": "ParentOS v0.1.0 · AI-powered child growth operating system"
+      }
+    },
+    "dev": {
+      "title": "Dev Tools",
+      "importMockData": "Import mock data",
+      "importMockDataDesc": "Import 3 children and all test data from mock fixtures into SQLite",
+      "importingWithProgress": "Importing... {{progress}}",
+      "importing": "Importing...",
+      "done": "Done",
+      "retry": "Retry",
+      "import": "Import"
+    }
+  },
   "Profile": {
     "title": "Health record",
     "actions": {

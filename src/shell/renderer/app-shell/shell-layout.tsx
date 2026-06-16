@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type MouseEvent as ReactMouseEvent, type ReactNode, type ComponentType } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Home, User, BookText, MessageCircle, TrendingUp, Settings, LogOut, ChevronDown, Check, UserPlus, type LucideProps } from 'lucide-react';
 import { AmbientBackground, Surface, cn } from '@nimiplatform/kit/ui';
@@ -11,30 +12,23 @@ import { isoNow } from '../bridge/ulid.js';
 import { ProfileTodoDrawer } from '../features/profile/profile-todo-drawer.js';
 import { ChildAvatar } from '../shared/child-avatar.js';
 
-const navItems: Array<{ to: string; label: string; Icon: ComponentType<LucideProps> }> = [
-  { to: '/timeline', label: '首页', Icon: Home },
-  { to: '/profile', label: '档案', Icon: User },
-  { to: '/journal', label: '成长随记', Icon: BookText },
-  { to: '/advisor', label: '顾问', Icon: MessageCircle },
-  { to: '/reports', label: '报告', Icon: TrendingUp },
-  { to: '/settings', label: '设置', Icon: Settings },
+const navItems: Array<{ to: string; labelKey: string; Icon: ComponentType<LucideProps> }> = [
+  { to: '/timeline', labelKey: 'Shell.navigation.timeline', Icon: Home },
+  { to: '/profile', labelKey: 'Shell.navigation.profile', Icon: User },
+  { to: '/journal', labelKey: 'Shell.navigation.journal', Icon: BookText },
+  { to: '/advisor', labelKey: 'Shell.navigation.advisor', Icon: MessageCircle },
+  { to: '/reports', labelKey: 'Shell.navigation.reports', Icon: TrendingUp },
+  { to: '/settings', labelKey: 'Shell.navigation.settings', Icon: Settings },
 ];
 
 /* ── Child Switcher Breadcrumb ─────────────────────────────── */
-
-function formatChildAge(ageMonths: number): string {
-  const y = Math.floor(ageMonths / 12);
-  const m = ageMonths % 12;
-  if (y > 0 && m > 0) return `${y}岁${m}个月`;
-  if (y > 0) return `${y}岁`;
-  return `${m}个月`;
-}
 
 function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
   childList: ChildProfile[];
   activeChildId: string | null;
   onSwitchChild: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -57,6 +51,14 @@ function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
   const activeChild = childList.find((c) => c.childId === activeChildId) ?? null;
   if (!activeChild) return null;
 
+  const formatChildAge = (ageMonths: number): string => {
+    const years = Math.floor(ageMonths / 12);
+    const months = ageMonths % 12;
+    if (years > 0 && months > 0) return t('Shell.age.yearsMonths', { years, months });
+    if (years > 0) return t('Shell.age.years', { count: years });
+    return t('Shell.age.months', { count: months });
+  };
+
   return (
     <div ref={ref} className="relative z-40">
       <button
@@ -64,7 +66,7 @@ function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
         onClick={() => open ? closeMenu() : openMenu()}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="切换孩子"
+        aria-label={t('Shell.childSwitcher.ariaLabel')}
         className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--nimi-action-ghost-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nimi-focus-ring-color)]"
       >
         <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-[var(--nimi-border-subtle)]">
@@ -136,7 +138,7 @@ function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[14px] text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
             >
               <UserPlus size={16} strokeWidth={1.8} className="text-[var(--nimi-text-muted)]" />
-              添加家庭成员
+              {t('Shell.childSwitcher.addFamilyMember')}
             </button>
           </div>
         </Surface>
@@ -148,11 +150,12 @@ function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
 /* ── Account Avatar Menu ───────────────────────────────────── */
 
 const accountMenuItems = [
-  { id: 'profile', label: '档案', icon: User, route: '/profile' },
-  { id: 'settings', label: '设置', icon: Settings, route: '/settings' },
+  { id: 'profile', labelKey: 'Shell.navigation.profile', icon: User, route: '/profile' },
+  { id: 'settings', labelKey: 'Shell.navigation.settings', icon: Settings, route: '/settings' },
 ] as const;
 
 function AccountAvatarMenu() {
+  const { t } = useTranslation();
   const authUser = useAppStore((s) => s.auth.user);
   const clearAuth = useAppStore((s) => s.clearAuthSession);
   const navigate = useNavigate();
@@ -189,13 +192,13 @@ function AccountAvatarMenu() {
     } catch (error) {
       setMounted(true);
       setOpen(true);
-      setLogoutError(error instanceof Error ? error.message : String(error || '退出登录失败'));
+      setLogoutError(error instanceof Error ? error.message : String(error || t('Shell.account.logoutFailed')));
     } finally {
       setLoggingOut(false);
     }
   };
 
-  const displayName = authUser?.displayName || '用户';
+  const displayName = authUser?.displayName || t('Shell.account.unnamedUser');
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
@@ -203,7 +206,7 @@ function AccountAvatarMenu() {
       <button
         onClick={() => open ? closeMenu() : openMenu()}
         aria-expanded={open}
-        aria-label="打开账号菜单"
+        aria-label={t('Shell.account.openMenu')}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--nimi-text-primary)] text-[14px] font-semibold text-[var(--nimi-text-inverse)] shadow-[var(--nimi-elevation-base)] transition-all hover:-translate-y-0.5"
       >
         {initial}
@@ -248,7 +251,7 @@ function AccountAvatarMenu() {
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] text-[var(--nimi-text-secondary)] transition-all hover:bg-[var(--nimi-action-ghost-hover)] hover:text-[var(--nimi-text-primary)]"
               >
                 <item.icon size={18} strokeWidth={1.8} className="text-[var(--nimi-text-muted)]" />
-                {item.label}
+                {t(item.labelKey)}
               </button>
             ))}
           </div>
@@ -269,7 +272,7 @@ function AccountAvatarMenu() {
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] text-[var(--nimi-status-danger)] transition-all hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <LogOut size={18} strokeWidth={1.8} className="text-[var(--nimi-status-danger)]" />
-              {loggingOut ? '退出中...' : '退出登录'}
+              {loggingOut ? t('Shell.account.loggingOut') : t('Shell.account.logout')}
             </button>
           </div>
         </Surface>
@@ -279,6 +282,7 @@ function AccountAvatarMenu() {
 }
 
 export function ShellLayout({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { children: childList, activeChildId, setActiveChildId } = useAppStore();
   const location = useLocation();
   const isProfileDetailPage = /^\/profile\/[^/]+/.test(location.pathname);
@@ -307,26 +311,30 @@ export function ShellLayout({ children }: { children: ReactNode }) {
         className="relative z-30 flex w-[62px] shrink-0 flex-col items-center overflow-visible bg-transparent pt-32 pb-5"
       >
         <div className="flex flex-1 flex-col items-center gap-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `group relative flex items-center justify-center w-[40px] h-[40px] rounded-xl transition-all duration-150 ${
-                  isActive
-                    ? 'bg-[var(--nimi-text-primary)] text-[var(--nimi-text-inverse)] shadow-[var(--nimi-elevation-base)]'
-                    : 'text-[var(--nimi-text-muted)] hover:bg-[var(--nimi-action-ghost-hover)] hover:text-[var(--nimi-text-primary)]'
-                }`
-              }
-            >
-              <item.Icon size={19} strokeWidth={1.8} />
-              <span
-                className="pointer-events-none absolute left-[52px] z-50 whitespace-nowrap rounded-2xl border border-[var(--nimi-material-glass-thick-border)] bg-[var(--nimi-material-glass-thick-bg)] px-3 py-1.5 text-[13px] font-medium text-[var(--nimi-text-primary)] opacity-0 shadow-[var(--nimi-elevation-floating)] backdrop-blur-[var(--nimi-backdrop-blur-strong)] transition-opacity duration-100 group-hover:opacity-100 nimi-material-glass-thick"
+          {navItems.map((item) => {
+            const label = t(item.labelKey);
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                aria-label={label}
+                className={({ isActive }) =>
+                  `group relative flex items-center justify-center w-[40px] h-[40px] rounded-xl transition-all duration-150 ${
+                    isActive
+                      ? 'bg-[var(--nimi-text-primary)] text-[var(--nimi-text-inverse)] shadow-[var(--nimi-elevation-base)]'
+                      : 'text-[var(--nimi-text-muted)] hover:bg-[var(--nimi-action-ghost-hover)] hover:text-[var(--nimi-text-primary)]'
+                  }`
+                }
               >
-                {item.label}
-              </span>
-            </NavLink>
-          ))}
+                <item.Icon size={19} strokeWidth={1.8} />
+                <span
+                  className="pointer-events-none absolute left-[52px] z-50 whitespace-nowrap rounded-2xl border border-[var(--nimi-material-glass-thick-border)] bg-[var(--nimi-material-glass-thick-bg)] px-3 py-1.5 text-[13px] font-medium text-[var(--nimi-text-primary)] opacity-0 shadow-[var(--nimi-elevation-floating)] backdrop-blur-[var(--nimi-backdrop-blur-strong)] transition-opacity duration-100 group-hover:opacity-100 nimi-material-glass-thick"
+                >
+                  {label}
+                </span>
+              </NavLink>
+            );
+          })}
         </div>
 
         <div className="mt-auto" />

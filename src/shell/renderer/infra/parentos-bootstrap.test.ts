@@ -36,6 +36,7 @@ const getFamilyMock = vi.fn();
 const getChildrenMock = vi.fn();
 const loadPersistedParentosAIConfigMock = vi.fn();
 const ensureParentosAIConfigFromFirstRunEvidenceMock = vi.fn();
+const loadAndApplyPersistedAppLanguageMock = vi.fn();
 const mapChildRowMock = vi.fn();
 const getAccountSessionStatusMock = vi.fn();
 const registerAppMock = vi.fn();
@@ -98,6 +99,10 @@ vi.mock('../features/settings/parentos-ai-config.js', () => ({
 
 vi.mock('../features/settings/parentos-ai-config-bootstrap.js', () => ({
   ensureParentosAIConfigFromFirstRunEvidence: ensureParentosAIConfigFromFirstRunEvidenceMock,
+}));
+
+vi.mock('../i18n/app-language.js', () => ({
+  loadAndApplyPersistedAppLanguage: loadAndApplyPersistedAppLanguageMock,
 }));
 
 let useAppStore: typeof import('../app-shell/app-store.js').useAppStore;
@@ -176,6 +181,7 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     getChildrenMock.mockReset();
     loadPersistedParentosAIConfigMock.mockReset();
     ensureParentosAIConfigFromFirstRunEvidenceMock.mockReset();
+    loadAndApplyPersistedAppLanguageMock.mockReset();
     mapChildRowMock.mockReset();
     getAccountSessionStatusMock.mockReset();
     registerAppMock.mockReset();
@@ -258,6 +264,7 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
       outcome: 'already-bound',
       config: {},
     });
+    loadAndApplyPersistedAppLanguageMock.mockResolvedValue(undefined);
     getAppStorageMock.mockResolvedValue({
       appId: 'nimi.parentos',
       state: 'ready',
@@ -402,6 +409,10 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
       dbInitMock.mock.invocationCallOrder[0]!,
     );
     expect(dbInitMock).toHaveBeenCalledWith('acct-42');
+    expect(loadAndApplyPersistedAppLanguageMock).toHaveBeenCalledTimes(1);
+    expect(dbInitMock.mock.invocationCallOrder[0]).toBeLessThan(
+      loadAndApplyPersistedAppLanguageMock.mock.invocationCallOrder[0]!,
+    );
     const auth = useAppStore.getState().auth;
     expect(auth.status).toBe('authenticated');
     expect(auth.user).toEqual({ id: 'acct-42', displayName: 'Scoped' });

@@ -11,6 +11,7 @@ Covered features from `feature-matrix.yaml`:
 - `PO-FEAT-009` nurture mode settings
 - `PO-FEAT-042` reminder frequency settings
 - `PO-FEAT-043` AI model/runtime settings
+- `PO-FEAT-057` app language preference
 
 Governing fact sources:
 
@@ -115,6 +116,7 @@ Current settings authority includes:
 - `/settings/nurture-mode` for nurture-mode and per-domain overrides
 - `/settings/reminders` for reminder frequency override management
 - `/settings/ai` for ParentOS model/runtime preferences
+- `/settings` for app language preference, persisted in `app_settings`
 
 Settings state must round-trip through `children` or `app_settings`. The shell must not invent shadow config stores outside those admitted persistence paths.
 

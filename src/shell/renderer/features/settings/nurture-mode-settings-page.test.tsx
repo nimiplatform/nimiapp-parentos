@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import NurtureModeSettingsPage from './nurture-mode-settings-page.js';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { REMINDER_DOMAINS } from '../../knowledge-base/index.js';
+import { i18n } from '../../i18n/index.js';
 
 const { updateChild } = vi.hoisted(() => ({
   updateChild: vi.fn().mockResolvedValue(undefined),
@@ -39,7 +40,8 @@ Object.defineProperty(Element.prototype, 'releasePointerCapture', {
 describe('NurtureModeSettingsPage', () => {
   const domain = REMINDER_DOMAINS[0] ?? 'sleep';
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh');
     updateChild.mockClear();
     useAppStore.setState({
       bootstrapReady: true,
@@ -68,7 +70,8 @@ describe('NurtureModeSettingsPage', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await i18n.changeLanguage('zh');
     useAppStore.setState({
       bootstrapReady: false,
       familyId: null,
@@ -119,5 +122,20 @@ describe('NurtureModeSettingsPage', () => {
       nurtureModeOverrides: persistedOverrides ? JSON.stringify(persistedOverrides) : null,
     });
     expect(persistedOverrides).not.toBeNull();
+  });
+
+  it('renders the nurture mode settings surface in English', async () => {
+    await i18n.changeLanguage('en');
+
+    const { container } = render(
+      <MemoryRouter>
+        <NurtureModeSettingsPage />
+      </MemoryRouter>,
+    );
+
+    expect(container.textContent).toContain("Mimi's nurture mode");
+    expect(container.textContent).toContain('Global mode');
+    expect(container.textContent).toContain('Customize by domain');
+    expect(container.textContent).toContain('Balanced');
   });
 });

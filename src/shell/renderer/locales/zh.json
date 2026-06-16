@@ -34,6 +34,178 @@
     "verifyAndLogin": "验证并登录",
     "selectWalletHint": "选择钱包进行连接"
   },
+  "Shell": {
+    "navigation": {
+      "timeline": "首页",
+      "profile": "档案",
+      "journal": "成长随记",
+      "advisor": "顾问",
+      "reports": "报告",
+      "settings": "设置"
+    },
+    "age": {
+      "months_one": "{{count}}个月",
+      "months_other": "{{count}}个月",
+      "years_one": "{{count}}岁",
+      "years_other": "{{count}}岁",
+      "yearsMonths": "{{years}}岁{{months}}个月"
+    },
+    "childSwitcher": {
+      "ariaLabel": "切换孩子",
+      "addFamilyMember": "添加家庭成员"
+    },
+    "account": {
+      "openMenu": "打开账号菜单",
+      "unnamedUser": "用户",
+      "logout": "退出登录",
+      "loggingOut": "退出中...",
+      "logoutFailed": "退出登录失败"
+    }
+  },
+  "Settings": {
+    "title": "设置",
+    "other": "其他",
+    "common": {
+      "backToSettings": "返回设置",
+      "loading": "加载中...",
+      "noActiveChild": "请先选择一个孩子",
+      "addChildFirst": "请先添加孩子"
+    },
+    "account": {
+      "unnamedUser": "未命名用户",
+      "logout": "退出登录",
+      "loggingOut": "退出中...",
+      "logoutFailed": "退出登录失败"
+    },
+    "language": {
+      "title": "界面语言",
+      "desc": "切换 ParentOS 的全局界面文案。",
+      "ariaLabel": "选择界面语言",
+      "saveFailed": "语言设置保存失败"
+    },
+    "sections": {
+      "children": {
+        "label": "孩子管理",
+        "desc": "添加、编辑、删除孩子档案"
+      },
+      "nurtureMode": {
+        "label": "养育模式",
+        "desc": "轻松养 / 均衡养 / 进阶养，可按领域混合配置"
+      },
+      "reminders": {
+        "label": "提醒管理",
+        "desc": "查看和管理已自定义频率的提醒"
+      },
+      "ai": {
+        "label": "AI 模型设置",
+        "desc": "配置对话、语音转写等 AI 能力使用的模型"
+      }
+    },
+    "nurtureMode": {
+      "childTitle": "{{name}} 的养育模式",
+      "subtitle": "控制提醒频率和内容深度，底线安全规则在任何模式下均不降级",
+      "globalMode": "全局模式",
+      "domainOverrides": "按领域自定义",
+      "domainOverridesDesc": "可为不同领域设置不同的养育模式",
+      "overrideCount_one": "{{count}} 项自定义",
+      "overrideCount_other": "{{count}} 项自定义",
+      "followGlobal": "跟随全局（{{mode}}）",
+      "domainGroups": {
+        "health": "身体健康",
+        "mind": "心智发展",
+        "social": "社会能力",
+        "planning": "兴趣与规划"
+      },
+      "modes": {
+        "relaxed": {
+          "displayName": "轻松养",
+          "subtitle": "低打扰",
+          "description": "只推送必要事项，减少日常提醒干扰。"
+        },
+        "balanced": {
+          "displayName": "均衡养",
+          "subtitle": "标准节奏",
+          "description": "保持阶段提醒、健康记录和观察建议的平衡。"
+        },
+        "advanced": {
+          "displayName": "进阶养",
+          "subtitle": "高细节",
+          "description": "展示更多领域细节和分析线索，适合高投入记录。"
+        }
+      },
+      "reminderBehavior": {
+        "push": "主动推送",
+        "silent": "静默记录",
+        "hidden": "隐藏"
+      },
+      "digestMode": {
+        "realtime": "实时",
+        "daily": "每日汇总",
+        "weekly": "每周汇总"
+      },
+      "parameter": {
+        "generalReminder": "一般提醒：{{value}}",
+        "maxDailyPush_one": "每日最多 {{count}} 条",
+        "maxDailyPush_other": "每日最多 {{count}} 条",
+        "digest": "汇总：{{value}}"
+      }
+    },
+    "reminders": {
+      "title": "提醒管理",
+      "desc": "查看和管理已自定义频率的提醒规则",
+      "emptyTitle": "所有提醒使用默认频率",
+      "emptyDesc": "在首页或提醒页点击“调整频率”可自定义",
+      "defaultInterval": "默认：每 {{months}} 个月 →",
+      "disabled": "已关闭",
+      "overrideInterval": "每 {{months}} 个月",
+      "restoreDefault": "恢复默认"
+    },
+    "domains": {
+      "bone-age": "骨龄评估",
+      "career": "职业启蒙",
+      "checkup": "体检",
+      "dental": "口腔",
+      "digital": "数字素养",
+      "emotional": "情绪管理",
+      "fitness": "体能",
+      "growth": "生长发育",
+      "hygiene": "卫生习惯",
+      "independence": "独立能力",
+      "interest": "兴趣培养",
+      "language": "语言发展",
+      "nutrition": "营养膳食",
+      "posture": "体态",
+      "relationship": "人际关系",
+      "safety": "安全防护",
+      "sensitivity": "敏感期",
+      "sexuality": "性教育",
+      "sleep": "睡眠",
+      "tanner": "青春期",
+      "vaccine": "疫苗接种",
+      "values": "价值观",
+      "vision": "视力"
+    },
+    "info": {
+      "privacy": {
+        "label": "数据与隐私",
+        "desc": "所有数据存储在本地，不上传至云端"
+      },
+      "about": {
+        "label": "关于",
+        "desc": "成长底稿 v0.1.0 · AI 驱动的儿童成长操作系统"
+      }
+    },
+    "dev": {
+      "title": "Dev Tools",
+      "importMockData": "导入测试数据",
+      "importMockDataDesc": "从 mock fixtures 导入 3 个孩子及全部测试数据到 SQLite",
+      "importingWithProgress": "导入中... {{progress}}",
+      "importing": "导入中...",
+      "done": "已完成",
+      "retry": "重试",
+      "import": "导入"
+    }
+  },
   "Profile": {
     "title": "\u5065\u5eb7\u6863\u6848",
     "actions": {
