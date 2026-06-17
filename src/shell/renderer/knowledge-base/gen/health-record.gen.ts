@@ -62,10 +62,23 @@ export interface HealthEvaluationOutputRule {
   when: string;
 }
 
+export interface HealthTrendThreshold {
+  thresholdId: string;
+  metricIds: readonly HealthMetricId[];
+  windowMonths: number;
+  operator: '>=' | '>' | '<=' | '<';
+  value: number;
+  unit: string;
+  status: HealthEvaluationStatus;
+  reasonCode: string;
+  boundary: string;
+}
+
 export interface HealthEvaluationPolicy {
   policyId: HealthEvaluationPolicyId;
   appliesTo: readonly HealthMetricId[];
   sourceRefs: readonly string[];
+  trendThresholds?: readonly HealthTrendThreshold[];
   outputRules: readonly HealthEvaluationOutputRule[];
 }
 
@@ -1215,6 +1228,22 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
     "sourceRefs": [
       "reference-data-assets.yaml#growth-standards.referenceRanges.axialLength"
     ],
+    "trendThresholds": [
+      {
+        "thresholdId": "axial-length-six-month-delta-watch",
+        "metricIds": [
+          "vision.left_axial_length",
+          "vision.right_axial_length"
+        ],
+        "windowMonths": 6,
+        "operator": ">=",
+        "value": 0.3,
+        "unit": "mm",
+        "status": "watch",
+        "reasonCode": "axial_length_delta_ge_0_30mm_6m",
+        "boundary": "descriptive_parent_attention"
+      }
+    ],
     "outputRules": [
       {
         "status": "missing",
@@ -1226,7 +1255,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       },
       {
         "status": "watch",
-        "when": "rule-defined trend delta crosses watch threshold"
+        "when": "trend delta crosses trendThresholds.thresholdId=axial-length-six-month-delta-watch"
       },
       {
         "status": "on_track",
@@ -1296,6 +1325,23 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
     "sourceRefs": [
       "profile-contract.md#PO-PROF-012"
     ],
+    "trendThresholds": [
+      {
+        "thresholdId": "tanner-stage-two-stage-twelve-month-watch",
+        "metricIds": [
+          "development.tanner_breast_stage",
+          "development.tanner_genital_stage",
+          "development.tanner_pubic_hair_stage"
+        ],
+        "windowMonths": 12,
+        "operator": ">=",
+        "value": 2,
+        "unit": "tanner_stage",
+        "status": "watch",
+        "reasonCode": "tanner_stage_delta_ge_2_12m",
+        "boundary": "descriptive_parent_attention"
+      }
+    ],
     "outputRules": [
       {
         "status": "missing",
@@ -1307,7 +1353,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       },
       {
         "status": "watch",
-        "when": "rule-defined trend delta crosses puberty-progress watch threshold"
+        "when": "stage delta crosses trendThresholds.thresholdId=tanner-stage-two-stage-twelve-month-watch"
       },
       {
         "status": "on_track",

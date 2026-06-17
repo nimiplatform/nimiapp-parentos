@@ -9,7 +9,7 @@ fn add_days_iso_strict(iso_date: &str, days: i64) -> Result<String, String> {
 }
 /// Dental follow-up rule metadata (mirrors orthodontic-protocols.yaml#dentalFollowUpRules).
 pub(crate) fn dental_followup_rule_for(event_type: &str) -> Option<(&'static str, i64)> {
-    // (admitted ruleId, intervalMonths)
+    // (admitted ruleId, month interval)
     match event_type {
         "cleaning" => Some(("PO-DEN-FOLLOWUP-CLEANING", 6)),
         "fluoride" => Some(("PO-DEN-FOLLOWUP-FLUORIDE", 6)),
@@ -383,10 +383,10 @@ fn upsert_dental_followup_reminder(
     event_date: &str,
     now: &str,
 ) -> Result<(), String> {
-    let Some((rule_id, interval_months)) = dental_followup_rule_for(event_type) else {
+    let Some((rule_id, month_interval)) = dental_followup_rule_for(event_type) else {
         return Ok(());
     };
-    let next_trigger = add_months_iso_strict(event_date, interval_months)?;
+    let next_trigger = add_months_iso_strict(event_date, month_interval)?;
     let next_trigger_iso = format!("{next_trigger}T00:00:00.000Z");
     let state_id = format!("dental-fu-{child_id}-{rule_id}");
     let notes = format!("[dental-followup] triggeredBy={event_type} at={event_date}");

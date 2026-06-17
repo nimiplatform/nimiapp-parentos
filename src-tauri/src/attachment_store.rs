@@ -42,6 +42,19 @@ fn sanitize_segment(value: &str, label: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+fn delete_child_dir_at(root: &Path, child_id: &str) -> Result<(), String> {
+    let child = sanitize_segment(child_id, "child_id")?;
+    let dir = root.join(child);
+    match fs::remove_dir_all(&dir) {
+        Ok(()) => Ok(()),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(err) => Err(format!(
+            "failed to delete child attachment dir ({}): {err}",
+            dir.display()
+        )),
+    }
+}
+
 fn extension_for_mime_type(mime_type: &str) -> Result<&'static str, String> {
     match mime_type.trim().to_ascii_lowercase().as_str() {
         "image/jpeg" | "image/jpg" => Ok("jpg"),
@@ -270,12 +283,19 @@ pub fn delete_attachment(attachment_id: String) -> Result<(), String> {
     Ok(())
 }
 
+pub fn delete_child_dir(child_id: &str) -> Result<(), String> {
+    let root = resolve_attachments_root()?;
+    delete_child_dir_at(&root, child_id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        extension_for_mime_type, is_generic_attachment_owner_table, is_supported_owner_table,
-        sanitize_segment,
+        delete_child_dir_at, extension_for_mime_type, is_generic_attachment_owner_table,
+        is_supported_owner_table, sanitize_segment,
     };
+    use std::fs;
+    use tempfile::TempDir;
 
     #[test]
     fn rejects_unsupported_mime_types() {
@@ -321,5 +341,21 @@ mod tests {
         assert!(!is_supported_owner_table("medical_events"));
         assert!(!is_supported_owner_table("unknown_table"));
         assert!(!is_supported_owner_table(""));
+    }
+
+    #[test]
+    fn delete_child_dir_purges_only_that_child() {
+        let tmp = TempDir::new().unwrap();
+        let root = tmp.path();
+        fs::create_dir_all(root.join("child-A")).unwrap();
+        fs::create_dir_all(root.join("child-B")).unwrap();
+        fs::write(root.join("child-A").join("att-1.jpg"), b"a").unwrap();
+        fs::write(root.join("child-B").join("att-2.jpg"), b"b").unwrap();
+
+        delete_child_dir_at(root, "child-A").expect("delete child A");
+
+        assert!(!root.join("child-A").exists());
+        assert!(root.join("child-B").join("att-2.jpg").exists());
+        delete_child_dir_at(root, "child-A").expect("second delete is idempotent");
     }
 }

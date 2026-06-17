@@ -390,7 +390,7 @@ pub fn insert_fitness_assessment(
             &linked_reminder_rule_id,
             &notes,
             serde_json::json!({
-                "legacyFitnessAssessmentApi": true,
+                "retainedFitnessAssessmentFacade": true,
                 "assessmentId": assessment_id,
                 "assessmentSource": assessment_source,
             })

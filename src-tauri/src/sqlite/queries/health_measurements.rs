@@ -1,9 +1,10 @@
 use rusqlite::params;
 use serde::Serialize;
 
+use super::health_records::health_record_authority;
 use super::super::get_conn;
 
-// ── Growth Measurements ────────────────────────────────────
+// ── Retained Measurement Facade ─────────────────────────────
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -20,7 +21,7 @@ pub struct Measurement {
     pub created_at: String,
 }
 
-fn legacy_measurement_type_to_metric_id(type_id: &str) -> Option<&'static str> {
+fn measurement_type_alias_to_metric_id(type_id: &str) -> Option<&'static str> {
     match type_id {
         "height" => Some("growth.height"),
         "weight" => Some("growth.weight"),
@@ -37,7 +38,48 @@ fn legacy_measurement_type_to_metric_id(type_id: &str) -> Option<&'static str> {
     }
 }
 
-fn metric_id_to_legacy_measurement_type(metric_id: &str) -> Option<&'static str> {
+fn measurement_type_aliases() -> &'static [&'static str] {
+    &[
+        "height",
+        "weight",
+        "head-circumference",
+        "vision-left",
+        "vision-right",
+        "axial-length-left",
+        "axial-length-right",
+        "iop-left",
+        "iop-right",
+        "bone-age",
+        "body-fat-percentage",
+    ]
+}
+
+fn measurement_alias_metric_ids() -> Result<Vec<&'static str>, String> {
+    let authority = health_record_authority()?;
+    let mut metric_ids = Vec::new();
+    for alias in measurement_type_aliases() {
+        let Some(metric_id) = measurement_type_alias_to_metric_id(alias) else {
+            return Err(format!("measurement facade alias \"{alias}\" has no metric mapping"));
+        };
+        if !authority.metrics_by_id.contains_key(metric_id) {
+            return Err(format!(
+                "measurement facade alias \"{alias}\" maps to metric \"{metric_id}\" that does not resolve in health-metric-registry.yaml"
+            ));
+        }
+        metric_ids.push(metric_id);
+    }
+    Ok(metric_ids)
+}
+
+fn measurement_metric_in_sql() -> Result<String, String> {
+    Ok(measurement_alias_metric_ids()?
+        .into_iter()
+        .map(|metric_id| format!("'{metric_id}'"))
+        .collect::<Vec<_>>()
+        .join(","))
+}
+
+fn metric_id_to_measurement_type_alias(metric_id: &str) -> Option<&'static str> {
     match metric_id {
         "growth.height" => Some("height"),
         "growth.weight" => Some("weight"),
@@ -54,51 +96,73 @@ fn metric_id_to_legacy_measurement_type(metric_id: &str) -> Option<&'static str>
     }
 }
 
-fn legacy_measurement_type_unit(type_id: &str) -> Option<&'static str> {
-    match type_id {
-        "height" | "head-circumference" => Some("cm"),
-        "weight" => Some("kg"),
-        "vision-left" | "vision-right" => Some("decimal"),
-        "axial-length-left" | "axial-length-right" => Some("mm"),
-        "iop-left" | "iop-right" => Some("mmHg"),
-        "bone-age" => Some("years"),
-        "body-fat-percentage" => Some("percent"),
-        _ => None,
+fn metric_qualifier(metric_id: &str) -> Option<&'static str> {
+    if metric_id.contains(".left_") {
+        return Some("left");
     }
+    if metric_id.contains(".right_") {
+        return Some("right");
+    }
+    None
 }
 
-fn legacy_measurement_type_qualifier(type_id: &str) -> Option<&'static str> {
-    match type_id {
-        "vision-left" | "axial-length-left" | "iop-left" => Some("left"),
-        "vision-right" | "axial-length-right" | "iop-right" => Some("right"),
-        _ => None,
-    }
-}
+fn measurement_protocol_and_group(metric_id: &str, age_months: i32) -> Result<(String, String), String> {
+    let authority = health_record_authority()?;
+    let metric = authority
+        .metrics_by_id
+        .get(metric_id)
+        .ok_or_else(|| format!("measurement facade metric id \"{metric_id}\" does not resolve in health-metric-registry.yaml"))?;
 
-fn legacy_measurement_protocol_and_group(type_id: &str) -> Option<(&'static str, &'static str)> {
-    match type_id {
-        "height" | "weight" => Some(("growth-child-quarterly", "growth")),
-        "head-circumference" => Some(("growth-infant-monthly", "growth")),
-        "vision-left" | "vision-right" => Some(("vision-basic", "vision")),
-        "axial-length-left" | "axial-length-right" | "iop-left" | "iop-right" => {
-            Some(("vision-full-exam", "vision"))
+    let protocol_preference: &[&str] = match metric_id {
+        "growth.height" | "growth.weight" if age_months <= 36 => &["growth-infant-monthly", "growth-child-quarterly", "growth-school-biannual"],
+        "growth.height" | "growth.weight" if age_months >= 84 => &["growth-school-biannual", "growth-child-quarterly", "growth-infant-monthly"],
+        "growth.height" | "growth.weight" => &["growth-child-quarterly", "growth-infant-monthly", "growth-school-biannual"],
+        "growth.head_circumference" => &["growth-infant-monthly"],
+        "vision.left_visual_acuity" | "vision.right_visual_acuity" => &["vision-basic", "vision-full-exam"],
+        "vision.left_axial_length" | "vision.right_axial_length" | "vision.left_iop" | "vision.right_iop" => &["vision-full-exam"],
+        "development.bone_age_years" | "development.body_fat_percentage" => &["development-auxiliary-measurement"],
+        _ => &[],
+    };
+
+    for protocol_id in protocol_preference {
+        let Some(protocol) = authority.protocols_by_id.get(*protocol_id) else {
+            continue;
+        };
+        if protocol.storage_target == "health_record_event"
+            && protocol.metric_ids.contains(metric_id)
+            && metric.capture_protocol_ids.contains(*protocol_id)
+        {
+            return Ok(((*protocol_id).to_string(), protocol.group_id.clone()));
         }
-        "bone-age" | "body-fat-percentage" => {
-            Some(("development-auxiliary-measurement", "development"))
-        }
-        _ => None,
     }
+
+    Err(format!(
+        "measurement facade cannot resolve an admitted health_record_event protocol for metric \"{metric_id}\""
+    ))
 }
 
-fn legacy_measurement_source_to_event_kind(source: Option<&str>) -> &'static str {
+fn measurement_metric_unit(metric_id: &str) -> Result<Option<String>, String> {
+    Ok(health_record_authority()?
+        .metrics_by_id
+        .get(metric_id)
+        .ok_or_else(|| format!("measurement facade metric id \"{metric_id}\" does not resolve in health-metric-registry.yaml"))?
+        .unit
+        .clone())
+}
+
+fn measurement_source_to_event_kind(source: Option<&str>, has_linked_reminder: bool) -> &'static str {
+    if has_linked_reminder {
+        return "reminder_linked";
+    }
     match source.map(str::trim) {
         Some("ocr") => "ocr_confirmed",
         Some("imported") => "imported",
+        Some("reminder") => "reminder_linked",
         _ => "manual",
     }
 }
 
-fn legacy_measurement_source_to_surface(source: Option<&str>) -> &'static str {
+fn measurement_facade_source_to_surface(source: Option<&str>) -> &'static str {
     match source.map(str::trim) {
         Some("ocr") => "ocr_tool",
         Some("imported") => "import",
@@ -106,7 +170,7 @@ fn legacy_measurement_source_to_surface(source: Option<&str>) -> &'static str {
     }
 }
 
-fn event_kind_to_legacy_measurement_source(
+fn event_kind_to_measurement_facade_source(
     record_kind: &str,
     source_surface: &str,
 ) -> Option<String> {
@@ -127,7 +191,7 @@ fn generated_detail_event_id(measurement_id: &str) -> String {
 
 fn measurement_from_health_record_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Measurement> {
     let metric_id: String = row.get(2)?;
-    let type_id = metric_id_to_legacy_measurement_type(&metric_id)
+    let type_id = metric_id_to_measurement_type_alias(&metric_id)
         .unwrap_or(metric_id.as_str())
         .to_string();
     let record_kind: String = row.get(7)?;
@@ -140,7 +204,7 @@ fn measurement_from_health_record_row(row: &rusqlite::Row<'_>) -> rusqlite::Resu
         measured_at: row.get(4)?,
         age_months: row.get(5)?,
         percentile: None,
-        source: event_kind_to_legacy_measurement_source(&record_kind, &source_surface),
+        source: event_kind_to_measurement_facade_source(&record_kind, &source_surface),
         notes: row.get(6)?,
         created_at: row.get(9)?,
     })
@@ -161,25 +225,33 @@ pub fn insert_measurement(
     linked_reminder_state_id: Option<String>,
     linked_reminder_rule_id: Option<String>,
 ) -> Result<(), String> {
-    let Some(metric_id) = legacy_measurement_type_to_metric_id(type_id.trim()) else {
+    let Some(metric_id) = measurement_type_alias_to_metric_id(type_id.trim()) else {
         return Err(format!(
-            "insert_measurement rejects unsupported folded measurement type \"{type_id}\"; use PO-CAPT or an admitted retained-domain writer"
+            "insert_measurement rejects unsupported retained measurement alias \"{type_id}\"; use PO-CAPT or an admitted retained-domain writer"
         ));
     };
-    let Some((protocol_id, group_id)) = legacy_measurement_protocol_and_group(type_id.trim())
-    else {
-        return Err(format!(
-            "insert_measurement cannot resolve protocol for type \"{type_id}\""
-        ));
-    };
+    let (protocol_id, group_id) = measurement_protocol_and_group(metric_id, age_months)?;
     if !value.is_finite() {
         return Err("insert_measurement requires a finite value".to_string());
     }
-    let source_surface = if linked_reminder_state_id.is_some() || linked_reminder_rule_id.is_some()
-    {
+    let linked_reminder_state_id = linked_reminder_state_id
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    let linked_reminder_rule_id = linked_reminder_rule_id
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    if linked_reminder_state_id.is_some() ^ linked_reminder_rule_id.is_some() {
+        return Err("insert_measurement reminder-linked writes require both linkedReminderStateId and linkedReminderRuleId".to_string());
+    }
+    let has_linked_reminder = linked_reminder_state_id.is_some() && linked_reminder_rule_id.is_some();
+    let source_is_reminder = matches!(source.as_deref().map(str::trim), Some("reminder"));
+    if source_is_reminder && !has_linked_reminder {
+        return Err("insert_measurement source=reminder requires linkedReminderStateId and linkedReminderRuleId".to_string());
+    }
+    let source_surface = if has_linked_reminder {
         "reminder"
     } else {
-        legacy_measurement_source_to_surface(source.as_deref())
+        measurement_facade_source_to_surface(source.as_deref())
     };
     let mut conn = get_conn()?.lock().map_err(|e| e.to_string())?;
     let tx = conn
@@ -196,7 +268,7 @@ pub fn insert_measurement(
             child_id,
             protocol_id,
             group_id,
-            legacy_measurement_source_to_event_kind(source.as_deref()),
+            measurement_source_to_event_kind(source.as_deref(), has_linked_reminder),
             source_surface,
             measured_at,
             age_months,
@@ -204,8 +276,8 @@ pub fn insert_measurement(
             linked_reminder_rule_id,
             notes,
             serde_json::json!({
-                "legacyMeasurementApi": true,
-                "legacyTypeId": type_id,
+                "retainedMeasurementFacade": true,
+                "typeAlias": type_id,
                 "percentile": percentile,
             })
             .to_string(),
@@ -223,8 +295,8 @@ pub fn insert_measurement(
             child_id,
             metric_id,
             value,
-            legacy_measurement_type_unit(type_id.trim()),
-            legacy_measurement_type_qualifier(type_id.trim()),
+            measurement_metric_unit(metric_id)?,
+            metric_qualifier(metric_id),
             now,
         ],
     )
@@ -240,6 +312,7 @@ pub fn get_measurements(
     type_id: Option<String>,
 ) -> Result<Vec<Measurement>, String> {
     let conn = get_conn()?.lock().map_err(|e| e.to_string())?;
+    let allowed_metric_sql = measurement_metric_in_sql()?;
     let sql = match type_id
         .as_deref()
         .map(str::trim)
@@ -251,41 +324,31 @@ pub fn get_measurements(
              FROM health_record_values v
              JOIN health_record_events e ON e.eventId = v.eventId
              WHERE v.childId = ?1 AND v.metricId = ?2 AND v.valueNumber IS NOT NULL
-             ORDER BY e.effectiveDate, v.createdAt"
+             ORDER BY e.effectiveDate, v.createdAt".to_string()
         }
         None => {
-            "SELECT v.valueId, v.childId, v.metricId, v.valueNumber, e.effectiveDate,
+            format!("SELECT v.valueId, v.childId, v.metricId, v.valueNumber, e.effectiveDate,
                     e.ageMonths, e.notes, e.recordKind, e.sourceSurface, v.createdAt
              FROM health_record_values v
              JOIN health_record_events e ON e.eventId = v.eventId
              WHERE v.childId = ?1
-               AND v.metricId IN (
-                 'growth.height',
-                 'growth.weight',
-                 'growth.head_circumference',
-                 'vision.left_visual_acuity',
-                 'vision.right_visual_acuity',
-                 'vision.left_axial_length',
-                 'vision.right_axial_length',
-                 'vision.left_iop',
-                 'vision.right_iop',
-                 'development.bone_age_years',
-                 'development.body_fat_percentage'
-               )
+               AND v.metricId IN ({allowed_metric_sql})
                AND v.valueNumber IS NOT NULL
-             ORDER BY e.effectiveDate, v.createdAt"
+             ORDER BY e.effectiveDate, v.createdAt")
         }
     };
     let mut stmt = conn
-        .prepare(sql)
+        .prepare(&sql)
         .map_err(|e| format!("get_measurements: {e}"))?;
     if let Some(tid) = type_id
         .as_deref()
         .map(str::trim)
         .filter(|value| !value.is_empty())
     {
-        let Some(metric_id) = legacy_measurement_type_to_metric_id(tid) else {
-            return Ok(Vec::new());
+        let Some(metric_id) = measurement_type_alias_to_metric_id(tid) else {
+            return Err(format!(
+                "get_measurements rejects unsupported retained measurement alias \"{tid}\""
+            ));
         };
         let rows = stmt
             .query_map(
@@ -319,24 +382,16 @@ pub fn update_measurement(
         return Err("update_measurement requires a finite value".to_string());
     }
     let conn = get_conn()?.lock().map_err(|e| e.to_string())?;
+    let allowed_metric_sql = measurement_metric_in_sql()?;
+    let update_value_sql = format!(
+        "UPDATE health_record_values
+         SET valueNumber = ?2, createdAt = ?8
+         WHERE valueId = ?1
+           AND metricId IN ({allowed_metric_sql})"
+    );
     let changed = conn
         .execute(
-            "UPDATE health_record_values
-             SET valueNumber = ?2, createdAt = ?8
-             WHERE valueId = ?1
-               AND metricId IN (
-                 'growth.height',
-                 'growth.weight',
-                 'growth.head_circumference',
-                 'vision.left_visual_acuity',
-                 'vision.right_visual_acuity',
-                 'vision.left_axial_length',
-                 'vision.right_axial_length',
-                 'vision.left_iop',
-                 'vision.right_iop',
-                 'development.bone_age_years',
-                 'development.body_fat_percentage'
-               )",
+            &update_value_sql,
             params![
                 measurement_id,
                 value,
@@ -369,7 +424,7 @@ pub fn update_measurement(
             age_months,
             notes,
             serde_json::json!({
-                "legacyMeasurementApi": true,
+                "retainedMeasurementFacade": true,
                 "percentile": percentile,
                 "source": source,
             })
@@ -384,6 +439,7 @@ pub fn update_measurement(
 #[tauri::command]
 pub fn delete_measurement(measurement_id: String) -> Result<(), String> {
     let conn = get_conn()?.lock().map_err(|e| e.to_string())?;
+    let allowed_metric_sql = measurement_metric_in_sql()?;
     let event_id: Option<String> = conn
         .query_row(
             "SELECT eventId FROM health_record_values WHERE valueId = ?1",
@@ -393,21 +449,11 @@ pub fn delete_measurement(measurement_id: String) -> Result<(), String> {
         .ok();
     let changed = conn
         .execute(
-            "DELETE FROM health_record_values
-             WHERE valueId = ?1
-               AND metricId IN (
-                 'growth.height',
-                 'growth.weight',
-                 'growth.head_circumference',
-                 'vision.left_visual_acuity',
-                 'vision.right_visual_acuity',
-                 'vision.left_axial_length',
-                 'vision.right_axial_length',
-                 'vision.left_iop',
-                 'vision.right_iop',
-                 'development.bone_age_years',
-                 'development.body_fat_percentage'
-               )",
+            &format!(
+                "DELETE FROM health_record_values
+                 WHERE valueId = ?1
+                   AND metricId IN ({allowed_metric_sql})"
+            ),
             params![measurement_id],
         )
         .map_err(|e| format!("delete_measurement delete health value: {e}"))?;

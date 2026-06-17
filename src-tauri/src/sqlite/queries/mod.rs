@@ -329,11 +329,13 @@ pub fn delete_child(child_id: String) -> Result<(), String> {
         conn.execute("DELETE FROM children WHERE childId = ?1", params![child_id])
             .map_err(|e| format!("delete_child: {e}"))?;
     }
-    // PIPL cascade (PO-ORTHO-012 + AGENTS.md Privacy Boundary):
-    // delete the child's orthodontic photo directory tree after the SQL
-    // cascade has swept all dependent rows. Fail-safe — a missing directory
-    // (no photos ever captured for this child) is OK. Anything else surfaces.
+    // PIPL cascade: SQL FKs remove rows; child-scoped local media roots must
+    // also be purged from disk. Missing roots are OK, other IO errors surface.
     crate::photos::delete_child_dir(child_id.as_str())?;
+    crate::attachment_store::delete_child_dir(child_id.as_str())?;
+    crate::journal_photo::delete_child_dir(child_id.as_str())?;
+    crate::journal_audio::delete_child_dir(child_id.as_str())?;
+    crate::child_avatar::delete_child_avatar_files(child_id.as_str())?;
     Ok(())
 }
 

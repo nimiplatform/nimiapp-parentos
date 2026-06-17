@@ -41,6 +41,10 @@ export function saveHealthRecordCapture(input: SaveHealthRecordCaptureInput) {
   return invoke<SaveHealthRecordCaptureResult>('save_health_record_capture', { input });
 }
 
+export function replaceHealthRecordCapture(replaceEventId: string, input: SaveHealthRecordCaptureInput) {
+  return invoke<SaveHealthRecordCaptureResult>('replace_health_record_capture', { replaceEventId, input });
+}
+
 export interface HealthRecordEventRow {
   eventId: string;
   childId: string;

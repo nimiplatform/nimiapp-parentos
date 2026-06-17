@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { computeAgeMonths } from '../../app-shell/app-store.js';
-import type { SaveHealthRecordCaptureResult } from '../../bridge/sqlite-bridge.js';
 import { getHealthRecordEventCaptureProtocolOptions, type LinkedHealthRecordReminder } from './health-capture-orchestrator.js';
 import { groupLabel } from './health-record-display.js';
 import { GrowthAddRecordContent } from './growth-capture-content.js';
@@ -33,6 +32,8 @@ import {
   ModalHeader,
   SmartInputButton,
 } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface HealthCaptureModalProps {
   open: boolean;
@@ -50,13 +51,13 @@ interface HealthCaptureModalProps {
   /**
    * When set, the left domain sidebar is hidden and the modal is locked to
    * `initialGroupId`. Detail pages (`/profile/*`) open the modal this way so
-   * their "添加" button shows only the relevant domain's capture form — the
-   * same right-pane form as the `/profile` 添加健康数据 modal, without the
+   * their add button shows only the relevant domain's capture form — the
+   * same right-pane form as the `/profile` health-data modal, without the
    * domain switcher.
    */
   hideSidebar?: boolean;
   onClose: () => void;
-  onSaved?: (result: SaveHealthRecordCaptureResult) => void;
+  onSaved?: () => void;
 }
 
 /**
@@ -113,8 +114,8 @@ const SIDEBAR_GROUP_ORDER: readonly string[] = [
  * `vaccine_records`, so it has no `health_record_events` capture protocol.
  */
 const VIRTUAL_SIDEBAR_ITEMS: ReadonlyArray<{ id: string; emoji: string; label: string }> = [
-  { id: 'posture', emoji: '🧍', label: '体态' },
-  { id: 'vaccine', emoji: '💉', label: '疫苗' },
+  { id: 'posture', emoji: '🧍', label: i18nText('HealthCapture.sidebar.posture') },
+  { id: 'vaccine', emoji: '💉', label: i18nText('HealthCapture.sidebar.vaccine') },
 ];
 
 function sortOptionsForSidebar<T extends { group: { groupId: string } }>(options: readonly T[]): T[] {
@@ -165,7 +166,7 @@ function SidebarHealthCaptureModal({
   const child = children.find((item) => item.childId === childId);
 
   const handleSavedFromGroup = () => {
-    onSaved?.({ eventId: '' } as SaveHealthRecordCaptureResult);
+    onSaved?.();
   };
 
   const sidebarItems: HealthRecordSidebarItem[] = [
@@ -250,10 +251,10 @@ function SidebarHealthCaptureModal({
     if (selectedGroupId === 'development') {
       const tabs = milestoneAvailable
         ? ([
-            { value: 'milestone' as const, label: '里程碑', emoji: '🎯' },
-            { value: 'tanner' as const, label: '青春期评估', emoji: '🌱' },
+            { value: 'milestone' as const, label: i18nText('HealthCapture.development.milestone'), emoji: '🎯' },
+            { value: 'tanner' as const, label: i18nText('HealthCapture.development.tanner'), emoji: '🌱' },
           ] as const)
-        : ([{ value: 'tanner' as const, label: '青春期评估', emoji: '🌱' }] as const);
+        : ([{ value: 'tanner' as const, label: i18nText('HealthCapture.development.tanner'), emoji: '🌱' }] as const);
       return (
         <DevelopmentTabContent
           tabs={tabs}
@@ -409,23 +410,22 @@ function DevelopmentTabContent({
 /* ── Coming-soon placeholder ──────────────────────────────────────────── */
 
 function ComingSoonPanel({ onClose }: { onClose: () => void }) {
-  const { t } = useTranslation();
   return (
     <>
-      <ModalHeader title={t('Profile.capture.title', { defaultValue: '添加健康数据' })} onClose={onClose} />
+      <ModalHeader title={i18nText('HealthCapture.title')} onClose={onClose} />
       <ModalContent>
         <div className="flex h-full flex-col items-center justify-center py-16 text-center">
           <div className="mb-4 text-[40px]">🚧</div>
           <p className="mb-2 text-[15px] font-semibold" style={{ color: 'var(--nimi-text-primary)' }}>
-            {t('Profile.capture.comingSoonTitle', { defaultValue: '该分组录入即将上线' })}
+            {i18nText('HealthCapture.comingSoon.title')}
           </p>
           <p className="text-[13px]" style={{ color: 'var(--nimi-text-muted)' }}>
-            {t('Profile.capture.comingSoonDesc', { defaultValue: '该分类正在迁移到统一录入界面。' })}
+            {i18nText('HealthCapture.comingSoon.description')}
           </p>
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">关闭</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('HealthCapture.close')}</Button>
       </ModalFooter>
     </>
   );

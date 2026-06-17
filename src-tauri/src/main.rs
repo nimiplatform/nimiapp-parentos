@@ -230,6 +230,7 @@ fn main() {
             sqlite::queries::get_posture_assessments,
             // Health Record Capture
             sqlite::queries::save_health_record_capture,
+            sqlite::queries::replace_health_record_capture,
             sqlite::queries::get_health_record_events,
             sqlite::queries::get_health_record_values,
             // Profile Section Summaries

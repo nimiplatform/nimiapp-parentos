@@ -6,6 +6,8 @@ use std::sync::OnceLock;
 
 use super::super::get_conn;
 
+include!("vaccine-reminder-rules.gen.rs");
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HealthRecordCaptureValueInput {
@@ -105,6 +107,16 @@ fn is_supported_health_value_kind(value: &str) -> bool {
     matches!(value, "measured" | "derived" | "parent_confirmed_import")
 }
 
+fn validate_vaccine_rule_id(rule_id: &str) -> Result<(), String> {
+    if VACCINE_REMINDER_RULE_IDS.contains(&rule_id) {
+        Ok(())
+    } else {
+        Err(format!(
+            "insert_vaccine_record: ruleId '{rule_id}' is not an admitted vaccine reminder rule"
+        ))
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct HealthMetricRegistryYaml {
     metrics: Vec<HealthMetricAuthorityYaml>,
@@ -115,6 +127,8 @@ struct HealthMetricRegistryYaml {
 struct HealthMetricAuthorityYaml {
     metric_id: String,
     group_id: String,
+    #[serde(default)]
+    unit: Option<String>,
     #[serde(default)]
     capture_protocol_ids: Vec<String>,
 }
@@ -135,27 +149,28 @@ struct HealthCaptureProtocolAuthorityYaml {
 }
 
 #[derive(Debug)]
-struct HealthMetricAuthority {
-    group_id: String,
-    capture_protocol_ids: HashSet<String>,
+pub(crate) struct HealthMetricAuthority {
+    pub(crate) group_id: String,
+    pub(crate) unit: Option<String>,
+    pub(crate) capture_protocol_ids: HashSet<String>,
 }
 
 #[derive(Debug)]
-struct HealthCaptureProtocolAuthority {
-    group_id: String,
-    metric_ids: HashSet<String>,
-    storage_target: String,
+pub(crate) struct HealthCaptureProtocolAuthority {
+    pub(crate) group_id: String,
+    pub(crate) metric_ids: HashSet<String>,
+    pub(crate) storage_target: String,
 }
 
 #[derive(Debug)]
-struct HealthRecordAuthority {
-    metrics_by_id: HashMap<String, HealthMetricAuthority>,
-    protocols_by_id: HashMap<String, HealthCaptureProtocolAuthority>,
+pub(crate) struct HealthRecordAuthority {
+    pub(crate) metrics_by_id: HashMap<String, HealthMetricAuthority>,
+    pub(crate) protocols_by_id: HashMap<String, HealthCaptureProtocolAuthority>,
 }
 
 static HEALTH_RECORD_AUTHORITY: OnceLock<Result<HealthRecordAuthority, String>> = OnceLock::new();
 
-fn health_record_authority() -> Result<&'static HealthRecordAuthority, String> {
+pub(crate) fn health_record_authority() -> Result<&'static HealthRecordAuthority, String> {
     match HEALTH_RECORD_AUTHORITY.get_or_init(load_health_record_authority) {
         Ok(authority) => Ok(authority),
         Err(error) => Err(error.clone()),
@@ -180,6 +195,7 @@ fn load_health_record_authority() -> Result<HealthRecordAuthority, String> {
                 metric.metric_id,
                 HealthMetricAuthority {
                     group_id: metric.group_id,
+                    unit: metric.unit,
                     capture_protocol_ids: metric.capture_protocol_ids.into_iter().collect(),
                 },
             )
@@ -349,6 +365,17 @@ pub(crate) fn save_health_record_capture_with_conn(
     let tx = conn
         .transaction()
         .map_err(|e| format!("save_health_record_capture begin transaction: {e}"))?;
+    let result = insert_health_record_capture_rows(&tx, input)?;
+    tx.commit()
+        .map_err(|e| format!("save_health_record_capture commit: {e}"))?;
+
+    Ok(result)
+}
+
+fn insert_health_record_capture_rows(
+    tx: &rusqlite::Transaction<'_>,
+    input: SaveHealthRecordCaptureInput,
+) -> Result<SaveHealthRecordCaptureResult, String> {
     tx.execute(
         "INSERT INTO health_record_events (
             eventId, childId, protocolId, groupId, recordKind, sourceSurface,
@@ -401,8 +428,6 @@ pub(crate) fn save_health_record_capture_with_conn(
         .map_err(|e| format!("save_health_record_capture insert value: {e}"))?;
         value_ids.push(value.value_id);
     }
-    tx.commit()
-        .map_err(|e| format!("save_health_record_capture commit: {e}"))?;
 
     Ok(SaveHealthRecordCaptureResult {
         event_id: input.event_id,
@@ -417,6 +442,36 @@ pub fn save_health_record_capture(
 ) -> Result<SaveHealthRecordCaptureResult, String> {
     let mut conn = get_conn()?.lock().map_err(|e| e.to_string())?;
     save_health_record_capture_with_conn(&mut conn, input)
+}
+
+#[tauri::command]
+pub fn replace_health_record_capture(
+    replace_event_id: String,
+    input: SaveHealthRecordCaptureInput,
+) -> Result<SaveHealthRecordCaptureResult, String> {
+    non_empty(&replace_event_id, "replaceEventId")?;
+    validate_health_record_capture(&input)?;
+
+    let mut conn = get_conn()?.lock().map_err(|e| e.to_string())?;
+    let tx = conn
+        .transaction()
+        .map_err(|e| format!("replace_health_record_capture begin transaction: {e}"))?;
+    let changed = tx
+        .execute(
+            "DELETE FROM health_record_events WHERE eventId = ?1 AND childId = ?2",
+            params![&replace_event_id, &input.child_id],
+        )
+        .map_err(|e| format!("replace_health_record_capture delete old event: {e}"))?;
+    if changed == 0 {
+        return Err(format!(
+            "replace_health_record_capture found no health_record_events row for replaceEventId \"{}\" and childId \"{}\"",
+            replace_event_id, input.child_id
+        ));
+    }
+    let result = insert_health_record_capture_rows(&tx, input)?;
+    tx.commit()
+        .map_err(|e| format!("replace_health_record_capture commit: {e}"))?;
+    Ok(result)
 }
 
 #[tauri::command]
@@ -632,6 +687,7 @@ pub fn insert_vaccine_record(
     photo_path: Option<String>,
     now: String,
 ) -> Result<(), String> {
+    validate_vaccine_rule_id(&rule_id)?;
     let conn = get_conn()?.lock().map_err(|e| e.to_string())?;
     conn.execute(
         "INSERT INTO vaccine_records (recordId, childId, ruleId, vaccineName, vaccinatedAt, ageMonths, batchNumber, hospital, adverseReaction, photoPath, createdAt) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
@@ -639,6 +695,22 @@ pub fn insert_vaccine_record(
     )
     .map_err(|e| format!("insert_vaccine_record: {e}"))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod vaccine_record_tests {
+    use super::validate_vaccine_rule_id;
+
+    #[test]
+    fn rejects_placeholder_or_custom_vaccine_rule_ids() {
+        assert!(validate_vaccine_rule_id("custom-vac-01H00000000000000000000000").is_err());
+        assert!(validate_vaccine_rule_id("custom-vac-next-01H00000000000000000000000").is_err());
+    }
+
+    #[test]
+    fn accepts_generated_vaccine_rule_ids() {
+        assert!(validate_vaccine_rule_id("PO-REM-VAC-001").is_ok());
+    }
 }
 
 #[derive(Debug, Serialize)]

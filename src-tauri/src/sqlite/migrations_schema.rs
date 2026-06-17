@@ -33,8 +33,9 @@ pub(super) const V1_SCHEMA_SQL: &str = r#"
         -- .nimi/spec/parentos/kernel/tables/local-storage.yaml#growth_measurement_canonical_migration.retirement_plan
         -- (topic 2026-05-19-parentos-growth-canonical-write-migration wave-0c).
         -- Storage moved to canonical health_record_events + health_record_values
-        -- (PO-HREC-004) at v13; v21 drops the legacy table outright. Fresh
-        -- installs never create it. Upgraded installs drop it via apply_v21.
+        -- (PO-HREC-004) at v13. Fresh installs never create this retired table.
+        -- If it reappears in a local database, apply_v21 fails closed instead
+        -- of silently backfilling or dropping it.
 
         -- Milestone Records
         CREATE TABLE IF NOT EXISTS milestone_records (

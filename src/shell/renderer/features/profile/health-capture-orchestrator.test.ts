@@ -4,21 +4,50 @@ import {
   createDefaultHealthCaptureIntent,
   getHealthCaptureProtocolOptions,
   type HealthCaptureDraftValue,
+  type HealthCaptureLaunchMode,
+  type HealthCaptureOrigin,
+  type HealthCaptureSource,
+  type LinkedHealthRecordReminder,
 } from './health-capture-orchestrator.js';
-import type { HealthMetricId } from '../../knowledge-base/index.js';
+import type { HealthMetricGroupId, HealthMetricId } from '../../knowledge-base/index.js';
 
 function ids() {
   let index = 0;
   return () => `id-${++index}`;
 }
 
+function intent(input: {
+  childId?: string;
+  groupId: HealthMetricGroupId;
+  metricIds: readonly HealthMetricId[];
+  mode?: HealthCaptureLaunchMode;
+  origin?: HealthCaptureOrigin;
+  source?: HealthCaptureSource;
+  linkedReminder?: LinkedHealthRecordReminder | null;
+}) {
+  return createDefaultHealthCaptureIntent({
+    intentId: `intent-${input.groupId}`,
+    origin: input.origin ?? 'profile_add_icon',
+    childId: input.childId ?? 'child-1',
+    groupId: input.groupId,
+    metricIds: input.metricIds,
+    mode: input.mode ?? 'manual',
+    source: input.source,
+    linkedReminder: input.linkedReminder,
+    todayIso: '2026-05-02',
+  });
+}
+
 describe('health-capture-orchestrator', () => {
   it('builds a protocol-backed health record event and derived BMI value', () => {
-    const intent = createDefaultHealthCaptureIntent('growth-child-quarterly', 'manual', '2026-05-02');
+    const captureIntent = intent({
+      groupId: 'growth',
+      metricIds: ['growth.height', 'growth.weight'],
+    });
     const input = buildHealthCaptureEventInput({
       childId: 'child-1',
       ageMonths: 65,
-      intent,
+      intent: captureIntent,
       draftValues: {
         'growth.height': { value: '118.2' },
         'growth.weight': { value: '22.4' },
@@ -40,13 +69,16 @@ describe('health-capture-orchestrator', () => {
   });
 
   it('rejects missing required metrics and user-authored derived metrics', () => {
-    const intent = createDefaultHealthCaptureIntent('growth-child-quarterly', 'manual', '2026-05-02');
+    const captureIntent = intent({
+      groupId: 'growth',
+      metricIds: ['growth.height', 'growth.weight'],
+    });
 
     expect(() =>
       buildHealthCaptureEventInput({
         childId: 'child-1',
         ageMonths: 65,
-        intent,
+        intent: captureIntent,
         draftValues: { 'growth.height': { value: '118.2' } },
         nowIso: '2026-05-02T10:00:00.000Z',
         makeId: ids(),
@@ -57,7 +89,7 @@ describe('health-capture-orchestrator', () => {
       buildHealthCaptureEventInput({
         childId: 'child-1',
         ageMonths: 65,
-        intent,
+        intent: captureIntent,
         draftValues: {
           'growth.height': { value: '118.2' },
           'growth.weight': { value: '22.4' },
@@ -70,16 +102,23 @@ describe('health-capture-orchestrator', () => {
   });
 
   it('keeps reminder-launched capture linked without completing reminders', () => {
-    const intent = createDefaultHealthCaptureIntent('outdoor-activity', 'reminder', '2026-05-02', {
-      stateId: 'state-1',
-      ruleId: 'PO-REM-OUTD-002',
-      scheduledFor: '2026-05-01',
+    const captureIntent = intent({
+      groupId: 'outdoor',
+      metricIds: ['outdoor.activity_minutes'],
+      mode: 'reminder',
+      origin: 'reminder',
+      linkedReminder: {
+        childId: 'child-1',
+        stateId: 'state-1',
+        ruleId: 'PO-REM-OUTD-002',
+        scheduledFor: '2026-05-01',
+      },
     });
 
     const input = buildHealthCaptureEventInput({
       childId: 'child-1',
       ageMonths: 65,
-      intent,
+      intent: captureIntent,
       draftValues: { 'outdoor.activity_minutes': { value: '45' } },
       nowIso: '2026-05-02T10:00:00.000Z',
       makeId: ids(),
@@ -93,34 +132,41 @@ describe('health-capture-orchestrator', () => {
   });
 
   it('fails closed before building a saveable event for invalid child ids', () => {
-    const intent = createDefaultHealthCaptureIntent('outdoor-activity', 'manual', '2026-05-02');
-
     expect(() =>
-      buildHealthCaptureEventInput({
+      intent({
         childId: '  ',
-        ageMonths: 65,
-        intent,
-        draftValues: { 'outdoor.activity_minutes': { value: '45' } },
-        nowIso: '2026-05-02T10:00:00.000Z',
-        makeId: ids(),
+        groupId: 'outdoor',
+        metricIds: ['outdoor.activity_minutes'],
       }),
     ).toThrow(/childId is required/);
   });
 
   it('fails closed when reminder mode has no concrete linked reminder rule', () => {
-    const missingReminder = createDefaultHealthCaptureIntent('outdoor-activity', 'reminder', '2026-05-02');
-    const blankRuleReminder = createDefaultHealthCaptureIntent('outdoor-activity', 'reminder', '2026-05-02', {
-      stateId: 'state-1',
-      ruleId: ' ',
-      scheduledFor: '2026-05-01',
+    const missingReminder = intent({
+      groupId: 'outdoor',
+      metricIds: ['outdoor.activity_minutes'],
+      mode: 'reminder',
+      origin: 'reminder',
+    });
+    const blankRuleReminder = intent({
+      groupId: 'outdoor',
+      metricIds: ['outdoor.activity_minutes'],
+      mode: 'reminder',
+      origin: 'reminder',
+      linkedReminder: {
+        childId: 'child-1',
+        stateId: 'state-1',
+        ruleId: ' ',
+        scheduledFor: '2026-05-01',
+      },
     });
 
-    for (const intent of [missingReminder, blankRuleReminder]) {
+    for (const captureIntent of [missingReminder, blankRuleReminder]) {
       expect(() =>
         buildHealthCaptureEventInput({
           childId: 'child-1',
           ageMonths: 65,
-          intent,
+          intent: captureIntent,
           draftValues: { 'outdoor.activity_minutes': { value: '45' } },
           nowIso: '2026-05-02T10:00:00.000Z',
           makeId: ids(),
@@ -133,19 +179,22 @@ describe('health-capture-orchestrator', () => {
     const invalidDates = [' ', '2026-02-30', '2026/05/02'];
 
     for (const effectiveDate of invalidDates) {
-      const intent = createDefaultHealthCaptureIntent('outdoor-activity', 'manual', '2026-05-02');
-      intent.effectiveDate = effectiveDate;
+      const captureIntent = intent({
+        groupId: 'outdoor',
+        metricIds: ['outdoor.activity_minutes'],
+      });
+      captureIntent.recordedAtDefault = effectiveDate;
 
       expect(() =>
         buildHealthCaptureEventInput({
           childId: 'child-1',
           ageMonths: 65,
-          intent,
+          intent: captureIntent,
           draftValues: { 'outdoor.activity_minutes': { value: '45' } },
           nowIso: '2026-05-02T10:00:00.000Z',
           makeId: ids(),
         }),
-      ).toThrow(/effectiveDate/);
+      ).toThrow(/recordedAtDefault/);
     }
   });
 
@@ -160,13 +209,16 @@ describe('health-capture-orchestrator', () => {
   });
 
   it('fails closed instead of misrouting retained-table protocols into health record events', () => {
-    const intent = createDefaultHealthCaptureIntent('vaccine-administration', 'manual', '2026-05-02');
+    const captureIntent = intent({
+      groupId: 'vaccine',
+      metricIds: ['vaccine.administration'],
+    });
 
     expect(() =>
       buildHealthCaptureEventInput({
         childId: 'child-1',
         ageMonths: 65,
-        intent,
+        intent: captureIntent,
         draftValues: { 'vaccine.administration': { value: '{"ruleId":"PO-REM-VAC-001","vaccineName":"MMR"}' } },
         nowIso: '2026-05-02T10:00:00.000Z',
         makeId: ids(),
@@ -175,12 +227,15 @@ describe('health-capture-orchestrator', () => {
   });
 
   it('rejects metrics outside the selected protocol', () => {
-    const intent = createDefaultHealthCaptureIntent('vision-basic', 'manual', '2026-05-02');
+    const captureIntent = intent({
+      groupId: 'vision',
+      metricIds: ['vision.left_visual_acuity', 'vision.right_visual_acuity'],
+    });
     expect(() =>
       buildHealthCaptureEventInput({
         childId: 'child-1',
         ageMonths: 65,
-        intent,
+        intent: captureIntent,
         draftValues: {
           'vision.left_visual_acuity': { value: '1.0' },
           'vision.right_visual_acuity': { value: '1.0' },

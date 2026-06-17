@@ -36,6 +36,19 @@ fn sanitize_segment(value: &str, label: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+fn delete_child_dir_at(root: &Path, child_id: &str) -> Result<(), String> {
+    let child_id = sanitize_segment(child_id, "child_id")?;
+    let dir = root.join(child_id);
+    match fs::remove_dir_all(&dir) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(format!(
+            "failed to delete child journal photo dir ({}): {error}",
+            dir.display()
+        )),
+    }
+}
+
 fn extension_for_mime_type(mime_type: &str) -> Result<&'static str, String> {
     match mime_type.trim().to_ascii_lowercase().as_str() {
         "image/jpeg" | "image/jpg" => Ok("jpg"),
@@ -127,9 +140,16 @@ pub fn delete_journal_photo(path: String) -> Result<(), String> {
     })
 }
 
+pub fn delete_child_dir(child_id: &str) -> Result<(), String> {
+    let root = resolve_photo_root()?;
+    delete_child_dir_at(&root, child_id)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{delete_journal_photo, save_journal_photo};
+    use super::{delete_child_dir_at, delete_journal_photo, save_journal_photo};
+    use std::fs;
+    use tempfile::TempDir;
 
     #[test]
     fn rejects_unsupported_mime_types() {
@@ -147,5 +167,21 @@ mod tests {
     fn delete_requires_absolute_path() {
         let result = delete_journal_photo("relative/file.jpg".to_string());
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn delete_child_dir_purges_only_that_child() {
+        let tmp = TempDir::new().unwrap();
+        let root = tmp.path();
+        fs::create_dir_all(root.join("child-A")).unwrap();
+        fs::create_dir_all(root.join("child-B")).unwrap();
+        fs::write(root.join("child-A").join("entry-1_0.jpg"), b"a").unwrap();
+        fs::write(root.join("child-B").join("entry-2_0.jpg"), b"b").unwrap();
+
+        delete_child_dir_at(root, "child-A").expect("delete child A");
+
+        assert!(!root.join("child-A").exists());
+        assert!(root.join("child-B").join("entry-2_0.jpg").exists());
+        delete_child_dir_at(root, "child-A").expect("second delete is idempotent");
     }
 }

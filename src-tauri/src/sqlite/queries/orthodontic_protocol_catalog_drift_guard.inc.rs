@@ -8,7 +8,7 @@ mod protocol_catalog_drift_guard {
     //! The YAML remains the sole authority. This test parses the YAML at
     //! compile/test time and asserts the embedded catalog agrees. Any new
     //! protocol rule, renamed ruleId, changed applianceType-binding, or
-    //! changed follow-up interval must update the YAML AND the Rust mirror
+    //! changed follow-up cadence must update the YAML AND the Rust mirror
     //! together or this test fails.
     use super::{
         appliance_phase_sequence, default_review_interval_days_for_rule, dental_followup_rule_for,
@@ -42,8 +42,14 @@ mod protocol_catalog_drift_guard {
     #[serde(rename_all = "camelCase")]
     struct DentalFollowupRuleSpec {
         rule_id: String,
-        interval_months: i64,
+        repeat_rule: RepeatRuleSpec,
         triggered_by: TriggeredBy,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct RepeatRuleSpec {
+        cadence_unit: String,
+        interval: i64,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
@@ -181,21 +187,26 @@ mod protocol_catalog_drift_guard {
     #[test]
     fn rust_dental_followup_rule_for_matches_yaml() {
         let spec = parse_spec();
-        // Every YAML follow-up rule has a Rust mapping with the same ruleId + intervalMonths.
+        // Every YAML follow-up rule has a Rust mapping with the same ruleId + month cadence.
         for rule in &spec.dental_followup_rules {
             let event_type = &rule.triggered_by.dental_event_type;
+            assert_eq!(
+                rule.repeat_rule.cadence_unit, "month",
+                "dental follow-up rule {} must remain month cadence in Rust scheduling mirror",
+                rule.rule_id,
+            );
             let mapped = dental_followup_rule_for(event_type)
-                .unwrap_or_else(|| panic!("Rust dental_followup_rule_for({event_type}) returns None; YAML has {} with interval {}",
-                    rule.rule_id, rule.interval_months));
+                .unwrap_or_else(|| panic!("Rust dental_followup_rule_for({event_type}) returns None; YAML has {} with month interval {}",
+                    rule.rule_id, rule.repeat_rule.interval));
             assert_eq!(
                 mapped.0, rule.rule_id,
                 "ruleId drift for dental eventType \"{event_type}\": Rust={} YAML={}",
                 mapped.0, rule.rule_id,
             );
             assert_eq!(
-                mapped.1, rule.interval_months,
-                "intervalMonths drift for \"{event_type}\": Rust={} YAML={}",
-                mapped.1, rule.interval_months,
+                mapped.1, rule.repeat_rule.interval,
+                "month interval drift for \"{event_type}\": Rust={} YAML={}",
+                mapped.1, rule.repeat_rule.interval,
             );
         }
         // Reverse direction: make sure Rust doesn't admit an event type the YAML doesn't list.

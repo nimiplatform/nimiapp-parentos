@@ -90,23 +90,13 @@ fn health_record_event_values_round_trip_and_cascade_with_child_delete() {
 }
 
 #[test]
-fn migration_v13_backfills_existing_growth_measurements_into_health_records() {
+fn migrations_reject_retired_growth_measurements_instead_of_backfilling_or_dropping() {
     let conn = Connection::open_in_memory().expect("open in-memory db");
     conn.execute_batch("PRAGMA foreign_keys=ON;")
         .expect("enable fk");
     run_migrations(&conn).expect("run migrations");
     seed_family_and_child(&conn);
 
-    // v21 retired the legacy growth_measurements table (see
-    // src-tauri/src/sqlite/migrations_v21.rs and
-    // .nimi/spec/parentos/kernel/tables/local-storage.yaml#growth_measurement_canonical_migration.retirement_plan).
-    // To preserve coverage of the v13 backfill semantics (a historical
-    // one-time migration whose mapping authority is still spec-bound),
-    // we recreate the legacy table here as a test fixture, populate it
-    // with pre-cutover-shape rows, then call run_migrations again to
-    // trigger the v13 backfill via repair_missing_tables. v21 will
-    // drop the table again at the end of the repair chain, which is
-    // correct end-state behaviour.
     conn.execute_batch(
         "CREATE TABLE growth_measurements (
             measurementId TEXT PRIMARY KEY NOT NULL,
@@ -119,122 +109,52 @@ fn migration_v13_backfills_existing_growth_measurements_into_health_records() {
             source        TEXT,
             notes         TEXT,
             createdAt     TEXT NOT NULL
-        );
-         CREATE INDEX idx_growth_child_type_date ON growth_measurements (childId, typeId, measuredAt);
-         CREATE INDEX idx_growth_child_age ON growth_measurements (childId, ageMonths);",
+        );",
     )
-    .expect("recreate legacy growth_measurements fixture for v13 backfill test");
+    .expect("create unsupported retired growth_measurements fixture");
 
-    conn.execute(
-        "INSERT INTO growth_measurements (
-            measurementId, childId, typeId, value, measuredAt, ageMonths,
-            percentile, source, notes, createdAt
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7, ?8, ?9)",
-        params![
-            "precutover-height-1",
-            "child-1",
-            "height",
-            145.2,
-            "2026-02-01T09:00:00.000Z",
-            25,
-            "manual",
-            "school measurement",
-            "2026-02-01T09:05:00.000Z"
-        ],
-    )
-    .expect("insert precutover height");
-    conn.execute(
-        "INSERT INTO growth_measurements (
-            measurementId, childId, typeId, value, measuredAt, ageMonths,
-            percentile, source, notes, createdAt
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7, ?8, ?9)",
-        params![
-            "precutover-vision-left-1",
-            "child-1",
-            "vision-left",
-            0.8,
-            "2026-02-02T09:00:00.000Z",
-            25,
-            "ocr",
-            "vision sheet",
-            "2026-02-02T09:05:00.000Z"
-        ],
-    )
-    .expect("insert precutover vision");
+    let error = run_migrations(&conn).expect_err("retired table must fail closed");
+    assert!(
+        error.contains("growth_measurements") && error.contains("no admitted historical backfill"),
+        "unexpected error: {error}"
+    );
 
-    run_migrations(&conn).expect("repair migration backfill");
-    run_migrations(&conn).expect("idempotent repair migration backfill");
-
-    let height = conn
+    let table_count: i64 = conn
         .query_row(
-            "SELECT e.protocolId, e.groupId, e.sourceSurface, v.metricId, v.valueNumber, v.unit
-             FROM health_record_events e
-             JOIN health_record_values v ON v.eventId = e.eventId
-             WHERE e.eventId = 'precutover-growth-measurement:precutover-height-1'",
-            [],
-            |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, String>(3)?,
-                    row.get::<_, Option<f64>>(4)?,
-                    row.get::<_, Option<String>>(5)?,
-                ))
-            },
-        )
-        .expect("query backfilled height");
-    assert_eq!(height.0, "growth-child-quarterly");
-    assert_eq!(height.1, "growth");
-    assert_eq!(height.2, "profile_detail");
-    assert_eq!(height.3, "growth.height");
-    assert_eq!(height.4, Some(145.2));
-    assert_eq!(height.5.as_deref(), Some("cm"));
-
-    let vision = conn
-        .query_row(
-            "SELECT e.protocolId, e.groupId, e.sourceSurface, v.metricId, v.valueNumber, v.unit, v.qualifier
-             FROM health_record_events e
-             JOIN health_record_values v ON v.eventId = e.eventId
-             WHERE e.eventId = 'precutover-growth-measurement:precutover-vision-left-1'",
-            [],
-            |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, String>(3)?,
-                    row.get::<_, Option<f64>>(4)?,
-                    row.get::<_, Option<String>>(5)?,
-                    row.get::<_, Option<String>>(6)?,
-                ))
-            },
-        )
-        .expect("query backfilled vision");
-    assert_eq!(vision.0, "vision-basic");
-    assert_eq!(vision.1, "vision");
-    assert_eq!(vision.2, "ocr_tool");
-    assert_eq!(vision.3, "vision.left_visual_acuity");
-    assert_eq!(vision.4, Some(0.8));
-    assert_eq!(vision.5.as_deref(), Some("decimal"));
-    assert_eq!(vision.6.as_deref(), Some("left"));
-
-    let event_count: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM health_record_events WHERE eventId LIKE 'precutover-growth-measurement:%'",
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'growth_measurements'",
             [],
             |row| row.get(0),
         )
-        .expect("count backfilled events");
-    let value_count: i64 = conn
+        .expect("count retired table");
+    assert_eq!(table_count, 1, "migration must not destructively drop retired tables");
+}
+
+#[test]
+fn migrations_create_only_canonical_health_record_storage_for_current_baseline() {
+    let conn = Connection::open_in_memory().expect("open in-memory db");
+    conn.execute_batch("PRAGMA foreign_keys=ON;")
+        .expect("enable fk");
+    run_migrations(&conn).expect("run migrations");
+
+    for table_name in ["health_record_events", "health_record_values"] {
+        let count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?1",
+                params![table_name],
+                |row| row.get(0),
+            )
+            .expect("count canonical table");
+        assert_eq!(count, 1, "missing canonical table {table_name}");
+    }
+
+    let retired_count: i64 = conn
         .query_row(
-            "SELECT COUNT(*) FROM health_record_values WHERE valueId LIKE 'precutover-growth-value:%'",
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'growth_measurements'",
             [],
             |row| row.get(0),
         )
-        .expect("count backfilled values");
-    assert_eq!(event_count, 2);
-    assert_eq!(value_count, 2);
+        .expect("count retired table");
+    assert_eq!(retired_count, 0);
 }
 
 #[test]

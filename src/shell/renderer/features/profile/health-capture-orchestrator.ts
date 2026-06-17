@@ -18,22 +18,40 @@ import {
 } from '../../engine/health-record-domain.js';
 
 export type HealthCaptureLaunchMode = 'manual' | 'prefilled' | 'guided' | 'reminder' | 'ocr_confirm';
+export type HealthCaptureOrigin =
+  | 'profile_add_icon'
+  | 'metric_row'
+  | 'reminder'
+  | 'detail_page'
+  | 'ocr_confirm'
+  | 'dashboard_task';
+export type HealthCaptureSource = 'manual' | 'ocr' | 'imported' | 'reminder';
 
 export interface LinkedHealthRecordReminder {
+  childId?: string | null;
   stateId?: string | null;
   ruleId: string;
+  repeatIndex?: number | null;
   scheduledFor?: string | null;
   dueDate?: string | null;
 }
 
 export interface HealthCaptureIntent {
-  protocolId: HealthCaptureProtocolId;
+  intentId: string;
+  origin: HealthCaptureOrigin;
+  childId: string;
+  groupId: HealthMetricGroup['groupId'];
+  metricIds: readonly HealthMetricId[];
+  captureProtocolId?: HealthCaptureProtocolId | null;
   mode: HealthCaptureLaunchMode;
-  effectiveDate: string;
+  recordedAtDefault: string;
+  source: HealthCaptureSource;
   recorderId?: string | null;
   notes?: string | null;
   linkedReminder?: LinkedHealthRecordReminder | null;
+  dashboardTaskId?: string | null;
   prefillValues?: Partial<Record<HealthMetricId, HealthCaptureDraftValue>>;
+  postSaveBehavior?: 'close' | 'stay';
 }
 
 export interface HealthCaptureDraftValue {
@@ -86,6 +104,20 @@ export interface HealthCaptureProtocolOption {
   protocols: readonly HealthCaptureProtocol[];
 }
 
+export interface DefaultHealthCaptureIntentInput {
+  intentId: string;
+  origin: HealthCaptureOrigin;
+  childId: string;
+  groupId: HealthMetricGroup['groupId'];
+  metricIds: readonly HealthMetricId[];
+  mode: HealthCaptureLaunchMode;
+  todayIso: string;
+  source?: HealthCaptureSource;
+  captureProtocolId?: HealthCaptureProtocolId | null;
+  linkedReminder?: LinkedHealthRecordReminder | null;
+  dashboardTaskId?: string | null;
+}
+
 const metricById = new Map(HEALTH_METRICS.map((metric) => [metric.metricId, metric]));
 
 export function getHealthCaptureProtocolOptions(): HealthCaptureProtocolOption[] {
@@ -125,21 +157,25 @@ export function getCaptureMetrics(protocol: HealthCaptureProtocol): {
 }
 
 export function createDefaultHealthCaptureIntent(
-  protocolId: HealthCaptureProtocolId,
-  mode: HealthCaptureLaunchMode,
-  todayIso: string,
-  linkedReminder?: LinkedHealthRecordReminder | null,
+  input: DefaultHealthCaptureIntentInput,
 ): HealthCaptureIntent {
   return {
-    protocolId,
-    mode,
-    effectiveDate: defaultEffectiveDate(todayIso, linkedReminder),
-    linkedReminder: linkedReminder ?? null,
+    intentId: requireNonBlank(input.intentId, 'Capture intent intentId'),
+    origin: input.origin,
+    childId: requireNonBlank(input.childId, 'Capture intent childId'),
+    groupId: input.groupId,
+    metricIds: [...input.metricIds],
+    captureProtocolId: input.captureProtocolId ?? null,
+    mode: input.mode,
+    recordedAtDefault: defaultEffectiveDate(input.todayIso, input.linkedReminder),
+    source: input.source ?? sourceForMode(input.mode),
+    linkedReminder: input.linkedReminder ?? null,
+    dashboardTaskId: input.dashboardTaskId ?? null,
   };
 }
 
 export function buildHealthCaptureEventInput(input: HealthCaptureBuildInput): HealthCaptureEventInput {
-  const protocol = getHealthCaptureProtocol(input.intent.protocolId);
+  const protocol = selectCaptureProtocol(input.intent, input.ageMonths);
   if (protocol.storageTarget !== 'health_record_event') {
     throw new Error(
       `Capture protocol ${protocol.protocolId} requires retained_table storage and must not be saved as a health_record_event`,
@@ -147,16 +183,20 @@ export function buildHealthCaptureEventInput(input: HealthCaptureBuildInput): He
   }
 
   const childId = requireNonBlank(input.childId, 'Capture intent childId');
-  const effectiveDate = requireIsoDate(input.intent.effectiveDate, 'Capture intent effectiveDate');
-  const linkedReminder = validateLinkedReminder(input.intent.mode, input.intent.linkedReminder);
+  const intentChildId = requireNonBlank(input.intent.childId, 'Capture intent childId');
+  if (childId !== intentChildId) {
+    throw new Error('Capture intent childId must match build childId');
+  }
+  const effectiveDate = requireIsoDate(input.intent.recordedAtDefault, 'Capture intent recordedAtDefault');
+  const linkedReminder = validateLinkedReminder(input.intent, childId, input.intent.linkedReminder);
   const eventId = input.makeId();
   const event: HealthRecordEvent = {
     eventId,
     childId,
     protocolId: protocol.protocolId,
     groupId: protocol.groupId,
-    recordKind: eventKindForMode(input.intent.mode),
-    sourceSurface: sourceSurfaceForMode(input.intent.mode),
+    recordKind: eventKindForIntent(input.intent),
+    sourceSurface: sourceSurfaceForIntent(input.intent),
     recordedAt: input.nowIso,
     effectiveDate,
     ageMonths: input.ageMonths,
@@ -165,9 +205,14 @@ export function buildHealthCaptureEventInput(input: HealthCaptureBuildInput): He
     linkedReminderRuleId: linkedReminder?.ruleId ?? null,
     notes: blankToNull(input.intent.notes),
     metadataJson: JSON.stringify({
+      intentId: input.intent.intentId,
+      origin: input.intent.origin,
       mode: input.intent.mode,
+      source: input.intent.source,
       protocolId: protocol.protocolId,
+      metricIds: input.intent.metricIds,
       linkedReminderRuleId: linkedReminder?.ruleId ?? null,
+      dashboardTaskId: input.intent.dashboardTaskId ?? null,
     }),
     createdAt: input.nowIso,
     updatedAt: input.nowIso,
@@ -293,33 +338,130 @@ function defaultEffectiveDate(todayIso: string, linkedReminder?: LinkedHealthRec
   return (linkedReminder?.scheduledFor ?? linkedReminder?.dueDate ?? todayIso).slice(0, 10);
 }
 
-function eventKindForMode(mode: HealthCaptureLaunchMode): HealthRecordEventKind {
-  if (mode === 'reminder') return 'reminder_linked';
-  if (mode === 'ocr_confirm') return 'ocr_confirmed';
+function selectCaptureProtocol(intent: HealthCaptureIntent, ageMonths: number): HealthCaptureProtocol {
+  const requestedMetricIds = normalizeMetricIds(intent.metricIds);
+  if (requestedMetricIds.length === 0) {
+    throw new Error('Capture intent metricIds must contain at least one metric');
+  }
+  for (const metricId of requestedMetricIds) {
+    const metric = metricById.get(metricId);
+    if (!metric) {
+      throw new Error(`Unknown health metric id: ${metricId}`);
+    }
+    if (metric.groupId !== intent.groupId) {
+      throw new Error(`Metric ${metricId} is not in capture intent group ${intent.groupId}`);
+    }
+  }
+  if (intent.origin === 'dashboard_task') {
+    requireNonBlank(intent.dashboardTaskId, 'Capture intent dashboardTaskId');
+  }
+
+  const candidates = HEALTH_CAPTURE_PROTOCOLS.filter((protocol) => {
+    if (protocol.groupId !== intent.groupId) return false;
+    if (!protocol.modeSupport.includes(intent.mode)) return false;
+    if (!protocol.sourceSupport.includes(intent.source)) return false;
+    return requestedMetricIds.every((metricId) => protocol.metricIds.includes(metricId));
+  });
+  const explicitProtocolId = blankToNull(intent.captureProtocolId ?? null);
+  const protocols = explicitProtocolId
+    ? [getHealthCaptureProtocol(explicitProtocolId)].filter((protocol) => candidates.includes(protocol))
+    : candidates;
+
+  if (protocols.length === 0) {
+    throw new Error(
+      `No health capture protocol admits group ${intent.groupId}, mode ${intent.mode}, source ${intent.source}, metrics ${requestedMetricIds.join(', ')}`,
+    );
+  }
+
+  const selected = [...protocols].sort((left, right) => (
+    protocolSelectionRank(left, intent, requestedMetricIds, ageMonths)
+    - protocolSelectionRank(right, intent, requestedMetricIds, ageMonths)
+  ))[0];
+  if (!selected) {
+    throw new Error('No health capture protocol selected after ranking');
+  }
+  return selected;
+}
+
+function normalizeMetricIds(metricIds: readonly HealthMetricId[]) {
+  return [...new Set(metricIds.map((metricId) => metricId.trim()).filter(Boolean) as HealthMetricId[])];
+}
+
+function protocolSelectionRank(
+  protocol: HealthCaptureProtocol,
+  intent: HealthCaptureIntent,
+  requestedMetricIds: readonly HealthMetricId[],
+  ageMonths: number,
+) {
+  const ageRank = intent.groupId === 'growth'
+    ? growthProtocolAgeRank(protocol.protocolId, requestedMetricIds, ageMonths)
+    : 0;
+  const requiredMisses = protocol.requiredMetricIds.filter(
+    (metricId) => !(protocol.derivedMetricIds ?? []).includes(metricId) && !requestedMetricIds.includes(metricId),
+  ).length;
+  const coverageSlack = protocol.metricIds.length - requestedMetricIds.length;
+  return ageRank * 1_000 + requiredMisses * 100 + coverageSlack;
+}
+
+function growthProtocolAgeRank(
+  protocolId: HealthCaptureProtocolId,
+  requestedMetricIds: readonly HealthMetricId[],
+  ageMonths: number,
+) {
+  const preferred = requestedMetricIds.includes('growth.head_circumference')
+    ? 'growth-infant-monthly'
+    : ageMonths <= 36
+      ? 'growth-infant-monthly'
+      : ageMonths >= 84
+        ? 'growth-school-biannual'
+        : 'growth-child-quarterly';
+  return protocolId === preferred ? 0 : 1;
+}
+
+function sourceForMode(mode: HealthCaptureLaunchMode): HealthCaptureSource {
+  if (mode === 'reminder') return 'reminder';
+  if (mode === 'ocr_confirm') return 'ocr';
   return 'manual';
 }
 
-function sourceSurfaceForMode(mode: HealthCaptureLaunchMode): HealthRecordEvent['sourceSurface'] {
-  if (mode === 'reminder') return 'reminder';
-  if (mode === 'ocr_confirm') return 'ocr_tool';
+function eventKindForIntent(intent: HealthCaptureIntent): HealthRecordEventKind {
+  if (intent.mode === 'reminder' || intent.origin === 'reminder' || intent.source === 'reminder') return 'reminder_linked';
+  if (intent.mode === 'ocr_confirm' || intent.origin === 'ocr_confirm' || intent.source === 'ocr') return 'ocr_confirmed';
+  if (intent.source === 'imported') return 'imported';
+  return 'manual';
+}
+
+function sourceSurfaceForIntent(intent: HealthCaptureIntent): HealthRecordEvent['sourceSurface'] {
+  if (intent.mode === 'reminder' || intent.origin === 'reminder' || intent.source === 'reminder') return 'reminder';
+  if (intent.mode === 'ocr_confirm' || intent.origin === 'ocr_confirm' || intent.source === 'ocr') return 'ocr_tool';
+  if (intent.source === 'imported') return 'import';
+  if (intent.origin === 'detail_page' || intent.origin === 'metric_row') return 'profile_detail';
   return 'profile_console';
 }
 
 function validateLinkedReminder(
-  mode: HealthCaptureLaunchMode,
+  intent: HealthCaptureIntent,
+  childId: string,
   linkedReminder: LinkedHealthRecordReminder | null | undefined,
 ): LinkedHealthRecordReminder | null {
-  if (mode !== 'reminder') {
+  const requiresReminder = intent.mode === 'reminder' || intent.origin === 'reminder' || intent.source === 'reminder';
+  if (!requiresReminder) {
     return linkedReminder ?? null;
   }
   if (!linkedReminder) {
     throw new Error('Reminder capture requires linkedReminder');
   }
+  const reminderChildId = requireNonBlank(linkedReminder.childId, 'Reminder capture linkedReminder.childId');
+  if (reminderChildId !== childId) {
+    throw new Error('Reminder capture linkedReminder.childId must match capture childId');
+  }
+  const stateId = requireNonBlank(linkedReminder.stateId, 'Reminder capture linkedReminder.stateId');
   const ruleId = requireNonBlank(linkedReminder.ruleId, 'Reminder capture linkedReminder.ruleId');
   return {
     ...linkedReminder,
+    childId: reminderChildId,
+    stateId,
     ruleId,
-    stateId: blankToNull(linkedReminder.stateId),
   };
 }
 
