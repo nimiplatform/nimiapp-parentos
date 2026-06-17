@@ -1,0 +1,91 @@
+[
+  {
+    "id": "seasonal-pollen-spring",
+    "title": "春季花粉季防护提醒",
+    "description": "进入春季花粉高发期，建议：排查家中抗过敏药是否充足、减少花粉浓度高时段外出、外出后清洗面部和鼻腔",
+    "activeMonths": [
+      3,
+      4,
+      5
+    ],
+    "requiredConditions": [
+      "pollen-allergy"
+    ],
+    "priority": "P1"
+  },
+  {
+    "id": "seasonal-pollen-autumn",
+    "title": "秋季花粉季防护提醒",
+    "description": "秋季蒿草/豚草花粉季到来，建议提前备好抗组胺药物，关注花粉浓度预报",
+    "activeMonths": [
+      8,
+      9,
+      10
+    ],
+    "requiredConditions": [
+      "pollen-allergy"
+    ],
+    "priority": "P1"
+  },
+  {
+    "id": "seasonal-dustmite-humid",
+    "title": "潮湿季节螨虫防护",
+    "description": "梅雨/回南天尘螨繁殖活跃，建议除螨清洗床品、开启除湿、检查抗过敏药储备",
+    "activeMonths": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "requiredConditions": [
+      "dust-mite"
+    ],
+    "priority": "P2"
+  },
+  {
+    "id": "seasonal-eczema-winter",
+    "title": "冬季湿疹护理提醒",
+    "description": "干燥寒冷季节湿疹易复发，建议加强保湿、减少热水洗浴时间、备好润肤剂和外用药膏",
+    "activeMonths": [
+      11,
+      12,
+      1,
+      2
+    ],
+    "requiredConditions": [
+      "eczema"
+    ],
+    "priority": "P2"
+  },
+  {
+    "id": "seasonal-asthma-cold",
+    "title": "换季哮喘防护",
+    "description": "气温变化大，哮喘易发作。建议确认吸入药物充足、关注空气质量、随身携带急救药物",
+    "activeMonths": [
+      3,
+      4,
+      10,
+      11
+    ],
+    "requiredConditions": [
+      "asthma"
+    ],
+    "priority": "P1"
+  },
+  {
+    "id": "seasonal-rhinitis-spring",
+    "title": "过敏性鼻炎季节提醒",
+    "description": "过敏性鼻炎高发季到来，建议提前使用鼻用糖皮质激素喷剂预防，备好抗组胺药",
+    "activeMonths": [
+      3,
+      4,
+      5,
+      9,
+      10
+    ],
+    "requiredConditions": [
+      "rhinitis"
+    ],
+    "priority": "P2"
+  }
+]

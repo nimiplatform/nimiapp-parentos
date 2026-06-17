@@ -1,0 +1,34 @@
+{
+  "assetId": "ai-boundary-rules",
+  "description": "ParentOS AI boundary banned-term and fail-close fallback data asset. Spec owns safety contracts and admission; this asset owns concrete terms and fallback copy.",
+  "schemaVersion": 1,
+  "contentVersion": "2026-06-17.1",
+  "schema": "schema.json",
+  "authorityClass": "curated_knowledge_asset",
+  "ownerContract": "advisor-contract.md#PO-ADVS-004",
+  "generatedModule": "ai-boundary.gen.ts",
+  "review": {
+    "status": "reviewed",
+    "owner": "parentos",
+    "reviewer": "parentos-spec",
+    "lastReviewedAt": "2026-06-17"
+  },
+  "primarySection": "bannedTermRules",
+  "sections": [
+    {
+      "sectionId": "bannedTermRules",
+      "kind": "singleton",
+      "files": "banned-term-rules.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "id"
+    },
+    {
+      "sectionId": "fallback",
+      "kind": "singleton",
+      "files": "fallback.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close"
+    }
+  ]
+}

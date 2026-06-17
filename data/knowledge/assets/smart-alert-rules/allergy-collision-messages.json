@@ -1,0 +1,4 @@
+{
+  "dangerTemplate": "含 {{allergenNames}} 过敏原，孩子有严重过敏史，务必遵医嘱",
+  "nonDangerTemplate": "可能含 {{allergenNames}} 成分，建议接种前告知医生过敏情况"
+}

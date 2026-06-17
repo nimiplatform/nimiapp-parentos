@@ -1,0 +1,34 @@
+{
+  "assetId": "advisor-classifier",
+  "description": "ParentOS advisor classifier keyword and generic-runtime phrase data asset. Spec owns routing contracts and reviewed-domain gates; this asset owns concrete classifier phrases.",
+  "schemaVersion": 1,
+  "contentVersion": "2026-06-17.1",
+  "schema": "schema.json",
+  "authorityClass": "curated_knowledge_asset",
+  "ownerContract": "advisor-contract.md#PO-ADVS-002",
+  "generatedModule": "advisor-classifier.gen.ts",
+  "review": {
+    "status": "reviewed",
+    "owner": "parentos",
+    "reviewer": "parentos-spec",
+    "lastReviewedAt": "2026-06-17"
+  },
+  "primarySection": "domainKeywords",
+  "sections": [
+    {
+      "sectionId": "domainKeywords",
+      "kind": "singleton",
+      "files": "domain-keywords.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "domain"
+    },
+    {
+      "sectionId": "genericRuntime",
+      "kind": "singleton",
+      "files": "generic-runtime.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close"
+    }
+  ]
+}

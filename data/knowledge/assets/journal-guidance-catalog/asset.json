@@ -1,0 +1,49 @@
+{
+  "assetId": "journal-guidance-catalog",
+  "description": "ParentOS reminder-triggered journal prompt and observation nudge copy data asset. Spec owns journal/timeline behavior; this asset owns canonical Chinese guidance copy.",
+  "schemaVersion": 1,
+  "contentVersion": "2026-06-17.1",
+  "schema": "schema.json",
+  "authorityClass": "curated_knowledge_asset",
+  "ownerContract": "journal-contract.md",
+  "generatedModule": "journal-guidance.gen.ts",
+  "review": {
+    "status": "reviewed",
+    "owner": "parentos",
+    "reviewer": "parentos-spec",
+    "lastReviewedAt": "2026-06-17"
+  },
+  "primarySection": "guidedPrompts",
+  "sections": [
+    {
+      "sectionId": "guidedPrompts",
+      "kind": "singleton",
+      "files": "guided-prompts.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "ruleId"
+    },
+    {
+      "sectionId": "guidedPromptFallback",
+      "kind": "singleton",
+      "files": "guided-prompt-fallback.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close"
+    },
+    {
+      "sectionId": "observationNudges",
+      "kind": "singleton",
+      "files": "observation-nudges.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "dimensionId"
+    },
+    {
+      "sectionId": "observationNudgeFallback",
+      "kind": "singleton",
+      "files": "observation-nudge-fallback.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close"
+    }
+  ]
+}

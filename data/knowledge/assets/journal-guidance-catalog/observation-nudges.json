@@ -1,0 +1,149 @@
+[
+  {
+    "dimensionId": "PO-OBS-CONC-001",
+    "variants": [
+      "孩子最近沉浸在什么事情里？",
+      "有没有发现孩子特别投入的瞬间？"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-REPT-001",
+    "variants": [
+      "孩子最近有没有反复做某件事？",
+      "留意一下孩子重复做的那些\"小仪式\""
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-CHOI-001",
+    "variants": [
+      "今天让孩子自己做个小决定试试",
+      "孩子面对选择时是果断还是犹豫？"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-INDP-001",
+    "variants": [
+      "有什么事孩子快要能自己搞定了？",
+      "试着退后一步，看孩子自己怎么来"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-SOCL-001",
+    "variants": [
+      "孩子跟小伙伴在一起时是什么状态？",
+      "留意一下孩子和其他孩子的互动方式"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-EMOT-001",
+    "variants": [
+      "孩子最近的情绪节奏是怎样的？",
+      "今天孩子开心和不开心的时候各是什么样？"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-MOVE-001",
+    "variants": [
+      "孩子身体上有什么新动作或新尝试吗？",
+      "观察一下孩子跑跑跳跳时的状态"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-LANG-001",
+    "variants": [
+      "孩子最近冒出什么新词或新表达了？",
+      "留意一下孩子怎么表达自己想要的东西"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-ORDR-001",
+    "variants": [
+      "孩子对\"东西放哪里\"在意吗？",
+      "有没有注意到孩子对顺序的小执念？"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-EXPL-001",
+    "variants": [
+      "孩子最近对什么东西特别好奇？",
+      "看看孩子遇到新事物时的第一反应"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-EXEC-001",
+    "variants": [
+      "孩子自己安排事情时表现如何？",
+      "留意一下孩子做计划和执行的过程"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-CASL-001",
+    "variants": [
+      "孩子在理解别人感受这件事上有什么变化？",
+      "最近有什么场景体现了孩子的共情能力？"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-GROW-001",
+    "variants": [
+      "孩子遇到困难时第一反应是什么？",
+      "看看孩子面对挫折时的态度变化"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-MINT-001",
+    "variants": [
+      "孩子最近痴迷什么？",
+      "有没有发现孩子在某件事上特别有天赋？"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-INDU-001",
+    "variants": [
+      "孩子最近有什么\"我做到了\"的时刻吗？",
+      "留意一下让孩子有成就感的事情"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-IDEN-001",
+    "variants": [
+      "孩子最近怎么形容自己？",
+      "留意孩子对\"我是谁\"这个问题的探索"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-PYDC-001",
+    "variants": [
+      "孩子在哪些方面表现出了责任感？",
+      "最近有什么事让你觉得孩子在成长？"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-META-001",
+    "variants": [
+      "孩子知道自己怎么学东西最快吗？",
+      "孩子有没有开始反思自己的学习方式？"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-MORL-001",
+    "variants": [
+      "孩子最近遇到\"对与错\"的问题了吗？",
+      "留意一下孩子在公平和规则方面的判断"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-ATTC-001",
+    "variants": [
+      "孩子在你离开和回来时是什么反应？",
+      "今天找个安静的时刻，感受一下你们之间的连接"
+    ]
+  },
+  {
+    "dimensionId": "PO-OBS-RELQ-001",
+    "variants": [
+      "你和孩子之间的沟通顺畅吗？",
+      "今天试着跟孩子聊一个轻松的话题"
+    ]
+  }
+]

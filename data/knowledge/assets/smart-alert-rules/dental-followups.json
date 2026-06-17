@@ -1,0 +1,27 @@
+[
+  {
+    "eventType": "fluoride",
+    "months": 6,
+    "title": "涂氟复查"
+  },
+  {
+    "eventType": "cleaning",
+    "months": 6,
+    "title": "定期洁牙"
+  },
+  {
+    "eventType": "sealant",
+    "months": 12,
+    "title": "窝沟封闭复查"
+  },
+  {
+    "eventType": "checkup",
+    "months": 6,
+    "title": "口腔常规检查"
+  },
+  {
+    "eventType": "filling",
+    "months": 6,
+    "title": "补牙后复查"
+  }
+]

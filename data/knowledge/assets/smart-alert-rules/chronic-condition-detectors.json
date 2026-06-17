@@ -1,0 +1,41 @@
+[
+  {
+    "conditionId": "pollen-allergy",
+    "sourceField": "allergen",
+    "keywords": [
+      "花粉",
+      "pollen"
+    ]
+  },
+  {
+    "conditionId": "rhinitis",
+    "sourceField": "allergen",
+    "keywords": [
+      "鼻炎",
+      "rhinitis"
+    ]
+  },
+  {
+    "conditionId": "eczema",
+    "sourceField": "allergen",
+    "keywords": [
+      "湿疹",
+      "eczema"
+    ]
+  },
+  {
+    "conditionId": "asthma",
+    "sourceField": "allergen",
+    "keywords": [
+      "哮喘",
+      "asthma"
+    ]
+  },
+  {
+    "conditionId": "seasonal",
+    "sourceField": "notes",
+    "keywords": [
+      "季节性"
+    ]
+  }
+]

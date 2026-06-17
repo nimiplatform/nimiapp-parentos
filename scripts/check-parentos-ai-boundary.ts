@@ -13,24 +13,28 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
+import { readKnowledgeAssetData } from './knowledge-json-asset.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const TABLES = resolve(ROOT, '.nimi/spec/parentos/kernel/tables');
+const DATA_KNOWLEDGE = resolve(ROOT, 'data/knowledge');
 const SRC = resolve(ROOT, 'src/shell/renderer');
 
-const BANNED_WORDS = [
-  '发育迟缓',
-  '异常',
-  '障碍',
-  '应该吃',
-  '建议用药',
-  '建议服用',
-  '推荐治疗',
-  '落后',
-  '危险',
-  '警告',
-];
+function loadBannedWordsFromAuthority() {
+  const data = readKnowledgeAssetData(DATA_KNOWLEDGE, 'ai-boundary-rules') as {
+    bannedTermRules?: Array<{ label?: string }>;
+  };
+  const words = (data.bannedTermRules ?? [])
+    .map((rule) => rule.label)
+    .filter((label): label is string => Boolean(label));
+  if (words.length === 0) {
+    throw new Error('ai-boundary-rules data asset must declare bannedTermRules labels');
+  }
+  return words;
+}
+
+const BANNED_WORDS = loadBannedWordsFromAuthority();
 
 export interface SourceFile {
   path: string;

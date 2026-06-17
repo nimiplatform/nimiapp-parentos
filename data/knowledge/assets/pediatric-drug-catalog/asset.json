@@ -1,0 +1,27 @@
+{
+  "assetId": "pediatric-drug-catalog",
+  "description": "ParentOS pediatric drug cold-start dictionary data asset for local record entry and OCR normalization only. Spec owns AI and medical-safety boundaries; this asset owns concrete dictionary rows.",
+  "schemaVersion": 1,
+  "contentVersion": "2026-06-17.1",
+  "schema": "schema.json",
+  "authorityClass": "curated_knowledge_asset",
+  "ownerContract": "profile-contract.md",
+  "generatedModule": "pediatric-drug-catalog.gen.ts",
+  "review": {
+    "status": "reviewed",
+    "owner": "parentos",
+    "reviewer": "parentos-spec",
+    "lastReviewedAt": "2026-06-17"
+  },
+  "primarySection": "drugs",
+  "sections": [
+    {
+      "sectionId": "drugs",
+      "kind": "singleton",
+      "files": "drugs.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "id"
+    }
+  ]
+}

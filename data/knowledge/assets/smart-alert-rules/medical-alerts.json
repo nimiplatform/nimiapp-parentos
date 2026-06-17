@@ -1,0 +1,28 @@
+{
+  "frequentVisits": {
+    "thresholdCount": 3,
+    "windowDays": 30,
+    "level": "warning",
+    "title": "近期就医频繁",
+    "messageTemplate": "近 {{windowDays}} 天内有 {{count}} 次就医记录，建议关注孩子整体健康状况"
+  },
+  "repeatedDiagnosis": {
+    "thresholdCount": 3,
+    "level": "warning",
+    "titleTemplate": "反复出现：{{diagnosis}}",
+    "messageTemplate": "\"{{diagnosis}}\"已记录 {{count}} 次，建议就医排查根本原因"
+  },
+  "severeWithoutFollowup": {
+    "followupWindowDays": 30,
+    "recentWindowDays": 60,
+    "level": "danger",
+    "titleTemplate": "重度事件未复查：{{title}}",
+    "messageTemplate": "{{date}} 的重度事件尚无后续复查记录，强烈建议尽快复诊"
+  },
+  "longTermMedication": {
+    "thresholdCount": 3,
+    "level": "info",
+    "titleTemplate": "长期用药：{{medication}}",
+    "messageTemplate": "\"{{medication}}\"已使用 {{count}} 次，建议定期评估用药必要性和副作用"
+  }
+}

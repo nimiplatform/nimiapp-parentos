@@ -95,3 +95,63 @@ export type {
   HealthRecordDataRuleId,
   HealthDateDefaultPolicy,
 } from './gen/health-record.gen.js';
+
+export {
+  AI_BOUNDARY_BANNED_TERM_RULES,
+  AI_BOUNDARY_FALLBACK_MESSAGE,
+} from './gen/ai-boundary.gen.js';
+export type { AiBoundaryBannedTermRule } from './gen/ai-boundary.gen.js';
+
+export {
+  ADVISOR_DOMAIN_KEYWORDS,
+  ADVISOR_GENERIC_RUNTIME,
+} from './gen/advisor-classifier.gen.js';
+export type {
+  AdvisorClassifierDomain,
+  AdvisorDomainKeyword,
+  AdvisorGenericRuntimeClassifier,
+} from './gen/advisor-classifier.gen.js';
+
+export { PEDIATRIC_DRUGS } from './gen/pediatric-drug-catalog.gen.js';
+export type { PediatricDrug } from './gen/pediatric-drug-catalog.gen.js';
+
+export {
+  JOURNAL_GUIDED_PROMPTS,
+  JOURNAL_GUIDED_PROMPT_FALLBACK,
+  OBSERVATION_NUDGE_COPY,
+  OBSERVATION_NUDGE_FALLBACK,
+} from './gen/journal-guidance.gen.js';
+export type {
+  JournalGuidedPrompt,
+  JournalGuidedPromptFallback,
+  ObservationNudgeCopy,
+  ObservationNudgeFallback,
+} from './gen/journal-guidance.gen.js';
+
+export {
+  ALLERGEN_NORMALIZATION_RULES,
+  REMINDER_TAG_ALLERGEN_RULES,
+  CHRONIC_CONDITION_DETECTORS,
+  ALLERGY_COLLISION_MESSAGES,
+  ALLERGY_FOLLOWUP_SYMPTOM_GROUPS,
+  ALLERGY_FOLLOWUP_TEMPLATES,
+  DENTAL_FOLLOWUP_RULES,
+  DENTAL_FOLLOWUP_DESCRIPTION_TEMPLATE,
+  SEASONAL_ALERT_RULES,
+  SMART_ALERT_MEDICAL_RULES,
+} from './gen/smart-alert-rules.gen.js';
+export type {
+  AllergenNormalizationRule,
+  ReminderTagAllergenRule,
+  ChronicConditionDetector,
+  AllergyCollisionMessages,
+  AllergyFollowupSymptomGroups,
+  AllergyFollowupTemplate,
+  DentalFollowupRule,
+  SeasonalAlertRule,
+  MedicalAlertRule,
+  SmartAlertMedicalRules,
+  SmartAlertPriority,
+  DynamicTaskSource,
+  AllergyFollowupCondition,
+} from './gen/smart-alert-rules.gen.js';

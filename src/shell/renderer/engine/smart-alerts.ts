@@ -8,6 +8,18 @@
  */
 
 import type { ActiveReminder } from './reminder-engine.js';
+import {
+  ALLERGEN_NORMALIZATION_RULES,
+  ALLERGY_COLLISION_MESSAGES,
+  ALLERGY_FOLLOWUP_SYMPTOM_GROUPS,
+  ALLERGY_FOLLOWUP_TEMPLATES,
+  CHRONIC_CONDITION_DETECTORS,
+  DENTAL_FOLLOWUP_DESCRIPTION_TEMPLATE,
+  DENTAL_FOLLOWUP_RULES,
+  REMINDER_TAG_ALLERGEN_RULES,
+  SEASONAL_ALERT_RULES,
+  SMART_ALERT_MEDICAL_RULES,
+} from '../knowledge-base/index.js';
 
 /* ================================================================
    1. DATA STRUCTURES
@@ -64,44 +76,33 @@ export interface SeasonalAlert {
    2. ALLERGEN TAG MAPPING
    ================================================================ */
 
-/**
- * Maps common allergen names (Chinese + English) to normalized tags.
- * Used to match child's allergy profile against reminder rule tags.
- */
-const ALLERGEN_NORMALIZE: Record<string, string[]> = {
-  // Food allergens
-  '鸡蛋': ['egg'], '蛋': ['egg'], '蛋白': ['egg'], 'egg': ['egg'],
-  '牛奶': ['milk', 'dairy'], '乳制品': ['milk', 'dairy'], '奶': ['milk'], 'milk': ['milk'],
-  '花生': ['peanut'], 'peanut': ['peanut'],
-  '坚果': ['tree-nut'], '杏仁': ['tree-nut'], '核桃': ['tree-nut'],
-  '大豆': ['soy'], '黄豆': ['soy'], 'soy': ['soy'],
-  '小麦': ['wheat', 'gluten'], '面粉': ['wheat', 'gluten'], '麸质': ['gluten'],
-  '海鲜': ['seafood', 'shellfish'], '虾': ['seafood', 'shellfish'], '蟹': ['seafood', 'shellfish'],
-  '鱼': ['fish'], '鱼类': ['fish'],
-  // Environmental
-  '尘螨': ['dust-mite'], '螨虫': ['dust-mite'],
-  '花粉': ['pollen'], '柳絮': ['pollen'], '杨絮': ['pollen'],
-  '霉菌': ['mold'], '真菌': ['mold'],
-  '猫毛': ['pet-dander'], '狗毛': ['pet-dander'], '动物皮屑': ['pet-dander'],
-  // Drug
-  '青霉素': ['penicillin'], '阿莫西林': ['penicillin', 'amoxicillin'],
-  '头孢': ['cephalosporin'], '磺胺': ['sulfonamide'],
-};
+const RULE_TAG_ALLERGEN_MAP = new Map(
+  REMINDER_TAG_ALLERGEN_RULES.map((rule) => [rule.ruleTag, rule.allergenTags]),
+);
 
-/**
- * Maps reminder rule tags to related allergen tags.
- * E.g., flu vaccine contains egg protein → tag 'egg' is a risk.
- */
-const RULE_TAG_ALLERGEN_MAP: Record<string, string[]> = {
-  // Vaccine-related
-  'influenza': ['egg'],        // 流感疫苗含鸡蛋蛋白
-  'flu': ['egg'],
-  'mmr': ['egg'],              // 麻腮风疫苗含微量鸡蛋蛋白
-  'yellow-fever': ['egg'],     // 黄热病疫苗
-  // General
-  'gelatin': ['gelatin'],      // 某些疫苗含明胶
-  'neomycin': ['neomycin'],    // 某些疫苗含新霉素
-};
+function renderTemplate(template: string, values: Record<string, string | number>) {
+  return template.replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (_match, key: string) => String(values[key] ?? ''));
+}
+
+function addDays(isoDate: string, days: number) {
+  const date = new Date(isoDate);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().split('T')[0] ?? date.toISOString();
+}
+
+function requireConfiguredNumber(value: number | undefined, field: string) {
+  if (typeof value !== 'number') {
+    throw new Error(`smart-alert-rules is missing numeric field ${field}`);
+  }
+  return value;
+}
+
+function requireConfiguredString(value: string | undefined, field: string) {
+  if (!value) {
+    throw new Error(`smart-alert-rules is missing string field ${field}`);
+  }
+  return value;
+}
 
 /* ================================================================
    3. TAG COLLISION INTERCEPTOR
@@ -113,9 +114,9 @@ const RULE_TAG_ALLERGEN_MAP: Record<string, string[]> = {
 export function normalizeAllergen(allergen: string): string[] {
   const lower = allergen.toLowerCase().trim();
   const tags: string[] = [];
-  for (const [key, mapped] of Object.entries(ALLERGEN_NORMALIZE)) {
-    if (lower.includes(key.toLowerCase())) {
-      tags.push(...mapped);
+  for (const rule of ALLERGEN_NORMALIZATION_RULES) {
+    if (lower.includes(rule.match.toLowerCase())) {
+      tags.push(...rule.tags);
     }
   }
   // If no match, use the raw string as a tag
@@ -149,13 +150,13 @@ export function buildAllergyProfile(
     categories.add(rec.category);
     if (rec.severity === 'severe') hasSevere = true;
 
-    // Detect chronic conditions
-    const lower = rec.allergen.toLowerCase();
-    if (lower.includes('花粉') || lower.includes('pollen')) chronic.push('pollen-allergy');
-    if (lower.includes('鼻炎') || lower.includes('rhinitis')) chronic.push('rhinitis');
-    if (lower.includes('湿疹') || lower.includes('eczema')) chronic.push('eczema');
-    if (lower.includes('哮喘') || lower.includes('asthma')) chronic.push('asthma');
-    if (rec.notes?.includes('季节性')) chronic.push('seasonal');
+    for (const detector of CHRONIC_CONDITION_DETECTORS) {
+      const source = detector.sourceField === 'notes' ? (rec.notes ?? '') : rec.allergen;
+      const lower = source.toLowerCase();
+      if (detector.keywords.some((keyword) => lower.includes(keyword.toLowerCase()))) {
+        chronic.push(detector.conditionId);
+      }
+    }
   }
 
   return {
@@ -192,7 +193,7 @@ export function interceptAllergyCollisions(
         matched.push(tag);
       }
       // Indirect match via rule-tag-to-allergen map
-      const relatedAllergens = RULE_TAG_ALLERGEN_MAP[tag];
+      const relatedAllergens = RULE_TAG_ALLERGEN_MAP.get(tag);
       if (relatedAllergens) {
         for (const ra of relatedAllergens) {
           if (allergenSet.has(ra)) matched.push(ra);
@@ -208,9 +209,12 @@ export function interceptAllergyCollisions(
       profile.hasSevereHistory ? 'danger' : uniqueMatched.length > 1 ? 'warning' : 'caution';
 
     const allergenNames = uniqueMatched.join('、');
-    const message = level === 'danger'
-      ? `含 ${allergenNames} 过敏原，孩子有严重过敏史，务必遵医嘱`
-      : `可能含 ${allergenNames} 成分，建议接种前告知医生过敏情况`;
+    const message = renderTemplate(
+      level === 'danger'
+        ? ALLERGY_COLLISION_MESSAGES.dangerTemplate
+        : ALLERGY_COLLISION_MESSAGES.nonDangerTemplate,
+      { allergenNames },
+    );
 
     return {
       ...reminder,
@@ -239,89 +243,30 @@ export function generateAllergyFollowups(
   },
 ): DynamicTask[] {
   const tasks: DynamicTask[] = [];
-  const nextDay = new Date(event.eventDate);
-  nextDay.setDate(nextDay.getDate() + 1);
-  const nextDayStr = nextDay.toISOString().split('T')[0] ?? nextDay.toISOString();
 
-  // High-priority symptoms that need next-day followup
-  const skinSymptoms = ['rash', 'hives', 'eczema', 'swelling', 'itching'];
-  const respiratorySymptoms = ['wheeze', 'cough'];
-  const giSymptoms = ['vomiting', 'diarrhea', 'abdominal'];
+  const hasSkin = event.symptoms.some((symptom) => ALLERGY_FOLLOWUP_SYMPTOM_GROUPS.skin.includes(symptom));
+  const hasResp = event.symptoms.some((symptom) => ALLERGY_FOLLOWUP_SYMPTOM_GROUPS.respiratory.includes(symptom));
+  const hasGI = event.symptoms.some((symptom) => ALLERGY_FOLLOWUP_SYMPTOM_GROUPS.gastrointestinal.includes(symptom));
+  const isAnaphylaxis = event.symptoms.some((symptom) => ALLERGY_FOLLOWUP_SYMPTOM_GROUPS.anaphylaxis.includes(symptom));
 
-  const hasSkin = event.symptoms.some((s) => skinSymptoms.includes(s));
-  const hasResp = event.symptoms.some((s) => respiratorySymptoms.includes(s));
-  const hasGI = event.symptoms.some((s) => giSymptoms.includes(s));
-  const isAnaphylaxis = event.symptoms.includes('anaphylaxis');
-
-  // 1. Anaphylaxis → immediate high-priority followup
-  if (isAnaphylaxis) {
+  for (const template of ALLERGY_FOLLOWUP_TEMPLATES) {
+    const shouldCreate = (
+      (template.condition === 'anaphylaxis' && isAnaphylaxis) ||
+      (template.condition === 'skin_without_anaphylaxis' && hasSkin && !isAnaphylaxis) ||
+      (template.condition === 'respiratory_without_anaphylaxis' && hasResp && !isAnaphylaxis) ||
+      (template.condition === 'gastrointestinal' && hasGI) ||
+      (template.condition === 'severe_without_anaphylaxis' && event.severity === 'severe' && !isAnaphylaxis)
+    );
+    if (!shouldCreate) continue;
     tasks.push({
-      id: `allergy-followup-anaph-${Date.now()}`,
+      id: `${template.idPrefix}-${Date.now()}`,
       childId,
-      title: '严重过敏反应后复查',
-      description: `昨日发生 ${event.allergen} 严重过敏反应，请立即就医复查，确认是否需要调整紧急用药方案`,
-      triggerDate: nextDayStr,
-      domain: 'allergy',
-      priority: 'P0',
-      source: 'allergy-followup',
-    });
-  }
-
-  // 2. Skin symptoms → observe next day
-  if (hasSkin && !isAnaphylaxis) {
-    tasks.push({
-      id: `allergy-followup-skin-${Date.now()}`,
-      childId,
-      title: `观察 ${event.allergen} 过敏皮疹消退情况`,
-      description: '拍照记录今日皮疹范围，与昨日照片对比。若扩大或加重请及时就医',
-      triggerDate: nextDayStr,
-      domain: 'allergy',
-      priority: 'P1',
-      source: 'allergy-followup',
-    });
-  }
-
-  // 3. Respiratory → monitor
-  if (hasResp && !isAnaphylaxis) {
-    tasks.push({
-      id: `allergy-followup-resp-${Date.now()}`,
-      childId,
-      title: `关注 ${event.allergen} 过敏呼吸症状`,
-      description: '观察咳嗽/喘息是否缓解。若呼吸困难加重请立即就医',
-      triggerDate: nextDayStr,
-      domain: 'allergy',
-      priority: 'P1',
-      source: 'allergy-followup',
-    });
-  }
-
-  // 4. GI symptoms → diet monitoring
-  if (hasGI) {
-    tasks.push({
-      id: `allergy-followup-gi-${Date.now()}`,
-      childId,
-      title: `${event.allergen} 过敏后饮食观察`,
-      description: '今日继续回避可疑食物，观察消化症状是否恢复',
-      triggerDate: nextDayStr,
-      domain: 'allergy',
-      priority: 'P2',
-      source: 'allergy-followup',
-    });
-  }
-
-  // 5. Severe (non-anaphylaxis) → 3-day check
-  if (event.severity === 'severe' && !isAnaphylaxis) {
-    const threeDaysLater = new Date(event.eventDate);
-    threeDaysLater.setDate(threeDaysLater.getDate() + 3);
-    tasks.push({
-      id: `allergy-followup-3day-${Date.now()}`,
-      childId,
-      title: `${event.allergen} 重度过敏 3 日复查`,
-      description: '距离上次过敏发作已 3 天，请评估症状恢复情况。若仍有症状建议就医',
-      triggerDate: threeDaysLater.toISOString().split('T')[0] ?? threeDaysLater.toISOString(),
-      domain: 'allergy',
-      priority: 'P1',
-      source: 'allergy-followup',
+      title: renderTemplate(template.titleTemplate, { allergen: event.allergen }),
+      description: renderTemplate(template.descriptionTemplate, { allergen: event.allergen }),
+      triggerDate: addDays(event.eventDate, template.offsetDays),
+      domain: template.domain,
+      priority: template.priority,
+      source: template.source,
     });
   }
 
@@ -336,25 +281,21 @@ export function generateDentalFollowup(
   eventType: string,
   eventDate: string,
 ): DynamicTask | null {
-  const intervals: Record<string, { months: number; title: string }> = {
-    fluoride: { months: 6, title: '涂氟复查' },
-    cleaning: { months: 6, title: '定期洁牙' },
-    sealant: { months: 12, title: '窝沟封闭复查' },
-    checkup: { months: 6, title: '口腔常规检查' },
-    filling: { months: 6, title: '补牙后复查' },
-  };
-
-  const config = intervals[eventType];
+  const config = DENTAL_FOLLOWUP_RULES.find((rule) => rule.eventType === eventType);
   if (!config) return null;
 
   const nextDate = new Date(eventDate);
   nextDate.setMonth(nextDate.getMonth() + config.months);
+  const titleStem = config.title.replace('复查', '').replace('定期', '');
 
   return {
     id: `dental-followup-${eventType}-${Date.now()}`,
     childId,
     title: config.title,
-    description: `距离上次${config.title.replace('复查', '').replace('定期', '')}已${config.months}个月，建议预约口腔检查`,
+    description: renderTemplate(DENTAL_FOLLOWUP_DESCRIPTION_TEMPLATE, {
+      titleStem,
+      months: config.months,
+    }),
     triggerDate: nextDate.toISOString().split('T')[0] ?? nextDate.toISOString(),
     domain: 'dental',
     priority: 'P2',
@@ -365,57 +306,6 @@ export function generateDentalFollowup(
 /* ================================================================
    5. SEASONAL / CONDITIONAL ALERTS
    ================================================================ */
-
-const SEASONAL_ALERTS: SeasonalAlert[] = [
-  {
-    id: 'seasonal-pollen-spring',
-    title: '春季花粉季防护提醒',
-    description: '进入春季花粉高发期，建议：排查家中抗过敏药是否充足、减少花粉浓度高时段外出、外出后清洗面部和鼻腔',
-    activeMonths: [3, 4, 5],
-    requiredConditions: ['pollen-allergy'],
-    priority: 'P1',
-  },
-  {
-    id: 'seasonal-pollen-autumn',
-    title: '秋季花粉季防护提醒',
-    description: '秋季蒿草/豚草花粉季到来，建议提前备好抗组胺药物，关注花粉浓度预报',
-    activeMonths: [8, 9, 10],
-    requiredConditions: ['pollen-allergy'],
-    priority: 'P1',
-  },
-  {
-    id: 'seasonal-dustmite-humid',
-    title: '潮湿季节螨虫防护',
-    description: '梅雨/回南天尘螨繁殖活跃，建议除螨清洗床品、开启除湿、检查抗过敏药储备',
-    activeMonths: [4, 5, 6, 7],
-    requiredConditions: ['dust-mite'],
-    priority: 'P2',
-  },
-  {
-    id: 'seasonal-eczema-winter',
-    title: '冬季湿疹护理提醒',
-    description: '干燥寒冷季节湿疹易复发，建议加强保湿、减少热水洗浴时间、备好润肤剂和外用药膏',
-    activeMonths: [11, 12, 1, 2],
-    requiredConditions: ['eczema'],
-    priority: 'P2',
-  },
-  {
-    id: 'seasonal-asthma-cold',
-    title: '换季哮喘防护',
-    description: '气温变化大，哮喘易发作。建议确认吸入药物充足、关注空气质量、随身携带急救药物',
-    activeMonths: [3, 4, 10, 11],
-    requiredConditions: ['asthma'],
-    priority: 'P1',
-  },
-  {
-    id: 'seasonal-rhinitis-spring',
-    title: '过敏性鼻炎季节提醒',
-    description: '过敏性鼻炎高发季到来，建议提前使用鼻用糖皮质激素喷剂预防，备好抗组胺药',
-    activeMonths: [3, 4, 5, 9, 10],
-    requiredConditions: ['rhinitis'],
-    priority: 'P2',
-  },
-];
 
 /**
  * Check which seasonal alerts should fire based on current date
@@ -432,7 +322,7 @@ export function getActiveSeasonalAlerts(
 
   const tasks: DynamicTask[] = [];
 
-  for (const alert of SEASONAL_ALERTS) {
+  for (const alert of SEASONAL_ALERT_RULES) {
     if (!alert.activeMonths.includes(month)) continue;
     if (!alert.requiredConditions.every((c) => conditionSet.has(c))) continue;
 
@@ -604,27 +494,39 @@ export function analyzeMedicalEvents(
 
   // ── Pattern-based alerts ──
 
-  // 1. Frequent visits (>3 in 30 days)
+  // 1. Frequent visits
+  const frequentVisitsRule = SMART_ALERT_MEDICAL_RULES.frequentVisits;
+  const frequentVisitsWindowDays = requireConfiguredNumber(frequentVisitsRule.windowDays, 'medicalAlerts.frequentVisits.windowDays');
+  const frequentVisitsThresholdCount = requireConfiguredNumber(frequentVisitsRule.thresholdCount, 'medicalAlerts.frequentVisits.thresholdCount');
   const now = Date.now();
   const recentEvents = events.filter(
-    (e) => now - new Date(e.eventDate).getTime() < 30 * 24 * 60 * 60 * 1000,
+    (e) => now - new Date(e.eventDate).getTime() < frequentVisitsWindowDays * 24 * 60 * 60 * 1000,
   );
-  if (recentEvents.length >= 3) {
+  if (recentEvents.length >= frequentVisitsThresholdCount) {
     alerts.push({
-      level: 'warning',
-      title: '近期就医频繁',
-      message: `近 30 天内有 ${recentEvents.length} 次就医记录，建议关注孩子整体健康状况`,
+      level: frequentVisitsRule.level,
+      title: requireConfiguredString(frequentVisitsRule.title, 'medicalAlerts.frequentVisits.title'),
+      message: renderTemplate(frequentVisitsRule.messageTemplate, {
+        windowDays: frequentVisitsWindowDays,
+        count: recentEvents.length,
+      }),
       relatedEventIds: recentEvents.map((e) => e.eventId),
     });
   }
 
-  // 2. Repeated same diagnosis (>2 times)
+  // 2. Repeated same diagnosis
+  const repeatedDiagnosisRule = SMART_ALERT_MEDICAL_RULES.repeatedDiagnosis;
+  const repeatedDiagnosisThresholdCount = requireConfiguredNumber(repeatedDiagnosisRule.thresholdCount, 'medicalAlerts.repeatedDiagnosis.thresholdCount');
+  const repeatedDiagnosisTitleTemplate = requireConfiguredString(repeatedDiagnosisRule.titleTemplate, 'medicalAlerts.repeatedDiagnosis.titleTemplate');
   for (const diag of diagMap.values()) {
-    if (diag.count >= 3) {
+    if (diag.count >= repeatedDiagnosisThresholdCount) {
       alerts.push({
-        level: 'warning',
-        title: `反复出现：${diag.diagnosis}`,
-        message: `"${diag.diagnosis}"已记录 ${diag.count} 次，建议就医排查根本原因`,
+        level: repeatedDiagnosisRule.level,
+        title: renderTemplate(repeatedDiagnosisTitleTemplate, { diagnosis: diag.diagnosis }),
+        message: renderTemplate(repeatedDiagnosisRule.messageTemplate, {
+          diagnosis: diag.diagnosis,
+          count: diag.count,
+        }),
         relatedEventIds: events
           .filter((e) => e.title.trim() === diag.diagnosis)
           .map((e) => e.eventId),
@@ -633,6 +535,10 @@ export function analyzeMedicalEvents(
   }
 
   // 3. Severe events without follow-up
+  const severeWithoutFollowupRule = SMART_ALERT_MEDICAL_RULES.severeWithoutFollowup;
+  const severeFollowupWindowDays = requireConfiguredNumber(severeWithoutFollowupRule.followupWindowDays, 'medicalAlerts.severeWithoutFollowup.followupWindowDays');
+  const severeRecentWindowDays = requireConfiguredNumber(severeWithoutFollowupRule.recentWindowDays, 'medicalAlerts.severeWithoutFollowup.recentWindowDays');
+  const severeTitleTemplate = requireConfiguredString(severeWithoutFollowupRule.titleTemplate, 'medicalAlerts.severeWithoutFollowup.titleTemplate');
   const severeEvents = events
     .filter((e) => e.severity === 'severe')
     .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
@@ -643,25 +549,33 @@ export function analyzeMedicalEvents(
         e.eventId !== sev.eventId &&
         e.title.trim() === sev.title.trim() &&
         new Date(e.eventDate).getTime() > sevDate &&
-        new Date(e.eventDate).getTime() - sevDate < 30 * 24 * 60 * 60 * 1000,
+        new Date(e.eventDate).getTime() - sevDate < severeFollowupWindowDays * 24 * 60 * 60 * 1000,
     );
-    if (!hasFollowup && now - sevDate < 60 * 24 * 60 * 60 * 1000) {
+    if (!hasFollowup && now - sevDate < severeRecentWindowDays * 24 * 60 * 60 * 1000) {
       alerts.push({
-        level: 'danger',
-        title: `重度事件未复查：${sev.title}`,
-        message: `${sev.eventDate.split('T')[0]} 的重度事件尚无后续复查记录，强烈建议尽快复诊`,
+        level: severeWithoutFollowupRule.level,
+        title: renderTemplate(severeTitleTemplate, { title: sev.title }),
+        message: renderTemplate(severeWithoutFollowupRule.messageTemplate, {
+          date: sev.eventDate.split('T')[0] ?? sev.eventDate,
+        }),
         relatedEventIds: [sev.eventId],
       });
     }
   }
 
-  // 4. Long-term medication usage (same med in >3 events)
+  // 4. Long-term medication usage
+  const longTermMedicationRule = SMART_ALERT_MEDICAL_RULES.longTermMedication;
+  const longTermMedicationThresholdCount = requireConfiguredNumber(longTermMedicationRule.thresholdCount, 'medicalAlerts.longTermMedication.thresholdCount');
+  const longTermMedicationTitleTemplate = requireConfiguredString(longTermMedicationRule.titleTemplate, 'medicalAlerts.longTermMedication.titleTemplate');
   for (const med of medMap.values()) {
-    if (med.count >= 3) {
+    if (med.count >= longTermMedicationThresholdCount) {
       alerts.push({
-        level: 'info',
-        title: `长期用药：${med.name}`,
-        message: `"${med.name}"已使用 ${med.count} 次，建议定期评估用药必要性和副作用`,
+        level: longTermMedicationRule.level,
+        title: renderTemplate(longTermMedicationTitleTemplate, { medication: med.name }),
+        message: renderTemplate(longTermMedicationRule.messageTemplate, {
+          medication: med.name,
+          count: med.count,
+        }),
         relatedDiagnoses: med.relatedDiagnoses,
         relatedEventIds: events
           .filter((e) => e.medication?.includes(med.name))

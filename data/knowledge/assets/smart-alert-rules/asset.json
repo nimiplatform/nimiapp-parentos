@@ -1,0 +1,95 @@
+{
+  "assetId": "smart-alert-rules",
+  "description": "ParentOS deterministic local smart-alert rule and copy data asset. Spec owns local-only alert behavior and fail-close posture; this asset owns concrete normalization rows, templates, thresholds, and alert copy.",
+  "schemaVersion": 1,
+  "contentVersion": "2026-06-17.1",
+  "schema": "schema.json",
+  "authorityClass": "curated_knowledge_asset",
+  "ownerContract": "timeline-contract.md",
+  "generatedModule": "smart-alert-rules.gen.ts",
+  "review": {
+    "status": "reviewed",
+    "owner": "parentos",
+    "reviewer": "parentos-spec",
+    "lastReviewedAt": "2026-06-17"
+  },
+  "primarySection": "allergyFollowupTemplates",
+  "sections": [
+    {
+      "sectionId": "allergenNormalization",
+      "kind": "singleton",
+      "files": "allergen-normalization.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "match"
+    },
+    {
+      "sectionId": "reminderTagAllergenMap",
+      "kind": "singleton",
+      "files": "reminder-tag-allergen-map.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "ruleTag"
+    },
+    {
+      "sectionId": "chronicConditionDetectors",
+      "kind": "singleton",
+      "files": "chronic-condition-detectors.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "conditionId"
+    },
+    {
+      "sectionId": "allergyCollisionMessages",
+      "kind": "singleton",
+      "files": "allergy-collision-messages.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close"
+    },
+    {
+      "sectionId": "allergyFollowupSymptomGroups",
+      "kind": "singleton",
+      "files": "allergy-followup-symptom-groups.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close"
+    },
+    {
+      "sectionId": "allergyFollowupTemplates",
+      "kind": "singleton",
+      "files": "allergy-followup-templates.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "templateId"
+    },
+    {
+      "sectionId": "dentalFollowups",
+      "kind": "singleton",
+      "files": "dental-followups.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "eventType"
+    },
+    {
+      "sectionId": "dentalFollowupDescriptionTemplate",
+      "kind": "singleton",
+      "files": "dental-followup-description-template.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close"
+    },
+    {
+      "sectionId": "seasonalAlerts",
+      "kind": "singleton",
+      "files": "seasonal-alerts.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "id"
+    },
+    {
+      "sectionId": "medicalAlerts",
+      "kind": "singleton",
+      "files": "medical-alerts.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close"
+    }
+  ]
+}

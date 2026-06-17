@@ -1,0 +1,57 @@
+[
+  {
+    "templateId": "allergy-followup-anaph",
+    "condition": "anaphylaxis",
+    "idPrefix": "allergy-followup-anaph",
+    "offsetDays": 1,
+    "titleTemplate": "严重过敏反应后复查",
+    "descriptionTemplate": "昨日发生 {{allergen}} 严重过敏反应，请立即就医复查，确认是否需要调整紧急用药方案",
+    "domain": "allergy",
+    "priority": "P0",
+    "source": "allergy-followup"
+  },
+  {
+    "templateId": "allergy-followup-skin",
+    "condition": "skin_without_anaphylaxis",
+    "idPrefix": "allergy-followup-skin",
+    "offsetDays": 1,
+    "titleTemplate": "观察 {{allergen}} 过敏皮疹消退情况",
+    "descriptionTemplate": "拍照记录今日皮疹范围，与昨日照片对比。若扩大或加重请及时就医",
+    "domain": "allergy",
+    "priority": "P1",
+    "source": "allergy-followup"
+  },
+  {
+    "templateId": "allergy-followup-resp",
+    "condition": "respiratory_without_anaphylaxis",
+    "idPrefix": "allergy-followup-resp",
+    "offsetDays": 1,
+    "titleTemplate": "关注 {{allergen}} 过敏呼吸症状",
+    "descriptionTemplate": "观察咳嗽/喘息是否缓解。若呼吸困难加重请立即就医",
+    "domain": "allergy",
+    "priority": "P1",
+    "source": "allergy-followup"
+  },
+  {
+    "templateId": "allergy-followup-gi",
+    "condition": "gastrointestinal",
+    "idPrefix": "allergy-followup-gi",
+    "offsetDays": 1,
+    "titleTemplate": "{{allergen}} 过敏后饮食观察",
+    "descriptionTemplate": "今日继续回避可疑食物，观察消化症状是否恢复",
+    "domain": "allergy",
+    "priority": "P2",
+    "source": "allergy-followup"
+  },
+  {
+    "templateId": "allergy-followup-severe-3day",
+    "condition": "severe_without_anaphylaxis",
+    "idPrefix": "allergy-followup-3day",
+    "offsetDays": 3,
+    "titleTemplate": "{{allergen}} 重度过敏 3 日复查",
+    "descriptionTemplate": "距离上次过敏发作已 3 天，请评估症状恢复情况。若仍有症状建议就医",
+    "domain": "allergy",
+    "priority": "P1",
+    "source": "allergy-followup"
+  }
+]

@@ -1,0 +1,238 @@
+[
+  {
+    "match": "鸡蛋",
+    "tags": [
+      "egg"
+    ]
+  },
+  {
+    "match": "蛋",
+    "tags": [
+      "egg"
+    ]
+  },
+  {
+    "match": "蛋白",
+    "tags": [
+      "egg"
+    ]
+  },
+  {
+    "match": "egg",
+    "tags": [
+      "egg"
+    ]
+  },
+  {
+    "match": "牛奶",
+    "tags": [
+      "milk",
+      "dairy"
+    ]
+  },
+  {
+    "match": "乳制品",
+    "tags": [
+      "milk",
+      "dairy"
+    ]
+  },
+  {
+    "match": "奶",
+    "tags": [
+      "milk"
+    ]
+  },
+  {
+    "match": "milk",
+    "tags": [
+      "milk"
+    ]
+  },
+  {
+    "match": "花生",
+    "tags": [
+      "peanut"
+    ]
+  },
+  {
+    "match": "peanut",
+    "tags": [
+      "peanut"
+    ]
+  },
+  {
+    "match": "坚果",
+    "tags": [
+      "tree-nut"
+    ]
+  },
+  {
+    "match": "杏仁",
+    "tags": [
+      "tree-nut"
+    ]
+  },
+  {
+    "match": "核桃",
+    "tags": [
+      "tree-nut"
+    ]
+  },
+  {
+    "match": "大豆",
+    "tags": [
+      "soy"
+    ]
+  },
+  {
+    "match": "黄豆",
+    "tags": [
+      "soy"
+    ]
+  },
+  {
+    "match": "soy",
+    "tags": [
+      "soy"
+    ]
+  },
+  {
+    "match": "小麦",
+    "tags": [
+      "wheat",
+      "gluten"
+    ]
+  },
+  {
+    "match": "面粉",
+    "tags": [
+      "wheat",
+      "gluten"
+    ]
+  },
+  {
+    "match": "麸质",
+    "tags": [
+      "gluten"
+    ]
+  },
+  {
+    "match": "海鲜",
+    "tags": [
+      "seafood",
+      "shellfish"
+    ]
+  },
+  {
+    "match": "虾",
+    "tags": [
+      "seafood",
+      "shellfish"
+    ]
+  },
+  {
+    "match": "蟹",
+    "tags": [
+      "seafood",
+      "shellfish"
+    ]
+  },
+  {
+    "match": "鱼",
+    "tags": [
+      "fish"
+    ]
+  },
+  {
+    "match": "鱼类",
+    "tags": [
+      "fish"
+    ]
+  },
+  {
+    "match": "尘螨",
+    "tags": [
+      "dust-mite"
+    ]
+  },
+  {
+    "match": "螨虫",
+    "tags": [
+      "dust-mite"
+    ]
+  },
+  {
+    "match": "花粉",
+    "tags": [
+      "pollen"
+    ]
+  },
+  {
+    "match": "柳絮",
+    "tags": [
+      "pollen"
+    ]
+  },
+  {
+    "match": "杨絮",
+    "tags": [
+      "pollen"
+    ]
+  },
+  {
+    "match": "霉菌",
+    "tags": [
+      "mold"
+    ]
+  },
+  {
+    "match": "真菌",
+    "tags": [
+      "mold"
+    ]
+  },
+  {
+    "match": "猫毛",
+    "tags": [
+      "pet-dander"
+    ]
+  },
+  {
+    "match": "狗毛",
+    "tags": [
+      "pet-dander"
+    ]
+  },
+  {
+    "match": "动物皮屑",
+    "tags": [
+      "pet-dander"
+    ]
+  },
+  {
+    "match": "青霉素",
+    "tags": [
+      "penicillin"
+    ]
+  },
+  {
+    "match": "阿莫西林",
+    "tags": [
+      "penicillin",
+      "amoxicillin"
+    ]
+  },
+  {
+    "match": "头孢",
+    "tags": [
+      "cephalosporin"
+    ]
+  },
+  {
+    "match": "磺胺",
+    "tags": [
+      "sulfonamide"
+    ]
+  }
+]

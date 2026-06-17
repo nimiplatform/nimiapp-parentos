@@ -46,6 +46,11 @@ const KNOWLEDGE_ASSET_IDS = [
   'sensitive-periods',
   'observation-framework',
   'ability-model',
+  'ai-boundary-rules',
+  'advisor-classifier',
+  'pediatric-drug-catalog',
+  'journal-guidance-catalog',
+  'smart-alert-rules',
 ] as const;
 
 function loadKnowledgeAssetForProjection(assetId: string) {
@@ -145,6 +150,14 @@ export interface ReminderExplain {
   sources: readonly ReminderExplainSource[];
 }
 
+export type ReminderRepeatCadenceUnit = 'day' | 'week' | 'month';
+
+export interface ReminderRepeatRule {
+  cadenceUnit: ReminderRepeatCadenceUnit;
+  interval: number;
+  maxRepeats: number;
+}
+
 export interface ReminderRule {
   ruleId: string;
   domain: ReminderDomain;
@@ -157,7 +170,7 @@ export interface ReminderRule {
   priority: ReminderPriority;
   nurtureMode: { relaxed: ReminderVisibility; balanced: ReminderVisibility; advanced: ReminderVisibility };
   actionType: ActionType;
-  repeatRule?: { intervalMonths: number; maxRepeats: number };
+  repeatRule?: ReminderRepeatRule;
   explain?: ReminderExplain;
   expiryMonths?: number;
   tags?: readonly string[];
@@ -170,6 +183,16 @@ export const REMINDER_KINDS = ${JSON.stringify(kinds)} ;
 `;
 
   writeGen('reminder-rules.gen.ts', ts);
+  const vaccineRuleIds = merged
+    .filter((rule) => rule.domain === 'vaccine')
+    .map((rule) => rule.ruleId);
+  const vaccineRustRows = vaccineRuleIds
+    .map((ruleId) => `    ${rustString(ruleId)},`)
+    .join('\n');
+  writeRustGen(
+    'vaccine-reminder-rules.gen.rs',
+    `pub(crate) static VACCINE_REMINDER_RULE_IDS: &[&str] = &[\n${vaccineRustRows}\n];\n`,
+  );
 }
 
 // ── milestone-catalog ──────────────────────────────────────
@@ -607,10 +630,23 @@ export interface HealthEvaluationOutputRule {
   when: string;
 }
 
+export interface HealthTrendThreshold {
+  thresholdId: string;
+  metricIds: readonly HealthMetricId[];
+  windowMonths: number;
+  operator: '>=' | '>' | '<=' | '<';
+  value: number;
+  unit: string;
+  status: HealthEvaluationStatus;
+  reasonCode: string;
+  boundary: string;
+}
+
 export interface HealthEvaluationPolicy {
   policyId: HealthEvaluationPolicyId;
   appliesTo: readonly HealthMetricId[];
   sourceRefs: readonly string[];
+  trendThresholds?: readonly HealthTrendThreshold[];
   outputRules: readonly HealthEvaluationOutputRule[];
 }
 
@@ -656,17 +692,16 @@ export const HEALTH_RECORD_DATA_RULE_IDS = ${JSON.stringify(targetRuleIds)} as c
 
 function generateGrowthMilestoneRules() {
   const data = readYaml('growth-milestone-rules.yaml') as {
-    rules?: Array<{ ruleId: string; kind: string }>;
+    rules: Array<{ ruleId: string; kind: string }>;
   };
-  const rules = data.rules ?? [];
+  if (!Array.isArray(data.rules) || data.rules.length === 0) {
+    throw new Error('growth-milestone-rules.yaml must declare a non-empty rules array');
+  }
+  const rules = data.rules;
   const ruleIds = rules.map((rule) => rule.ruleId);
   const kinds = [...new Set(rules.map((rule) => rule.kind))].sort();
-  const kindUnion = kinds.length > 0
-    ? kinds.map((kind) => `'${kind}'`).join(' | ')
-    : "'threshold_crossed' | 'percentile_shift'";
-  const ruleIdUnion = ruleIds.length > 0
-    ? ruleIds.map((id) => `'${id}'`).join(' | ')
-    : 'string';
+  const kindUnion = kinds.map((kind) => `'${kind}'`).join(' | ');
+  const ruleIdUnion = ruleIds.map((id) => `'${id}'`).join(' | ');
   const ts = `
 export type GrowthMilestoneRuleKind = ${kindUnion};
 export interface GrowthMilestoneThresholdCrossedTrigger { type: 'threshold_cross'; thresholdValue: number; thresholdUnit: string; direction: 'upward' | 'downward'; evidenceWindowMonths: number; }
@@ -679,6 +714,220 @@ export type GrowthMilestoneRuleId = ${ruleIdUnion};
 export const GROWTH_MILESTONE_RULE_IDS = ${JSON.stringify(ruleIds)} as const;
 `;
   writeGen('growth-milestone-rules.gen.ts', ts);
+}
+
+// -- runtime policy/catalog projections --------------------------------------
+
+function generateAiBoundaryRules() {
+  const data = readKnowledgeAsset('ai-boundary-rules') as {
+    bannedTermRules: Array<Record<string, unknown>>;
+    fallback: { message: string };
+  };
+
+  const ts = `
+export interface AiBoundaryBannedTermRule {
+  id: string;
+  label: string;
+  pattern: string;
+  flags: string;
+  boundary: string;
+}
+
+export const AI_BOUNDARY_BANNED_TERM_RULES: readonly AiBoundaryBannedTermRule[] = ${JSON.stringify(data.bannedTermRules, null, 2)};
+export const AI_BOUNDARY_FALLBACK_MESSAGE = ${JSON.stringify(data.fallback.message)};
+`;
+
+  writeGen('ai-boundary.gen.ts', ts);
+}
+
+function generateAdvisorClassifier() {
+  const data = readKnowledgeAsset('advisor-classifier') as {
+    domainKeywords: Array<Record<string, unknown>>;
+    genericRuntime: Record<string, unknown>;
+  };
+
+  const domains = data.domainKeywords.map((row) => row.domain as string);
+  const ts = `
+export type AdvisorClassifierDomain = ${domains.map((domain) => `'${domain}'`).join(' | ')};
+
+export interface AdvisorDomainKeyword {
+  domain: AdvisorClassifierDomain;
+  keywords: readonly string[];
+}
+
+export interface AdvisorGenericRuntimeClassifier {
+  phraseIncludes: readonly string[];
+  exactGreetings: readonly string[];
+  compactPunctuationPattern: string;
+}
+
+export const ADVISOR_DOMAIN_KEYWORDS: readonly AdvisorDomainKeyword[] = ${JSON.stringify(data.domainKeywords, null, 2)};
+export const ADVISOR_GENERIC_RUNTIME: AdvisorGenericRuntimeClassifier = ${JSON.stringify(data.genericRuntime, null, 2)};
+`;
+
+  writeGen('advisor-classifier.gen.ts', ts);
+}
+
+function generatePediatricDrugCatalog() {
+  const data = readKnowledgeAsset('pediatric-drug-catalog') as {
+    drugs: Array<Record<string, unknown>>;
+  };
+
+  const ts = `
+export interface PediatricDrug {
+  id: string;
+  name: string;
+  generic?: string;
+  unit: string;
+  altUnits?: readonly string[];
+  frequency: string;
+  py: string;
+  tags?: readonly string[];
+  aliases?: readonly string[];
+}
+
+export const PEDIATRIC_DRUGS: readonly PediatricDrug[] = ${JSON.stringify(data.drugs, null, 2)};
+`;
+
+  writeGen('pediatric-drug-catalog.gen.ts', ts);
+}
+
+function generateJournalGuidanceCatalog() {
+  const data = readKnowledgeAsset('journal-guidance-catalog') as {
+    guidedPrompts: Array<Record<string, unknown>>;
+    guidedPromptFallback: Record<string, unknown>;
+    observationNudges: Array<Record<string, unknown>>;
+    observationNudgeFallback: Record<string, unknown>;
+  };
+
+  const ts = `
+export interface JournalGuidedPrompt {
+  ruleId: string;
+  prompts: readonly string[];
+}
+
+export interface JournalGuidedPromptFallback {
+  observedChangeTemplate: string;
+  responseEffect: string;
+}
+
+export interface ObservationNudgeCopy {
+  dimensionId: string;
+  variants: readonly string[];
+}
+
+export interface ObservationNudgeFallback {
+  template: string;
+}
+
+export const JOURNAL_GUIDED_PROMPTS: readonly JournalGuidedPrompt[] = ${JSON.stringify(data.guidedPrompts, null, 2)};
+export const JOURNAL_GUIDED_PROMPT_FALLBACK: JournalGuidedPromptFallback = ${JSON.stringify(data.guidedPromptFallback, null, 2)};
+export const OBSERVATION_NUDGE_COPY: readonly ObservationNudgeCopy[] = ${JSON.stringify(data.observationNudges, null, 2)};
+export const OBSERVATION_NUDGE_FALLBACK: ObservationNudgeFallback = ${JSON.stringify(data.observationNudgeFallback, null, 2)};
+`;
+
+  writeGen('journal-guidance.gen.ts', ts);
+}
+
+function generateSmartAlertRules() {
+  const data = readKnowledgeAsset('smart-alert-rules') as Record<string, unknown>;
+
+  const ts = `
+export type SmartAlertPriority = 'P0' | 'P1' | 'P2';
+export type DynamicTaskSource = 'allergy-followup' | 'dental-followup' | 'seasonal-alert';
+export type AllergyFollowupCondition =
+  | 'anaphylaxis'
+  | 'skin_without_anaphylaxis'
+  | 'respiratory_without_anaphylaxis'
+  | 'gastrointestinal'
+  | 'severe_without_anaphylaxis';
+
+export interface AllergenNormalizationRule {
+  match: string;
+  tags: readonly string[];
+}
+
+export interface ReminderTagAllergenRule {
+  ruleTag: string;
+  allergenTags: readonly string[];
+}
+
+export interface ChronicConditionDetector {
+  conditionId: string;
+  sourceField: 'allergen' | 'notes';
+  keywords: readonly string[];
+}
+
+export interface AllergyCollisionMessages {
+  dangerTemplate: string;
+  nonDangerTemplate: string;
+}
+
+export interface AllergyFollowupSymptomGroups {
+  skin: readonly string[];
+  respiratory: readonly string[];
+  gastrointestinal: readonly string[];
+  anaphylaxis: readonly string[];
+}
+
+export interface AllergyFollowupTemplate {
+  templateId: string;
+  condition: AllergyFollowupCondition;
+  idPrefix: string;
+  offsetDays: number;
+  titleTemplate: string;
+  descriptionTemplate: string;
+  domain: string;
+  priority: SmartAlertPriority;
+  source: DynamicTaskSource;
+}
+
+export interface DentalFollowupRule {
+  eventType: string;
+  months: number;
+  title: string;
+}
+
+export interface SeasonalAlertRule {
+  id: string;
+  title: string;
+  description: string;
+  activeMonths: readonly number[];
+  requiredConditions: readonly string[];
+  priority: Exclude<SmartAlertPriority, 'P0'>;
+}
+
+export interface MedicalAlertRule {
+  thresholdCount?: number;
+  windowDays?: number;
+  followupWindowDays?: number;
+  recentWindowDays?: number;
+  level: 'info' | 'warning' | 'danger';
+  title?: string;
+  titleTemplate?: string;
+  messageTemplate: string;
+}
+
+export interface SmartAlertMedicalRules {
+  frequentVisits: MedicalAlertRule;
+  repeatedDiagnosis: MedicalAlertRule;
+  severeWithoutFollowup: MedicalAlertRule;
+  longTermMedication: MedicalAlertRule;
+}
+
+export const ALLERGEN_NORMALIZATION_RULES: readonly AllergenNormalizationRule[] = ${JSON.stringify(data.allergenNormalization, null, 2)};
+export const REMINDER_TAG_ALLERGEN_RULES: readonly ReminderTagAllergenRule[] = ${JSON.stringify(data.reminderTagAllergenMap, null, 2)};
+export const CHRONIC_CONDITION_DETECTORS: readonly ChronicConditionDetector[] = ${JSON.stringify(data.chronicConditionDetectors, null, 2)};
+export const ALLERGY_COLLISION_MESSAGES: AllergyCollisionMessages = ${JSON.stringify(data.allergyCollisionMessages, null, 2)};
+export const ALLERGY_FOLLOWUP_SYMPTOM_GROUPS: AllergyFollowupSymptomGroups = ${JSON.stringify(data.allergyFollowupSymptomGroups, null, 2)};
+export const ALLERGY_FOLLOWUP_TEMPLATES: readonly AllergyFollowupTemplate[] = ${JSON.stringify(data.allergyFollowupTemplates, null, 2)};
+export const DENTAL_FOLLOWUP_RULES: readonly DentalFollowupRule[] = ${JSON.stringify(data.dentalFollowups, null, 2)};
+export const DENTAL_FOLLOWUP_DESCRIPTION_TEMPLATE = ${JSON.stringify(data.dentalFollowupDescriptionTemplate)};
+export const SEASONAL_ALERT_RULES: readonly SeasonalAlertRule[] = ${JSON.stringify(data.seasonalAlerts, null, 2)};
+export const SMART_ALERT_MEDICAL_RULES: SmartAlertMedicalRules = ${JSON.stringify(data.medicalAlerts, null, 2)};
+`;
+
+  writeGen('smart-alert-rules.gen.ts', ts);
 }
 
 // -- knowledge asset projection fingerprints -------------------------------
@@ -726,5 +975,10 @@ generateKnowledgeSourceReadiness();
 generateDashboardTaskCatalog();
 generateHealthRecordAuthority();
 generateGrowthMilestoneRules();
+generateAiBoundaryRules();
+generateAdvisorClassifier();
+generatePediatricDrugCatalog();
+generateJournalGuidanceCatalog();
+generateSmartAlertRules();
 generateKnowledgeAssetProjectionFingerprints();
 console.log('Done.');

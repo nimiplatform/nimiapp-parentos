@@ -1,0 +1,38 @@
+[
+  {
+    "ruleTag": "influenza",
+    "allergenTags": [
+      "egg"
+    ]
+  },
+  {
+    "ruleTag": "flu",
+    "allergenTags": [
+      "egg"
+    ]
+  },
+  {
+    "ruleTag": "mmr",
+    "allergenTags": [
+      "egg"
+    ]
+  },
+  {
+    "ruleTag": "yellow-fever",
+    "allergenTags": [
+      "egg"
+    ]
+  },
+  {
+    "ruleTag": "gelatin",
+    "allergenTags": [
+      "gelatin"
+    ]
+  },
+  {
+    "ruleTag": "neomycin",
+    "allergenTags": [
+      "neomycin"
+    ]
+  }
+]

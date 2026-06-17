@@ -1,0 +1,21 @@
+{
+  "skin": [
+    "rash",
+    "hives",
+    "eczema",
+    "swelling",
+    "itching"
+  ],
+  "respiratory": [
+    "wheeze",
+    "cough"
+  ],
+  "gastrointestinal": [
+    "vomiting",
+    "diarrhea",
+    "abdominal"
+  ],
+  "anaphylaxis": [
+    "anaphylaxis"
+  ]
+}

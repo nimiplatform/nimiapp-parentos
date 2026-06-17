@@ -111,19 +111,19 @@ describe('advisor boundary', () => {
     expect(resolveAdvisorPromptStrategy('Need help with sleep', ['sleep'])).toBe('reviewed-advice');
 
     const message = buildAdvisorGenericRuntimeUserMessage('你好，测试，你的模型是？');
-    expect(message).toContain('泛闲聊或产品能力澄清');
-    expect(message).toContain('用户消息：你好，测试，你的模型是？');
+    expect(message).toMatch(/generic chat|泛闲聊或产品能力澄清/);
+    expect(message).toMatch(/User message: 你好，测试，你的模型是？|用户消息：你好，测试，你的模型是？/);
   });
 
   it('builds descriptive and clarifier runtime prompts for non-reviewed paths', () => {
     const descriptive = buildAdvisorNeedsReviewRuntimeUserMessage('How is growth going?', ['growth'], snapshot);
-    expect(descriptive).toContain('描述型回答策略');
-    expect(descriptive).toContain('涉及领域：growth');
+    expect(descriptive).toMatch(/descriptive-answer strategy|描述型回答策略/);
+    expect(descriptive).toMatch(/Involved domains: growth|涉及领域：growth/);
     expect(descriptive).toContain('"childId":"child-1"');
 
     const clarifier = buildAdvisorUnknownClarifierRuntimeUserMessage('最近怎么样？', snapshot);
-    expect(clarifier).toContain('澄清型回答策略');
-    expect(clarifier).toContain('当前本地记录概况');
+    expect(clarifier).toMatch(/clarifying-answer strategy|澄清型回答策略/);
+    expect(clarifier).toMatch(/Current local record summary|当前本地记录概况/);
   });
 
   it('forces mixed reviewed and needs-review questions back to structured facts', () => {
@@ -134,21 +134,21 @@ describe('advisor boundary', () => {
     const text = buildStructuredAdvisorFallback('Need help with sleep and growth together', domains, snapshot);
     expect(text).toContain('growth');
     expect(text).toContain('Phase 1');
-    expect(text).toContain('建议咨询专业人士');
+    expect(text).toMatch(/consult a professional|建议咨询专业人士/);
   });
 
   it('builds structured fallback for needs-review domains', () => {
     const text = buildStructuredAdvisorFallback('How is growth going?', ['growth'], snapshot);
-    expect(text).toContain('问题：How is growth going?');
-    expect(text).toContain('生长记录：');
-    expect(text).toContain('Phase 1 仅返回结构化事实和来源标注');
-    expect(text).toContain('建议咨询专业人士');
+    expect(text).toMatch(/Question: How is growth going\?|问题：How is growth going\?/);
+    expect(text).toMatch(/Growth records:|生长记录：/);
+    expect(text).toContain('Phase 1');
+    expect(text).toMatch(/consult a professional|建议咨询专业人士/);
   });
 
   it('appends reviewed-domain source labels', () => {
     const text = appendAdvisorSources('Safe answer', ['sleep']);
     expect(text).toContain('Safe answer');
-    expect(text).toContain('来源：');
+    expect(text).toMatch(/Sources:|来源：/);
     expect(text).toContain('sleep:');
   });
 
@@ -159,8 +159,8 @@ describe('advisor boundary', () => {
 
   it('builds runtime user content from the frozen local snapshot', () => {
     const message = buildAdvisorRuntimeUserMessage('最近睡眠怎么样？', ['sleep'], snapshot);
-    expect(message).toContain('问题：最近睡眠怎么样？');
-    expect(message).toContain('已判定领域：sleep');
+    expect(message).toMatch(/Question: 最近睡眠怎么样？|问题：最近睡眠怎么样？/);
+    expect(message).toMatch(/Detected domains: sleep|已判定领域：sleep/);
     expect(message).toContain('"childId":"child-1"');
   });
 });

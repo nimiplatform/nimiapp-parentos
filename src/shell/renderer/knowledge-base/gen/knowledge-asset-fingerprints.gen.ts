@@ -39,5 +39,35 @@ export const KNOWLEDGE_ASSET_PROJECTION_FINGERPRINTS: Record<string, KnowledgeAs
     "schemaVersion": 2,
     "contentVersion": "2026-05-07.2",
     "authorityClass": "design_asset"
+  },
+  "ai-boundary-rules": {
+    "projectionFingerprint": "e57ad80500abaf6787c186ddb95716b6be6074006380eb5e8671697a1f943e02",
+    "schemaVersion": 1,
+    "contentVersion": "2026-06-17.1",
+    "authorityClass": "curated_knowledge_asset"
+  },
+  "advisor-classifier": {
+    "projectionFingerprint": "a91a749bfa8b006618fd6dacb89604a9669505b15fa5bf06a3c25b30b5511b7d",
+    "schemaVersion": 1,
+    "contentVersion": "2026-06-17.1",
+    "authorityClass": "curated_knowledge_asset"
+  },
+  "pediatric-drug-catalog": {
+    "projectionFingerprint": "c0a3d233a232122eda0670494db5f420c12611aaad573e8b3f464828e6b44bd5",
+    "schemaVersion": 1,
+    "contentVersion": "2026-06-17.1",
+    "authorityClass": "curated_knowledge_asset"
+  },
+  "journal-guidance-catalog": {
+    "projectionFingerprint": "8106fa55f557cfbaf89034546583756c1bb294f7254a28894dc973c74a254859",
+    "schemaVersion": 1,
+    "contentVersion": "2026-06-17.1",
+    "authorityClass": "curated_knowledge_asset"
+  },
+  "smart-alert-rules": {
+    "projectionFingerprint": "c6374b3d5c8148255a4bff31492614743ceee350848dd918474c7965a535e606",
+    "schemaVersion": 1,
+    "contentVersion": "2026-06-17.1",
+    "authorityClass": "curated_knowledge_asset"
   }
 };
