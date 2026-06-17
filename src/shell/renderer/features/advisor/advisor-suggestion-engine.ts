@@ -3,6 +3,7 @@ import {
   runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
 import type { AdvisorSnapshot } from './advisor-boundary.js';
+import { i18nText, i18nTextForLanguage } from '../../i18n/index.js';
 
 export type AdvisorSuggestion = {
   id: string;
@@ -14,15 +15,26 @@ const MAX_COUNT = 4;
 const MIN_LEN = 4;
 const MAX_LEN = 24;
 
-const HARD_BAN_TERMS = ['诊断', '治疗', '发育迟缓', '建议用药', '建议服用', '推荐治疗', '障碍'];
-const HARD_BAN = new RegExp(HARD_BAN_TERMS.join('|'), 'u');
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function hardBanPattern() {
+  const terms = [i18nTextForLanguage('en', 'Advisor.suggestionPrompt.hardBanTerms'), i18nTextForLanguage('zh', 'Advisor.suggestionPrompt.hardBanTerms')]
+    .join('|')
+    .split('|')
+    .map((term) => term.trim())
+    .filter(Boolean)
+    .map(escapeRegExp);
+  return new RegExp(terms.join('|'), 'iu');
+}
 
 function summarizeLatestMeasurement(snapshot: AdvisorSnapshot) {
   const latest = [...snapshot.measurements]
     .sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))
     .slice(0, 3)
     .map((m) => `${m.typeId}:${m.value}@${m.measuredAt.slice(0, 10)}`);
-  return latest.join('；') || '无';
+  return latest.join(i18nText('Advisor.suggestionPrompt.itemSeparator')) || i18nText('Advisor.suggestionPrompt.none');
 }
 
 function buildCompactSnapshot(snapshot: AdvisorSnapshot) {
@@ -44,24 +56,28 @@ function buildCompactSnapshot(snapshot: AdvisorSnapshot) {
 }
 
 function buildSystemPrompt() {
-  return `你是 ParentOS 的"推荐问题"助手。
-基于家长提供的孩子本地快照，生成家长最可能想问的 ${MIN_COUNT}-${MAX_COUNT} 个问题。
-
-要求：
-- 家长第一人称视角，每条一句问题，长度 ${MIN_LEN}-${MAX_LEN} 个字符，以问号结尾；越短越好，不要铺垫。
-- 不要在问题里重复孩子名字或年龄，也不要复述快照中的数据细节——那些在界面上已经展示过。
-- 只围绕已审核领域：${REVIEWED_DOMAINS.join('、')}。
-- 不生成诊断型、评估型、排名型、风险结论型问题；不要使用"诊断 / 治疗 / 发育迟缓 / 障碍"等词。
-- 只输出一个 JSON 数组，如 ["问题一？","问题二？"]。不要任何解释、标题、前后缀或代码块围栏。`;
+  return [
+    i18nText('Advisor.suggestionPrompt.systemRole'),
+    i18nText('Advisor.suggestionPrompt.systemTask', { minCount: MIN_COUNT, maxCount: MAX_COUNT }),
+    '',
+    i18nText('Advisor.suggestionPrompt.requirementsTitle'),
+    i18nText('Advisor.suggestionPrompt.firstPerson', { minLen: MIN_LEN, maxLen: MAX_LEN }),
+    i18nText('Advisor.suggestionPrompt.noRepeatSnapshot'),
+    i18nText('Advisor.suggestionPrompt.reviewedDomains', {
+      domains: REVIEWED_DOMAINS.join(i18nText('Advisor.suggestionPrompt.domainSeparator')),
+    }),
+    i18nText('Advisor.suggestionPrompt.safetyBoundary'),
+    i18nText('Advisor.suggestionPrompt.jsonOnly'),
+  ].join('\n');
 }
 
 function buildUserPrompt(snapshot: AdvisorSnapshot) {
   const compact = buildCompactSnapshot(snapshot);
   return [
-    '孩子本地快照（JSON，仅供生成问题使用）：',
+    i18nText('Advisor.suggestionPrompt.snapshotTitle'),
     JSON.stringify(compact),
     '',
-    `请输出一个长度在 ${MIN_COUNT}-${MAX_COUNT} 之间的 JSON 字符串数组。`,
+    i18nText('Advisor.suggestionPrompt.outputCount', { minCount: MIN_COUNT, maxCount: MAX_COUNT }),
   ].join('\n');
 }
 
@@ -94,7 +110,7 @@ function normalizeQuestion(raw: string): string | null {
   const cleaned = raw.trim().replace(/^[-•\d.、\s]+/, '').trim();
   if (cleaned.length < MIN_LEN || cleaned.length > MAX_LEN) return null;
   const q = /[？?。.！!]$/.test(cleaned) ? cleaned.replace(/[。.！!]$/, '？') : `${cleaned}？`;
-  if (HARD_BAN.test(q)) return null;
+  if (hardBanPattern().test(q)) return null;
   return q;
 }
 

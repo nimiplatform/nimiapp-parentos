@@ -15,6 +15,8 @@ import {
   type DentalEruptionCandidate,
   flipCandidatesHorizontally,
 } from './dental-eruption-scan.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type Stage = 'upload' | 'analyzing' | 'review' | 'saving';
 
@@ -56,14 +58,17 @@ function renderToothRow(
         const isSelected = selected.has(id);
         const wasAlready = already.has(id);
         const className = pickToothClassName({ candidate, isSelected, wasAlready });
-        const confidenceHint = candidate ? ` · AI 置信度 ${(candidate.confidence * 100).toFixed(0)}%` : '';
+        const confidenceHint = candidate
+          ? i18nText('DentalEruptionScan.tooth.confidenceHint', { confidence: (candidate.confidence * 100).toFixed(0) })
+          : '';
+        const historyHint = wasAlready ? i18nText('DentalEruptionScan.tooth.historyHint') : '';
         return (
           <button
             key={id}
             type="button"
             onClick={() => candidate && onToggle(id)}
             disabled={!candidate}
-            title={`${id} ${TOOTH_NAMES[id] ?? ''}${confidenceHint}${wasAlready ? ' · 已在历史中' : ''}`}
+            title={i18nText('DentalEruptionScan.tooth.title', { id, name: TOOTH_NAMES[id] ?? '', confidenceHint, historyHint })}
             className={className}
           >
             {id}
@@ -181,9 +186,9 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
     >
         <div className="flex items-center justify-between border-b border-[var(--nimi-border-subtle)] px-5 py-4">
           <div>
-            <h2 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">AI 识别牙齿萌出情况</h2>
+            <h2 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('DentalEruptionScan.title')}</h2>
             <p className="mt-0.5 text-[13px] text-[var(--nimi-text-muted)]">
-              支持口腔全景片、口内照、咬合照。AI 识别仅供参考，请以医生诊断为准。
+              {i18nText('DentalEruptionScan.subtitle')}
             </p>
           </div>
           <Button
@@ -191,7 +196,7 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
             tone="ghost"
             size="sm"
             className="h-7 min-h-7 w-7 rounded-full px-0 text-[18px] leading-none"
-            aria-label="关闭"
+            aria-label={i18nText('DentalEruptionScan.action.close')}
           >
             ×
           </Button>
@@ -208,9 +213,9 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
 
           {props.stage === 'upload' ? (
             <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">选择一张口腔全景片或口腔照片</p>
+              <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('DentalEruptionScan.upload.title')}</p>
               <p className="max-w-[420px] text-[13px] text-[var(--nimi-text-muted)]">
-                建议：咬合面照或正面微笑照最适合识别已萌出的牙齿；全景 X 光片还可以帮助识别颌骨内未萌出的恒牙胚。
+                {i18nText('DentalEruptionScan.upload.hint')}
               </p>
               <Button
                 onClick={() => void props.onPickImage()}
@@ -218,7 +223,7 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
                 size="md"
                 className="mt-2"
               >
-                选择照片
+                {i18nText('DentalEruptionScan.action.pickPhoto')}
               </Button>
             </div>
           ) : null}
@@ -227,24 +232,23 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
             <div className="flex items-start gap-3">
               <img
                 src={props.previewUrl}
-                alt="dental preview"
+                alt={i18nText('DentalEruptionScan.previewAlt')}
                 className="h-28 w-28 rounded-2xl border border-[var(--nimi-border-subtle)] object-cover"
               />
               <div className="flex-1 text-[13px] text-[var(--nimi-text-muted)]">
                 {props.stage === 'analyzing' ? (
-                  <p>AI 正在分析中，请稍候…</p>
+                  <p>{i18nText('DentalEruptionScan.status.analyzing')}</p>
                 ) : props.stage === 'saving' ? (
-                  <p>正在保存记录…</p>
+                  <p>{i18nText('DentalEruptionScan.status.savingRecord')}</p>
                 ) : props.stage === 'review' ? (
                   <>
                     <p>
-                      AI 识别出 <span className="text-[var(--nimi-action-primary-bg)]">{permanentCount}</span> 颗恒牙、
-                      <span className="text-[var(--nimi-action-primary-bg)]"> {primaryCount}</span> 颗乳牙已萌出。
+                      {i18nText('DentalEruptionScan.review.detectedSummary', { permanentCount, primaryCount })}
                     </p>
-                    <p className="mt-1">请确认或取消选择后点击下方"确认并写入"。</p>
+                    <p className="mt-1">{i18nText('DentalEruptionScan.review.confirmHint')}</p>
                   </>
                 ) : (
-                  <p>准备分析…</p>
+                  <p>{i18nText('DentalEruptionScan.status.ready')}</p>
                 )}
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Button
@@ -252,7 +256,7 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
                     tone="secondary"
                     size="sm"
                   >
-                    换一张照片
+                    {i18nText('DentalEruptionScan.action.retake')}
                   </Button>
                   {props.stage === 'review' ? (
                     <Button
@@ -260,7 +264,7 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
                       tone="secondary"
                       size="sm"
                     >
-                      重新分析
+                      {i18nText('DentalEruptionScan.action.reanalyze')}
                     </Button>
                   ) : null}
                 </div>
@@ -294,7 +298,7 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
                           : 'bg-transparent text-[var(--nimi-text-muted)] hover:bg-[var(--nimi-action-ghost-hover)]',
                       )}
                     >
-                      {value === 'primary' ? '乳牙' : '恒牙'}
+                      {value === 'primary' ? i18nText('DentalEruptionScan.toothSet.primary') : i18nText('DentalEruptionScan.toothSet.permanent')}
                     </button>
                   ))}
                 </div>
@@ -304,61 +308,61 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
                     tone="secondary"
                     size="sm"
                   >
-                    全选当前视图
+                    {i18nText('DentalEruptionScan.action.selectAllVisible')}
                   </Button>
                   <Button
                     onClick={() => selectAllVisible(false)}
                     tone="secondary"
                     size="sm"
                   >
-                    全不选当前视图
+                    {i18nText('DentalEruptionScan.action.deselectAllVisible')}
                   </Button>
                   <Button
                     onClick={handleFlip}
-                    title="如果 AI 把左右搞反了，点此镜像翻转"
+                    title={i18nText('DentalEruptionScan.action.flipHint')}
                     tone="secondary"
                     size="sm"
                   >
-                    左右镜像
+                    {i18nText('DentalEruptionScan.action.flip')}
                   </Button>
                   <Button
                     onClick={handleReset}
                     tone="secondary"
                     size="sm"
                   >
-                    恢复 AI 默认选择
+                    {i18nText('DentalEruptionScan.action.resetAiSelection')}
                   </Button>
                 </div>
               </div>
 
               <Surface tone="panel" material="solid" elevation="base" padding="sm" className="rounded-2xl">
                 <div className="flex flex-col items-center gap-1">
-                  <p className="text-[12px] text-[var(--nimi-text-muted)]">上颌</p>
+                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('DentalEruptionScan.arch.upper')}</p>
                   <div className="flex gap-1">
-                    {renderToothRow(upperRight, '右', candidateMap, selected, props.alreadyRecordedErupted, toggleTooth)}
+                    {renderToothRow(upperRight, i18nText('DentalEruptionScan.side.right'), candidateMap, selected, props.alreadyRecordedErupted, toggleTooth)}
                     <span className="w-3" />
                     {renderToothRow(upperLeft, '', candidateMap, selected, props.alreadyRecordedErupted, toggleTooth)}
-                    <span className="ml-1 w-8 text-[12px] text-[var(--nimi-text-muted)]">左</span>
+                    <span className="ml-1 w-8 text-[12px] text-[var(--nimi-text-muted)]">{i18nText('DentalEruptionScan.side.left')}</span>
                   </div>
                   <div className="my-1 h-px w-full bg-[var(--nimi-border-subtle)]" />
                   <div className="flex gap-1">
-                    {renderToothRow(lowerRight, '右', candidateMap, selected, props.alreadyRecordedErupted, toggleTooth)}
+                    {renderToothRow(lowerRight, i18nText('DentalEruptionScan.side.right'), candidateMap, selected, props.alreadyRecordedErupted, toggleTooth)}
                     <span className="w-3" />
                     {renderToothRow(lowerLeft, '', candidateMap, selected, props.alreadyRecordedErupted, toggleTooth)}
-                    <span className="ml-1 w-8 text-[12px] text-[var(--nimi-text-muted)]">左</span>
+                    <span className="ml-1 w-8 text-[12px] text-[var(--nimi-text-muted)]">{i18nText('DentalEruptionScan.side.left')}</span>
                   </div>
-                  <p className="text-[12px] text-[var(--nimi-text-muted)]">下颌</p>
+                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('DentalEruptionScan.arch.lower')}</p>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-3 text-[12px] text-[var(--nimi-text-muted)]">
-                  <StatusBadge tone="info">已确认写入</StatusBadge>
-                  <StatusBadge tone="warning">AI 建议已取消</StatusBadge>
-                  <StatusBadge tone="neutral">已在历史记录中</StatusBadge>
-                  <StatusBadge tone="neutral" className="opacity-70">AI 未识别到</StatusBadge>
+                  <StatusBadge tone="info">{i18nText('DentalEruptionScan.legend.selected')}</StatusBadge>
+                  <StatusBadge tone="warning">{i18nText('DentalEruptionScan.legend.deselected')}</StatusBadge>
+                  <StatusBadge tone="neutral">{i18nText('DentalEruptionScan.legend.history')}</StatusBadge>
+                  <StatusBadge tone="neutral" className="opacity-70">{i18nText('DentalEruptionScan.legend.notDetected')}</StatusBadge>
                 </div>
               </Surface>
 
               <div>
-                <p className="mb-1 text-[13px] text-[var(--nimi-text-muted)]">观察日期</p>
+                <p className="mb-1 text-[13px] text-[var(--nimi-text-muted)]">{i18nText('DentalEruptionScan.eventDate')}</p>
                 <DatePicker value={props.eventDate} onChange={props.onEventDateChange} />
               </div>
             </>
@@ -367,7 +371,7 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
 
         <div className="flex items-center justify-between gap-2 border-t border-[var(--nimi-border-subtle)] px-5 py-3">
           <p className="text-[12px] text-[var(--nimi-text-muted)]">
-            已选 {selected.size} 颗（{permanentCount} 恒 / {primaryCount} 乳）
+            {i18nText('DentalEruptionScan.selectedSummary', { selectedCount: selected.size, permanentCount, primaryCount })}
           </p>
           <div className="flex gap-2">
             <Button
@@ -376,7 +380,7 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
               tone="secondary"
               size="md"
             >
-              取消
+              {i18nText('DentalEruptionScan.action.cancel')}
             </Button>
             <Button
               onClick={() => void handleConfirm()}
@@ -384,7 +388,7 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
               tone="primary"
               size="md"
             >
-              {props.stage === 'saving' ? '保存中…' : '确认并写入'}
+              {props.stage === 'saving' ? i18nText('DentalEruptionScan.action.saving') : i18nText('DentalEruptionScan.action.confirm')}
             </Button>
           </div>
         </div>

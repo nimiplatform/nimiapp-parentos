@@ -73,7 +73,7 @@ export interface DashboardTaskInput {
 
 export interface DashboardTaskProjection {
   mainList: DashboardTaskEntry[];
-  /** Aggregated badge count: "档案有 N 项可更新". */
+  /** Aggregated badge count rendered by the dashboard task list. */
   downgradeIndicatorCount: number;
   /** Rows resurfacing next cycle; not displayed. */
   hiddenResurfaceCount: number;

@@ -1,6 +1,6 @@
 // Reminder panel controller — shared data pipeline + capture-modal cluster for
-// the 待办事项 surface. Both the dashboard right rail (`TimelinePage`) and the
-// profile 待办事项 drawer (`ProfileTodoDrawer`) consume this so the two
+// the task surface. Both the dashboard right rail (`TimelinePage`) and the
+// profile task drawer (`ProfileTodoDrawer`) consume this so the two
 // surfaces render identical content and behavior from one source of truth.
 //
 // The hook owns: reminder agenda construction, allergy interception, seasonal
@@ -54,6 +54,8 @@ import { DashboardTaskList, type DashboardTaskCaptureIntent } from './dashboard-
 import { buildDashboardTaskProjection } from './dashboard-task-projection.js';
 import { useDash, type DashData } from './timeline-data.js';
 import { ReminderPanel, type ReminderPanelProps } from './timeline-page-panels.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const PROTOCOL_GROUP_LOOKUP = new Map(
   HEALTH_CAPTURE_PROTOCOLS.map((protocol) => [protocol.protocolId, protocol.groupId] as const),
@@ -97,7 +99,7 @@ export interface ReminderPanelController {
 }
 
 /**
- * Shared controller for the 待办事项 panel. `child` is `undefined` before a
+ * Shared controller for the task panel. `child` is `undefined` before a
  * child profile is selected — the hook stays inert (empty agenda) in that case.
  */
 export function useReminderPanelController(child: ChildProfile | undefined): ReminderPanelController {
@@ -192,7 +194,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
     return computeObservationNudges(activeDims, d.journalEntries);
   }, [child, ageMonths, d.journalEntries]);
 
-  // Catalog-only count for the 今天 tab badge and default-tab pick. Mirrors the
+  // Catalog-only count for the today tab badge and default-tab pick. Mirrors the
   // projection that `<DashboardTaskList showOnly="catalog" />` builds internally.
   const dashboardCatalogCount = useMemo(() => {
     if (!child || !agenda) return 0;
@@ -262,7 +264,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
           (row) => row.applianceId === orthoBinding!.applianceId,
         );
         if (!appliance) {
-          throw new Error(`找不到提醒绑定的矫治器（applianceId=${orthoBinding.applianceId}）`);
+          throw new Error(i18nText('Timeline.error.missingBoundAppliance', { applianceId: orthoBinding.applianceId }));
         }
         if (orthoBinding.kind === 'expander-activation') {
           setCaptureSelection(null);
@@ -304,7 +306,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
     const groupId = PROTOCOL_GROUP_LOOKUP.get(intent.captureProtocolId as HealthCaptureProtocolId);
     if (!groupId) {
       setCaptureSelection(null);
-      setCaptureError(`未识别的 captureProtocolId: ${intent.captureProtocolId}`);
+      setCaptureError(i18nText('Timeline.error.unknownCaptureProtocol', { captureProtocolId: intent.captureProtocolId }));
       return;
     }
     setCaptureSelection({ groupId, metricId: intent.metricIds[0] ?? null });
@@ -406,7 +408,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
 }
 
 /**
- * Self-contained 待办事项 panel for embedding surfaces (the profile drawer).
+ * Self-contained task panel for embedding surfaces (the profile drawer).
  * Renders the embedded `<ReminderPanel>` plus its capture modals. The host owns
  * the outer frame (header, scroll container, slide-in chrome).
  */

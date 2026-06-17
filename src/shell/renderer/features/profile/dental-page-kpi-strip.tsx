@@ -1,5 +1,7 @@
 import { Surface } from '@nimiplatform/kit/ui';
 import type { ReactNode } from 'react';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface KPI {
   key: string;
@@ -31,7 +33,7 @@ export function DentalKPIStrip({ eruptedCount, eruptedTotal, permanentCount, car
   const kpis: KPI[] = [
     {
       key: 'erupted',
-      label: '已萌出',
+      label: i18nText('Dental.kpi.erupted'),
       value: eruptedCount,
       unit: `/ ${eruptedTotal}`,
       iconTone: 'text-[var(--nimi-action-primary-bg)]',
@@ -45,9 +47,9 @@ export function DentalKPIStrip({ eruptedCount, eruptedTotal, permanentCount, car
     },
     {
       key: 'permanent',
-      label: '恒牙',
+      label: i18nText('Dental.form.toothSet.permanent'),
       value: permanentCount,
-      unit: '颗',
+      unit: i18nText('Dental.unit.teeth'),
       iconTone: 'text-[var(--nimi-status-info)]',
       iconBg: 'bg-[color-mix(in_srgb,var(--nimi-status-info)_14%,transparent)]',
       icon: (
@@ -58,9 +60,9 @@ export function DentalKPIStrip({ eruptedCount, eruptedTotal, permanentCount, car
     },
     {
       key: 'caries',
-      label: '龋齿',
+      label: i18nText('Dental.eventType.caries.label'),
       value: cariesCount,
-      unit: '颗',
+      unit: i18nText('Dental.unit.teeth'),
       iconTone: 'text-[var(--nimi-status-danger)]',
       iconBg: 'bg-[color-mix(in_srgb,var(--nimi-status-danger)_12%,transparent)]',
       icon: (
@@ -72,9 +74,9 @@ export function DentalKPIStrip({ eruptedCount, eruptedTotal, permanentCount, car
     },
     {
       key: 'records',
-      label: '记录',
+      label: i18nText('Dental.kpi.records'),
       value: recordCount,
-      unit: '条',
+      unit: i18nText('Dental.unit.records'),
       iconTone: 'text-[var(--nimi-text-muted)]',
       iconBg: 'bg-[var(--nimi-surface-active)]',
       icon: (

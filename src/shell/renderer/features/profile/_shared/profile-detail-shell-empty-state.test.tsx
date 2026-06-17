@@ -20,13 +20,34 @@ import { MemoryRouter } from 'react-router-dom';
 import { TooltipProvider } from '@nimiplatform/kit/ui';
 import { useAppStore } from '../../../app-shell/app-store.js';
 
+const { translateI18nKey } = vi.hoisted(() => {
+  const textByKey: Record<string, string> = {
+    'Sleep.page.title': '睡眠记录',
+    'Fitness.page.title': '体能评估',
+    'Allergy.page.title': '过敏记录',
+    'Milestone.page.title': '发育里程碑',
+    'Tanner.page.title': '青春期发育评估',
+    'MedicalEvents.page.title': '就医记录',
+    'Vaccine.page.title': '疫苗接种',
+    'Posture.page.title': '体态档案',
+    'ReportUpload.title': '智能识别 & 影像档案',
+    'Reports.history.title': '单据记录',
+    'Vision.page.title': '视力档案',
+    'Dental.page.title': '口腔档案',
+  };
+  return {
+    translateI18nKey: (key: string) => textByKey[key] ?? key,
+  };
+});
+
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue(undefined),
   convertFileSrc: (value: string) => value,
 }));
 
 vi.mock('../../../i18n/index.js', () => ({
-  i18n: { t: (key: string) => key },
+  i18n: { t: translateI18nKey },
+  i18nText: translateI18nKey,
 }));
 
 vi.mock('react-i18next', () => ({

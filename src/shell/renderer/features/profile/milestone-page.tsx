@@ -17,16 +17,18 @@ import { AISummaryCard } from './ai-summary-card.js';
 import { readImageFileAsDataUrl } from './checkup-ocr.js';
 import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.js';
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── domain config ───────────────────────────────────────── */
 
 const DOMAINS: Array<{ key: MilestoneDomain; label: string; emoji: string; toneClass: string }> = [
-  { key: 'gross-motor', label: '大运动', emoji: '🏃', toneClass: 'bg-[var(--nimi-surface-active)]' },
-  { key: 'fine-motor', label: '精细动作', emoji: '✋', toneClass: 'bg-[var(--nimi-surface-muted)]' },
-  { key: 'language', label: '语言', emoji: '💬', toneClass: 'bg-[var(--nimi-surface-active)]' },
-  { key: 'cognitive', label: '认知', emoji: '🧠', toneClass: 'bg-[var(--nimi-surface-muted)]' },
-  { key: 'social-emotional', label: '社交情绪', emoji: '🤝', toneClass: 'bg-[var(--nimi-surface-muted)]' },
-  { key: 'self-care', label: '自理', emoji: '🪥', toneClass: 'bg-[var(--nimi-surface-active)]' },
+  { key: 'gross-motor', label: i18nText('Milestone.domain.grossMotor'), emoji: '🏃', toneClass: 'bg-[var(--nimi-surface-active)]' },
+  { key: 'fine-motor', label: i18nText('Milestone.domain.fineMotor'), emoji: '✋', toneClass: 'bg-[var(--nimi-surface-muted)]' },
+  { key: 'language', label: i18nText('Milestone.domain.language'), emoji: '💬', toneClass: 'bg-[var(--nimi-surface-active)]' },
+  { key: 'cognitive', label: i18nText('Milestone.domain.cognitive'), emoji: '🧠', toneClass: 'bg-[var(--nimi-surface-muted)]' },
+  { key: 'social-emotional', label: i18nText('Milestone.domain.socialEmotional'), emoji: '🤝', toneClass: 'bg-[var(--nimi-surface-muted)]' },
+  { key: 'self-care', label: i18nText('Milestone.domain.selfCare'), emoji: '🪥', toneClass: 'bg-[var(--nimi-surface-active)]' },
 ];
 const DOMAIN_MAP = new Map(DOMAINS.map((d) => [d.key, d]));
 
@@ -38,7 +40,7 @@ type AgeBucket = {
 };
 
 function formatAchievedDate(achievedAt: string | null | undefined) {
-  return achievedAt?.split('T')[0] ?? '已记录';
+  return achievedAt?.split('T')[0] ?? i18nText('Milestone.record.recordedFallback');
 }
 
 /* ================================================================
@@ -140,17 +142,17 @@ function RecordModal({ milestone, record, childId, ageMonths, onSave, onClose }:
         <div className="space-y-4">
           <p className="text-[14px] text-[var(--nimi-text-muted)]">{milestone.description}</p>
           <div>
-            <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">达成日期</label>
+            <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">{i18nText('Milestone.recordModal.achievedDate')}</label>
             <DatePicker value={date} onChange={setDate} />
           </div>
           <div>
-            <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">记录小故事 ✏️</label>
+            <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">{i18nText('Milestone.recordModal.storyWithIcon')}</label>
             <TextareaField value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="例如：第一次找到藏起来的球，开心地咯咯笑..."
+              placeholder={i18nText('Milestone.recordModal.storyPlaceholder')}
               className="w-full" rows={3} />
           </div>
           <div>
-            <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">添加照片 📷</label>
+            <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">{i18nText('Milestone.recordModal.photo')}</label>
             <input type="file" accept="image/*" className="text-[14px]"
               onChange={(e) => void handlePhoto(e.target.files?.[0] ?? null)} />
             {photoPreview && <img src={photoPreview} alt="" className="mt-2 h-24 rounded-2xl object-cover" />}
@@ -158,9 +160,9 @@ function RecordModal({ milestone, record, childId, ageMonths, onSave, onClose }:
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button onClick={onClose} tone="ghost" size="md">{i18nText('Milestone.recordModal.cancel')}</Button>
         <Button onClick={() => void handleSave()} disabled={saving} tone="primary" size="md">
-          {saving ? '保存中...' : '记录达成'}
+          {saving ? i18nText('Milestone.recordModal.saving') : i18nText('Milestone.recordModal.save')}
         </Button>
       </ModalFooter>
     </HealthRecordModalShell>
@@ -185,7 +187,7 @@ export default function MilestonePage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="发育里程碑">
+      <ProfileDetailShell title={i18nText('Milestone.page.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -236,10 +238,23 @@ export default function MilestonePage() {
   /* ── Timeline: group milestones by age buckets ──────────── */
   const ageBuckets = useMemo(() => {
     const buckets: AgeBucket[] = [];
-    const ranges = [[0, 3, '0-3 个月'], [4, 6, '4-6 个月'], [7, 9, '7-9 个月'], [10, 12, '10-12 个月'],
-      [13, 18, '13-18 个月'], [19, 24, '19-24 个月'], [25, 36, '2-3 岁'], [37, 48, '3-4 岁'],
-      [49, 60, '4-5 岁'], [61, 72, '5-6 岁'], [73, 96, '6-8 岁'], [97, 120, '8-10 岁'],
-      [121, 144, '10-12 岁'], [145, 180, '12-15 岁'], [181, 216, '15-18 岁']] as const;
+    const ranges = [
+      [0, 3, i18nText('Milestone.ageBucket.m0_3')],
+      [4, 6, i18nText('Milestone.ageBucket.m4_6')],
+      [7, 9, i18nText('Milestone.ageBucket.m7_9')],
+      [10, 12, i18nText('Milestone.ageBucket.m10_12')],
+      [13, 18, i18nText('Milestone.ageBucket.m13_18')],
+      [19, 24, i18nText('Milestone.ageBucket.m19_24')],
+      [25, 36, i18nText('Milestone.ageBucket.y2_3')],
+      [37, 48, i18nText('Milestone.ageBucket.y3_4')],
+      [49, 60, i18nText('Milestone.ageBucket.y4_5')],
+      [61, 72, i18nText('Milestone.ageBucket.y5_6')],
+      [73, 96, i18nText('Milestone.ageBucket.y6_8')],
+      [97, 120, i18nText('Milestone.ageBucket.y8_10')],
+      [121, 144, i18nText('Milestone.ageBucket.y10_12')],
+      [145, 180, i18nText('Milestone.ageBucket.y12_15')],
+      [181, 216, i18nText('Milestone.ageBucket.y15_18')],
+    ] as const;
     for (const [s, e, lbl] of ranges) {
       const ms = MILESTONE_CATALOG.filter((m) => m.typicalAge.medianMonths >= s && m.typicalAge.medianMonths <= e);
       if (ms.length > 0) buckets.push({ startMonth: s, endMonth: e, label: lbl, milestones: ms });
@@ -281,7 +296,7 @@ export default function MilestonePage() {
     <ProfileDetailShell
       title={
         <span className="flex items-center gap-2">
-          <span>{isArchive ? '早期发育记录' : '发育里程碑'}</span>
+          <span>{isArchive ? i18nText('Milestone.page.archiveTitle') : i18nText('Milestone.page.title')}</span>
           <span className="group relative inline-flex">
             <span className="w-[18px] h-[18px] rounded-full inline-flex items-center justify-center cursor-help transition-colors hover:bg-[var(--nimi-action-ghost-hover)] text-[var(--nimi-text-muted)]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -295,51 +310,58 @@ export default function MilestonePage() {
               padding="none"
               className="pointer-events-none absolute left-0 top-7 z-50 w-[340px] rounded-xl p-4 text-[13px] leading-relaxed opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
             >
-              <p className="text-[14px] font-semibold text-[var(--nimi-text-primary)] mb-2.5">数据参考文献</p>
+              <p className="text-[14px] font-semibold text-[var(--nimi-text-primary)] mb-2.5">{i18nText('Milestone.sources.title')}</p>
               <ul className="space-y-2.5">
                 <li>
-                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">大运动 · 精细动作 · 语言 · 认知</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">CDC Developmental Milestones (2022 updated).</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-subtle)]">Zubler JM, et al. Evidence-Informed Milestones for Developmental Surveillance. MMWR 2022;71(1):1-4</span>
+                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">{i18nText('Milestone.sources.coreDomains')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">{i18nText('Milestone.sources.cdc')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-subtle)]">{i18nText('Milestone.sources.cdcCitation')}</span>
                 </li>
                 <li>
-                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">社交情绪 · 自理能力</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">Ages &amp; Stages Questionnaires (ASQ-3), 3rd Edition.</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-subtle)]">Squires J, Bricker D. Paul H. Brookes Publishing, 2009</span>
+                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">{i18nText('Milestone.sources.socialSelfCare')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">{i18nText('Milestone.sources.asq')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-subtle)]">{i18nText('Milestone.sources.asqCitation')}</span>
                 </li>
                 <li>
-                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">中国儿童发育参考</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">国家卫生健康委员会.《0-6岁儿童健康管理技术规范》· 首都儿科研究所《0-6岁儿童发育行为评估量表》</span>
+                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">{i18nText('Milestone.sources.chinaReference')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">{i18nText('Milestone.sources.chinaReferenceDetail')}</span>
                 </li>
               </ul>
-              <p className="text-[12px] mt-2.5 pt-2 border-t border-[var(--nimi-border-subtle)] text-[var(--nimi-text-subtle)]">每项标注中位月龄和正常范围 · 超过警示月龄未达成建议咨询专业人士</p>
+              <p className="text-[12px] mt-2.5 pt-2 border-t border-[var(--nimi-border-subtle)] text-[var(--nimi-text-subtle)]">{i18nText('Milestone.sources.note')}</p>
             </Surface>
           </span>
         </span>
       }
       actions={
         <span className="text-[14px] px-3 py-1 rounded-full bg-[var(--nimi-surface-active)] text-[var(--nimi-action-primary-bg)]">
-          已达成 {achievedCount}/{MILESTONE_CATALOG.length}
+          {i18nText('Milestone.page.achievedCount', { achieved: achievedCount, total: MILESTONE_CATALOG.length })}
         </span>
       }
       aiSummary={
         <AISummaryCard domain="milestone" childName={child.displayName} childId={child.childId}
-          ageLabel={`${Math.floor(ageMonths / 12)}岁${ageMonths % 12}个月`} gender={child.gender}
+          ageLabel={i18nText('Milestone.summary.ageYearsMonths', {
+            years: Math.floor(ageMonths / 12),
+            months: ageMonths % 12,
+          })} gender={child.gender}
           dataContext={achievedCount > 0
-            ? `已达成 ${achievedCount}/${MILESTONE_CATALOG.length} 个里程碑。${DOMAINS.map((d) => {
+            ? i18nText('Milestone.summary.context', {
+              achieved: achievedCount,
+              total: MILESTONE_CATALOG.length,
+              domains: DOMAINS.map((d) => {
               const ms = MILESTONE_CATALOG.filter((m) => m.domain === d.key);
               const ac = ms.filter((m) => recordMap.get(m.milestoneId)?.achievedAt).length;
               return `${d.label}: ${ac}/${ms.length}`;
-            }).join(', ')}`
+            }).join(', '),
+            })
             : ''} />
       }
     >
-      {/* ── 4. Upcoming milestones (主动推送, hidden in archive mode) ── */}
+      {/* Upcoming milestones, hidden in archive mode. */}
       {!isArchive && upcoming.length > 0 && (
         <Surface tone="card" material="glass-regular" elevation="raised" padding="md" className="mb-5 rounded-3xl">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-[16px]">🔔</span>
-            <h3 className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">即将到来的里程碑</h3>
+            <h3 className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Milestone.page.upcomingTitle')}</h3>
           </div>
           <div className="space-y-2">
             {upcoming.map((m) => {
@@ -362,18 +384,18 @@ export default function MilestonePage() {
                         ? 'border-[var(--nimi-action-primary-bg)] bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]'
                         : 'border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)]'
                     }`}
-                    title={achieved ? '撤销达成' : '标记已达成'}>
+                    title={achieved ? i18nText('Milestone.record.undoAchieved') : i18nText('Milestone.record.markAchieved')}>
                     {achieved && <svg viewBox="0 0 12 12" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" fill="none" /></svg>}
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className={`text-[14px] font-medium ${achieved ? 'text-[var(--nimi-action-primary-bg)]' : 'text-[var(--nimi-text-primary)]'}`}>{m.title}</p>
                     <p className="text-[12px] text-[var(--nimi-text-muted)]">
-                      {achieved ? `${formatAchievedDate(rec?.achievedAt)} 达成` : `典型 ${formatAge(m.typicalAge.rangeStart)}-${formatAge(m.typicalAge.rangeEnd)} · ${m.description.slice(0, 30)}...`}
+                      {achieved ? i18nText('Milestone.record.achievedOn', { date: formatAchievedDate(rec?.achievedAt) }) : i18nText('Milestone.record.typicalSummary', { start: formatAge(m.typicalAge.rangeStart), end: formatAge(m.typicalAge.rangeEnd), description: m.description.slice(0, 30) })}
                     </p>
                   </div>
                   <button onClick={() => setEditingMilestone(m.milestoneId)}
                     className="text-[12px] shrink-0 rounded-full border border-[var(--nimi-border-subtle)] px-2.5 py-1 text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]">
-                    📝 {achieved ? '补个故事' : '记录'}
+                    📝 {achieved ? i18nText('Milestone.record.addStory') : i18nText('Milestone.record.record')}
                   </button>
                 </div>
               );
@@ -384,7 +406,7 @@ export default function MilestonePage() {
 
       {/* ── View toggle: Timeline / Radar ────────────────────── */}
       <div className="flex gap-1 rounded-full bg-[var(--nimi-surface-muted)] p-1 mb-5 w-fit">
-        {([['timeline', '📋 时间轴'], ['radar', '📊 雷达图']] as const).map(([k, l]) => (
+        {([['timeline', i18nText('Milestone.tab.timeline')], ['radar', i18nText('Milestone.tab.radar')]] as const).map(([k, l]) => (
           <button key={k} onClick={() => setActiveTab(k)}
             className={`px-4 py-1.5 text-[13px] font-medium rounded-full transition-all ${
               activeTab === k
@@ -399,7 +421,7 @@ export default function MilestonePage() {
       {/* ── 3. Radar chart view ──────────────────────────────── */}
       {activeTab === 'radar' && (
         <Surface tone="card" material="glass-regular" elevation="raised" padding="md" className="mb-5 rounded-3xl">
-          <h3 className="text-[14px] font-semibold mb-2 text-center text-[var(--nimi-text-primary)]">发展轮廓总览</h3>
+          <h3 className="text-[14px] font-semibold mb-2 text-center text-[var(--nimi-text-primary)]">{i18nText('Milestone.page.radarTitle')}</h3>
           <RadarChart data={radarData} />
           <div className="grid grid-cols-3 gap-2 mt-4">
             {radarData.map((d) => (
@@ -458,13 +480,13 @@ export default function MilestonePage() {
                         <div className="flex-1 min-w-0">
                           <p className={`text-[14px] font-medium ${achieved ? 'text-[var(--nimi-action-primary-bg)]' : 'text-[var(--nimi-text-muted)]'}`}>{m.title}</p>
                           <p className="text-[12px] truncate text-[var(--nimi-text-muted)]">
-                            {achieved ? `${formatAchievedDate(rec?.achievedAt)} 达成` : '未记录'}
+                            {achieved ? i18nText('Milestone.record.achievedOn', { date: formatAchievedDate(rec?.achievedAt) }) : i18nText('Milestone.record.notRecorded')}
                           </p>
                         </div>
                         <button
                           onClick={() => setEditingMilestone(m.milestoneId)}
                           className="text-[12px] shrink-0 rounded-full border border-[var(--nimi-border-subtle)] px-2.5 py-1 text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]">
-                          📝 {achieved ? '补个故事' : '补记'}
+                          📝 {achieved ? i18nText('Milestone.record.addStory') : i18nText('Milestone.record.backfill')}
                         </button>
                       </div>
                     );
@@ -489,14 +511,17 @@ export default function MilestonePage() {
                       🗂️
                     </span>
                     <span className="text-[14px] font-semibold tracking-[0.08em] text-[var(--nimi-action-primary-bg)]">
-                      成长档案
+                      {i18nText('Milestone.archive.eyebrow')}
                     </span>
                   </div>
                   <h3 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">
-                    已走过的阶段
+                    {i18nText('Milestone.archive.title')}
                   </h3>
                   <p className="mt-1 text-[13px] leading-5 text-[var(--nimi-text-muted)]">
-                    {pastBuckets[0]!.label} ~ {pastBuckets[pastBuckets.length - 1]!.label} 的成长足迹，随时可以回顾和补记
+                    {i18nText('Milestone.archive.rangeFootprint', {
+                      start: pastBuckets[0]!.label,
+                      end: pastBuckets[pastBuckets.length - 1]!.label,
+                    })}
                   </p>
                 </div>
 
@@ -506,7 +531,7 @@ export default function MilestonePage() {
                   size="sm"
                   className="gap-2"
                 >
-                  {pastExpanded ? '收起成长档案' : '展开成长档案'}
+                  {pastExpanded ? i18nText('Milestone.archive.collapse') : i18nText('Milestone.archive.expand')}
                   <svg
                     width="14"
                     height="14"
@@ -524,13 +549,13 @@ export default function MilestonePage() {
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <div className="rounded-full bg-[var(--nimi-surface-active)] px-3 py-1 text-[12px] font-medium text-[var(--nimi-action-primary-bg)]">
-                  已走过 {pastBuckets.length} 个阶段
+                  {i18nText('Milestone.archive.pastStages', { count: pastBuckets.length })}
                 </div>
                 <div className="rounded-full bg-[var(--nimi-surface-muted)] px-3 py-1 text-[12px] font-medium text-[var(--nimi-text-primary)]">
-                  已记录 {pastSummary.achieved}/{pastSummary.total} 项
+                  {i18nText('Milestone.archive.recordedCount', { achieved: pastSummary.achieved, total: pastSummary.total })}
                 </div>
                 <div className="rounded-full bg-[color-mix(in_srgb,var(--nimi-status-warning)_15%,transparent)] px-3 py-1 text-[12px] font-medium text-[var(--nimi-status-warning)]">
-                  {pastPendingCount} 项可补记
+                  {i18nText('Milestone.archive.pendingCount', { count: pastPendingCount })}
                 </div>
               </div>
 
@@ -561,18 +586,18 @@ export default function MilestonePage() {
                             <span
                               className="rounded-full border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)] px-2.5 py-1 text-[12px] font-medium text-[var(--nimi-text-primary)]"
                             >
-                              已记录 {bucketAchieved}/{bucket.milestones.length}
+                              {i18nText('Milestone.archive.recordedCount', { achieved: bucketAchieved, total: bucket.milestones.length })}
                             </span>
                             {bucketPending > 0 && (
                               <span
                                 className="rounded-full bg-[color-mix(in_srgb,var(--nimi-status-warning)_15%,transparent)] px-2.5 py-1 text-[12px] font-medium text-[var(--nimi-status-warning)]"
                               >
-                                待补记 {bucketPending} 项
+                                {i18nText('Milestone.archive.bucketPending', { count: bucketPending })}
                               </span>
                             )}
                           </div>
                           <p className="mt-1 text-[12px] leading-5 text-[var(--nimi-text-muted)]">
-                            {bucketPending > 0 ? '还有未记录的项目，可以补上哦' : '所有里程碑都已记录'}
+                            {bucketPending > 0 ? i18nText('Milestone.archive.bucketHasPending') : i18nText('Milestone.archive.bucketComplete')}
                           </p>
                         </div>
 
@@ -598,7 +623,7 @@ export default function MilestonePage() {
                                       ? 'border-[var(--nimi-action-primary-bg)] bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]'
                                       : 'border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)]'
                                   }`}
-                                  title={achieved ? '撤销达成' : '标记已达成'}>
+                                  title={achieved ? i18nText('Milestone.record.undoAchieved') : i18nText('Milestone.record.markAchieved')}>
                                   {achieved && <svg viewBox="0 0 12 12" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" fill="none" /></svg>}
                                 </button>
 
@@ -610,18 +635,18 @@ export default function MilestonePage() {
                                     <span
                                       className={`rounded-full px-2 py-0.5 text-[12px] font-medium text-[var(--nimi-text-primary)] ${dm?.toneClass ?? 'bg-[var(--nimi-surface-muted)]'}`}
                                     >
-                                      {dm?.label ?? '里程碑'}
+                                      {dm?.label ?? i18nText('Milestone.page.milestoneFallback')}
                                     </span>
                                   </div>
                                   <p className="mt-1 line-clamp-2 text-[12px] leading-4 text-[var(--nimi-text-muted)]">
-                                    {achieved ? `${formatAchievedDate(rec?.achievedAt)} 达成` : m.description}
+                                    {achieved ? i18nText('Milestone.record.achievedOn', { date: formatAchievedDate(rec?.achievedAt) }) : m.description}
                                   </p>
                                 </div>
 
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setEditingMilestone(m.milestoneId); }}
                                   className="text-[12px] shrink-0 rounded-full border border-[var(--nimi-border-subtle)] px-2.5 py-1 text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]">
-                                  📝 {achieved ? '补个故事' : '记录'}
+                                  📝 {achieved ? i18nText('Milestone.record.addStory') : i18nText('Milestone.record.record')}
                                 </button>
                               </div>
                             );
@@ -645,7 +670,7 @@ export default function MilestonePage() {
                   <div className="absolute left-[11px] top-1 w-[16px] h-[16px] rounded-full border-[2px] flex items-center justify-center border-[var(--nimi-action-primary-bg)] bg-[var(--nimi-action-primary-bg)]" />
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-[14px] font-bold text-[var(--nimi-action-primary-bg)]">{currentBucket.label}</span>
-                    <span className="text-[12px] px-2 py-0.5 rounded-full bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]">当前阶段</span>
+                    <span className="text-[12px] px-2 py-0.5 rounded-full bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]">{i18nText('Milestone.page.currentStage')}</span>
                   </div>
                   <div className="space-y-1.5">
                     {currentBucket.milestones.map((m) => {
@@ -668,21 +693,21 @@ export default function MilestonePage() {
                                 ? 'border-[var(--nimi-action-primary-bg)] bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]'
                                 : 'border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)]'
                             }`}
-                            title={achieved ? '撤销达成' : '标记已达成'}>
+                            title={achieved ? i18nText('Milestone.record.undoAchieved') : i18nText('Milestone.record.markAchieved')}>
                             {achieved && <svg viewBox="0 0 12 12" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" fill="none" /></svg>}
                           </button>
                           {/* Content */}
                           <div className="flex-1 min-w-0">
                             <p className={`text-[14px] font-medium ${achieved ? 'text-[var(--nimi-action-primary-bg)]' : 'text-[var(--nimi-text-primary)]'}`}>{m.title}</p>
                             <p className="text-[12px] truncate text-[var(--nimi-text-muted)]">
-                              {achieved ? `${formatAchievedDate(rec?.achievedAt)} 达成` : m.description}
+                              {achieved ? i18nText('Milestone.record.achievedOn', { date: formatAchievedDate(rec?.achievedAt) }) : m.description}
                             </p>
                           </div>
                           {/* Detail record button */}
                           <button
                             onClick={(e) => { e.stopPropagation(); setEditingMilestone(m.milestoneId); }}
                             className="text-[12px] shrink-0 rounded-full border border-[var(--nimi-border-subtle)] px-2.5 py-1 text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]">
-                            📝 {achieved ? '补个故事' : '记录'}
+                            📝 {achieved ? i18nText('Milestone.record.addStory') : i18nText('Milestone.record.record')}
                           </button>
                         </div>
                       );

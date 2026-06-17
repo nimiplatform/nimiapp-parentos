@@ -6,6 +6,8 @@ import type {
   GrowthNextCheck,
   GrowthNextCheckScheduled,
 } from './growth-detail-projection.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 // growth-milestones-card.tsx — PO-GROWTH-DETAIL-002 / -006 growth timeline
 // composition. Renders the wave-A projection's milestones, the current
@@ -15,10 +17,9 @@ import type {
 // Pure render of typed projection rows + a reschedule CTA (PO-GROWTH-DETAIL-006).
 // No useState/useEffect for projection data, no AI, no bridge, no Date.now().
 
-const EMPTY_STATE_COPY = '暂无识别到的重要节点';
 // The next-check date is a system-default reminder time; the CTA opens the
-// timeline where the parent adjusts it, so the label reads "更改" not "设为提醒".
-const NEXT_CHECK_CTA_LABEL = '更改';
+// timeline where the parent adjusts it, so the label is a change action.
+const NEXT_CHECK_CTA_LABEL = i18nText('GrowthCurve.milestones.nextCheckCta');
 
 // Positive nodes (height thresholds, weight rises) sit on the calm grey
 // rail; negative nodes (e.g. a >=10% weight drop) are marked in caution
@@ -37,29 +38,29 @@ const MILESTONE_BADGE_TONE: Record<GrowthMilestone['polarity'], string> = {
 };
 
 function formatNextCheckDate(iso: string): string {
-  // "2026-06-03" → "6 月 3 日". The accompanying days-away label carries the
+  // "2026-06-03" becomes a compact month-day label. The accompanying days-away label carries the
   // distance, so dropping the year keeps the headline compact.
   const datePart = iso.split('T')[0] ?? iso;
   const [, month, day] = datePart.split('-');
   if (!month || !day) return datePart;
-  return `${Number(month)} 月 ${Number(day)} 日`;
+  return i18nText('GrowthCurve.milestones.monthDay', { month: Number(month), day: Number(day) });
 }
 
 function formatDaysFromNow(daysFromNow: number): string {
-  if (daysFromNow < 0) return `已逾期 ${Math.abs(daysFromNow)} 天`;
-  if (daysFromNow === 0) return '今天';
-  if (daysFromNow === 1) return '明天';
-  return `还有 ${daysFromNow} 天`;
+  if (daysFromNow < 0) return i18nText('GrowthCurve.milestones.overdueDays', { days: Math.abs(daysFromNow) });
+  if (daysFromNow === 0) return i18nText('GrowthCurve.milestones.today');
+  if (daysFromNow === 1) return i18nText('GrowthCurve.milestones.tomorrow');
+  return i18nText('GrowthCurve.milestones.daysLeft', { days: daysFromNow });
 }
 
 // Plain-language band label derived from the percentile number — descriptive
 // only, never alarming.
 function percentileBand(percentile: number): string {
-  if (percentile >= 90) return '偏高';
-  if (percentile >= 75) return '中等偏上';
-  if (percentile >= 25) return '中等';
-  if (percentile >= 10) return '中等偏下';
-  return '偏低';
+  if (percentile >= 90) return i18nText('GrowthCurve.milestones.percentileBand.high');
+  if (percentile >= 75) return i18nText('GrowthCurve.milestones.percentileBand.upperMiddle');
+  if (percentile >= 25) return i18nText('GrowthCurve.milestones.percentileBand.middle');
+  if (percentile >= 10) return i18nText('GrowthCurve.milestones.percentileBand.lowerMiddle');
+  return i18nText('GrowthCurve.milestones.percentileBand.low');
 }
 
 function milestoneBadgeText(milestone: GrowthMilestone): string {
@@ -84,10 +85,10 @@ export interface GrowthMilestonesCardProps {
   headline: GrowthHeadline;
   nextCheck: GrowthNextCheck;
   /** Opens the next-check reschedule modal (PO-GROWTH-DETAIL-006). When omitted,
-   *  or when the scheduled next-check carries a null `recheckRuleId`, the `更改`
+   *  or when the scheduled next-check carries a null `recheckRuleId`, the change
    *  CTA is disabled (PO-GROWTH-DETAIL-009). */
   onReschedule?: () => void;
-  /** When set, the card renders a "查看更多" affordance. The page wires this
+  /** When set, the card renders a view-more affordance. The page wires this
    *  to scroll the full milestone list (the history table) into view; it is
    *  omitted when the preview already shows every milestone. */
   onViewMore?: () => void;
@@ -136,7 +137,7 @@ export function GrowthMilestonesCard(props: GrowthMilestonesCardProps) {
       data-testid="growth-milestones-card"
     >
       <div className="mb-4 flex items-center justify-between gap-2">
-        <h3 className="text-[15px] font-semibold text-[var(--nimi-text-primary)]">生长重要节点</h3>
+        <h3 className="text-[15px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('GrowthCurve.milestones.title')}</h3>
         {onViewMore ? (
           <button
             type="button"
@@ -144,13 +145,13 @@ export function GrowthMilestonesCard(props: GrowthMilestonesCardProps) {
             className="text-[12px] text-[var(--nimi-text-muted)] transition-colors hover:text-[var(--nimi-text-secondary)]"
             data-testid="growth-milestones-view-more"
           >
-            查看更多
+            {i18nText('GrowthCurve.milestones.viewMore')}
           </button>
         ) : null}
       </div>
 
       {sortedMilestones.length === 0 ? (
-        <p className="mb-3 text-[13px] text-[var(--nimi-text-muted)]">{EMPTY_STATE_COPY}</p>
+        <p className="mb-3 text-[13px] text-[var(--nimi-text-muted)]">{i18nText('GrowthCurve.milestones.empty')}</p>
       ) : null}
 
       {/* Upper timeline (milestones + current). The flex-grow spacer absorbs
@@ -198,12 +199,12 @@ export function GrowthMilestonesCard(props: GrowthMilestonesCardProps) {
                 {headline.measuredAt.split('T')[0]}
               </p>
               <p className="mt-0.5 text-[13px] font-semibold leading-tight text-[var(--nimi-text-primary)]">
-                当前 {headline.currentValueDisplay}
+                {i18nText('GrowthCurve.milestones.currentValue', { value: headline.currentValueDisplay })}
               </p>
               <p className="mt-0.5 text-[12px] text-[var(--nimi-text-muted)]">
                 {headline.currentPercentile != null
                   ? `${headline.currentPercentile}% · ${percentileBand(headline.currentPercentile)}`
-                  : '参考数据未覆盖'}
+                  : i18nText('GrowthCurve.milestones.referenceUnavailable')}
               </p>
             </TimelineNode>
           ) : null}
@@ -262,7 +263,7 @@ export function GrowthMilestonesCard(props: GrowthMilestonesCardProps) {
               className="text-[13px] text-[var(--nimi-text-muted)]"
               data-testid="growth-next-check-card-unscheduled"
             >
-              暂无下次测量安排
+              {i18nText('GrowthCurve.milestones.unscheduled')}
             </p>
           </>
         )}

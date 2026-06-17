@@ -1,4 +1,6 @@
 import type { JournalEntryRow } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── Types ── */
 
@@ -51,13 +53,13 @@ export interface PhotoDraft {
 }
 
 export const KEEPSAKE_REASON_OPTIONS: Array<{ value: KeepsakeReason; label: string }> = [
-  { value: 'commemorative', label: '值得纪念' },
-  { value: 'first-time', label: '第一次' },
-  { value: 'achievement', label: '取得成果' },
-  { value: 'persistence', label: '长期坚持' },
-  { value: 'character', label: '性格闪光' },
-  { value: 'family-moment', label: '家庭时刻' },
-  { value: 'other', label: '其他' },
+  { value: 'commemorative', label: i18nText('Journal.keepsakeReason.commemorative') },
+  { value: 'first-time', label: i18nText('Journal.keepsakeReason.firstTime') },
+  { value: 'achievement', label: i18nText('Journal.keepsakeReason.achievement') },
+  { value: 'persistence', label: i18nText('Journal.keepsakeReason.persistence') },
+  { value: 'character', label: i18nText('Journal.keepsakeReason.character') },
+  { value: 'family-moment', label: i18nText('Journal.keepsakeReason.familyMoment') },
+  { value: 'other', label: i18nText('Journal.keepsakeReason.other') },
 ];
 
 export function getKeepsakeReasonLabel(reason: KeepsakeReason | null | undefined) {
@@ -67,9 +69,9 @@ export function getKeepsakeReasonLabel(reason: KeepsakeReason | null | undefined
 /* ── Scene config ── */
 
 export const SCENE_TABS: Array<{ key: SceneTab; emoji: string; label: string; sub: string }> = [
-  { key: 'quick', emoji: '⚡️', label: '随手记', sub: '抓拍 · 速记 · 闪念' },
-  { key: 'deep', emoji: '🔍', label: '专项观察', sub: '深度 · 计时 · 结构化' },
-  { key: 'review', emoji: '🌙', label: '阶段复盘', sub: '回顾 · 梳理 · 感悟' },
+  { key: 'quick', emoji: '⚡️', label: i18nText('Journal.scene.quickLabel'), sub: i18nText('Journal.scene.quickSub') },
+  { key: 'deep', emoji: '🔍', label: i18nText('Journal.scene.deepLabel'), sub: i18nText('Journal.scene.deepSub') },
+  { key: 'review', emoji: '🌙', label: i18nText('Journal.scene.reviewLabel'), sub: i18nText('Journal.scene.reviewSub') },
 ];
 
 /** Map scene tabs to existing observation mode IDs */
@@ -90,7 +92,7 @@ export interface EmojiCategoryDef {
 
 export const EMOJI_CATEGORIES: EmojiCategoryDef[] = [
   {
-    key: 'frequent', icon: '🕐', label: '常用',
+    key: 'frequent', icon: '🕐', label: i18nText('Journal.emojiCategory.frequent'),
     emojis: [
       '😊', '😂', '🥰', '😍', '🤗', '😢', '😡', '😴',
       '🎉', '👏', '💪', '🌟', '❤️', '🎈', '🎨', '🏃',
@@ -98,7 +100,7 @@ export const EMOJI_CATEGORIES: EmojiCategoryDef[] = [
     ],
   },
   {
-    key: 'smileys', icon: '😀', label: '表情',
+    key: 'smileys', icon: '😀', label: i18nText('Journal.emojiCategory.smileys'),
     emojis: [
       '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
       '🙂', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗',
@@ -123,7 +125,7 @@ export const EMOJI_CATEGORIES: EmojiCategoryDef[] = [
     ],
   },
   {
-    key: 'gestures', icon: '👋', label: '手势',
+    key: 'gestures', icon: '👋', label: i18nText('Journal.emojiCategory.gestures'),
     emojis: [
       '👋', '🤚', '🖐️', '✋', '🖖', '🫱', '🫲', '🫳',
       '🫴', '🫷', '🫸', '👌', '🤌', '🤏', '✌️', '🤞',
@@ -136,7 +138,7 @@ export const EMOJI_CATEGORIES: EmojiCategoryDef[] = [
     ],
   },
   {
-    key: 'people', icon: '👶', label: '人物',
+    key: 'people', icon: '👶', label: i18nText('Journal.emojiCategory.people'),
     emojis: [
       '👶', '🧒', '👦', '👧', '🧑', '👱', '👨', '🧔',
       '👩', '🧓', '👴', '👵', '🙍', '🙎', '🙅', '🙆',
@@ -152,7 +154,7 @@ export const EMOJI_CATEGORIES: EmojiCategoryDef[] = [
     ],
   },
   {
-    key: 'animals', icon: '🐶', label: '动物',
+    key: 'animals', icon: '🐶', label: i18nText('Journal.emojiCategory.animals'),
     emojis: [
       '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼',
       '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸',
@@ -184,7 +186,7 @@ export const EMOJI_CATEGORIES: EmojiCategoryDef[] = [
     ],
   },
   {
-    key: 'food', icon: '🍎', label: '食物',
+    key: 'food', icon: '🍎', label: i18nText('Journal.emojiCategory.food'),
     emojis: [
       '🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇',
       '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥',
@@ -205,7 +207,7 @@ export const EMOJI_CATEGORIES: EmojiCategoryDef[] = [
     ],
   },
   {
-    key: 'activity', icon: '⚽', label: '活动',
+    key: 'activity', icon: '⚽', label: i18nText('Journal.emojiCategory.activity'),
     emojis: [
       '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉',
       '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍',
@@ -221,7 +223,7 @@ export const EMOJI_CATEGORIES: EmojiCategoryDef[] = [
     ],
   },
   {
-    key: 'objects', icon: '💡', label: '物品',
+    key: 'objects', icon: '💡', label: i18nText('Journal.emojiCategory.objects'),
     emojis: [
       '👓', '🕶️', '🥽', '🧳', '🌂', '☂️', '🎒', '👑',
       '🧢', '🎩', '💍', '💎', '📱', '💻', '⌨️', '🖥️',
@@ -251,7 +253,7 @@ export const EMOJI_CATEGORIES: EmojiCategoryDef[] = [
     ],
   },
   {
-    key: 'symbols', icon: '❤️', label: '符号',
+    key: 'symbols', icon: '❤️', label: i18nText('Journal.emojiCategory.symbols'),
     emojis: [
       '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
       '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '❣️', '💕', '💞', '💓',
@@ -288,17 +290,17 @@ export const CAPTURE_MODES: CaptureMode[] = ['text', 'voice'];
 export function describeVoiceStatus(status: VoiceDraftStatus) {
   switch (status) {
     case 'recording':
-      return 'Recording';
+      return i18nText('Journal.voiceStatus.recording');
     case 'ready':
-      return 'Ready to transcribe';
+      return i18nText('Journal.voiceStatus.ready');
     case 'transcribing':
-      return 'Transcribing';
+      return i18nText('Journal.voiceStatus.transcribing');
     case 'transcribed':
-      return 'Ready to save';
+      return i18nText('Journal.voiceStatus.transcribed');
     case 'transcription-failed':
-      return 'Transcription failed, voice-only save is still available';
+      return i18nText('Journal.voiceStatus.transcriptionFailed');
     default:
-      return 'No voice draft yet';
+      return i18nText('Journal.voiceStatus.idle');
   }
 }
 
@@ -368,13 +370,13 @@ export function groupEntriesByDate(entries: JournalEntryRow[]): [string, Journal
 export function formatDateLabel(iso: string): string {
   const now = new Date();
   const today = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
-  if (iso === today) return '今天';
+  if (iso === today) return i18nText('Common.relative.today');
   const y = new Date(now);
   y.setDate(y.getDate() - 1);
   const yesterday = `${y.getFullYear()}-${pad2(y.getMonth() + 1)}-${pad2(y.getDate())}`;
-  if (iso === yesterday) return '昨天';
+  if (iso === yesterday) return i18nText('Common.relative.yesterday');
   const [, m, d] = iso.split('-');
-  return `${parseInt(m!, 10)}月${parseInt(d!, 10)}日`;
+  return i18nText('Common.date.monthDay', { month: parseInt(m!, 10), day: parseInt(d!, 10) });
 }
 
 export function getSceneForMode(modeId: string | null): SceneTab {

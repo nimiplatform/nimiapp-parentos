@@ -9,6 +9,7 @@ export default defineConfig({
   test: {
     globals: true,
     include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
+    setupFiles: ['src/shell/renderer/test/setup-i18n-language.ts'],
     // Pin the timezone so date-boundary logic (e.g. PO-ORTHO-008a's
     // "today 00:00 local" net-wear window) is deterministic across machines.
     env: { TZ: 'UTC' },

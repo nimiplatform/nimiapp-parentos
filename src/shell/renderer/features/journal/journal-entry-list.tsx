@@ -2,6 +2,8 @@ import type { ChildProfile } from '../../app-shell/app-store.js';
 import { OBSERVATION_DIMENSIONS } from '../../knowledge-base/index.js';
 import type { JournalEntryRow } from '../../bridge/sqlite-bridge.js';
 import { getLocalDateKey, parseSelectedTags } from './journal-page-helpers.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type JournalEntryListProps = {
   child: ChildProfile;
@@ -11,7 +13,7 @@ type JournalEntryListProps = {
 
 export function JournalEntryList({ child, entries, onEdit }: JournalEntryListProps) {
   if (entries.length === 0) {
-    return <p className="text-sm text-gray-400">No journal entries yet. Pick a mode to start observing.</p>;
+    return <p className="text-sm text-gray-400">{i18nText('Journal.entryList.empty')}</p>;
   }
 
   return (
@@ -21,14 +23,15 @@ export function JournalEntryList({ child, entries, onEdit }: JournalEntryListPro
         const tags = parseSelectedTags(entry.selectedTags);
         const recorderName =
           child.recorderProfiles?.find((item) => item.id === entry.recorderId)?.name ?? null;
-        const bodyText = entry.textContent?.trim() || (entry.voicePath ? 'Voice observation saved.' : 'No text content.');
+        const bodyText = entry.textContent?.trim()
+          || (entry.voicePath ? i18nText('Journal.entryList.voiceSaved') : i18nText('Journal.entryList.noText'));
 
         return (
           <div key={entry.entryId} className="rounded-lg border p-4">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <span className="text-xs text-gray-400">{getLocalDateKey(entry.recordedAt)}</span>
               {onEdit && (
-                <button onClick={() => onEdit(entry.entryId)} title="编辑"
+                <button onClick={() => onEdit(entry.entryId)} title={i18nText('Journal.entryList.edit')}
                   className="ml-auto w-6 h-6 rounded-full flex items-center justify-center transition-colors hover:bg-gray-100"
                   style={{ color: '#475569' }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -43,12 +46,12 @@ export function JournalEntryList({ child, entries, onEdit }: JournalEntryListPro
               ) : null}
               {dimension ? (
                 <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">
-                  成长方向 · {dimension.displayName}
+                  {i18nText('Journal.entryList.dimension', { dimension: dimension.displayName })}
                 </span>
               ) : null}
               {entry.voicePath ? (
                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-                  {entry.contentType === 'mixed' ? 'Voice + transcript' : 'Voice'}
+                  {entry.contentType === 'mixed' ? i18nText('Journal.entryList.voiceMixed') : i18nText('Journal.entryList.voice')}
                 </span>
               ) : null}
               {recorderName ? (
@@ -58,14 +61,14 @@ export function JournalEntryList({ child, entries, onEdit }: JournalEntryListPro
               ) : null}
               {entry.keepsake === 1 ? (
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
-                  Keepsake
+                  {i18nText('Journal.entryList.keepsake')}
                 </span>
               ) : null}
             </div>
             <p className="text-sm text-gray-800">{bodyText}</p>
             {tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
-                <span className="mr-1 text-xs text-gray-400">成长关键词</span>
+                <span className="mr-1 text-xs text-gray-400">{i18nText('Journal.entryList.tagsLabel')}</span>
                 {tags.map((tag) => (
                   <span key={tag} className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
                     {tag}

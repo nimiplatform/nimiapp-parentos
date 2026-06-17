@@ -14,10 +14,10 @@ export type GenericMetricDetailShellProps = {
 
 /**
  * Generic fallback shell for read-only metric detail pages (typed by
- * routes.yaml as the "通用兜底" surface). Distinct from
+ * routes.yaml as the generic fallback surface). Distinct from
  * `ProfileDetailShell` by design — uses pill ArrowLeft back + max-w-5xl
  * + tight top padding to visually signal "you are on a generic fallback
- * page" rather than a领域 detail page.
+ * page" rather than a domain detail page.
  *
  * Body content (metric summary surface, history list, etc.) is fully
  * caller-provided; this shell only owns the outer container + back row.
@@ -30,7 +30,7 @@ export function GenericMetricDetailShell({
   className,
 }: GenericMetricDetailShellProps) {
   const { t } = useTranslation();
-  const label = backLabel ?? t('Profile.detail.back', { defaultValue: 'Back' });
+  const label = backLabel ?? t('Profile.detail.back');
   return (
     <div className={cn('h-full overflow-y-auto hide-scrollbar bg-transparent', className)}>
       <div className="mx-auto max-w-5xl px-6 pb-8 pt-5">

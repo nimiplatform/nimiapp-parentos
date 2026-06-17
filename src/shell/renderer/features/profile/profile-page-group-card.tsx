@@ -6,6 +6,7 @@ import { Surface } from '@nimiplatform/kit/ui';
 import type { HealthGroupSnapshot, HealthMetricSnapshot } from '../../engine/health-record-domain.js';
 import type { HealthMetricGroupId, HealthMetricId } from '../../knowledge-base/index.js';
 import { formatDate, formatMetricSnapshotValue, formatMetricSnapshotValueParts, groupLabel, metricLabel } from './health-record-display.js';
+import { i18nText } from '../../i18n/index.js';
 
 interface GroupVisual {
   icon: typeof Activity;
@@ -36,7 +37,7 @@ const PREVIEW_LIMIT = 3;
 
 // Sport-activity metrics (category/duration/distance/intensity) are sub-fields
 // of a single `fitness-sport-activity` log event, not individually tracked
-// metrics. They collapse into one "日常运动" action row rather than rendering
+// metrics. They collapse into one sport-activity action row rather than rendering
 // one bare row each.
 const SPORT_ACTIVITY_PROTOCOL_ID = 'fitness-sport-activity';
 
@@ -85,7 +86,7 @@ export function ProfileGroupCard({ group, onCapture }: ProfileGroupCardProps) {
   const subtitle = visibleMetrics
     .slice(0, 5)
     .map((snapshot) => metricLabel(snapshot.metric, t))
-    .join(t('Profile.group.metricSeparator', { defaultValue: '、' }));
+    .join(t('Profile.group.metricSeparator'));
   const reviewStatus = computeReviewStatus(visibleMetrics);
   const groupRoute = visibleMetrics[0]?.metric.detailRoute ?? group.metrics[0]?.metric.detailRoute ?? '/profile';
 
@@ -156,7 +157,7 @@ export function ProfileGroupCard({ group, onCapture }: ProfileGroupCardProps) {
         </div>
       ) : (
         <div className="px-5 py-8 text-[12px] text-[var(--nimi-text-muted)]">
-          {t('Profile.group.emptyHint', { defaultValue: '还没有任何记录，点击右侧记录按钮开始记录。' })}
+          {t('Profile.group.emptyHint')}
         </div>
       )}
     </Surface>
@@ -196,7 +197,7 @@ function ExpandedRows({
           to={groupRoute}
           className="inline-flex items-center gap-1 text-[12px] font-medium transition-colors hover:opacity-80 text-[var(--nimi-action-primary-bg)]"
         >
-          {t('Profile.group.viewAll', { defaultValue: '查看全部' })}
+          {t('Profile.group.viewAll')}
           <span aria-hidden>→</span>
         </Link>
       </div>
@@ -210,10 +211,10 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
   const hasValue = snapshot.latestValue != null;
   const parts = hasValue
     ? formatMetricSnapshotValueParts(snapshot, t)
-    : { valueText: t('Profile.group.notRecordedDash', { defaultValue: '—' }), unitText: '' };
+    : { valueText: t('Profile.group.notRecordedDash'), unitText: '' };
   const dateText = hasValue
     ? formatDate(snapshot.latestEvent?.effectiveDate, t)
-    : t('Profile.group.notRecorded', { defaultValue: '未记录' });
+    : t('Profile.group.notRecorded');
   const reviewStatus = snapshot.evaluation.status === 'professional_review_prompt';
 
   return (
@@ -250,7 +251,7 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
               className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)] px-2.5 py-1 text-[12px] font-medium text-[var(--nimi-action-primary-bg)] transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_18%,transparent)]"
             >
               <Plus size={12} />
-              {t('Profile.group.update', { defaultValue: '更新' })}
+              {t('Profile.group.update')}
             </button>
           ) : (
             <button
@@ -263,7 +264,7 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
               className="inline-flex items-center gap-1 rounded-full bg-[var(--nimi-action-primary-bg)] px-3 py-1 text-[12px] font-semibold text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)] transition-transform hover:brightness-110"
             >
               <Plus size={12} />
-              {t('Profile.group.record', { defaultValue: '记录' })}
+              {t('Profile.group.record')}
             </button>
           )}
         </div>
@@ -273,7 +274,7 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
 }
 
 // Open-ended "log a sport activity" entry — opens the fitness capture modal on
-// its 日常运动 tab. Unlike a national-standard metric it is not a checklist
+// its sport-activity tab. Unlike a national-standard metric it is not a checklist
 // item, so it carries no value/date and stays out of the X/Y progress count.
 function SportActivityRow({ onCapture }: { onCapture?: () => void }) {
   const { t } = useTranslation();
@@ -286,15 +287,15 @@ function SportActivityRow({ onCapture }: { onCapture?: () => void }) {
       >
         <div className="min-w-0">
           <p className="truncate text-[14px] font-medium text-[var(--nimi-text-primary)]">
-            {t('Profile.fitness.sportActivityLabel', { defaultValue: '日常运动' })}
+            {t('Profile.fitness.sportActivityLabel')}
           </p>
           <p className="truncate text-[12px] text-[var(--nimi-text-muted)]">
-            {t('Profile.fitness.sportActivityHint', { defaultValue: '跑步、游泳、球类等运动量记录' })}
+            {t('Profile.fitness.sportActivityHint')}
           </p>
         </div>
         <span className="inline-flex items-center gap-1 rounded-full bg-[var(--nimi-action-primary-bg)] px-3 py-1 text-[12px] font-semibold text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)]">
           <Plus size={12} />
-          {t('Profile.group.record', { defaultValue: '记录' })}
+          {t('Profile.group.record')}
         </span>
       </button>
     </li>
@@ -340,8 +341,8 @@ function computeReviewStatus(metrics: readonly HealthMetricSnapshot[]): ReviewSt
   const staleCount = metrics.filter((snapshot) => snapshot.freshness === 'stale').length;
   const missingCount = metrics.filter((snapshot) => snapshot.freshness === 'missing').length;
   const out: ReviewStatusPiece[] = [];
-  if (reviewCount > 0) out.push({ key: 'review', text: `${reviewCount} 项需关注`, className: 'text-[var(--nimi-status-danger)]' });
-  if (staleCount > 0) out.push({ key: 'stale', text: `${staleCount} 项已过期`, className: 'text-[var(--nimi-status-warning)]' });
-  if (missingCount > 0) out.push({ key: 'missing', text: `${missingCount} 项待补`, className: 'text-[var(--nimi-text-secondary)]' });
+  if (reviewCount > 0) out.push({ key: 'review', text: i18nText('Profile.group.reviewCount', { count: reviewCount }), className: 'text-[var(--nimi-status-danger)]' });
+  if (staleCount > 0) out.push({ key: 'stale', text: i18nText('Profile.group.staleCount', { count: staleCount }), className: 'text-[var(--nimi-status-warning)]' });
+  if (missingCount > 0) out.push({ key: 'missing', text: i18nText('Profile.group.missingCount', { count: missingCount }), className: 'text-[var(--nimi-text-secondary)]' });
   return out;
 }

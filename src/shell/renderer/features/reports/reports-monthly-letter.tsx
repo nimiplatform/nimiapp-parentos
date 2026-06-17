@@ -7,16 +7,18 @@ import { exportReportAsImage, exportReportAsPdf, printReport } from './report-ex
 import { ReportActionBar } from './reports-action-bar.js';
 import { ProfessionalSummaryModal } from './reports-professional-view.js';
 import { isPlaceholderKeyword, type NarrativeReportContent, type NarrativeSection } from './structured-report.js';
+import { i18nText } from '../../i18n/index.js';
 
-const KIND_META: Record<string, { label: string; className: string }> = {
-  growth:    { label: '成长', className: 'report-monthly-kind-growth' },
-  sleep:     { label: '作息', className: 'report-monthly-kind-sleep' },
-  health:    { label: '健康', className: 'report-monthly-kind-health' },
-  nutrition: { label: '饮食', className: 'report-monthly-kind-nutrition' },
-  milestone: { label: '里程碑', className: 'report-monthly-kind-milestone' },
-  journal:   { label: '观察', className: 'report-monthly-kind-journal' },
-  emotion:   { label: '情感', className: 'report-monthly-kind-emotion' },
-  default:   { label: '记录', className: 'report-monthly-kind-default' },
+
+const KIND_META: Record<string, { labelKey: string; className: string }> = {
+  growth:    { labelKey: 'Reports.monthly.kind.growth', className: 'report-monthly-kind-growth' },
+  sleep:     { labelKey: 'Reports.monthly.kind.sleep', className: 'report-monthly-kind-sleep' },
+  health:    { labelKey: 'Reports.monthly.kind.health', className: 'report-monthly-kind-health' },
+  nutrition: { labelKey: 'Reports.monthly.kind.nutrition', className: 'report-monthly-kind-nutrition' },
+  milestone: { labelKey: 'Reports.monthly.kind.milestone', className: 'report-monthly-kind-milestone' },
+  journal:   { labelKey: 'Reports.monthly.kind.journal', className: 'report-monthly-kind-journal' },
+  emotion:   { labelKey: 'Reports.monthly.kind.emotion', className: 'report-monthly-kind-emotion' },
+  default:   { labelKey: 'Reports.monthly.kind.default', className: 'report-monthly-kind-default' },
 };
 
 function kindOf(section: NarrativeSection) {
@@ -28,15 +30,17 @@ function kindOf(section: NarrativeSection) {
 }
 
 // Old reports generated before the child-centric prompt change may contain
-// caregiver-addressed openers like "亲爱的妈妈，感谢你..." We detect those and
-// fall back to safer text so the hero doesn't scream the wrong subject.
+// caregiver-addressed openers. Detect those and fall back to safer text so
+// the hero does not foreground the wrong subject.
 const CAREGIVER_PATTERNS: RegExp[] = [
-  /^亲爱的(妈妈|爸爸|家长|父母|爹娘|爷爷|奶奶|外公|外婆|姥姥|姥爷|你)/,
-  /^(感谢|谢谢)(你|你们|大家|家人|爸爸?|妈妈?|爷爷|奶奶|外公|外婆|姥姥|姥爷)/,
-  /^你这个月/,
-  /^你辛苦了/,
-  /^致\s*(妈妈|爸爸|家长|父母)/,
+  new RegExp('^\\u4eb2\\u7231\\u7684(\\u5988\\u5988|\\u7238\\u7238|\\u5bb6\\u957f|\\u7236\\u6bcd|\\u7239\\u5a18|\\u7237\\u7237|\\u5976\\u5976|\\u5916\\u516c|\\u5916\\u5a46|\\u59e5\\u59e5|\\u59e5\\u7237|\\u4f60)'),
+  new RegExp('^(\\u611f\\u8c22|\\u8c22\\u8c22)(\\u4f60|\\u4f60\\u4eec|\\u5927\\u5bb6|\\u5bb6\\u4eba|\\u7238\\u7238?|\\u5988\\u5988?|\\u7237\\u7237|\\u5976\\u5976|\\u5916\\u516c|\\u5916\\u5a46|\\u59e5\\u59e5|\\u59e5\\u7237)'),
+  new RegExp('^\\u4f60\\u8fd9\\u4e2a\\u6708'),
+  new RegExp('^\\u4f60\\u8f9b\\u82e6\\u4e86'),
+  new RegExp('^\\u81f4\\s*(\\u5988\\u5988|\\u7238\\u7238|\\u5bb6\\u957f|\\u7236\\u6bcd)'),
 ];
+
+const CHILD_NAME_TITLE_SUFFIX = new RegExp('\\u7684?(\\u6708\\u5ea6|\\u672c\\u6708|\\u8fd9\\u4e2a\\u6708|\\u56db\\u6708|\\u4e09\\u6708|\\u4e94\\u6708).*$');
 
 function looksCaregiverAddressed(text: string | null | undefined): boolean {
   if (!text) return false;
@@ -58,8 +62,8 @@ function splitTeaser(source: string): { keyword: string; sub: string } {
   const match = trimmed.match(/^([\u4e00-\u9fa5]{2,4}|\S{2,6})[、；;：:，,。.\s·—-]+(.+)$/);
   if (match) return { keyword: match[1]!, sub: match[2]!.trim() };
   if (trimmed.length <= 6) return { keyword: trimmed, sub: '' };
-  // No clean punctuation boundary — don't chop mid-word (would turn
-  // "感谢爸爸..." into "感谢爸"). Let the caller try the next source.
+  // No clean punctuation boundary. Do not chop mid-token; let the caller try
+  // the next source.
   return { keyword: '', sub: trimmed };
 }
 
@@ -87,7 +91,7 @@ function EditPencil({ onClick }: { onClick: () => void }) {
   return (
     <IconButton
       onClick={onClick}
-      aria-label="编辑"
+      aria-label={i18nText('Reports.monthly.edit')}
       icon={<Pencil size={12} />}
       size="sm"
       tone="ghost"
@@ -114,8 +118,8 @@ function HoverEditable({
           textareaClassName="report-monthly-edit-textarea"
         />
         <div className="mt-2 flex gap-2">
-          <Button size="sm" tone="primary" onClick={() => { onSave(draft); setEditing(false); }}>保存</Button>
-          <Button size="sm" tone="ghost" onClick={() => setEditing(false)}>取消</Button>
+          <Button size="sm" tone="primary" onClick={() => { onSave(draft); setEditing(false); }}>{i18nText('Reports.monthly.save')}</Button>
+          <Button size="sm" tone="ghost" onClick={() => setEditing(false)}>{i18nText('Reports.monthly.cancel')}</Button>
         </div>
       </div>
     );
@@ -167,7 +171,7 @@ export function MonthlyLetterViewer({
   const [professionalOpen, setProfessionalOpen] = useState(false);
   const [professionalPrintPending, setProfessionalPrintPending] = useState(false);
 
-  const reportFileStem = `${(childName && childName.trim()) || '成长报告'}-${periodStart?.slice(0, 7) ?? ''}`;
+  const reportFileStem = `${(childName && childName.trim()) || i18nText('Reports.monthly.defaultFileStem')}-${periodStart?.slice(0, 7) ?? ''}`;
   const handleSavePdf = async () => {
     await exportReportAsPdf(articleRef.current, {
       filename: `${reportFileStem}.pdf`,
@@ -200,7 +204,7 @@ export function MonthlyLetterViewer({
 
   const { month } = monthFromIso(periodStart ?? content.generatedAt);
   const issueNo = String(month).padStart(2, '0');
-  const name = (childName && childName.trim()) || content.title.replace(/的?(月度|本月|这个月|四月|三月|五月).*$/, '').trim() || 'Ta';
+  const name = (childName && childName.trim()) || content.title.replace(CHILD_NAME_TITLE_SUFFIX, '').trim() || 'Ta';
 
   const cleanTeaser = sanitizeForChildFocus(content.teaser);
   const cleanOpening = sanitizeForChildFocus(content.opening);
@@ -247,7 +251,7 @@ export function MonthlyLetterViewer({
 
   const highlights = (content.highlights?.length ?? 0) > 0
     ? content.highlights!.slice(0, 3).map((body, i) => ({
-        title: firstSentence(body) || `亮点 ${i + 1}`,
+        title: firstSentence(body) || i18nText('Reports.monthly.highlightTitle', { index: i + 1 }),
         body,
       }))
     : [];
@@ -269,12 +273,14 @@ export function MonthlyLetterViewer({
   const formatAgeMonths = (m: number) => {
     const y = Math.floor(m / 12);
     const mm = m % 12;
-    return mm === 0 ? `${y}岁` : `${y}岁${mm}个月`;
+    return mm === 0
+      ? i18nText('Reports.monthly.age.years', { years: y })
+      : i18nText('Reports.monthly.age.yearsMonths', { years: y, months: mm });
   };
   const ageLabel = ageMonthsStart != null && ageMonthsEnd != null
     ? (ageMonthsStart >= 24
-        ? `${formatAgeMonths(ageMonthsStart)}–${formatAgeMonths(ageMonthsEnd)}`
-        : `${ageMonthsStart}–${ageMonthsEnd} 月龄`)
+        ? i18nText('Reports.monthly.age.range', { start: formatAgeMonths(ageMonthsStart), end: formatAgeMonths(ageMonthsEnd) })
+        : i18nText('Reports.monthly.age.monthRange', { start: ageMonthsStart, end: ageMonthsEnd }))
     : null;
   const badgeNameClass = badgeNameSizeClass(name);
 
@@ -294,8 +300,7 @@ export function MonthlyLetterViewer({
         <div className="report-legacy-banner hide-on-print report-monthly-legacy-banner">
           <AlertCircle size={16} strokeWidth={2} className="report-monthly-legacy-icon" />
           <div className="report-monthly-legacy-copy">
-            这份报告是旧格式生成的（内容还在对妈妈/记录者说话）。
-            在下方「高级选项」重新生成同一时段，就会变成以 {name} 为主角的新版。
+            {i18nText('Reports.monthly.legacyBanner', { name })}
           </div>
         </div>
       ) : null}
@@ -304,20 +309,20 @@ export function MonthlyLetterViewer({
       <header className="report-monthly-header">
         <div>
           <div className="report-monthly-issue">
-            LETTER № {issueNo}
+            {i18nText('Reports.monthly.issue', { issueNo })}
             {content.format === 'narrative-ai' ? (
-              <StatusBadge tone="success" className="ml-2 px-2 py-px text-[11px]">AI 撰写</StatusBadge>
+              <StatusBadge tone="success" className="ml-2 px-2 py-px text-[11px]">{i18nText('Reports.monthly.aiWritten')}</StatusBadge>
             ) : null}
           </div>
           <div className="report-monthly-period">
             {periodLabel}
-            {ageLabel ? ` · ${ageLabel}` : ''}
-            {momentsCount ? ` · ${momentsCount} 个瞬间` : ''}
+            {ageLabel ? i18nText('Reports.monthly.periodAgeSuffix', { age: ageLabel }) : ''}
+            {momentsCount ? i18nText('Reports.monthly.periodMomentsSuffix', { count: momentsCount }) : ''}
           </div>
         </div>
         <div className="report-monthly-badge">
           <div className="report-monthly-badge-inner">
-            <div className="report-monthly-badge-month">{month}月</div>
+            <div className="report-monthly-badge-month">{i18nText('Reports.monthly.monthBadge', { month })}</div>
             <div className={`report-monthly-badge-name ${badgeNameClass}`}>
               {name}
             </div>
@@ -333,7 +338,7 @@ export function MonthlyLetterViewer({
       {/* Hero keyword + line */}
       <section className="report-hero-block report-monthly-hero">
         <div className="report-monthly-kicker">
-          本 月 关 键 词
+          {i18nText('Reports.monthly.keywordKicker')}
         </div>
         {heroKeyword ? (
           <h2 className="report-monthly-keyword">
@@ -360,13 +365,12 @@ export function MonthlyLetterViewer({
       {/* Letter body — child-centric opening stats */}
       <section className="report-monthly-intro">
         <p className="report-monthly-paragraph-spaced">
-          {name} 这个月
-          {ageLabel ? <>在 <b>{ageLabel}</b> 的节奏里，</> : '，'}
-          被记录下了 <b>{momentsCount}</b> 个瞬间，
-          分布在 <b>{content.narrativeSections.length}</b> 个观察里。
+          {ageLabel
+            ? i18nText('Reports.monthly.introStatsWithAge', { name, age: ageLabel, moments: momentsCount, sections: content.narrativeSections.length })
+            : i18nText('Reports.monthly.introStats', { name, moments: momentsCount, sections: content.narrativeSections.length })}
         </p>
         <p className="report-monthly-paragraph-muted">
-          以下是关于 {name} 这个月，值得被留下来的几件事。
+          {i18nText('Reports.monthly.introSubtitle', { name })}
         </p>
       </section>
 
@@ -415,20 +419,20 @@ export function MonthlyLetterViewer({
             </div>
           )}
           <div className="report-monthly-pullquote-meta">
-            — 关于 {name} · {periodLabel}
+            {i18nText('Reports.monthly.pullQuoteMeta', { name, periodLabel })}
           </div>
           <NoteAnchor anchor="closingMessage" content={content} canEdit={canEdit} onChange={handleNoteChange} />
         </section>
       ) : null}
 
-      {/* Narrative timeline — "{name} 这个月的样子" */}
+      {/* Narrative timeline */}
       {content.narrativeSections.length > 0 ? (
         <section className="report-monthly-timeline">
           <h3 className="report-monthly-section-title">
-            {name} 这个月的样子
+            {i18nText('Reports.monthly.timelineTitle', { name })}
           </h3>
           <div className="report-monthly-section-subtitle">
-            {content.narrativeSections.length} 个被看见的变化
+            {i18nText('Reports.monthly.timelineSubtitle', { count: content.narrativeSections.length })}
           </div>
           <ol className="report-monthly-timeline-list">
             <div className="report-monthly-timeline-rule" />
@@ -439,7 +443,7 @@ export function MonthlyLetterViewer({
                   <div className="report-monthly-timeline-dot" />
                   <div>
                     <div className="report-monthly-kind-label">
-                      {k.label}
+                      {i18nText(k.labelKey)}
                     </div>
                     <h4 className="report-monthly-timeline-title">
                       {sec.title}
@@ -480,10 +484,10 @@ export function MonthlyLetterViewer({
       {content.watchNext && content.watchNext.length > 0 ? (
         <section className="report-monthly-watch">
           <h3 className="report-monthly-section-title">
-            下月可以多留意
+            {i18nText('Reports.monthly.watchTitle')}
           </h3>
           <div className="report-monthly-section-subtitle report-monthly-section-subtitle-tight">
-            给下一次见面的提醒
+            {i18nText('Reports.monthly.watchSubtitle')}
           </div>
           <ul className="report-monthly-watch-list">
             {content.watchNext.map((w, i) => (
@@ -500,10 +504,10 @@ export function MonthlyLetterViewer({
       {content.actionItems.length > 0 ? (
         <section className="report-monthly-actions">
           <h3 className="report-monthly-section-title">
-            如果想再往前一步
+            {i18nText('Reports.monthly.actionsTitle')}
           </h3>
           <div className="report-monthly-section-subtitle">
-            关于 {name} 的几件事，都可以稍后决定。
+            {i18nText('Reports.monthly.actionsSubtitle', { name })}
           </div>
           <div className="report-monthly-action-list">
             {content.actionItems.slice(0, 3).map((a) => (
@@ -514,7 +518,7 @@ export function MonthlyLetterViewer({
                     {a.text}
                   </h4>
                   <Link to={a.linkTo ?? '/advisor'} className="report-monthly-action-link">
-                    去 Advisor 讨论
+                    {i18nText('Reports.monthly.discussInAdvisor')}
                     <ArrowRight size={11} strokeWidth={2} />
                   </Link>
                 </div>
@@ -529,29 +533,32 @@ export function MonthlyLetterViewer({
         <div className="report-monthly-caregiver-heading">
           <Heart size={14} strokeWidth={1.5} className="report-monthly-caregiver-icon" />
           <span className="report-monthly-caregiver-label">
-            也看见记录的你
+            {i18nText('Reports.monthly.caregiverTitle')}
           </span>
         </div>
         <p className="report-monthly-caregiver-copy">
-          这封信能写出来，是因为你这个月把 {name} 的细节都放在了心上。
-          坐下来记录的那些时刻，也是她月度故事的一部分。
+          {i18nText('Reports.monthly.caregiverCopy', { name })}
         </p>
       </section>
 
       {/* Sign-off — child-centric, no caregiver address */}
       <section className="report-monthly-signoff">
         <p className="report-monthly-signoff-copy">
-          这就是 {name} 本月的样子。
-          <br />下个月，再见。
+          {i18nText('Reports.monthly.signoffCopy', { name })}
+          <br />{i18nText('Reports.monthly.signoffSeeYou')}
         </p>
         <div className="report-monthly-signoff-meta">
-          — ParentOS · {periodLabel}
+          {i18nText('Reports.monthly.signoffMeta', { periodLabel })}
         </div>
       </section>
 
       {/* Sources footer */}
       <footer className="report-monthly-footer">
-        <div>数据来源：{content.sources.slice(0, 6).join(' · ')}{content.sources.length > 6 ? ' 等' : ''}</div>
+        <div>
+          {i18nText('Reports.monthly.sourcesPrefix')}
+          {content.sources.slice(0, 6).join(i18nText('Reports.monthly.sourcesSeparator'))}
+          {content.sources.length > 6 ? i18nText('Reports.monthly.sourcesEtc') : ''}
+        </div>
         {content.safetyNote ? (
           <div className="report-monthly-safety-note">{content.safetyNote}</div>
         ) : null}

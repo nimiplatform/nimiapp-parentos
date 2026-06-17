@@ -13,6 +13,8 @@ import { filterAIResponse } from '../../engine/ai-safety-filter.js';
 import {
   runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface AISummaryCardProps {
   /** Unique domain key, e.g. 'growth', 'vaccine', 'vision' */
@@ -21,7 +23,7 @@ interface AISummaryCardProps {
   childName: string;
   /** Child ID for cache key */
   childId: string;
-  /** Age description, e.g. "9岁4个月" */
+  /** Age description, e.g. "9 years 4 months" */
   ageLabel: string;
   /** Gender: 'male' | 'female' */
   gender: string;
@@ -33,18 +35,18 @@ interface AISummaryCardProps {
   dataContext: string;
 }
 
-const DOMAIN_LABELS: Record<string, string> = {
-  overview: '综合发育',
-  growth: '生长发育',
-  milestone: '发育里程碑',
-  vaccine: '疫苗接种',
-  vision: '视力健康',
-  dental: '口腔发育',
-  allergy: '过敏管理',
-  sleep: '睡眠习惯',
-  medical: '健康记录',
-  tanner: '青春期发育',
-  fitness: '体能发展',
+const DOMAIN_LABEL_KEYS: Record<string, string> = {
+  overview: 'AISummary.domain.overview',
+  growth: 'AISummary.domain.growth',
+  milestone: 'AISummary.domain.milestone',
+  vaccine: 'AISummary.domain.vaccine',
+  vision: 'AISummary.domain.vision',
+  dental: 'AISummary.domain.dental',
+  allergy: 'AISummary.domain.allergy',
+  sleep: 'AISummary.domain.sleep',
+  medical: 'AISummary.domain.medical',
+  tanner: 'AISummary.domain.tanner',
+  fitness: 'AISummary.domain.fitness',
 };
 
 function cacheKey(childId: string, domain: string) {
@@ -80,21 +82,29 @@ function looksTruncated(text: string): boolean {
 }
 
 function buildPrompt(props: AISummaryCardProps): string {
-  const label = DOMAIN_LABELS[props.domain] ?? props.domain;
+  const labelKey = DOMAIN_LABEL_KEYS[props.domain];
+  const label = labelKey ? i18nText(labelKey) : props.domain;
+  const gender = props.gender === 'female'
+    ? i18nText('AISummary.prompt.genderFemale')
+    : i18nText('AISummary.prompt.genderMale');
   return [
-    `你是一位专业的儿童${label}顾问。`,
-    `请根据以下数据，为家长提供一段简洁的分析总结（2-4句话）。`,
-    `要求：`,
-    `- 使用客观、温和的语气`,
-    `- 使用"观察到"、"建议关注"等表述`,
-    `- 不使用"异常"、"落后"、"发育迟缓"等焦虑性词汇`,
-    `- 如果数据充足，给出趋势观察；如果数据不足，建议补充哪些记录`,
-    `- 仅输出分析文本，不要 markdown 格式`,
+    i18nText('AISummary.prompt.role', { label }),
+    i18nText('AISummary.prompt.task'),
+    i18nText('AISummary.prompt.requirementsTitle'),
+    i18nText('AISummary.prompt.tone'),
+    i18nText('AISummary.prompt.allowedLanguage'),
+    i18nText('AISummary.prompt.bannedLanguage'),
+    i18nText('AISummary.prompt.dataSufficiency'),
+    i18nText('AISummary.prompt.outputOnly'),
     ``,
-    `孩子信息：${props.childName}，${props.ageLabel}，${props.gender === 'female' ? '女' : '男'}`,
+    i18nText('AISummary.prompt.childInfo', {
+      childName: props.childName,
+      ageLabel: props.ageLabel,
+      gender,
+    }),
     ``,
-    `${label}数据：`,
-    props.dataContext || '暂无记录数据',
+    i18nText('AISummary.prompt.dataLabel', { label }),
+    props.dataContext || i18nText('AISummary.prompt.noRecords'),
   ].join('\n');
 }
 
@@ -171,10 +181,12 @@ export function AISummaryCard(props: AISummaryCardProps) {
 
       const filtered = filterAIResponse(output.text);
       const wasTruncated = output.finishReason === 'length' || looksTruncated(output.text);
-      const baseText = filtered.safe ? filtered.filtered : '数据已记录，建议定期更新以获取更准确的分析。';
+      const baseText = filtered.safe ? filtered.filtered : i18nText('AISummary.safeFallback');
       // Tag visibly-truncated output so the user isn't left staring at a
       // mid-sentence summary with no indication of what happened.
-      const text = filtered.safe && wasTruncated ? `${baseText.replace(/[，、\s]+$/u, '')}…（内容较长，建议点击刷新重新生成）` : baseText;
+      const text = filtered.safe && wasTruncated
+        ? `${baseText.replace(/[，、\s]+$/u, '')}…${i18nText('AISummary.truncatedSuffix')}`
+        : baseText;
       setSummary(text);
 
       // Never cache a truncated response: it would pin the mid-sentence
@@ -198,7 +210,7 @@ export function AISummaryCard(props: AISummaryCardProps) {
     return (
       <Surface tone="card" material="solid" elevation="base" padding="md" className="mb-5 flex items-center gap-3">
         <span className="text-[20px]">📊</span>
-        <p className="text-[14px] text-[var(--nimi-text-muted)]">记录更多数据后，AI 将为您生成分析报告</p>
+        <p className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('AISummary.noDataHint')}</p>
       </Surface>
     );
   }
@@ -208,18 +220,18 @@ export function AISummaryCard(props: AISummaryCardProps) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-[16px]">✨</span>
-          <h3 className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">AI 分析</h3>
+          <h3 className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('AISummary.title')}</h3>
         </div>
         <Button onClick={() => void generate(true)}
           disabled={loading}
           tone="ghost"
           size="sm"
-          title="重新生成">
+          title={i18nText('AISummary.regenerate')}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
             className={loading ? 'animate-spin' : ''}>
             <path d="M21 12a9 9 0 1 1-6.22-8.56" />
           </svg>
-          {loading ? '生成中' : '刷新'}
+          {loading ? i18nText('AISummary.generating') : i18nText('AISummary.refresh')}
         </Button>
       </div>
 
@@ -232,9 +244,9 @@ export function AISummaryCard(props: AISummaryCardProps) {
         </div>
       ) : error ? (
         <div className="flex items-center gap-2">
-          <span className="text-[14px] text-[var(--nimi-text-muted)]">连接 AI 运行时后可查看智能分析</span>
+          <span className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('AISummary.runtimeUnavailable')}</span>
           <Button onClick={() => void generate(true)} tone="secondary" size="sm">
-            重试
+            {i18nText('AISummary.retry')}
           </Button>
         </div>
       ) : summary ? (

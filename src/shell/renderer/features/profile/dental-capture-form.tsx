@@ -15,6 +15,8 @@ import {
 import { DentalRecordFormBody } from './dental-page-form-modal.js';
 import { EVENT_TYPES } from './dental-page-domain.js';
 import { InlineError } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const AVAILABLE_EVENT_TYPES = EVENT_TYPES;
 
@@ -148,7 +150,7 @@ export function DentalCaptureContent({ child, ageMonths, onSaved, onClose }: Den
       onClose();
     } catch (error) {
       catchLog('dental-capture', 'action:submit-failed')(error);
-      setErrorMsg(error instanceof Error ? error.message : '保存失败，请重试');
+      setErrorMsg(error instanceof Error ? error.message : i18nText('Dental.form.error.saveFailed'));
     }
   };
 

@@ -3,6 +3,8 @@ import { AmbientBackground } from '@nimiplatform/kit/ui';
 import { useAppStore } from './app-store.js';
 import { runParentOSBootstrap } from '../infra/parentos-bootstrap.js';
 import { ParentOSLoginPage } from '../features/auth/parentos-login-page.js';
+import { i18nText } from '../i18n/index.js';
+
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const authStatus = useAppStore((s) => s.auth.status);
@@ -28,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       <AmbientBackground variant="mesh" className="flex h-screen w-screen items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin mx-auto" />
-          <p className="text-gray-500">加载中...</p>
+          <p className="text-gray-500">{i18nText('App.loading')}</p>
         </div>
       </AmbientBackground>
     );

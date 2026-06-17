@@ -31,6 +31,8 @@ import {
   ModalFooter,
   ModalHeader,
 } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const NUMBER_INPUT_CLASS = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
@@ -105,44 +107,45 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
       onClose();
     } catch (err) {
       catchLog('sleep', 'action:upsert-sleep-record-failed')(err);
-      const msg = typeof err === 'string' ? err : err instanceof Error ? err.message : '未知错误';
-      setSaveError(`保存失败: ${msg}`);
+      const msg = typeof err === 'string' ? err : err instanceof Error ? err.message : i18nText('Sleep.form.unknownError');
+      setSaveError(i18nText('Sleep.form.saveFailed', { message: msg }));
     } finally {
       setSaving(false);
     }
   };
 
-  const napLabel = tier === 'infant' || tier === 'toddler' ? '日间小睡' : '午睡';
+  const napKind = tier === 'infant' || tier === 'toddler' ? 'daytime' : 'afternoon';
+  const napLabel = i18nText(napKind === 'daytime' ? 'Sleep.form.daytimeNap' : 'Sleep.form.afternoonNap');
 
   return (
     <>
       <ModalHeader
-        title={isEditing ? '编辑睡眠记录' : '新增睡眠记录'}
+        title={isEditing ? i18nText('Sleep.form.editTitle') : i18nText('Sleep.form.createTitle')}
         icon={<Moon size={18} strokeWidth={1.5} style={{ color: 'var(--nimi-action-primary-bg)' }} />}
         onClose={onClose}
       />
       <ModalContent>
         <div className="space-y-5">
           <FormGrid cols={3}>
-            <FormField label="日期">
+            <FormField label={i18nText('Sleep.form.date')}>
               <DatePicker value={formSleepDate} onChange={setFormSleepDate} className="h-12" />
             </FormField>
-            <FormField label="入睡时间">
+            <FormField label={i18nText('Sleep.form.bedtime')}>
               <TimePickerInput value={formBedtime} onChange={setFormBedtime} icon={Moon} />
             </FormField>
-            <FormField label="起床时间">
+            <FormField label={i18nText('Sleep.form.wakeTime')}>
               <TimePickerInput value={formWakeTime} onChange={setFormWakeTime} icon={Sun} />
             </FormField>
           </FormGrid>
 
           {autoDuration !== null ? (
             <p className="-mt-2 text-[13px] font-medium" style={{ color: 'var(--nimi-action-primary-bg)' }}>
-              夜间 {fmtDuration(autoDuration)}
+              {i18nText('Sleep.form.nightDuration', { duration: fmtDuration(autoDuration) })}
             </p>
           ) : null}
 
           {showNightWakings ? (
-            <FormField label="夜醒次数">
+            <FormField label={i18nText('Sleep.form.nightWakingCount')}>
               <div className="w-32">
                 <TextField
                   type="number"
@@ -165,7 +168,7 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
               </span>
               {napCount > 0 ? (
                 <span className="text-[13px] font-medium" style={{ color: 'var(--nimi-action-primary-bg)' }}>
-                  {napCount} 次 · {fmtDuration(totalNapMinutes)}
+                  {i18nText('Sleep.form.napSummary', { count: napCount, duration: fmtDuration(totalNapMinutes) })}
                 </span>
               ) : null}
             </div>
@@ -185,7 +188,7 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
                     <TimePickerInput value={row.start} onChange={(value) => updateNapRow(index, 'start', value)} icon={Clock} size="small" />
                   </div>
                   <span className="shrink-0 text-[13px]" style={{ color: 'var(--nimi-text-muted)' }}>
-                    至
+                    {i18nText('Sleep.form.timeRangeTo')}
                   </span>
                   <div className="flex-1">
                     <TimePickerInput value={row.end} onChange={(value) => updateNapRow(index, 'end', value)} icon={Clock} size="small" />
@@ -234,13 +237,13 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
                 className="text-[13px] font-medium"
                 style={{ color: napAddHover ? 'var(--nimi-text-primary)' : '#a0a0a0', transition: 'color 0.25s ease' }}
               >
-                添加{napLabel === '日间小睡' ? '小睡' : '午睡'}
+                {i18nText('Sleep.form.addNap', { label: i18nText(napKind === 'daytime' ? 'Sleep.form.shortNap' : 'Sleep.form.afternoonNap') })}
               </span>
             </button>
           </div>
 
           <FormGrid cols={2}>
-            <FormField label="睡眠质量">
+            <FormField label={i18nText('Sleep.form.quality')}>
               <AppSelect
                 value={formQuality}
                 onChange={setFormQuality}
@@ -249,9 +252,9 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
                 contentClassName="z-[120]"
               />
             </FormField>
-            <FormField label="备注">
+            <FormField label={i18nText('Sleep.form.notes')}>
               <TextField
-                placeholder="补充今天的睡眠细节..."
+                placeholder={i18nText('Sleep.form.notesPlaceholder')}
                 value={formNotes}
                 onChange={(event) => setFormNotes(event.target.value)}
                 className="w-full min-h-12"
@@ -263,9 +266,9 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('Sleep.form.cancel')}</Button>
         <Button type="button" onClick={() => void handleSave()} disabled={saving} tone="primary" size="md">
-          {saving ? '保存中...' : '保存'}
+          {saving ? i18nText('Sleep.form.saving') : i18nText('Sleep.form.save')}
         </Button>
       </ModalFooter>
     </>

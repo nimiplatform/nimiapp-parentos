@@ -17,78 +17,80 @@ import {
   ModalHeader,
   SectionCard,
 } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const SOURCE_OPTIONS = [
-  { value: 'parent', label: '家长观察' },
-  { value: 'checkup', label: '体检报告' },
-  { value: 'doctor', label: '医生评估' },
+  { value: 'parent', label: i18nText('PostureCapture.source.parent') },
+  { value: 'checkup', label: i18nText('PostureCapture.source.checkup') },
+  { value: 'doctor', label: i18nText('PostureCapture.source.doctor') },
 ] as const;
 
 const SHOULDER_OPTIONS = [
-  { value: '0', label: '对称', normal: true },
-  { value: '1', label: '左肩偏高', normal: false },
-  { value: '2', label: '右肩偏高', normal: false },
+  { value: '0', label: i18nText('PostureCapture.option.symmetric'), normal: true },
+  { value: '1', label: i18nText('PostureCapture.option.leftShoulderHigh'), normal: false },
+  { value: '2', label: i18nText('PostureCapture.option.rightShoulderHigh'), normal: false },
 ] as const;
 
 const SCAPULA_OPTIONS = [
-  { value: 'symmetric', label: '对称', normal: true },
-  { value: 'left-wing', label: '左侧突出', normal: false },
-  { value: 'right-wing', label: '右侧突出', normal: false },
+  { value: 'symmetric', label: i18nText('PostureCapture.option.symmetric'), normal: true },
+  { value: 'left-wing', label: i18nText('PostureCapture.option.leftProminent'), normal: false },
+  { value: 'right-wing', label: i18nText('PostureCapture.option.rightProminent'), normal: false },
 ] as const;
 
 const HIP_OPTIONS = [
-  { value: 'equal', label: '等高', normal: true },
-  { value: 'left-high', label: '左侧高', normal: false },
-  { value: 'right-high', label: '右侧高', normal: false },
+  { value: 'equal', label: i18nText('PostureCapture.option.equalHeight'), normal: true },
+  { value: 'left-high', label: i18nText('PostureCapture.option.leftHigh'), normal: false },
+  { value: 'right-high', label: i18nText('PostureCapture.option.rightHigh'), normal: false },
 ] as const;
 
 const LEG_OPTIONS = [
-  { value: 'straight', label: '直腿', normal: true },
-  { value: 'o-leg', label: 'O型腿', normal: false },
-  { value: 'x-leg', label: 'X型腿', normal: false },
+  { value: 'straight', label: i18nText('PostureCapture.option.straightLegs'), normal: true },
+  { value: 'o-leg', label: i18nText('PostureCapture.option.oLeg'), normal: false },
+  { value: 'x-leg', label: i18nText('PostureCapture.option.xLeg'), normal: false },
 ] as const;
 
 const HEEL_OPTIONS = [
-  { value: 'normal', label: '垂直', normal: true },
-  { value: 'valgus', label: '外翻', normal: false },
-  { value: 'varus', label: '内翻', normal: false },
+  { value: 'normal', label: i18nText('PostureCapture.option.vertical'), normal: true },
+  { value: 'valgus', label: i18nText('PostureCapture.option.valgus'), normal: false },
+  { value: 'varus', label: i18nText('PostureCapture.option.varus'), normal: false },
 ] as const;
 
 const NECK_OPTIONS = [
-  { value: 'normal', label: '正常', normal: true },
-  { value: 'mild-forward', label: '轻度前倾', normal: false },
-  { value: 'obvious-forward', label: '明显前倾', normal: false },
+  { value: 'normal', label: i18nText('PostureCapture.option.normal'), normal: true },
+  { value: 'mild-forward', label: i18nText('PostureCapture.option.mildForward'), normal: false },
+  { value: 'obvious-forward', label: i18nText('PostureCapture.option.obviousForward'), normal: false },
 ] as const;
 
 const PELVIS_OPTIONS = [
-  { value: 'normal', label: '正常', normal: true },
-  { value: 'anterior-tilt', label: '骨盆前倾', normal: false },
+  { value: 'normal', label: i18nText('PostureCapture.option.normal'), normal: true },
+  { value: 'anterior-tilt', label: i18nText('PostureCapture.option.anteriorTilt'), normal: false },
 ] as const;
 
 const KNEE_OPTIONS = [
-  { value: 'normal', label: '正常', normal: true },
-  { value: 'hyperextension', label: '膝盖超伸', normal: false },
+  { value: 'normal', label: i18nText('PostureCapture.option.normal'), normal: true },
+  { value: 'hyperextension', label: i18nText('PostureCapture.option.hyperextension'), normal: false },
 ] as const;
 
 const ADAM_OPTIONS = [
-  { value: 'normal', label: '两侧等高', normal: true },
-  { value: 'mild', label: '轻微不对称', normal: false },
-  { value: 'obvious', label: '明显隆起', normal: false },
+  { value: 'normal', label: i18nText('PostureCapture.option.bothSidesLevel'), normal: true },
+  { value: 'mild', label: i18nText('PostureCapture.option.mildAsymmetry'), normal: false },
+  { value: 'obvious', label: i18nText('PostureCapture.option.obviousProminence'), normal: false },
 ] as const;
 
 const POSTURE_TABS = [
-  { key: 'back', label: '正背面', emoji: '🧍', photoKey: 'back' },
-  { key: 'side', label: '侧面', emoji: '🧍‍♂️', photoKey: 'side' },
-  { key: 'forward-bend', label: '前屈', emoji: '🙇', photoKey: 'adam' },
+  { key: 'back', label: i18nText('PostureCapture.tab.back'), emoji: '🧍', photoKey: 'back' },
+  { key: 'side', label: i18nText('PostureCapture.tab.side'), emoji: '🧍‍♂️', photoKey: 'side' },
+  { key: 'forward-bend', label: i18nText('PostureCapture.tab.forwardBend'), emoji: '🙇', photoKey: 'adam' },
 ] as const;
 
 type PostureTab = (typeof POSTURE_TABS)[number]['key'];
 
 const COBB_LEVELS = [
-  { max: 10, label: '正常', tone: 'success' },
-  { max: 25, label: '需定期监测', tone: 'warning' },
-  { max: 40, label: '建议支具治疗', tone: 'danger' },
-  { max: Infinity, label: '建议手术评估', tone: 'danger' },
+  { max: 10, labelKey: 'Posture.cobbLevel.normal', tone: 'success' },
+  { max: 25, labelKey: 'Posture.cobbLevel.monitor', tone: 'warning' },
+  { max: 40, labelKey: 'Posture.cobbLevel.brace', tone: 'danger' },
+  { max: Infinity, labelKey: 'Posture.cobbLevel.surgicalAssessment', tone: 'danger' },
 ] as const;
 
 function cobbLevel(angle: number) {
@@ -131,7 +133,7 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
 
   const handleSubmit = async () => {
     if (!formDate) {
-      setErrorMsg('请选择评估日期');
+      setErrorMsg(i18nText('PostureCapture.error.missingDate'));
       return;
     }
 
@@ -143,7 +145,7 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
       || formNotes.trim().length > 0
       || photoValues.length > 0;
     if (!hasAnyField) {
-      setErrorMsg('请至少选择一项体态评估或填写 Cobb 角');
+      setErrorMsg(i18nText('PostureCapture.error.missingAssessment'));
       return;
     }
 
@@ -174,7 +176,7 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
       onClose();
     } catch (error) {
       catchLog('posture-capture', 'action:submit-failed')(error);
-      setErrorMsg(error instanceof Error ? error.message : '保存失败，请重试');
+      setErrorMsg(error instanceof Error ? error.message : i18nText('PostureCapture.error.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -226,15 +228,15 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
         }}
       />
 
-      <ModalHeader title="添加体态记录" icon="🧍" onClose={onClose} />
+      <ModalHeader title={i18nText('PostureCapture.title')} icon="🧍" onClose={onClose} />
       <ModalContent>
         <div className="space-y-4">
-          <SectionCard title="基础信息">
+          <SectionCard title={i18nText('PostureCapture.section.basic')}>
             <FormGrid cols={2}>
-              <FormField label="评估日期">
+              <FormField label={i18nText('PostureCapture.field.assessedAt')}>
                 <DatePicker value={formDate} onChange={setFormDate} className="h-12" />
               </FormField>
-              <FormField label="数据来源">
+              <FormField label={i18nText('PostureCapture.field.source')}>
                 <ChipGroup
                   layout="fill"
                   size="sm"
@@ -287,7 +289,7 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
             <div className="mt-3 space-y-3">
               {currentPhotoUrl ? (
                 <div className="relative">
-                  <img src={currentPhotoUrl} alt="preview" className="h-28 w-full rounded-2xl object-cover" />
+                  <img src={currentPhotoUrl} alt={i18nText('PostureCapture.photo.previewAlt')} className="h-28 w-full rounded-2xl object-cover" />
                   <button
                     type="button"
                     onClick={() =>
@@ -298,7 +300,7 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
                       })
                     }
                     className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-[color-mix(in_srgb,var(--nimi-text-primary)_50%,transparent)] text-[var(--nimi-action-primary-text)] transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-text-primary)_70%,transparent)]"
-                    aria-label="删除照片"
+                    aria-label={i18nText('PostureCapture.photo.remove')}
                   >
                     <X size={12} strokeWidth={1.75} />
                   </button>
@@ -310,51 +312,51 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
                     photoSlotRef.current = currentPhotoKey;
                     photoInputRef.current?.click();
                   }}
-                  label={`点击上传${POSTURE_TABS.find((t) => t.key === postureTab)?.label}照片`}
+                  label={i18nText('PostureCapture.photo.uploadLabel', { label: POSTURE_TABS.find((t) => t.key === postureTab)?.label })}
                 />
               )}
 
               {postureTab === 'back' && (
                 <div className="space-y-3">
-                  <FormField label="高低肩">
+                  <FormField label={i18nText('PostureCapture.field.shoulder')}>
                     {renderChips(SHOULDER_OPTIONS as readonly ChipOpt[], formShoulder, setFormShoulder)}
                   </FormField>
-                  <FormField label="肩胛骨">
+                  <FormField label={i18nText('PostureCapture.field.scapula')}>
                     {renderChips(SCAPULA_OPTIONS as readonly ChipOpt[], formScapula, setFormScapula)}
                   </FormField>
-                  <FormField label="高低胯">
+                  <FormField label={i18nText('PostureCapture.field.hip')}>
                     {renderChips(HIP_OPTIONS as readonly ChipOpt[], formHip, setFormHip)}
                   </FormField>
-                  <FormField label="腿型">
+                  <FormField label={i18nText('PostureCapture.field.legShape')}>
                     {renderChips(LEG_OPTIONS as readonly ChipOpt[], formLeg, setFormLeg)}
                   </FormField>
-                  <FormField label="足跟内外翻">
+                  <FormField label={i18nText('PostureCapture.field.heelAlignment')}>
                     {renderChips(HEEL_OPTIONS as readonly ChipOpt[], formHeel, setFormHeel)}
                   </FormField>
                 </div>
               )}
               {postureTab === 'side' && (
                 <div className="space-y-3">
-                  <FormField label="颈部与头部">
+                  <FormField label={i18nText('PostureCapture.field.neckHead')}>
                     {renderChips(NECK_OPTIONS as readonly ChipOpt[], formNeck, setFormNeck)}
                   </FormField>
-                  <FormField label="骨盆">
+                  <FormField label={i18nText('PostureCapture.field.pelvis')}>
                     {renderChips(PELVIS_OPTIONS as readonly ChipOpt[], formPelvis, setFormPelvis)}
                   </FormField>
-                  <FormField label="膝盖">
+                  <FormField label={i18nText('PostureCapture.field.knee')}>
                     {renderChips(KNEE_OPTIONS as readonly ChipOpt[], formKnee, setFormKnee)}
                   </FormField>
                 </div>
               )}
               {postureTab === 'forward-bend' && (
                 <div className="space-y-3">
-                  <FormField label="前屈试验（Adam's test）">
+                  <FormField label={i18nText('PostureCapture.field.adamTest')}>
                     {renderChips(ADAM_OPTIONS as readonly ChipOpt[], formAdam, setFormAdam)}
                   </FormField>
                   {formAdam === 'obvious' && (
                     <div className="rounded-xl border border-[color-mix(in_srgb,var(--nimi-status-danger)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))] px-3 py-2.5">
                       <p className="text-[12.5px] font-medium text-[var(--nimi-status-danger)]">
-                        ⚠️ 建议尽快去骨科或脊柱外科做正式评估
+                        {i18nText('PostureCapture.adamWarning')}
                       </p>
                     </div>
                   )}
@@ -364,18 +366,18 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
           </SectionCard>
 
           <SectionCard
-            title="医疗数据（脊柱侧弯）"
+            title={i18nText('PostureCapture.section.medical')}
             trailing={
               isMedical ? null : (
                 <span
                   className="rounded-full bg-[var(--nimi-surface-muted)] px-2 py-0.5 text-[11px] text-[var(--nimi-text-muted)]"
                 >
-                  选择"体检报告"或"医生评估"后激活
+                  {i18nText('PostureCapture.section.medicalDisabledHint')}
                 </span>
               )
             }
           >
-            <FormField label="Cobb 角（°）" hint="来自 X 光报告">
+            <FormField label={i18nText('PostureCapture.field.cobbAngle')} hint={i18nText('PostureCapture.field.cobbAngleHint')}>
               <div className="flex items-center gap-3">
                 <TextField
                   type="number"
@@ -393,7 +395,7 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
                   const level = cobbLevel(parseFloat(formCobb));
                   return (
                     <StatusBadge tone={level.tone} className="shrink-0 py-1 text-[12.5px]">
-                      {level.label}
+                      {i18nText(level.labelKey)}
                     </StatusBadge>
                   );
                 })() : null}
@@ -401,12 +403,12 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
             </FormField>
           </SectionCard>
 
-          <FormField label="备注">
+          <FormField label={i18nText('PostureCapture.field.notes')}>
             <TextareaField
               rows={2}
               value={formNotes}
               onChange={(e) => setFormNotes(e.target.value)}
-              placeholder="其他观察到的情况..."
+              placeholder={i18nText('PostureCapture.field.notesPlaceholder')}
               className="w-full"
             />
           </FormField>
@@ -415,9 +417,9 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('PostureCapture.action.cancel')}</Button>
         <Button type="button" onClick={() => void handleSubmit()} disabled={saving} tone="primary" size="md">
-          {saving ? '保存中...' : '保存'}
+          {saving ? i18nText('PostureCapture.action.saving') : i18nText('PostureCapture.action.save')}
         </Button>
       </ModalFooter>
     </>
@@ -425,9 +427,9 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
 }
 
 /**
- * Sidebar-less modal wrapper for the posture detail page's "添加记录" button.
+ * Sidebar-less modal wrapper for the posture detail page add-record action.
  * Sized M (720) so the form pane matches the width of the posture pane inside
- * the `/profile` 添加健康数据 capture modal (L 920 − 200 sidebar = 720).
+ * the `/profile` health-data capture modal (L 920 - 200 sidebar = 720).
  */
 export function PostureCaptureModal(props: PostureCaptureProps) {
   return (

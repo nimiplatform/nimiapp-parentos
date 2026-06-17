@@ -6,6 +6,8 @@ import { DentalHistoryView } from './dental-history-view.js';
 import { OrthodonticPage } from './orthodontic-page.js';
 import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.js';
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type DentalTab = 'history' | 'orthodontic';
 
@@ -18,10 +20,10 @@ function readInitialTab(searchParams: URLSearchParams): DentalTab {
  * tab nav) + delegating to one of two admitted tabs. Child switching
  * is handled by the global header next to the ParentOS logo.
  *
- *  - 口腔记录: dental_records clinical timeline (includes ortho clinical events)
- *  - 正畸治疗: case + appliance + daily checkin surface
+ *  - History: dental_records clinical timeline (includes ortho clinical events)
+ *  - Orthodontics: case + appliance + daily checkin surface
  *
- * The per-tab primary action ("添加记录" / "添加矫治器") lives inline at the
+ * The per-tab primary action lives inline at the
  * top of each tab's content area, not in the shell header — both tabs render
  * their action button via the same right-aligned in-content row pattern.
  */
@@ -33,7 +35,7 @@ export default function DentalPage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="口腔档案">
+      <ProfileDetailShell title={i18nText('Dental.page.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -43,7 +45,7 @@ export default function DentalPage() {
 
   return (
     <ProfileDetailShell
-      title="口腔档案"
+      title={i18nText('Dental.page.title')}
       subnav={<TabNav activeTab={activeTab} onChange={setActiveTab} />}
     >
       {activeTab === 'history' && <DentalHistoryView />}
@@ -69,13 +71,13 @@ function TabNav({
 }) {
   return (
     <PillTabs
-      ariaLabel="口腔档案分区"
+      ariaLabel={i18nText('Dental.page.tabAria')}
       size="sm"
       value={activeTab}
       onValueChange={(next) => onChange(next as DentalTab)}
       items={[
-        { value: 'history', label: '口腔记录' },
-        { value: 'orthodontic', label: '正畸治疗' },
+        { value: 'history', label: i18nText('Dental.page.tabs.history') },
+        { value: 'orthodontic', label: i18nText('Dental.page.tabs.orthodontic') },
       ]}
     />
   );

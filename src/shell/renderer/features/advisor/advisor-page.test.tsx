@@ -684,7 +684,7 @@ describe('AdvisorPage', () => {
     });
   });
 
-  it('does not suppress retry when reminder consultation writeback fails', async () => {
+  it('shows structured fallback and still allows retry when reminder consultation writeback fails', async () => {
     streamMock
       .mockResolvedValueOnce(createStreamOutput('第一次回复不应显示。'))
       .mockResolvedValueOnce(createStreamOutput('第二次回复已写回。'));
@@ -706,6 +706,10 @@ describe('AdvisorPage', () => {
       expect(insertConsultationAiMessageMock).toHaveBeenCalledTimes(1);
     });
     expect(screen.queryByText(/第一次回复不应显示/)).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText(/首条咨询回复持久化失败/)).toBeTruthy();
+    });
+    expect(insertAiMessageMock.mock.calls.filter((call) => call[0].role === 'assistant')).toHaveLength(0);
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText('输入问题...')).toBeTruthy();
@@ -818,6 +822,58 @@ describe('AdvisorPage', () => {
       expect(screen.getByText(/当前问题涉及 needs-review 领域/)).toBeTruthy();
     });
     expect(screen.getByText(/建议咨询专业人士/)).toBeTruthy();
+  });
+
+  it('returns structured fallback when advisor snapshot assembly fails before runtime', async () => {
+    getMeasurementsMock
+      .mockRejectedValueOnce(new Error('snapshot read failed'))
+      .mockRejectedValueOnce(new Error('snapshot read failed'));
+
+    renderAdvisorPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /新对话/ }));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('输入问题...')).toBeTruthy();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('输入问题...'), {
+      target: { value: '最近睡眠怎么样？' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(insertAiMessageMock.mock.calls.filter((call) => call[0].role === 'assistant')).toHaveLength(1);
+    });
+
+    expect(streamMock).not.toHaveBeenCalled();
+    expect(insertAiMessageMock.mock.calls.find((call) => call[0].role === 'user')?.[0].contextSnapshot).toContain('"measurements":[]');
+
+    await waitFor(() => {
+      expect(screen.getByText(/本地快照读取失败/)).toBeTruthy();
+    });
+  });
+
+  it('returns local structured fallback when user message persistence fails before runtime', async () => {
+    insertAiMessageMock.mockRejectedValueOnce(new Error('user write failed'));
+
+    renderAdvisorPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /新对话/ }));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('输入问题...')).toBeTruthy();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('输入问题...'), {
+      target: { value: '最近睡眠怎么样？' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/用户消息持久化失败/)).toBeTruthy();
+    });
+
+    expect(streamMock).not.toHaveBeenCalled();
+    expect(insertAiMessageMock.mock.calls.filter((call) => call[0].role === 'assistant')).toHaveLength(0);
   });
 
   it('surfaces normalized runtime error details in the fallback note', async () => {

@@ -7,6 +7,7 @@ import {
   parseDateValue,
 } from '@nimiplatform/kit/ui';
 import { getLocalToday } from '../../engine/reminder-engine.js';
+import { i18nText } from '../../i18n/index.js';
 
 const CALENDAR_ICON = (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -17,10 +18,13 @@ const CALENDAR_ICON = (
 
 function formatChipLabel(dueDate: string): string {
   const today = getLocalToday();
-  if (!dueDate) return '今天';
-  if (dueDate === today) return '今天';
+  if (!dueDate) return i18nText('Timeline.customTodo.due.today');
+  if (dueDate === today) return i18nText('Timeline.customTodo.due.today');
   const d = parseDateValue(dueDate);
-  return `${d.getMonth() + 1}月${d.getDate()}日`;
+  return i18nText('Timeline.relativeDateFallback', {
+    month: d.getMonth() + 1,
+    day: d.getDate(),
+  });
 }
 
 type TodoDueDatePickerProps = {

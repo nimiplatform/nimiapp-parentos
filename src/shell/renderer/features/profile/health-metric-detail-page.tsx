@@ -9,7 +9,6 @@ import { computeAgeMonths, useAppStore } from '../../app-shell/app-store.js';
 import {
   getHealthRecordEvents,
   getHealthRecordValues,
-  type SaveHealthRecordCaptureResult,
 } from '../../bridge/sqlite-bridge.js';
 import {
   buildHealthRecordSnapshot,
@@ -252,7 +251,7 @@ export default function HealthMetricDetailPage() {
             initialGroupId={metric.groupId}
             initialMetricId={metric.metricId}
             onClose={() => setCaptureOpen(false)}
-            onSaved={(_: SaveHealthRecordCaptureResult) => {
+            onSaved={() => {
               void loadRecords(activeChild.childId);
             }}
           />

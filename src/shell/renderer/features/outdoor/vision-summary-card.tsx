@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { getMeasurements, type MeasurementRow } from '../../bridge/sqlite-bridge.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { EYE_SET, fmtAge, groupByDate } from '../profile/vision-data.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 function daysBetween(fromISO: string, toISO: string): number {
   const a = new Date(fromISO);
@@ -12,10 +14,10 @@ function daysBetween(fromISO: string, toISO: string): number {
 }
 
 function formatElapsed(days: number): string {
-  if (days <= 1) return '今天';
-  if (days < 30) return `${days} 天前`;
-  if (days < 365) return `${Math.round(days / 30)} 个月前`;
-  return `${Math.round(days / 365)} 年前`;
+  if (days <= 1) return i18nText('Common.relative.today');
+  if (days < 30) return i18nText('Common.relative.daysAgo', { days });
+  if (days < 365) return i18nText('Common.relative.monthsAgo', { months: Math.round(days / 30) });
+  return i18nText('Common.relative.yearsAgo', { years: Math.round(days / 365) });
 }
 
 /**
@@ -54,10 +56,10 @@ export function VisionSummaryCard({ childId }: { childId: string }) {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">视力档案</span>
-            <span className="text-[12px] text-[var(--nimi-text-muted)]">尚无检查记录</span>
+            <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Outdoor.visionSummary.profileTitle')}</span>
+            <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.noExamRecords')}</span>
           </div>
-          <span className="text-[13px] text-[var(--nimi-text-muted)]">录入 →</span>
+          <span className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.addRecord')}</span>
         </div>
       </Surface>
     );
@@ -86,25 +88,25 @@ export function VisionSummaryCard({ childId }: { childId: string }) {
     >
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">最近一次视力检查</span>
+          <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Outdoor.visionSummary.latestExam')}</span>
           <span className="text-[12px] text-[var(--nimi-text-muted)]">{latestRecord.date} · {elapsed}</span>
         </div>
-        <span className="text-[13px] text-[var(--nimi-text-muted)]">查看档案 →</span>
+        <span className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.viewProfile')}</span>
       </div>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         {hasVision && (
           <div className="flex items-baseline gap-2">
-            <span className="text-[12px] text-[var(--nimi-text-muted)]">裸眼</span>
+            <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.uncorrectedVision')}</span>
             <span className="text-[16px] font-bold tabular-nums text-[var(--nimi-text-primary)]">
-              R {vr ?? '—'} · L {vl ?? '—'}
+              R {vr ?? '—'} {i18nText('Outdoor.visionSummary.leftEyeSeparator')} {vl ?? '—'}
             </span>
           </div>
         )}
         {hasAxial && (
           <div className="flex items-baseline gap-2">
-            <span className="text-[12px] text-[var(--nimi-text-muted)]">眼轴</span>
+            <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.axialLength')}</span>
             <span className="text-[16px] font-bold tabular-nums text-[var(--nimi-text-primary)]">
-              R {ar != null ? `${ar}mm` : '—'} · L {al != null ? `${al}mm` : '—'}
+              R {ar != null ? `${ar}mm` : '—'} {i18nText('Outdoor.visionSummary.leftEyeSeparator')} {al != null ? `${al}mm` : '—'}
             </span>
           </div>
         )}

@@ -20,6 +20,8 @@ import {
   buildDashboardTaskProjection,
   type DashboardTaskEntry,
 } from './dashboard-task-projection.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export interface DashboardTaskCaptureIntent {
   origin: 'dashboard_task';
@@ -44,8 +46,8 @@ export interface DashboardTaskListProps {
    *  downgrade-indicator badge — used when mounting alongside `ReminderPanel`,
    *  which already owns reminder + custom-todo rendering. */
   showOnly?: 'all' | 'catalog';
-  /** When true, omit the outer card wrapper and "今日任务" header so the list
-   *  can be embedded inside another surface (e.g. the 待办事项 panel's 今天
+  /** When true, omit the outer card wrapper and task header so the list
+   *  can be embedded inside another surface (e.g. the task panel's today
    *  tab). */
   headerless?: boolean;
 }
@@ -53,17 +55,17 @@ export interface DashboardTaskListProps {
 function catalogTitle(row: DashboardTaskCatalogRow): string {
   switch (row.taskId) {
     case 'dashboard-maintain-growth-infant':
-      return '看看这个月长高了吗？';
+      return i18nText('Timeline.dashboardTask.catalog.growthInfant');
     case 'dashboard-maintain-growth-child':
-      return '记录一下身高体重';
+      return i18nText('Timeline.dashboardTask.catalog.growthChild');
     case 'dashboard-maintain-sleep':
-      return '昨晚睡得怎么样？';
+      return i18nText('Timeline.dashboardTask.catalog.sleep');
     case 'dashboard-maintain-outdoor':
-      return '本周户外目标进展';
+      return i18nText('Timeline.dashboardTask.catalog.outdoor');
     case 'dashboard-maintain-vision':
-      return '更新一下视力记录';
+      return i18nText('Timeline.dashboardTask.catalog.vision');
     case 'dashboard-observe-growth-journal':
-      return '今天有让你印象深的瞬间吗？';
+      return i18nText('Timeline.dashboardTask.catalog.growthJournal');
     default:
       return row.taskId;
   }
@@ -90,7 +92,7 @@ function CatalogRow({
   const row = entry.catalogRow!;
   const title = catalogTitle(row);
 
-  // Catalog rows are rendered inline with reminder rows in the 待办事项 today
+  // Catalog rows are rendered inline with reminder rows in the task today
   // tab (see timeline-page-panels.tsx). Visual parity with TimelineReminderRow
   // keeps the panel reading as one unified list. testids preserved for tests.
   const handleActivate = () => {
@@ -108,8 +110,12 @@ function CatalogRow({
   // so the schema is honored without exposing unfinished surfaces.
   if (row.family !== 'maintain' && row.family !== 'observe') return null;
 
-  const buttonLabel = row.family === 'maintain' ? '记录' : '写一条';
-  const buttonTitle = row.family === 'maintain' ? '记录数据' : '写一条成长随记';
+  const buttonLabel = row.family === 'maintain'
+    ? i18nText('Timeline.dashboardTask.action.record')
+    : i18nText('Timeline.dashboardTask.action.writeJournal');
+  const buttonTitle = row.family === 'maintain'
+    ? i18nText('Timeline.dashboardTask.action.recordDataTitle')
+    : i18nText('Timeline.dashboardTask.action.writeJournalTitle');
 
   return (
     <div
@@ -162,7 +168,7 @@ function ReminderRow({ entry }: { entry: DashboardTaskEntry }) {
       style={{ background: isP0 ? '#fff7ed' : '#f8fafc' }}
     >
       <span className="text-[13px] font-semibold" style={{ color: textMain }}>{title}</span>
-      <span className="text-[12px]" style={{ color: textMuted }}>{isP0 ? 'P0 · 今日重要' : '今日'}</span>
+      <span className="text-[12px]" style={{ color: textMuted }}>{isP0 ? i18nText('Timeline.dashboardTask.priority.p0Today') : i18nText('Timeline.dashboardTask.priority.today')}</span>
     </div>
   );
 }
@@ -237,7 +243,7 @@ export function DashboardTaskList(props: DashboardTaskListProps) {
           className="mt-2 rounded-md p-2 text-[12px]"
           style={{ background: '#f8fafc', color: textSoft }}
         >
-          档案有 {projection.downgradeIndicatorCount} 项可更新
+          {i18nText('Timeline.dashboardTask.downgradeIndicator', { count: projection.downgradeIndicatorCount })}
         </div>
       ) : null}
     </div>
@@ -247,7 +253,7 @@ export function DashboardTaskList(props: DashboardTaskListProps) {
 
   return (
     <Cd cls="mb-4">
-      <Hdr title="今日任务" />
+      <Hdr title={i18nText('Timeline.dashboardTask.title')} />
       {body}
     </Cd>
   );

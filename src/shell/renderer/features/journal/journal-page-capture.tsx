@@ -17,6 +17,8 @@ import { formatJournalDraftTime } from './journal-page-local-draft.js';
 import { EmojiPickerPortal } from './journal-page-overlays.js';
 import { ObservationFocusPanel, type ObservationFocusData, type ObservationFocusOption } from './journal-observation-focus.js';
 import { RecordedAtPicker } from './journal-recorded-at-picker.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function JournalPageCapture(props: {
   guidedContext: GuidedPromptContext | null;
@@ -48,6 +50,7 @@ export function JournalPageCapture(props: {
   onEmojiCategoryChange: (value: EmojiCategory) => void;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   draftStatusLabel: string | null;
+  draftStatusState: 'saved' | 'unsaved' | null;
   saving: boolean;
   canSaveText: boolean;
   canSaveVoice: boolean;
@@ -72,28 +75,28 @@ export function JournalPageCapture(props: {
   monthlyEntryCount: number;
   totalEntryCount: number;
   keepsakeEntryCount: number;
-  childPronoun: '他' | '她';
+  childPronoun: string;
 }) {
   return (
     <>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
         <div className="min-w-0 flex-1">
           <h1 className="parentos-journal-hero-title parentos-journal-hero-title__bold text-[44px] leading-[1.05] tracking-tight text-[var(--nimi-text-primary)]">
-            成长
+            {i18nText('Journal.capture.heroLead')}
             <span className="parentos-journal-hero-title__tail">
-              随记
+              {i18nText('Journal.capture.heroTail')}
               <span className="parentos-journal-hero-title__dot" aria-hidden="true" />
             </span>
           </h1>
           <NimiText as="p" role="body" className="mt-3 text-[14px] leading-relaxed">
-            <span className="font-semibold text-[var(--nimi-text-primary)]">不评判，只观察。</span>
-            <span className="text-[var(--nimi-text-muted)]">每一条都是{props.childPronoun}长大后回望自己的一扇小窗。</span>
+            <span className="font-semibold text-[var(--nimi-text-primary)]">{i18nText('Journal.capture.subtitleLead')}</span>
+            <span className="text-[var(--nimi-text-muted)]">{i18nText('Journal.capture.subtitleTail', { childPronoun: props.childPronoun })}</span>
           </NimiText>
         </div>
         <dl className="flex shrink-0 items-end gap-7">
-          <JournalHeroStat label="本月" value={props.monthlyEntryCount} />
-          <JournalHeroStat label="累计" value={props.totalEntryCount} />
-          <JournalHeroStat label="珍藏" value={props.keepsakeEntryCount} />
+          <JournalHeroStat label={i18nText('Journal.capture.stat.thisMonth')} value={props.monthlyEntryCount} />
+          <JournalHeroStat label={i18nText('Journal.capture.stat.total')} value={props.totalEntryCount} />
+          <JournalHeroStat label={i18nText('Journal.capture.stat.keepsake')} value={props.keepsakeEntryCount} />
         </dl>
       </header>
 
@@ -131,22 +134,23 @@ export function JournalPageCapture(props: {
                   <div
                     className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_14%,transparent)] text-[14px] text-[var(--nimi-action-primary-bg)]"
                   >
-                    草
+                    {i18nText('Journal.capture.draft.badge')}
                   </div>
                   <div>
-                    <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">发现一条未完成的随手记</p>
+                    <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Journal.capture.draft.title')}</p>
                     <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--nimi-text-muted)]">
-                      内容已帮你暂存在本地
-                      {props.restorableDraft.updatedAt ? `，上次保存于 ${formatJournalDraftTime(props.restorableDraft.updatedAt)}` : ''}
+                      {props.restorableDraft.updatedAt
+                        ? i18nText('Journal.capture.draft.descriptionWithTime', { time: formatJournalDraftTime(props.restorableDraft.updatedAt) })
+                        : i18nText('Journal.capture.draft.description')}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button type="button" onClick={props.onDiscardLocalDraft} tone="ghost" size="sm" className="min-h-0 parentos-radius-sm px-3 py-1.5 text-[13px]">
-                    放弃草稿
+                    {i18nText('Journal.capture.draft.discard')}
                   </Button>
                   <Button type="button" onClick={() => props.onRestoreLocalDraft(props.restorableDraft!)} tone="primary" size="sm" className="min-h-0 parentos-radius-sm px-3 py-1.5 text-[13px] font-medium">
-                    继续编辑
+                    {i18nText('Journal.capture.draft.restore')}
                   </Button>
                 </div>
               </Surface>
@@ -156,7 +160,7 @@ export function JournalPageCapture(props: {
           {props.editingEntryLabel ? (
             <div className="border-b border-[var(--nimi-border-subtle)] px-5 pb-3 pt-4">
               <Surface tone="card" elevation="base" padding="sm" className="flex items-center justify-between gap-3 parentos-radius-sm px-3 py-2">
-                <p className="text-[14px] text-[var(--nimi-text-primary)]">正在编辑 {props.editingEntryLabel} 的记录</p>
+                <p className="text-[14px] text-[var(--nimi-text-primary)]">{i18nText('Journal.capture.editingEntry', { label: props.editingEntryLabel })}</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -165,7 +169,7 @@ export function JournalPageCapture(props: {
                   }}
                   className="text-[13px] text-[var(--nimi-text-muted)] underline"
                 >
-                  取消编辑
+                  {i18nText('Journal.capture.cancelEdit')}
                 </button>
               </Surface>
             </div>
@@ -203,7 +207,7 @@ export function JournalPageCapture(props: {
                 ref={props.textareaRef}
                 value={props.textContent}
                 onChange={(event) => props.onTextContentChange(event.target.value)}
-                placeholder={props.guidedContext || props.observationFocus ? '参考上面的引导问题，记录你观察到的情况...' : `${props.childPronoun}刚刚做了什么？说了什么？如果遇到了困难，${props.childPronoun}是如何解决的...`}
+                placeholder={props.guidedContext || props.observationFocus ? i18nText('Journal.capture.guidedPlaceholder') : i18nText('Journal.capture.freePlaceholder', { childPronoun: props.childPronoun })}
                 tone="quiet"
                 className="w-full border-0 bg-transparent px-5 py-0 text-[14px] leading-relaxed focus-within:border-transparent focus-within:ring-0"
                 textareaClassName="min-h-[120px] resize-none px-0 pt-6 pb-3"
@@ -233,7 +237,7 @@ export function JournalPageCapture(props: {
                   }
                 >
                   <span className="voice-note-btn__ripple" aria-hidden="true" />
-                  语音记事
+                  {i18nText('Journal.capture.voiceNote')}
                 </Button>
                 <span aria-hidden="true" className="mx-1 h-4 w-px bg-[var(--nimi-border-subtle)]" />
                 <IconButton
@@ -242,7 +246,7 @@ export function JournalPageCapture(props: {
                   tone="ghost"
                   size="sm"
                   className="h-8 min-h-0 w-8 parentos-radius-sm text-[var(--nimi-text-muted)]"
-                  title="添加图片"
+                  title={i18nText('Journal.capture.addPhoto')}
                   icon={
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                       <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
@@ -256,7 +260,7 @@ export function JournalPageCapture(props: {
                   tone="ghost"
                   size="sm"
                   className="h-8 min-h-0 w-8 parentos-radius-sm text-[var(--nimi-text-muted)]"
-                  title="表情"
+                  title={i18nText('Journal.capture.emoji')}
                   icon={
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                       <circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" />
@@ -286,8 +290,8 @@ export function JournalPageCapture(props: {
                     'h-8 min-h-0 w-8 parentos-radius-sm hover:bg-[color-mix(in_srgb,var(--nimi-status-warning)_18%,transparent)]',
                     props.keepsake ? 'text-[var(--nimi-status-warning)]' : 'text-[var(--nimi-text-muted)]',
                   )}
-                  aria-label={props.keepsake ? '取消标记为珍藏' : '标记为珍藏'}
-                  title={props.keepsake ? '取消标记为珍藏' : '标记为珍藏'}
+                  aria-label={props.keepsake ? i18nText('Journal.capture.keepsakeOff') : i18nText('Journal.capture.keepsakeOn')}
+                  title={props.keepsake ? i18nText('Journal.capture.keepsakeOff') : i18nText('Journal.capture.keepsakeOn')}
                   icon={
                     <svg width="18" height="18" viewBox="0 0 24 24" fill={props.keepsake ? 'var(--nimi-status-warning)' : 'none'} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -305,11 +309,11 @@ export function JournalPageCapture(props: {
                     size="sm"
                     className="min-h-0 parentos-radius-sm px-3 py-1.5 text-[13px]"
                   >
-                    取消编辑
+                    {i18nText('Journal.capture.cancelEdit')}
                   </Button>
                 ) : null}
                 {props.draftStatusLabel ? (
-                  <span className={cn('text-[12px]', props.draftStatusLabel === '未保存' ? 'text-[var(--nimi-status-warning)]' : 'text-[var(--nimi-text-muted)]')}>
+                  <span className={cn('text-[12px]', props.draftStatusState === 'unsaved' ? 'text-[var(--nimi-status-warning)]' : 'text-[var(--nimi-text-muted)]')}>
                     {props.draftStatusLabel}
                   </span>
                 ) : null}
@@ -323,7 +327,7 @@ export function JournalPageCapture(props: {
                   size="sm"
                   className="min-h-0 rounded-xl border-transparent bg-[var(--nimi-text-primary)] px-4 py-1.5 text-[13px] font-medium text-[var(--nimi-text-inverse)] shadow-[var(--nimi-elevation-base)] hover:border-transparent hover:bg-[var(--nimi-text-primary)]"
                 >
-                  {props.saving ? '保存中...' : props.editingEntryId ? '保存修改' : '保存'}
+                  {props.saving ? i18nText('Journal.capture.saving') : props.editingEntryId ? i18nText('Journal.capture.saveChanges') : i18nText('Journal.capture.save')}
                 </Button>
               </div>
             </>
@@ -361,8 +365,8 @@ export function JournalPageCapture(props: {
                     'h-8 min-h-0 w-8 parentos-radius-sm hover:bg-[color-mix(in_srgb,var(--nimi-status-warning)_18%,transparent)]',
                     props.keepsake ? 'text-[var(--nimi-status-warning)]' : 'text-[var(--nimi-text-muted)]',
                   )}
-                  aria-label={props.keepsake ? '取消标记为珍藏' : '标记为珍藏'}
-                  title={props.keepsake ? '取消标记为珍藏' : '标记为珍藏'}
+                  aria-label={props.keepsake ? i18nText('Journal.capture.keepsakeOff') : i18nText('Journal.capture.keepsakeOn')}
+                  title={props.keepsake ? i18nText('Journal.capture.keepsakeOff') : i18nText('Journal.capture.keepsakeOn')}
                   icon={
                     <svg width="18" height="18" viewBox="0 0 24 24" fill={props.keepsake ? 'var(--nimi-status-warning)' : 'none'} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -380,11 +384,11 @@ export function JournalPageCapture(props: {
                     size="sm"
                     className="min-h-0 parentos-radius-sm px-3 py-1.5 text-[13px]"
                   >
-                    取消编辑
+                    {i18nText('Journal.capture.cancelEdit')}
                   </Button>
                 ) : null}
                 {props.draftStatusLabel ? (
-                  <span className={cn('text-[12px]', props.draftStatusLabel === '未保存' ? 'text-[var(--nimi-status-warning)]' : 'text-[var(--nimi-text-muted)]')}>
+                  <span className={cn('text-[12px]', props.draftStatusState === 'unsaved' ? 'text-[var(--nimi-status-warning)]' : 'text-[var(--nimi-text-muted)]')}>
                     {props.draftStatusLabel}
                   </span>
                 ) : null}
@@ -398,7 +402,7 @@ export function JournalPageCapture(props: {
                   size="sm"
                   className="min-h-0 rounded-xl border-transparent bg-[var(--nimi-text-primary)] px-4 py-1.5 text-[13px] font-medium text-[var(--nimi-text-inverse)] shadow-[var(--nimi-elevation-base)] hover:border-transparent hover:bg-[var(--nimi-text-primary)]"
                 >
-                  {props.saving ? '保存中...' : props.editingEntryId ? '保存修改' : '保存'}
+                  {props.saving ? i18nText('Journal.capture.saving') : props.editingEntryId ? i18nText('Journal.capture.saveChanges') : i18nText('Journal.capture.save')}
                 </Button>
               </div>
               )}
@@ -412,7 +416,7 @@ export function JournalPageCapture(props: {
       {props.postSaveExperiment ? (
         <Surface as="section" tone="card" elevation="base" padding="md" className="mx-5 mb-4 parentos-radius-14 border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_22%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_8%,var(--nimi-surface-card))] p-4">
           <p className="mb-2 text-[14px] font-medium text-[var(--nimi-text-primary)]">
-            试试这个小实验
+            {i18nText('Journal.capture.experiment.title')}
           </p>
           <p className="mb-3 text-[14px] leading-relaxed text-[var(--nimi-text-primary)]">
             {props.postSaveExperiment.title}
@@ -426,7 +430,7 @@ export function JournalPageCapture(props: {
               size="sm"
               className="min-h-0 parentos-radius-full px-3.5 py-1.5 text-[13px] font-medium"
             >
-              {props.addingTodo ? '添加中...' : '添加到待办'}
+              {props.addingTodo ? i18nText('Journal.capture.experiment.adding') : i18nText('Journal.capture.experiment.addTodo')}
             </Button>
             <Button
               type="button"
@@ -435,7 +439,7 @@ export function JournalPageCapture(props: {
               size="sm"
               className="min-h-0 parentos-radius-full px-3 py-1.5 text-[13px]"
             >
-              跳过
+              {i18nText('Journal.capture.experiment.skip')}
             </Button>
           </div>
         </Surface>
@@ -452,7 +456,7 @@ function JournalHeroStat({ label, value }: { label: string; value: number }) {
         <span className="text-[32px] font-bold leading-none tracking-tight text-[var(--nimi-text-primary)]">
           {value}
         </span>
-        <span className="text-[12px] text-[var(--nimi-text-muted)]">条</span>
+        <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Journal.capture.stat.unit')}</span>
       </dd>
     </div>
   );

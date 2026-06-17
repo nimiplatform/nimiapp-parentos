@@ -11,6 +11,8 @@ import {
   type EmojiCategory,
   type KeepsakeReason,
 } from './journal-page-helpers.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function EmojiPickerPortal({
   anchorRef, category, onCategoryChange, onSelect, onClose,
@@ -105,7 +107,7 @@ export function DeleteJournalEntryModal({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const previewText = entry.textContent?.trim() || '这是一条语音或图片记录。';
+  const previewText = entry.textContent?.trim() || i18nText('Journal.deleteModal.mediaOnlyPreview');
   const mediaCount = parseSelectedTags(entry.photoPaths).length + (entry.voicePath ? 1 : 0);
 
   return (
@@ -116,11 +118,11 @@ export function DeleteJournalEntryModal({
       panelClassName="w-full max-w-[420px] parentos-radius-xl"
       contentClassName="!p-5"
     >
-      <DialogTitle className="sr-only">删除随手记</DialogTitle>
+      <DialogTitle className="sr-only">{i18nText('Journal.deleteModal.title')}</DialogTitle>
       <div className="mb-4">
-        <h3 aria-hidden="true" className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">删除这条随手记？</h3>
+        <h3 aria-hidden="true" className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Journal.deleteModal.heading')}</h3>
         <p className="mt-1 text-[14px] leading-relaxed text-[var(--nimi-text-muted)]">
-          删除后会从列表中移除这条随手记，关联的本地语音和图片也会一起清理。
+          {i18nText('Journal.deleteModal.body')}
         </p>
       </div>
       <Surface tone="card" elevation="base" padding="sm" className="mb-4 parentos-radius-sm p-3">
@@ -129,15 +131,15 @@ export function DeleteJournalEntryModal({
         </p>
         <p className="line-clamp-3 text-[14px] leading-relaxed text-[var(--nimi-text-muted)]">{previewText}</p>
         {mediaCount > 0 ? (
-          <p className="mt-2 text-[13px] text-[var(--nimi-status-warning)]">包含 {mediaCount} 个本地媒体附件</p>
+          <p className="mt-2 text-[13px] text-[var(--nimi-status-warning)]">{i18nText('Journal.deleteModal.mediaCount', { count: mediaCount })}</p>
         ) : null}
       </Surface>
       <div className="flex items-center justify-end gap-2">
         <Button type="button" onClick={onCancel} disabled={deleting} tone="ghost" size="sm">
-          取消
+          {i18nText('Journal.deleteModal.cancel')}
         </Button>
         <Button type="button" onClick={onConfirm} disabled={deleting} tone="danger" size="sm">
-          {deleting ? '删除中...' : '确认删除'}
+          {deleting ? i18nText('Journal.deleteModal.deleting') : i18nText('Journal.deleteModal.confirm')}
         </Button>
       </div>
     </OverlayShell>
@@ -171,22 +173,22 @@ export function KeepsakePromptModal({
 
   const copy = mode === 'confirm'
     ? {
-        ariaLabel: '建议加入珍藏',
-        heading: '要不要把这条加入珍藏？',
-        bannerTitle: '看起来像一个值得珍藏的时刻',
-        bannerBody: '可以顺手补充标题或原因，之后回顾会更清楚。不想收藏点"跳过"就好。',
-        skipLabel: '不用',
-        saveLabel: '加入珍藏',
-        savingLabel: '保存中...',
+        ariaLabel: i18nText('Journal.keepsakePrompt.confirm.ariaLabel'),
+        heading: i18nText('Journal.keepsakePrompt.confirm.heading'),
+        bannerTitle: i18nText('Journal.keepsakePrompt.confirm.bannerTitle'),
+        bannerBody: i18nText('Journal.keepsakePrompt.confirm.bannerBody'),
+        skipLabel: i18nText('Journal.keepsakePrompt.confirm.skip'),
+        saveLabel: i18nText('Journal.keepsakePrompt.confirm.save'),
+        savingLabel: i18nText('Journal.keepsakePrompt.saving'),
       }
     : {
-        ariaLabel: '补充珍藏信息',
-        heading: '这条已经加入珍藏',
-        bannerTitle: '补充珍藏信息',
-        bannerBody: '可以顺手补充一个标题或珍藏原因，之后在回顾时会更清楚。现在跳过也没关系。',
-        skipLabel: '跳过',
-        saveLabel: '保存补充信息',
-        savingLabel: '保存中...',
+        ariaLabel: i18nText('Journal.keepsakePrompt.enrich.ariaLabel'),
+        heading: i18nText('Journal.keepsakePrompt.enrich.heading'),
+        bannerTitle: i18nText('Journal.keepsakePrompt.enrich.bannerTitle'),
+        bannerBody: i18nText('Journal.keepsakePrompt.enrich.bannerBody'),
+        skipLabel: i18nText('Journal.keepsakePrompt.enrich.skip'),
+        saveLabel: i18nText('Journal.keepsakePrompt.enrich.save'),
+        savingLabel: i18nText('Journal.keepsakePrompt.saving'),
       };
 
   return (
@@ -210,8 +212,8 @@ export function KeepsakePromptModal({
           tone="ghost"
           size="sm"
           className="h-7 min-h-0 w-7 parentos-radius-full text-[var(--nimi-text-muted)]"
-          aria-label="关闭"
-          title="关闭"
+          aria-label={i18nText('Journal.keepsakePrompt.close')}
+          title={i18nText('Journal.keepsakePrompt.close')}
           icon="✕"
         />
       </div>
@@ -226,25 +228,25 @@ export function KeepsakePromptModal({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="mb-1 text-[13px] text-[var(--nimi-text-muted)]">标题（可选）</p>
+            <p className="mb-1 text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Journal.keepsakePrompt.titleLabel')}</p>
             <TextField
               type="text"
               value={title}
               maxLength={60}
               onChange={(event) => onTitleChange(event.target.value)}
-              placeholder="比如：第一次独自上台分享"
+              placeholder={i18nText('Journal.keepsakePrompt.titlePlaceholder')}
               className="w-full parentos-radius-sm text-[14px]"
             />
           </div>
 
           <div>
-            <p className="mb-1 text-[13px] text-[var(--nimi-text-muted)]">为什么值得珍藏（可选）</p>
+            <p className="mb-1 text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Journal.keepsakePrompt.reasonLabel')}</p>
             <select
               value={reason ?? ''}
               onChange={(event) => onReasonChange(event.target.value ? event.target.value as KeepsakeReason : null)}
               className="min-h-[var(--nimi-sizing-field-md-height)] w-full cursor-pointer appearance-none parentos-radius-sm border border-[var(--nimi-field-border)] bg-[var(--nimi-field-bg)] px-3 text-[14px] text-[var(--nimi-field-text)] outline-none transition-colors focus:border-[var(--nimi-field-focus)] focus:ring-[length:var(--nimi-focus-ring-width)] focus:ring-[var(--nimi-focus-ring-color)]"
             >
-              <option value="">暂不选择</option>
+              <option value="">{i18nText('Journal.keepsakePrompt.noReason')}</option>
               {KEEPSAKE_REASON_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}

@@ -9,6 +9,8 @@ import {
   fmtDate,
   getWeekStart,
 } from '../outdoor/outdoor-helpers.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /**
  * Compact link-card shown at the top of the vision page. Surfaces this
@@ -52,18 +54,18 @@ export function OutdoorSummaryCard({ childId }: { childId: string }) {
     >
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">本周户外活动</span>
+          <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Outdoor.summaryCard.title')}</span>
           <span className="rounded bg-[color-mix(in_srgb,var(--nimi-status-success)_12%,transparent)] px-1.5 py-0.5 text-[12px] text-[var(--nimi-status-success)]">
-            近视防控
+            {i18nText('Outdoor.summaryCard.badge')}
           </span>
         </div>
-        <span className="text-[13px] text-[var(--nimi-text-muted)]">查看详情 →</span>
+        <span className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.summaryCard.details')}</span>
       </div>
       <div className="mb-2 flex items-baseline gap-2">
         <span className="text-[18px] font-bold tabular-nums text-[var(--nimi-text-primary)]">
           {summary.totalMinutes}
         </span>
-        <span className="text-[13px] text-[var(--nimi-text-muted)]">/ {goalMinutes} 分钟</span>
+        <span className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.summaryCard.goalSuffix', { minutes: goalMinutes })}</span>
         <span className={`ml-auto text-[13px] font-medium tabular-nums ${progressTone}`}>
           {percent}%
         </span>
@@ -71,7 +73,7 @@ export function OutdoorSummaryCard({ childId }: { childId: string }) {
       <progress
         value={percent}
         max={100}
-        aria-label="本周户外活动完成度"
+        aria-label={i18nText('Outdoor.summaryCard.progressAriaLabel')}
         className="h-1.5 w-full overflow-hidden rounded-full accent-[var(--nimi-action-primary-bg)]"
       />
     </Surface>

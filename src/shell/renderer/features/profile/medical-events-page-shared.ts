@@ -1,14 +1,16 @@
 import type { MedicalAlert } from '../../engine/smart-alerts.js';
 import type { MedicalEventRow } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export const EVENT_TYPE_LABELS: Record<string, string> = {
-  visit: '门诊',
-  emergency: '急诊',
-  hospitalization: '住院',
-  checkup: '体检',
-  medication: '用药',
-  'lab-report': '检验报告',
-  other: '其他',
+  visit: i18nText('MedicalEvents.type.visit'),
+  emergency: i18nText('MedicalEvents.type.emergency'),
+  hospitalization: i18nText('MedicalEvents.type.hospitalization'),
+  checkup: i18nText('MedicalEvents.type.checkup'),
+  medication: i18nText('MedicalEvents.type.medication'),
+  'lab-report': i18nText('MedicalEvents.type.labReport'),
+  other: i18nText('MedicalEvents.type.other'),
 };
 
 export const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -35,6 +37,7 @@ export interface LabRange {
   max: number;
   color: string;
   label: string;
+  tone: 'danger' | 'warning' | 'success';
 }
 
 export interface LabItem {
@@ -47,53 +50,53 @@ export interface LabItem {
 export const LAB_ITEMS: LabItem[] = [
   {
     key: 'vitamin-d',
-    label: '维生素D',
+    label: i18nText('MedicalEvents.lab.vitaminD'),
     unit: 'ng/mL',
     ranges: [
-      { max: 12, color: '#dc2626', label: '严重缺乏' },
-      { max: 20, color: '#f59e0b', label: '缺乏' },
-      { max: 30, color: '#eab308', label: '不足' },
-      { max: 100, color: '#22c55e', label: '充足' },
+      { max: 12, color: '#dc2626', label: i18nText('MedicalEvents.labRange.severeDeficiency'), tone: 'danger' },
+      { max: 20, color: '#f59e0b', label: i18nText('MedicalEvents.labRange.deficiency'), tone: 'warning' },
+      { max: 30, color: '#eab308', label: i18nText('MedicalEvents.labRange.insufficiency'), tone: 'warning' },
+      { max: 100, color: '#22c55e', label: i18nText('MedicalEvents.labRange.sufficient'), tone: 'success' },
     ],
   },
   {
     key: 'ferritin',
-    label: '铁蛋白',
+    label: i18nText('MedicalEvents.lab.ferritin'),
     unit: 'ng/mL',
     ranges: [
-      { max: 12, color: '#dc2626', label: '耗竭' },
-      { max: 30, color: '#f59e0b', label: '不足' },
-      { max: 150, color: '#22c55e', label: '正常' },
+      { max: 12, color: '#dc2626', label: i18nText('MedicalEvents.labRange.depleted'), tone: 'danger' },
+      { max: 30, color: '#f59e0b', label: i18nText('MedicalEvents.labRange.insufficiency'), tone: 'warning' },
+      { max: 150, color: '#22c55e', label: i18nText('MedicalEvents.labRange.normal'), tone: 'success' },
     ],
   },
   {
     key: 'hemoglobin',
-    label: '血红蛋白',
+    label: i18nText('MedicalEvents.lab.hemoglobin'),
     unit: 'g/L',
     ranges: [
-      { max: 110, color: '#dc2626', label: '贫血' },
-      { max: 120, color: '#f59e0b', label: '偏低' },
-      { max: 160, color: '#22c55e', label: '正常' },
+      { max: 110, color: '#dc2626', label: i18nText('MedicalEvents.labRange.anemia'), tone: 'danger' },
+      { max: 120, color: '#f59e0b', label: i18nText('MedicalEvents.labRange.low'), tone: 'warning' },
+      { max: 160, color: '#22c55e', label: i18nText('MedicalEvents.labRange.normal'), tone: 'success' },
     ],
   },
   {
     key: 'calcium',
-    label: '血钙',
+    label: i18nText('MedicalEvents.lab.calcium'),
     unit: 'mmol/L',
     ranges: [
-      { max: 2.20, color: '#dc2626', label: '偏低' },
-      { max: 2.70, color: '#22c55e', label: '正常' },
-      { max: Infinity, color: '#f59e0b', label: '偏高' },
+      { max: 2.20, color: '#dc2626', label: i18nText('MedicalEvents.labRange.low'), tone: 'danger' },
+      { max: 2.70, color: '#22c55e', label: i18nText('MedicalEvents.labRange.normal'), tone: 'success' },
+      { max: Infinity, color: '#f59e0b', label: i18nText('MedicalEvents.labRange.high'), tone: 'warning' },
     ],
   },
   {
     key: 'zinc',
-    label: '血锌',
+    label: i18nText('MedicalEvents.lab.zinc'),
     unit: 'μmol/L',
     ranges: [
-      { max: 10.7, color: '#dc2626', label: '缺乏' },
-      { max: 17.6, color: '#22c55e', label: '正常' },
-      { max: Infinity, color: '#f59e0b', label: '偏高' },
+      { max: 10.7, color: '#dc2626', label: i18nText('MedicalEvents.labRange.deficiency'), tone: 'danger' },
+      { max: 17.6, color: '#22c55e', label: i18nText('MedicalEvents.labRange.normal'), tone: 'success' },
+      { max: Infinity, color: '#f59e0b', label: i18nText('MedicalEvents.labRange.high'), tone: 'warning' },
     ],
   },
 ];
@@ -105,9 +108,9 @@ export interface LabReportData {
 
 export const SEVERITY_OPTIONS = ['mild', 'moderate', 'severe'] as const;
 export const SEVERITY_LABELS: Record<string, string> = {
-  mild: '轻度',
-  moderate: '中度',
-  severe: '重度',
+  mild: i18nText('MedicalEvents.severity.mild'),
+  moderate: i18nText('MedicalEvents.severity.moderate'),
+  severe: i18nText('MedicalEvents.severity.severe'),
 };
 export const SEVERITY_COLORS: Record<string, string> = {
   mild: '#22c55e',
@@ -116,12 +119,21 @@ export const SEVERITY_COLORS: Record<string, string> = {
 };
 export const RESULT_OPTIONS = ['pass', 'refer', 'fail'] as const;
 export const RESULT_LABELS: Record<string, string> = {
-  pass: '通过',
-  refer: '转诊',
-  fail: '未通过',
+  pass: i18nText('MedicalEvents.result.pass'),
+  refer: i18nText('MedicalEvents.result.refer'),
+  fail: i18nText('MedicalEvents.result.fail'),
 };
 
-export const COMMON_SYMPTOMS = ['发烧', '咳嗽', '流鼻涕', '呕吐', '腹泻', '皮疹', '腹痛', '头痛'] as const;
+export const COMMON_SYMPTOMS = [
+  i18nText('MedicalEvents.symptom.fever'),
+  i18nText('MedicalEvents.symptom.cough'),
+  i18nText('MedicalEvents.symptom.runnyNose'),
+  i18nText('MedicalEvents.symptom.vomiting'),
+  i18nText('MedicalEvents.symptom.diarrhea'),
+  i18nText('MedicalEvents.symptom.rash'),
+  i18nText('MedicalEvents.symptom.abdominalPain'),
+  i18nText('MedicalEvents.symptom.headache'),
+] as const;
 export const VISIT_TYPES = ['visit', 'emergency', 'hospitalization', 'checkup', 'medication', 'lab-report', 'other'] as const;
 
 export const ALERT_STYLES: Record<MedicalAlert['level'], { bg: string; border: string; icon: string }> = {
@@ -157,5 +169,5 @@ export function groupByMonth(events: MedicalEventRow[]): [string, MedicalEventRo
 
 export function formatMonthLabel(yearMonth: string): string {
   const [year, month] = yearMonth.split('-');
-  return `${year} 年 ${parseInt(month ?? '1', 10)} 月`;
+  return i18nText('Common.date.yearMonth', { year, month: parseInt(month ?? '1', 10) });
 }

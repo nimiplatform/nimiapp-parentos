@@ -9,6 +9,7 @@ import {
 import { parentosTauriOAuthBridge } from '../../bridge/index.js';
 import { syncParentOSLocalDataScope } from '../../infra/parentos-bootstrap.js';
 import parentosLogoUrl from '../../../../../src-tauri/icons/icon.png';
+import { i18nText } from '../../i18n/index.js';
 
 export function ParentOSLoginPage() {
   const adapter = useMemo(() => createParentOSDesktopBrowserAuthAdapter(), []);
@@ -63,9 +64,9 @@ export function ParentOSLoginPage() {
         runtimeAccountBroker,
       }}
       copy={{
-        desktopLogoHintText: '授权失败。点击 logo 重试。',
-        desktopAuthOpenMessage: '已打开浏览器，请在网页完成授权登录。',
-        desktopAuthSuccessMessage: '网页登录授权成功，已登录。',
+        desktopLogoHintText: i18nText('Auth.desktopLogoHint'),
+        desktopAuthOpenMessage: i18nText('Auth.desktopAuthOpen'),
+        desktopAuthSuccessMessage: i18nText('Auth.desktopAuthSuccess'),
       }}
       testIds={{
         screen: 'parentos-login-page',

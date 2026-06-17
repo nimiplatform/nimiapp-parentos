@@ -20,6 +20,7 @@ import { GrowthCurveHistoryTable } from './growth-curve-history-table.js';
 import {
   buildGrowthSummaryContext,
   computeBMI,
+  formatAgeLabel,
   getLatestMeasurement,
 } from './growth-curve-page-shared.js';
 import { buildGrowthDetailSnapshot } from './growth-detail-projection.js';
@@ -32,6 +33,8 @@ import type {
   HealthRecordValue,
 } from '../../engine/health-record-domain.js';
 import type { HealthMetricId } from '../../knowledge-base/index.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 // ---------------------------------------------------------------------------
 // In-page adapters (wave-B). Convert the legacy MeasurementRow stream into
@@ -119,7 +122,7 @@ function measurementsToHealthRecordSlice(
   // health-record projection only derives BMI when one event carries both
   // height and weight — but the per-measurement adapter above emits a
   // separate event per row, so BMI would never derive and the BMI hero would
-  // fall back to its no-data state ("添加首次BMI测量后…"). Pair same-date
+  // fall back to its no-data state. Pair same-date
   // height + weight here and attach a synthetic growth.bmi value to that
   // date's height event. recordKind 'measured' keeps it through
   // recomputeDerivedHealthRecordValues, which only strips 'derived' rows.
@@ -234,7 +237,7 @@ function computeYearlyGrowth(
 }
 
 // The hero milestone card shows only the most recent few milestones; the rest
-// are reached via its "查看更多" affordance, which leads to the history table.
+// are reached via its view-more affordance, which leads to the history table.
 const HERO_MILESTONE_PREVIEW_LIMIT = 3;
 
 export default function GrowthCurvePage() {
@@ -258,7 +261,7 @@ export default function GrowthCurvePage() {
   const [editDate, setEditDate] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showReschedule, setShowReschedule] = useState(false);
-  // Scroll target for the hero milestone card's "查看更多" affordance — it
+  // Scroll target for the hero milestone card's view-more affordance; it
   // brings the full milestone list (the history table) into view.
   const historyTableRef = useRef<HTMLDivElement>(null);
 
@@ -340,7 +343,7 @@ export default function GrowthCurvePage() {
   // Milestones scoped to the selected metric, newest last. The history table
   // renders all of these; the hero milestone card renders only the most recent
   // `HERO_MILESTONE_PREVIEW_LIMIT` — one source, so the card preview and its
-  // "查看更多" destination always agree. `growthDetailSnapshot.milestones` is
+  // view-more destination always agree. `growthDetailSnapshot.milestones` is
   // the full-record set; a milestone belongs to the selected metric when its
   // evidence events are that metric's measurements.
   const selectedMetricMilestones = useMemo(() => {
@@ -393,8 +396,15 @@ export default function GrowthCurvePage() {
   const navigateToAI = (m: MeasurementRow) => {
     const ti = GROWTH_STANDARDS.find((s) => s.typeId === m.typeId);
     const topic = t('Profile.rich.growth.dataAnalysisTopic', { metric: ti?.displayName ?? m.typeId });
-    const lines = [`${child.displayName}，${Math.floor(ageMonths / 12)}岁${ageMonths % 12}个月`,
-      `${ti?.displayName ?? m.typeId}: ${m.value} ${ti?.unit ?? ''}（${m.measuredAt.split('T')[0]}）`];
+    const lines = [
+      i18nText('GrowthCurve.advisor.childLine', { name: child.displayName, age: formatAgeLabel(ageMonths) }),
+      i18nText('GrowthCurve.advisor.measurementLine', {
+        metric: ti?.displayName ?? m.typeId,
+        value: m.value,
+        unit: ti?.unit ?? '',
+        date: m.measuredAt.split('T')[0],
+      }),
+    ];
     if (latestH) lines.push(t('Profile.rich.growth.latestHeight', { value: latestH.value }));
     if (latestW) lines.push(t('Profile.rich.growth.latestWeight', { value: latestW.value }));
     const desc = lines.join('\\n');
@@ -445,34 +455,34 @@ export default function GrowthCurvePage() {
             contentClassName="w-[360px] p-4 text-[13px] leading-relaxed text-[var(--nimi-text-secondary)]"
             content={(
               <>
-                <p className="mb-2.5 text-[14px] font-semibold text-[var(--nimi-text-primary)]">数据参考文献</p>
+                <p className="mb-2.5 text-[14px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('GrowthCurve.references.title')}</p>
                 <ul className="space-y-2.5">
                   <li>
-                    <span className="font-medium text-[var(--nimi-status-success)]">身高 · 体重 · BMI 百分位曲线（0-5岁）</span>
-                    <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-secondary)]">WHO Child Growth Standards (2006). Length/height-for-age, weight-for-age, BMI-for-age.</span>
-                    <span className="block text-[12px] text-[var(--nimi-text-muted)]">World Health Organization Multicentre Growth Reference Study Group</span>
+                    <span className="font-medium text-[var(--nimi-status-success)]">{i18nText('GrowthCurve.references.whoUnder5Title')}</span>
+                    <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-secondary)]">{i18nText('GrowthCurve.references.whoUnder5Description')}</span>
+                    <span className="block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('GrowthCurve.references.whoUnder5Source')}</span>
                   </li>
                   <li>
-                    <span className="font-medium text-[var(--nimi-status-success)]">身高 · 体重 · BMI 百分位曲线（5-19岁）</span>
-                    <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-secondary)]">WHO Growth References (2007). Height-for-age, weight-for-age, BMI-for-age references for school-age children and adolescents.</span>
-                    <span className="block text-[12px] text-[var(--nimi-text-muted)]">de Onis M, et al. Bull World Health Organ 2007;85:660-667</span>
+                    <span className="font-medium text-[var(--nimi-status-success)]">{i18nText('GrowthCurve.references.whoSchoolAgeTitle')}</span>
+                    <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-secondary)]">{i18nText('GrowthCurve.references.whoSchoolAgeDescription')}</span>
+                    <span className="block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('GrowthCurve.references.whoSchoolAgeSource')}</span>
                   </li>
                   <li>
-                    <span className="font-medium text-[var(--nimi-status-success)]">头围百分位曲线（0-36月）</span>
-                    <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-secondary)]">WHO Child Growth Standards (2006). Head circumference-for-age.</span>
-                    <span className="block text-[12px] text-[var(--nimi-text-muted)]">覆盖: 0-36个月 · 分男/女 · P3-P97 百分位线</span>
+                    <span className="font-medium text-[var(--nimi-status-success)]">{i18nText('GrowthCurve.references.headCircumferenceTitle')}</span>
+                    <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-secondary)]">{i18nText('GrowthCurve.references.headCircumferenceDescription')}</span>
+                    <span className="block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('GrowthCurve.references.headCircumferenceCoverage')}</span>
                   </li>
                   <li>
-                    <span className="font-medium text-[var(--nimi-status-success)]">骨龄评估</span>
-                    <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-secondary)]">Greulich-Pyle Atlas / Tanner-Whitehouse 3 (TW3) 骨龄评估标准</span>
+                    <span className="font-medium text-[var(--nimi-status-success)]">{i18nText('GrowthCurve.references.boneAgeTitle')}</span>
+                    <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-secondary)]">{i18nText('GrowthCurve.references.boneAgeDescription')}</span>
                   </li>
                 </ul>
-                <p className="mt-2.5 border-t border-[var(--nimi-border-subtle)] pt-2 text-[12px] text-[var(--nimi-text-muted)]">百分位线: P3 · P10 · P25 · P50 (中位数) · P75 · P90 · P97 · 低于P3或高于P97建议咨询专业人士</p>
+                <p className="mt-2.5 border-t border-[var(--nimi-border-subtle)] pt-2 text-[12px] text-[var(--nimi-text-muted)]">{i18nText('GrowthCurve.references.percentileLines')}</p>
               </>
             )}
           >
             <IconButton
-              aria-label="数据参考文献"
+              aria-label={i18nText('GrowthCurve.references.title')}
               size="sm"
               tone="ghost"
               className="min-h-0 w-[22px] rounded-full text-[var(--nimi-text-muted)]"
@@ -497,7 +507,7 @@ export default function GrowthCurvePage() {
       }
       aiSummary={
         <AISummaryCard domain="growth" childName={child.displayName} childId={child.childId}
-          ageLabel={`${Math.floor(ageMonths/12)}岁${ageMonths%12}个月`} gender={child.gender}
+          ageLabel={formatAgeLabel(ageMonths)} gender={child.gender}
           dataContext={buildGrowthSummaryContext(measurements, computedBmi)}
         />
       }

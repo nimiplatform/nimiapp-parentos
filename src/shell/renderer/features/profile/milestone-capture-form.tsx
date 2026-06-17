@@ -13,14 +13,16 @@ import {
   ModalFooter,
   ModalHeader,
 } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const DOMAINS: Array<{ key: MilestoneDomain; label: string; emoji: string }> = [
-  { key: 'gross-motor', label: '大运动', emoji: '🏃' },
-  { key: 'fine-motor', label: '精细动作', emoji: '✋' },
-  { key: 'language', label: '语言', emoji: '💬' },
-  { key: 'cognitive', label: '认知', emoji: '🧠' },
-  { key: 'social-emotional', label: '社交情绪', emoji: '🤝' },
-  { key: 'self-care', label: '自理', emoji: '🪥' },
+  { key: 'gross-motor', label: i18nText('Milestone.domain.grossMotor'), emoji: '🏃' },
+  { key: 'fine-motor', label: i18nText('Milestone.domain.fineMotor'), emoji: '✋' },
+  { key: 'language', label: i18nText('Milestone.domain.language'), emoji: '💬' },
+  { key: 'cognitive', label: i18nText('Milestone.domain.cognitive'), emoji: '🧠' },
+  { key: 'social-emotional', label: i18nText('Milestone.domain.socialEmotional'), emoji: '🤝' },
+  { key: 'self-care', label: i18nText('Milestone.domain.selfCare'), emoji: '🪥' },
 ];
 
 export function hasMilestoneCandidatesForAge(ageMonths: number): boolean {
@@ -117,20 +119,20 @@ export function MilestoneCaptureContent({ child, ageMonths, onSaved, onClose, he
   if (availableDomains.length === 0) {
     return (
       <>
-        <ModalHeader title="记录里程碑" icon="🎯" onClose={onClose} trailing={headerTrailing} />
+        <ModalHeader title={i18nText('Milestone.capture.title')} icon="🎯" onClose={onClose} trailing={headerTrailing} />
         <ModalContent>
           <div className="flex h-full flex-col items-center justify-center px-8 py-12 text-center">
             <div className="mb-3 text-[36px]">🎓</div>
             <p className="mb-1 text-[14px] font-medium text-[var(--nimi-text-primary)]">
-              已超出里程碑数据范围
+              {i18nText('Milestone.capture.noCandidatesTitle')}
             </p>
             <p className="text-[13px] text-[var(--nimi-text-muted)]">
-              里程碑库只覆盖 0–6 岁。该孩子的年龄段已无新可记录条目。
+              {i18nText('Milestone.capture.noCandidatesHint')}
             </p>
           </div>
         </ModalContent>
         <ModalFooter>
-          <Button type="button" onClick={onClose} tone="ghost" size="md">关闭</Button>
+          <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('Milestone.capture.close')}</Button>
         </ModalFooter>
       </>
     );
@@ -144,10 +146,10 @@ export function MilestoneCaptureContent({ child, ageMonths, onSaved, onClose, he
 
   return (
     <>
-      <ModalHeader title="记录里程碑" icon="🎯" onClose={onClose} trailing={headerTrailing} />
+      <ModalHeader title={i18nText('Milestone.capture.title')} icon="🎯" onClose={onClose} trailing={headerTrailing} />
       <ModalContent>
         <div className="space-y-5">
-          <FormField label="领域">
+          <FormField label={i18nText('Milestone.capture.domain')}>
             <ChipGroup
               options={domainChips}
               value={domain}
@@ -159,7 +161,7 @@ export function MilestoneCaptureContent({ child, ageMonths, onSaved, onClose, he
           </FormField>
 
           {showMilestoneList ? (
-            <FormField label="选择里程碑（按当前月龄过滤）">
+            <FormField label={i18nText('Milestone.capture.selectMilestone')}>
               <div className="max-h-[260px] space-y-1.5 overflow-y-auto pr-1">
                 {candidates.map((item) => (
                   <Surface
@@ -180,7 +182,10 @@ export function MilestoneCaptureContent({ child, ageMonths, onSaved, onClose, he
                         {item.title}
                       </span>
                       <span className="text-[12px] text-[var(--nimi-text-muted)]">
-                        {item.typicalAge.rangeStart}-{item.typicalAge.rangeEnd} 月
+                        {i18nText('Milestone.capture.ageRangeMonths', {
+                          start: item.typicalAge.rangeStart,
+                          end: item.typicalAge.rangeEnd,
+                        })}
                       </span>
                     </div>
                     <p className="mt-0.5 text-[12px] text-[var(--nimi-text-muted)]">
@@ -197,7 +202,10 @@ export function MilestoneCaptureContent({ child, ageMonths, onSaved, onClose, he
                   {milestone.title}
                 </span>
                 <span className="text-[12px] text-[var(--nimi-text-muted)]">
-                  {milestone.typicalAge.rangeStart}-{milestone.typicalAge.rangeEnd} 月
+                  {i18nText('Milestone.capture.ageRangeMonths', {
+                    start: milestone.typicalAge.rangeStart,
+                    end: milestone.typicalAge.rangeEnd,
+                  })}
                 </span>
               </div>
               <p className="mt-0.5 text-[12px] text-[var(--nimi-text-muted)]">
@@ -208,26 +216,26 @@ export function MilestoneCaptureContent({ child, ageMonths, onSaved, onClose, he
 
           {milestone ? (
             <>
-              <FormField label="达成日期">
+              <FormField label={i18nText('Milestone.capture.achievedDate')}>
                 <DatePicker value={date} onChange={setDate} className="h-12" />
               </FormField>
 
-              <FormField label="记录小故事">
+              <FormField label={i18nText('Milestone.capture.story')}>
                 <TextareaField
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="例如：第一次找到藏起来的球，开心地咯咯笑..."
+                  placeholder={i18nText('Milestone.capture.storyPlaceholder')}
                   rows={3}
                   className="w-full"
                 />
               </FormField>
 
-              <FormField label={`照片${photos.length > 0 ? ` (${photos.length}/9)` : ''}`}>
+              <FormField label={i18nText('Milestone.capture.photos', { count: photos.length > 0 ? ` (${photos.length}/9)` : '' })}>
                 <div className="space-y-2">
                   <PhotoGrid
                     photos={photos}
                     maxPhotos={9}
-                    hint="点击或拖拽上传里程碑照片（最多 9 张）"
+                    hint={i18nText('Milestone.capture.photoHint')}
                     onChange={setPhotos}
                   />
                 </div>
@@ -237,9 +245,9 @@ export function MilestoneCaptureContent({ child, ageMonths, onSaved, onClose, he
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('Milestone.capture.cancel')}</Button>
         <Button type="button" onClick={() => void handleSave()} disabled={saving || !milestone} tone="primary" size="md">
-          {saving ? '保存中...' : '记录达成'}
+          {saving ? i18nText('Milestone.capture.saving') : i18nText('Milestone.capture.save')}
         </Button>
       </ModalFooter>
     </>

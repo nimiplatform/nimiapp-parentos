@@ -8,6 +8,7 @@ export default defineConfig([
   ...tseslint.configs.recommended,
   globalIgnores([
     'dist/**',
+    '.nimi/local/**',
     'src-tauri/target/**',
     'node_modules/**',
     '*.config.ts',

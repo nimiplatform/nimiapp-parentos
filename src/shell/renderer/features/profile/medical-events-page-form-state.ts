@@ -15,6 +15,8 @@ import type {
   MedicalEventsChildContext,
   MedicalEventsFormMedication,
 } from './medical-events-page-types.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function useMedicalEventsFormState(
   child: MedicalEventsChildContext | undefined,
@@ -76,26 +78,26 @@ export function useMedicalEventsFormState(
     try {
       const imageUrl = await readImageFileAsDataUrl(file);
       if (!hasParentOSNimiClient()) {
-        setOcrError('AI 运行时不可用，请确认已启动');
+        setOcrError(i18nText('MedicalEvents.form.ocrRuntimeUnavailable'));
         return;
       }
 
       const prompt = [
-        '你是一位医疗记录识别助手。请从这张病历/处方单图片中提取以下信息，以 JSON 格式输出：',
+        i18nText('MedicalEvents.ocrPrompt.role'),
         '{',
         '  "eventType": "visit|emergency|hospitalization|checkup|medication|other",',
-        '  "title": "诊断/主要症状",',
-        '  "eventDate": "YYYY-MM-DD 或 null",',
-        '  "hospital": "医院名称 或 null",',
-        '  "severity": "mild|moderate|severe 或 null",',
-        '  "medications": [{"name":"药名","dose":"剂量","unit":"单位","frequency":"用法","days":"天数"}],',
-        '  "notes": "其他重要信息摘要 或 null"',
+        i18nText('MedicalEvents.ocrPrompt.titleField'),
+        i18nText('MedicalEvents.ocrPrompt.eventDateField'),
+        i18nText('MedicalEvents.ocrPrompt.hospitalField'),
+        i18nText('MedicalEvents.ocrPrompt.severityField'),
+        i18nText('MedicalEvents.ocrPrompt.medicationsField'),
+        i18nText('MedicalEvents.ocrPrompt.notesField'),
         '}',
-        '规则：',
-        '- 仅提取图片中明确可见的信息，不要推测。',
-        '- 如果某字段在图片中找不到，设为 null。',
-        '- medications 数组只包含图片中明确列出的药品。',
-        '- 仅输出 JSON，不要输出其他内容。',
+        i18nText('MedicalEvents.ocrPrompt.rulesTitle'),
+        i18nText('MedicalEvents.ocrPrompt.visibleOnly'),
+        i18nText('MedicalEvents.ocrPrompt.missingNull'),
+        i18nText('MedicalEvents.ocrPrompt.medicationsVisibleOnly'),
+        i18nText('MedicalEvents.ocrPrompt.outputOnly'),
       ].join('\n');
 
       const output = await runParentosMultimodalTextGenerate({
@@ -113,7 +115,7 @@ export function useMedicalEventsFormState(
 
       const jsonMatch = output.text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        setOcrError('未能从图片中识别出有效信息');
+        setOcrError(i18nText('MedicalEvents.form.ocrNoValidInfo'));
         return;
       }
 
@@ -138,14 +140,14 @@ export function useMedicalEventsFormState(
         setFormMeds(data.medications.map((medication) => ({
           name: medication.name ?? '',
           dose: medication.dose ?? '',
-          unit: medication.unit ?? '次',
+          unit: medication.unit ?? i18nText('MedicalEvents.form.medicationDefaultUnit'),
           frequency: medication.frequency ?? '',
           days: medication.days ?? '',
           tags: [],
         })));
       }
     } catch (error) {
-      setOcrError(error instanceof Error ? error.message : '识别失败，请重试');
+      setOcrError(error instanceof Error ? error.message : i18nText('MedicalEvents.form.ocrFailed'));
     } finally {
       setOcrLoading(false);
     }
@@ -155,13 +157,13 @@ export function useMedicalEventsFormState(
     if (!child) return;
 
     const isLab = formEventType === 'lab-report';
-    const effectiveTitle = isLab ? '检验报告' : formTitle.trim();
+    const effectiveTitle = isLab ? i18nText('MedicalEvents.type.labReport') : formTitle.trim();
     if (!isLab && !formTitle.trim()) {
-      setSubmitError('请填写诊断或症状');
+      setSubmitError(i18nText('MedicalEvents.form.titleRequired'));
       return;
     }
     if (!formEventDate) {
-      setSubmitError('请选择发生日期');
+      setSubmitError(i18nText('MedicalEvents.form.dateRequired'));
       return;
     }
 
@@ -178,7 +180,7 @@ export function useMedicalEventsFormState(
       effectiveNotes = JSON.stringify({ type: 'lab-report', values: labValues } satisfies LabReportData);
     }
 
-    const symptomStr = formSymptomTags.size > 0 ? [...formSymptomTags].join('、') : '';
+    const symptomStr = formSymptomTags.size > 0 ? [...formSymptomTags].join(i18nText('Common.list.separator')) : '';
     const fullTitle = [effectiveTitle, symptomStr].filter(Boolean).join(' — ');
     const medicationSummary = formMeds.length > 0
       ? formMeds
@@ -187,7 +189,7 @@ export function useMedicalEventsFormState(
           const parts = [medication.name.trim()];
           if (medication.dose) parts.push(`${medication.dose}${medication.unit}`);
           if (medication.frequency) parts.push(medication.frequency);
-          if (medication.days) parts.push(`${medication.days}天`);
+          if (medication.days) parts.push(i18nText('MedicalEvents.form.medicationDays', { days: medication.days }));
           return parts.join(' ');
         })
         .join('；')
@@ -197,7 +199,7 @@ export function useMedicalEventsFormState(
       if (editingEventId) {
         await updateMedicalEvent({
           eventId: editingEventId,
-          title: isLab ? '检验报告' : formTitle.trim(),
+          title: isLab ? i18nText('MedicalEvents.type.labReport') : formTitle.trim(),
           eventDate: formEventDate,
           endDate: formEndDate || null,
           severity: formSeverity || null,
@@ -236,7 +238,7 @@ export function useMedicalEventsFormState(
       resetForm();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setSubmitError(`保存失败：${message}`);
+      setSubmitError(i18nText('MedicalEvents.form.saveFailed', { message }));
     } finally {
       setSaving(false);
     }

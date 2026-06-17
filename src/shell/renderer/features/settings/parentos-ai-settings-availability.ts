@@ -2,6 +2,7 @@ import { getDaemonStatus as getRuntimeBridgeStatus } from '../../bridge/index.js
 import type { RuntimeBridgeDaemonStatus } from '../../bridge/index.js';
 import { loadParentosRuntimeRouteOptions } from '../../infra/parentos-runtime-route-options.js';
 import { describeError, logRendererEvent } from '../../infra/telemetry/renderer-log.js';
+import { i18nText } from '../../i18n/index.js';
 
 export type ParentosAISettingsAvailability =
   | {
@@ -80,15 +81,15 @@ export function parentosAISettingsAvailabilityLabel(
   availability: ParentosAISettingsAvailability | null,
 ): string {
   if (!availability) {
-    return '运行时检测中';
+    return i18nText('AISettings.availability.checking');
   }
   if (availability.kind === 'ready') {
-    return '运行时已连接';
+    return i18nText('AISettings.availability.connected');
   }
   if (availability.kind === 'daemon-unavailable') {
-    return '运行时未连接';
+    return i18nText('AISettings.availability.notConnected');
   }
-  return '路由快照不可用';
+  return i18nText('AISettings.availability.routeSnapshotUnavailable');
 }
 
 export function parentosAISettingsAvailabilityHint(
@@ -98,9 +99,9 @@ export function parentosAISettingsAvailabilityHint(
     return '';
   }
   if (availability.kind === 'daemon-unavailable') {
-    return '当前未检测到 nimi runtime daemon，请确认 runtime 已启动后再使用模型选择器。';
+    return i18nText('AISettings.availability.daemonHint');
   }
-  return `runtime route snapshot 读取失败：${availability.detail}。`;
+  return i18nText('AISettings.availability.routeSnapshotFailed', { detail: availability.detail });
 }
 
 export function parentosAISettingsAvailabilityBannerCopy(
@@ -115,11 +116,13 @@ export function parentosAISettingsAvailabilityBannerCopy(
   if (availability.kind === 'daemon-unavailable') {
     return {
       kind: 'warning',
-      message: `运行时未连接，模型选择不可用。请确认 nimi runtime 已启动。${availability.detail ? ` (${availability.detail})` : ''}`,
+      message: i18nText('AISettings.availability.daemonBanner', {
+        detail: availability.detail ? ` (${availability.detail})` : '',
+      }),
     };
   }
   return {
     kind: 'error',
-    message: `runtime 路由快照读取失败。${availability.detail}`,
+    message: i18nText('AISettings.availability.routeSnapshotBanner', { detail: availability.detail }),
   };
 }

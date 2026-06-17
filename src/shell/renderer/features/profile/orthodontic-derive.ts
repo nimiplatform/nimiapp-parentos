@@ -21,6 +21,7 @@ import type {
   OrthodonticStage,
   OrthodonticUnwearIntervalRow,
 } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
 
 // ── Spec defaults (mirror Rust `default_review_interval_days_for_rule` /
 //    `appliance_supports_wear_gap`) ───────────────────────────────────────
@@ -140,8 +141,9 @@ export interface LatestAlignerChange {
  * its anchor time + alignerIndex. PO-ORTHO-008's "latest-by-time" semantic is
  * the single source of which-tray-is-current truth — exported so the home
  * dashboard widget (`deriveOrthoCycle`) can't drift back to `Math.max`, which
- * traps a parent who mis-clicked 换下一副 (logging a stale higher index) into
- * never being able to correct themselves by logging a newer lower index.
+ * traps a parent who mis-clicked the next-aligner action (logging a stale
+ * higher index) into never being able to correct themselves by logging a newer
+ * lower index.
  *
  * `checkinAt` (sub-day precision) is preferred over `checkinDate` (00:00 UTC
  * fallback for legacy rows) so a same-day correction overrides earlier rows
@@ -178,7 +180,7 @@ export interface AlignerContext {
 }
 
 /**
- * Derives the "第 X 副牙套·第 Y/Z 天" decoration for an orthodontic clinical
+ * Derives the aligner-index and tray-day decoration for an orthodontic clinical
  * event rendered in the dental timeline (PO-ORTHO-006a). Returns null unless a
  * `clear-aligner` appliance window covers `eventDate` — so non-clear-aligner
  * cases and events dated outside any aligner window carry no aligner context.
@@ -234,7 +236,7 @@ export function deriveAlignerContextForDate(params: {
 /** Formats an `AlignerContext` as the PO-ORTHO-006a badge text. */
 export function formatAlignerContext(ctx: AlignerContext): string {
   const day = ctx.daysPerAligner !== null ? `${ctx.dayInTray}/${ctx.daysPerAligner}` : `${ctx.dayInTray}`;
-  return `第${ctx.alignerIndex}副牙套·第${day}天`;
+  return i18nText('Orthodontic.alignerContext', { alignerIndex: ctx.alignerIndex, day });
 }
 
 // ── Cycle progress (PO-ORTHO-008) ───────────────────────────────────────
@@ -553,9 +555,9 @@ export function computeStageOptions(
     let blockedReason: string | null = null;
     if (state === 'future') {
       if (!isImmediateNext) {
-        blockedReason = '只能依次推进相邻阶段';
+        blockedReason = i18nText('Orthodontic.stageBlocked.adjacentOnly');
       } else if (stage === 'completed' && !caseRow.actualEndAt) {
-        blockedReason = '完成阶段需要先填写实际结束日期';
+        blockedReason = i18nText('Orthodontic.stageBlocked.completedNeedsEndDate');
       } else {
         advanceable = true;
       }
@@ -569,59 +571,59 @@ export function computeStageOptions(
 export function formatHours(hours: number): string {
   if (hours < 1) {
     const minutes = Math.round(hours * 60);
-    return `${minutes} 分钟`;
+    return i18nText('Common.duration.minutes', { minutes });
   }
   if (hours < 10) {
-    return `${hours.toFixed(1)} 小时`;
+    return i18nText('Common.duration.hours', { hours: hours.toFixed(1) });
   }
-  return `${Math.round(hours)} 小时`;
+  return i18nText('Common.duration.hours', { hours: Math.round(hours) });
 }
 
 export function caseTypeLabel(t: OrthodonticCaseRow['caseType']): string {
   switch (t) {
     case 'early-intervention':
-      return '早期矫治';
+      return i18nText('Orthodontic.caseType.earlyIntervention');
     case 'fixed-braces':
-      return '固定矫治';
+      return i18nText('Orthodontic.caseType.fixedBraces');
     case 'clear-aligners':
-      return '隐形矫治';
+      return i18nText('Orthodontic.caseType.clearAligners');
     case 'unknown-legacy':
-      return '历史疗程';
+      return i18nText('Orthodontic.caseType.unknownLegacy');
   }
 }
 
 export function stageLabel(s: OrthodonticStage): string {
   switch (s) {
     case 'assessment':
-      return '初评';
+      return i18nText('Orthodontic.stage.assessment');
     case 'planning':
-      return '方案规划';
+      return i18nText('Orthodontic.stage.planning');
     case 'active':
-      return '治疗中';
+      return i18nText('Orthodontic.stage.active');
     case 'retention':
-      return '保持期';
+      return i18nText('Orthodontic.stage.retention');
     case 'completed':
-      return '已完成';
+      return i18nText('Orthodontic.stage.completed');
   }
 }
 
 export function applianceTypeLabel(t: OrthodonticApplianceType): string {
   switch (t) {
     case 'twin-block':
-      return 'Twin-Block 功能矫治器';
+      return i18nText('Orthodontic.applianceType.twinBlock');
     case 'expander':
-      return '扩弓器';
+      return i18nText('Orthodontic.applianceType.expander');
     case 'activator':
-      return '功能性矫治器';
+      return i18nText('Orthodontic.applianceType.activator');
     case 'metal-braces':
-      return '金属固定矫治器';
+      return i18nText('Orthodontic.applianceType.metalBraces');
     case 'ceramic-braces':
-      return '陶瓷固定矫治器';
+      return i18nText('Orthodontic.applianceType.ceramicBraces');
     case 'clear-aligner':
-      return '隐形牙套';
+      return i18nText('Orthodontic.applianceType.clearAligner');
     case 'retainer-fixed':
-      return '固定保持器';
+      return i18nText('Orthodontic.applianceType.retainerFixed');
     case 'retainer-removable':
-      return '活动保持器';
+      return i18nText('Orthodontic.applianceType.retainerRemovable');
   }
 }

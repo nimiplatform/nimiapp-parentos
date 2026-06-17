@@ -49,14 +49,14 @@ const screeningEvent = (overrides: Partial<MedicalEventRow> = {}): MedicalEventR
 describe('parseExamMeta', () => {
   it('extracts hospital, doctor, pupil, and free-form notes from token-prefixed measurement notes', () => {
     const records = groupByDate([
-      m('axial-length-right', 22.84, '2026-04-06', '医院: 上海市儿童医院 | 医生: 李医生 | 瞳孔: 散瞳 | 当日复查'),
-      m('axial-length-left', 22.79, '2026-04-06', '医院: 上海市儿童医院 | 医生: 李医生 | 瞳孔: 散瞳 | 当日复查'),
+      m('axial-length-right', 22.84, '2026-04-06', 'hospital=上海市儿童医院 | doctor=李医生 | pupil=dilated | 当日复查'),
+      m('axial-length-left', 22.79, '2026-04-06', 'hospital=上海市儿童医院 | doctor=李医生 | pupil=dilated | 当日复查'),
     ]);
     const meta = parseExamMeta(records[0]!);
     expect(meta).toEqual({
       hospital: '上海市儿童医院',
       doctor: '李医生',
-      pupil: '散瞳',
+      pupil: 'dilated',
       notes: '当日复查',
     });
   });
@@ -100,9 +100,9 @@ describe('buildExamViews', () => {
   it('merges quantitative exam records and screening events into a newest-first timeline', () => {
     const today = new Date('2026-04-29T00:00:00Z');
     const records = groupByDate([
-      m('axial-length-right', 22.84, '2026-04-06', '医院: A医院'),
-      m('axial-length-left', 22.79, '2026-04-06', '医院: A医院'),
-      m('vision-right', 1.0, '2026-01-10', '医院: A医院'),
+      m('axial-length-right', 22.84, '2026-04-06', 'hospital=A医院'),
+      m('axial-length-left', 22.79, '2026-04-06', 'hospital=A医院'),
+      m('vision-right', 1.0, '2026-01-10', 'hospital=A医院'),
     ]);
     const events = [screeningEvent({ eventDate: '2024-04-01' })];
 

@@ -7,6 +7,8 @@ import {
 } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface Props {
   appliance: OrthodonticApplianceRow;
@@ -16,9 +18,8 @@ interface Props {
   defaultStartAt?: string;
   /**
    * Optional seed for the reason field. Wave D quick-tag routing uses this
-   * to land the parent on `OrthodonticUnwearReason='other'` (selecting "其它"
-   * from the picker) when they tap the 漏戴 chip — the chip already implies
-   * "miss" so we skip an extra click.
+   * to land the parent on `OrthodonticUnwearReason='other'` when they tap
+   * the missed-wear chip, so we skip an extra click.
    */
   defaultReason?: OrthodonticUnwearReason;
   onClose: () => void;
@@ -27,11 +28,11 @@ interface Props {
 }
 
 const REASON_OPTIONS: { value: OrthodonticUnwearReason; label: string }[] = [
-  { value: 'meal', label: '用餐' },
-  { value: 'sport', label: '运动' },
-  { value: 'school', label: '上学' },
-  { value: 'sleep', label: '睡眠' },
-  { value: 'other', label: '其它' },
+  { value: 'meal', label: i18nText('Orthodontic.unwear.reason.meal') },
+  { value: 'sport', label: i18nText('Orthodontic.unwear.reason.sport') },
+  { value: 'school', label: i18nText('Orthodontic.unwear.reason.school') },
+  { value: 'sleep', label: i18nText('Orthodontic.unwear.reason.sleep') },
+  { value: 'other', label: i18nText('Orthodontic.unwear.reason.other') },
 ];
 
 /**
@@ -40,7 +41,7 @@ const REASON_OPTIONS: { value: OrthodonticUnwearReason; label: string }[] = [
  * Two flows:
  *  - Quick "open now" (`openOnly`=true, parent just took the appliance out) →
  *    submits with `endAt = null`. UI hides the endAt field.
- *  - Backfill ("我刚才忘戴了") → both startAt and endAt fields shown.
+ *  - Backfill → both startAt and endAt fields shown.
  *
  * Reason and notes are optional. Validation runs both client-side (for fast
  * feedback) and server-side (Rust fail-close).
@@ -67,11 +68,11 @@ export function OrthodonticUnwearForm({
 
   const handleSubmit = async () => {
     if (!startIso) {
-      setLocalError('请填写开始时间');
+      setLocalError(i18nText('Orthodontic.unwear.error.missingStart'));
       return;
     }
     if (endBeforeStart) {
-      setLocalError('结束时间必须晚于开始时间');
+      setLocalError(i18nText('Orthodontic.unwear.error.endBeforeStart'));
       return;
     }
     setLocalError(null);
@@ -101,7 +102,7 @@ export function OrthodonticUnwearForm({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="记录未戴时段"
+      aria-label={i18nText('Orthodontic.unwear.dialogLabel')}
       className="fixed inset-0 z-[100] grid place-items-center bg-[var(--nimi-scrim-modal)] p-4"
     >
       <Surface
@@ -117,10 +118,10 @@ export function OrthodonticUnwearForm({
       >
         <div className="flex items-center justify-between">
           <h3 className="m-0 text-[16px] font-semibold text-[var(--nimi-text-primary)]">
-            {openOnly ? '记录脱下时间' : '补记一次未戴时段'}
+            {openOnly ? i18nText('Orthodontic.unwear.title.open') : i18nText('Orthodontic.unwear.title.backfill')}
           </h3>
           <IconButton
-            aria-label="关闭"
+            aria-label={i18nText('Orthodontic.unwear.close')}
             onClick={onClose}
             size="sm"
             tone="ghost"
@@ -138,7 +139,7 @@ export function OrthodonticUnwearForm({
         )}
 
         <label className="flex flex-col gap-1 text-[14px] text-[var(--nimi-text-muted)]">
-          脱下时间
+          {i18nText('Orthodontic.unwear.startAt')}
           <TextField
             type="datetime-local"
             value={startAt}
@@ -149,7 +150,7 @@ export function OrthodonticUnwearForm({
 
         {!openOnly && (
           <label className="flex flex-col gap-1 text-[14px] text-[var(--nimi-text-muted)]">
-            戴回时间
+            {i18nText('Orthodontic.unwear.endAt')}
             <TextField
               type="datetime-local"
               value={endAt}
@@ -158,14 +159,14 @@ export function OrthodonticUnwearForm({
             />
             {endBeforeStart && (
               <span className="text-[13px] text-[var(--nimi-status-danger)]">
-                结束时间必须晚于开始时间
+                {i18nText('Orthodontic.unwear.error.endBeforeStart')}
               </span>
             )}
           </label>
         )}
 
         <fieldset className="flex flex-col gap-1.5 border-0 p-0 text-[14px] text-[var(--nimi-text-muted)]">
-          <legend>原因（选填）</legend>
+          <legend>{i18nText('Orthodontic.unwear.reasonLabel')}</legend>
           <div className="flex items-center gap-2 flex-wrap">
             {REASON_OPTIONS.map((opt) => {
               const active = reason === opt.value;
@@ -185,13 +186,13 @@ export function OrthodonticUnwearForm({
         </fieldset>
 
         <label className="flex flex-col gap-1 text-[14px] text-[var(--nimi-text-muted)]">
-          备注（选填）
+          {i18nText('Orthodontic.unwear.notesLabel')}
           <TextareaField
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             className="text-[14px]"
-            placeholder="例如：嘴唇红肿，吃饭时取下"
+            placeholder={i18nText('Orthodontic.unwear.notesPlaceholder')}
           />
         </label>
 
@@ -201,7 +202,7 @@ export function OrthodonticUnwearForm({
             tone="ghost"
             size="sm"
           >
-            取消
+            {i18nText('Orthodontic.unwear.cancel')}
           </Button>
           <Button
             onClick={() => void handleSubmit()}
@@ -209,7 +210,7 @@ export function OrthodonticUnwearForm({
             tone="primary"
             size="sm"
           >
-            保存
+            {i18nText('Orthodontic.unwear.save')}
           </Button>
         </div>
       </Surface>

@@ -2,6 +2,8 @@ import { Button, cn, StatusBadge, Surface } from '@nimiplatform/kit/ui';
 import type { OrthodonticPhotoAngle, OrthodonticPhotoAttachmentRow, OrthodonticPhotoSessionBundle } from '../../bridge/sqlite-bridge.js';
 import { usePhotoBlob } from './orthodontic-teeth-selfies-compare.js';
 import { CapsLabel, formatThumbLabel } from './orthodontic-teeth-selfies-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 // ── Thumbnail strip ────────────────────────────────────────
 
@@ -38,7 +40,7 @@ export function SessionStrip({
           marginBottom: 10,
         }}
       >
-        <CapsLabel>全部记录</CapsLabel>
+        <CapsLabel>{i18nText('Orthodontic.selfies.strip.allRecords')}</CapsLabel>
         <Button
           type="button"
           onClick={onCapture}
@@ -46,7 +48,7 @@ export function SessionStrip({
           size="sm"
           className="whitespace-nowrap"
         >
-          + 拍一组新的
+          {i18nText('Orthodontic.selfies.strip.captureNew')}
         </Button>
       </div>
       <div
@@ -138,7 +140,7 @@ function ThumbnailFrame({
         <div
           className="absolute inset-0 grid place-items-center text-[11px] text-[var(--nimi-text-muted)]"
         >
-          无照片
+          {i18nText('Orthodontic.selfies.strip.noPhoto')}
         </div>
       )}
       {role && (
@@ -204,10 +206,10 @@ function ThumbnailPicker({
         zIndex: 10,
       }}
     >
-      <PickerOption disabled={isA} label="设为「之前」" onClick={onAssignA} />
-      <PickerOption disabled={isB} label="设为「之后」" onClick={onAssignB} />
+      <PickerOption disabled={isA} label={i18nText('Orthodontic.selfies.strip.assignBefore')} onClick={onAssignA} />
+      <PickerOption disabled={isB} label={i18nText('Orthodontic.selfies.strip.assignAfter')} onClick={onAssignB} />
       <div className="my-0.5 border-t border-[var(--nimi-border-subtle)]" />
-      <PickerOption danger label="删除这组照片" onClick={onDelete} />
+      <PickerOption danger label={i18nText('Orthodontic.selfies.strip.deleteSet')} onClick={onDelete} />
     </Surface>
   );
 }
@@ -251,7 +253,7 @@ export function EmptyState({ onCapture }: { onCapture: () => void }) {
       padding="none"
       className="flex flex-col items-center gap-3.5 rounded-2xl border-[1.5px] border-dashed border-[var(--nimi-border-strong)] px-4 py-8 text-center text-[var(--nimi-text-muted)]"
     >
-      <div className="text-[14px]">还没有照片记录</div>
+      <div className="text-[14px]">{i18nText('Orthodontic.selfies.empty.title')}</div>
       <Button
         type="button"
         onClick={onCapture}
@@ -259,7 +261,7 @@ export function EmptyState({ onCapture }: { onCapture: () => void }) {
         size="md"
         className="text-[13px]"
       >
-        + 拍一组
+        {i18nText('Orthodontic.selfies.empty.capture')}
       </Button>
     </Surface>
   );
@@ -273,7 +275,7 @@ export function Loading() {
         padding: 32,
       }}
     >
-      加载中…
+      {i18nText('Orthodontic.selfies.loading')}
     </div>
   );
 }

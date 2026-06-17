@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { convertFileSrc } from '@tauri-apps/api/core';
 import { IconButton, StatusBadge, Surface, cn } from '@nimiplatform/kit/ui';
 import { OBSERVATION_DIMENSIONS } from '../../knowledge-base/index.js';
 import type { JournalEntryRow } from '../../bridge/sqlite-bridge.js';
+import { toMediaSrc } from '../../bridge/media-src.js';
 import { DentalPhotoLightbox, type DentalPhotoLightboxItem } from '../profile/dental-photo-lightbox.js';
 import {
   parseSelectedTags,
@@ -12,6 +12,8 @@ import {
   getKeepsakeReasonLabel,
   getLocalTimeLabel,
 } from './journal-page-helpers.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export interface RecorderProfile {
   id: string;
@@ -32,8 +34,8 @@ export interface JournalEntryTimelineProps {
 type EntryFilter = JournalEntryTimelineProps['entryFilter'];
 
 const FILTER_OPTIONS: Array<{ key: EntryFilter; label: string }> = [
-  { key: 'all', label: '全部' },
-  { key: 'keepsake', label: '珍藏' },
+  { key: 'all', label: i18nText('Journal.timeline.filter.all') },
+  { key: 'keepsake', label: i18nText('Journal.timeline.filter.keepsake') },
 ];
 
 /* ── Dropdown menu for low-frequency actions (edit / delete) ── */
@@ -94,8 +96,8 @@ function EntryActionMenu({
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen((prev) => !prev); }}
         className="flex h-6 w-6 items-center justify-center parentos-radius-sm text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
-        aria-label="更多操作"
-        title="更多操作"
+        aria-label={i18nText('Journal.timeline.action.more')}
+        title={i18nText('Journal.timeline.action.more')}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="12" cy="5" r="1.5" />
@@ -122,7 +124,7 @@ function EntryActionMenu({
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
               </svg>
-              编辑
+              {i18nText('Journal.timeline.action.edit')}
             </button>
             {onDelete ? (
               <button
@@ -135,7 +137,7 @@ function EntryActionMenu({
                   <path d="M19 6l-1 14H6L5 6" />
                   <path d="M10 11v6" /><path d="M14 11v6" />
                 </svg>
-                删除
+                {i18nText('Journal.timeline.action.delete')}
               </button>
             ) : null}
           </Surface>
@@ -167,7 +169,7 @@ export function JournalEntryTimeline({
   return (
     <section>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">成长足迹</h2>
+        <h2 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Journal.timeline.title')}</h2>
         <div className="flex flex-wrap gap-1">
           {FILTER_OPTIONS.map(({ key, label }) => (
             <button
@@ -188,13 +190,13 @@ export function JournalEntryTimeline({
 
       {entries.length === 0 ? (
         <Surface tone="card" elevation="raised" padding="lg" className="parentos-radius-xl p-8 text-center">
-          <p className="text-[14px] text-[var(--nimi-text-muted)]">还没有随记，先写下一条吧</p>
+          <p className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Journal.timeline.empty.noEntries')}</p>
         </Surface>
       ) : filteredEntries.length === 0 ? (
         <Surface tone="card" elevation="raised" padding="lg" className="parentos-radius-xl p-8 text-center">
-          <p className="text-[14px] text-[var(--nimi-text-primary)]">还没有珍藏的成长瞬间</p>
+          <p className="text-[14px] text-[var(--nimi-text-primary)]">{i18nText('Journal.timeline.empty.noKeepsakeTitle')}</p>
           <p className="mt-2 text-[13px] leading-relaxed text-[var(--nimi-text-muted)]">
-            遇到第一次、获奖、读完一本书或特别想留住的片刻时，可以把随记标记为珍藏。
+            {i18nText('Journal.timeline.empty.noKeepsakeBody')}
           </p>
         </Surface>
       ) : (
@@ -211,7 +213,9 @@ export function JournalEntryTimeline({
 
               <div className="mb-2 flex items-center gap-2">
                 <span className="text-[14px] font-bold text-[var(--nimi-text-primary)]">{formatDateLabel(date)}</span>
-                <span className="text-[12px] text-[var(--nimi-text-muted)]">{dayEntries.length} 条</span>
+                <span className="text-[12px] text-[var(--nimi-text-muted)]">
+                  {i18nText('Journal.timeline.entryCount', { count: dayEntries.length })}
+                </span>
               </div>
 
               <div className="space-y-2.5">
@@ -224,7 +228,7 @@ export function JournalEntryTimeline({
                     filePath: photoPath,
                     fileName: photoPath.split(/[\\/]/).pop() ?? '',
                   }));
-                  const bodyText = entry.textContent?.trim() || (entry.voicePath ? '语音记录已保存' : '');
+                  const bodyText = entry.textContent?.trim() || (entry.voicePath ? i18nText('Journal.timeline.voiceSavedFallback') : '');
                   const isKeepsake = entry.keepsake === 1;
                   const keepsakeReasonLabel = getKeepsakeReasonLabel(entry.keepsakeReason);
 
@@ -252,7 +256,7 @@ export function JournalEntryTimeline({
                                   <circle cx="12" cy="12" r="3" />
                                   <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
                                 </svg>
-                                观察 · {dimension.displayName}
+                                {i18nText('Journal.timeline.observationDimension', { dimension: dimension.displayName })}
                               </StatusBadge>
                             ) : null}
                           </div>
@@ -260,7 +264,7 @@ export function JournalEntryTimeline({
                           <div className="flex items-center gap-1">
                             {entry.voicePath ? (
                               <StatusBadge tone="info" className="mr-1 parentos-radius-sm px-1.5 py-0.5 text-[12px]">
-                                {entry.contentType === 'mixed' ? '语音 + 文字' : '语音'}
+                                {entry.contentType === 'mixed' ? i18nText('Journal.timeline.contentType.mixed') : i18nText('Journal.timeline.contentType.voice')}
                               </StatusBadge>
                             ) : null}
 
@@ -274,8 +278,8 @@ export function JournalEntryTimeline({
                                 tone="ghost"
                                 size="sm"
                                 className="h-6 min-h-0 w-6 parentos-radius-sm text-[var(--nimi-text-muted)] hover:bg-[color-mix(in_srgb,var(--nimi-status-info)_12%,transparent)] hover:text-[var(--nimi-status-info)]"
-                                aria-label="和 AI 聊这条记录"
-                                title="和 AI 聊这条记录"
+                                aria-label={i18nText('Journal.timeline.action.askAi')}
+                                title={i18nText('Journal.timeline.action.askAi')}
                                 icon={
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z" />
@@ -291,8 +295,8 @@ export function JournalEntryTimeline({
                                 onToggleKeepsake?.(entry);
                               }}
                               className="flex h-6 w-6 items-center justify-center parentos-radius-sm transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-status-warning)_18%,transparent)]"
-                              aria-label={isKeepsake ? '取消珍藏' : '标记珍藏'}
-                              title={isKeepsake ? '取消珍藏' : '标记珍藏'}
+                              aria-label={isKeepsake ? i18nText('Journal.timeline.action.removeKeepsake') : i18nText('Journal.timeline.action.markKeepsake')}
+                              title={isKeepsake ? i18nText('Journal.timeline.action.removeKeepsake') : i18nText('Journal.timeline.action.markKeepsake')}
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24"
                                 fill={isKeepsake ? 'var(--nimi-status-warning)' : 'none'}
@@ -332,10 +336,10 @@ export function JournalEntryTimeline({
                                   setLightbox({ photos: photoItems, index });
                                 }}
                                 className="group/photo relative h-20 w-20 cursor-zoom-in overflow-hidden parentos-radius-sm border border-[var(--nimi-border-subtle)]"
-                                aria-label="查看大图"
+                                aria-label={i18nText('Journal.timeline.action.viewImage')}
                               >
                                 <img
-                                  src={convertFileSrc(item.filePath)}
+                                  src={toMediaSrc(item.filePath)}
                                   alt=""
                                   className="h-full w-full object-cover"
                                 />
@@ -355,7 +359,7 @@ export function JournalEntryTimeline({
                           <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[var(--nimi-border-subtle)] pt-2.5">
                             {keepsakeReasonLabel ? (
                               <StatusBadge tone="warning" className="parentos-radius-full px-2.5 py-1 text-[12px] font-medium">
-                                珍藏原因 · {keepsakeReasonLabel}
+                                {i18nText('Journal.timeline.keepsakeReason', { reason: keepsakeReasonLabel })}
                               </StatusBadge>
                             ) : null}
                             {tags.map((tag) => (

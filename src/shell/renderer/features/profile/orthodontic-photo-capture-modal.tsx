@@ -12,6 +12,8 @@ import {
 } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface Props {
   childId: string;
@@ -68,22 +70,22 @@ export function OrthodonticPhotoCaptureModal({
     setLocalError(null);
     onError(null);
     if (!sessionDate.trim()) {
-      setLocalError('请填写拍摄日期');
+      setLocalError(i18nText('Orthodontic.photoCapture.error.missingDate'));
       return;
     }
     if (!front.base64 && !side.base64) {
-      setLocalError('至少选择一张照片（正面或侧面）');
+      setLocalError(i18nText('Orthodontic.photoCapture.error.missingPhoto'));
       return;
     }
     let trayIndexNumber: number | null = null;
     if (trayIndex.trim() !== '') {
       const n = Number(trayIndex.trim());
       if (!Number.isInteger(n) || n < 1) {
-        setLocalError('牙套序号必须为大于等于 1 的整数');
+        setLocalError(i18nText('Orthodontic.photoCapture.error.invalidTrayIndex'));
         return;
       }
       if (!isClearAligner) {
-        setLocalError('牙套序号只在「隐形牙套」装置上有效');
+        setLocalError(i18nText('Orthodontic.photoCapture.error.trayIndexRequiresAligner'));
         return;
       }
       trayIndexNumber = n;
@@ -150,7 +152,7 @@ export function OrthodonticPhotoCaptureModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="拍一组牙齿照片"
+      aria-label={i18nText('Orthodontic.photoCapture.title')}
       style={{
         position: 'fixed',
         inset: 0,
@@ -186,14 +188,14 @@ export function OrthodonticPhotoCaptureModal({
           }}
         >
           <h3 className="m-0 text-[16px] font-semibold text-[var(--nimi-text-primary)]">
-            拍一组牙齿照片
+            {i18nText('Orthodontic.photoCapture.title')}
           </h3>
           <Button
             onClick={() => !submitting && onClose()}
             tone="ghost"
             size="sm"
             className="h-7 min-h-7 w-7 rounded-full px-0 text-[18px]"
-            aria-label="关闭"
+            aria-label={i18nText('Orthodontic.photoCapture.close')}
           >
             ×
           </Button>
@@ -213,19 +215,19 @@ export function OrthodonticPhotoCaptureModal({
         )}
 
         <PhotoSlot
-          label="正面"
+          label={i18nText('Orthodontic.photoCapture.angle.front')}
           slot={front}
           onChange={(s) => setFront(s)}
           onSlotError={setLocalError}
         />
         <PhotoSlot
-          label="侧面"
+          label={i18nText('Orthodontic.photoCapture.angle.side')}
           slot={side}
           onChange={(s) => setSide(s)}
           onSlotError={setLocalError}
         />
 
-        <Field label="拍摄日期">
+        <Field label={i18nText('Orthodontic.photoCapture.sessionDate')}>
           <TextField
             type="date"
             value={sessionDate}
@@ -235,7 +237,7 @@ export function OrthodonticPhotoCaptureModal({
         </Field>
 
         {isClearAligner && (
-          <Field label="对应牙套序号（可选）">
+          <Field label={i18nText('Orthodontic.photoCapture.trayIndex')}>
             <TextField
               type="number"
               min={1}
@@ -247,11 +249,11 @@ export function OrthodonticPhotoCaptureModal({
           </Field>
         )}
 
-        <Field label="备注（可选）">
+        <Field label={i18nText('Orthodontic.photoCapture.note')}>
           <TextField
             type="text"
             value={note}
-            placeholder="复诊确认 / 治疗起点 / …"
+            placeholder={i18nText('Orthodontic.photoCapture.notePlaceholder')}
             onChange={(e) => setNote(e.target.value)}
             className="w-full"
           />
@@ -271,7 +273,7 @@ export function OrthodonticPhotoCaptureModal({
             tone="ghost"
             size="md"
           >
-            取消
+            {i18nText('Orthodontic.photoCapture.cancel')}
           </Button>
           <Button
             onClick={() => void handleSubmit()}
@@ -279,7 +281,7 @@ export function OrthodonticPhotoCaptureModal({
             tone="primary"
             size="md"
           >
-            {submitting ? '保存中…' : '保存'}
+            {submitting ? i18nText('Orthodontic.photoCapture.saving') : i18nText('Orthodontic.photoCapture.save')}
           </Button>
         </footer>
       </Surface>
@@ -317,14 +319,19 @@ function PhotoSlot({
     onSlotError(null);
     const canonicalized = canonicalizePhotoMime(file.type);
     if (!canonicalized) {
-      onSlotError(`不支持的图片格式: ${file.type || '未知'}（仅支持 JPEG / PNG / WebP）`);
+      onSlotError(i18nText('Orthodontic.photoCapture.error.unsupportedType', {
+        type: file.type || i18nText('Orthodontic.photoCapture.error.unknownType'),
+      }));
       return;
     }
     try {
       const base64 = await fileToBase64(file);
       if (base64.length > MAX_PHOTO_BASE64_PAYLOAD_BYTES) {
         onSlotError(
-          `照片太大（${formatMb(base64.length)}），请压缩到 ${formatMb(MAX_PHOTO_BASE64_PAYLOAD_BYTES)} 以内再上传`,
+          i18nText('Orthodontic.photoCapture.error.photoTooLarge', {
+            actual: formatMb(base64.length),
+            max: formatMb(MAX_PHOTO_BASE64_PAYLOAD_BYTES),
+          }),
         );
         return;
       }
@@ -362,7 +369,7 @@ function PhotoSlot({
         {previewUrl ? (
           <img
             src={previewUrl}
-            alt={`${label} 预览`}
+            alt={i18nText('Orthodontic.photoCapture.previewAlt', { label })}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
@@ -386,7 +393,7 @@ function PhotoSlot({
           </div>
         ) : (
           <div className="text-[12px] text-[var(--nimi-text-muted)]">
-            JPEG / PNG / WebP — 自动压缩到 1600px
+            {i18nText('Orthodontic.photoCapture.uploadHint')}
           </div>
         )}
       </div>
@@ -397,7 +404,7 @@ function PhotoSlot({
           size="sm"
           className="text-[12px]"
         >
-          {slot.file ? '更换' : '选择照片'}
+          {slot.file ? i18nText('Orthodontic.photoCapture.replace') : i18nText('Orthodontic.photoCapture.choosePhoto')}
         </Button>
         {slot.file && (
           <Button
@@ -409,7 +416,7 @@ function PhotoSlot({
             size="sm"
             className="text-[12px]"
           >
-            清空
+            {i18nText('Orthodontic.photoCapture.clear')}
           </Button>
         )}
       </div>
@@ -470,7 +477,11 @@ function formatMb(bytes: number): string {
 
 function formatCaptureError(err: unknown): string {
   if (err instanceof PhotoAngleAlreadyExistsError) {
-    return `该角度（${err.angle === 'front' ? '正面' : '侧面'}）已存在照片，请先删除现有附件再重新上传`;
+    return i18nText('Orthodontic.photoCapture.error.angleAlreadyExists', {
+      angle: err.angle === 'front'
+        ? i18nText('Orthodontic.photoCapture.angle.front')
+        : i18nText('Orthodontic.photoCapture.angle.side'),
+    });
   }
   if (err instanceof Error) return err.message;
   return String(err);
@@ -482,14 +493,14 @@ async function fileToBase64(file: File): Promise<string> {
     reader.onload = () => {
       const result = reader.result;
       if (typeof result !== 'string') {
-        reject(new Error('FileReader 返回非字符串结果'));
+        reject(new Error(i18nText('Orthodontic.photoCapture.error.fileReaderNonString')));
         return;
       }
       // result is `data:mime;base64,<...>` — strip the prefix.
       const comma = result.indexOf(',');
       resolve(comma >= 0 ? result.slice(comma + 1) : result);
     };
-    reader.onerror = () => reject(reader.error ?? new Error('读取文件失败'));
+    reader.onerror = () => reject(reader.error ?? new Error(i18nText('Orthodontic.photoCapture.error.fileReadFailed')));
     reader.readAsDataURL(file);
   });
 }

@@ -1,6 +1,8 @@
 import { Surface } from '@nimiplatform/kit/ui';
 import type { MedicalAnalysis } from '../../engine/smart-alerts.js';
 import { EVENT_TYPE_LABELS } from './medical-events-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function MedicalEventsAnalysisPanel({
   analysis,
@@ -22,7 +24,7 @@ export function MedicalEventsAnalysisPanel({
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="text-[16px]">🔍</span>
-              <h2 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">智能识别分析</h2>
+              <h2 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('MedicalEvents.analysis.title')}</h2>
             </div>
             <button
               onClick={onRefresh}
@@ -32,7 +34,7 @@ export function MedicalEventsAnalysisPanel({
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={aiLoading ? 'animate-spin' : ''}>
                 <path d="M21 12a9 9 0 1 1-6.22-8.56" />
               </svg>
-              {aiLoading ? 'AI 分析中' : 'AI 深度分析'}
+              {aiLoading ? i18nText('MedicalEvents.analysis.aiLoading') : i18nText('MedicalEvents.analysis.deepAnalyze')}
             </button>
           </div>
 
@@ -55,7 +57,7 @@ export function MedicalEventsAnalysisPanel({
 
           {analysis.diagnoses.length > 0 ? (
             <div className="mb-4">
-              <h3 className="text-[14px] font-semibold mb-2 text-[var(--nimi-text-primary)]">诊断汇总</h3>
+              <h3 className="text-[14px] font-semibold mb-2 text-[var(--nimi-text-primary)]">{i18nText('MedicalEvents.analysis.diagnosisSummary')}</h3>
               <div className="flex flex-wrap gap-1.5">
                 {analysis.diagnoses.slice(0, 12).map((diagnosis) => (
                   <button
@@ -64,7 +66,7 @@ export function MedicalEventsAnalysisPanel({
                     className="rounded-2xl border border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_20%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_9%,transparent)] px-2.5 py-1 text-[13px] text-[var(--nimi-action-primary-bg)] transition-colors hover:opacity-80"
                   >
                     {diagnosis.diagnosis}
-                    <span className="ml-1 opacity-60">x{diagnosis.count}</span>
+                    <span className="ml-1 opacity-60">{i18nText('MedicalEvents.analysis.countSuffix', { count: diagnosis.count })}</span>
                   </button>
                 ))}
               </div>
@@ -73,7 +75,7 @@ export function MedicalEventsAnalysisPanel({
 
           {analysis.medications.length > 0 ? (
             <div className="mb-4">
-              <h3 className="text-[14px] font-semibold mb-2 text-[var(--nimi-text-primary)]">用药汇总</h3>
+              <h3 className="text-[14px] font-semibold mb-2 text-[var(--nimi-text-primary)]">{i18nText('MedicalEvents.analysis.medicationSummary')}</h3>
               <div className="flex flex-wrap gap-1.5">
                 {analysis.medications.slice(0, 12).map((medication) => (
                   <button
@@ -83,7 +85,7 @@ export function MedicalEventsAnalysisPanel({
                   >
                     {medication.name}
                     {medication.dosage ? <span className="ml-1 opacity-60">{medication.dosage}</span> : null}
-                    <span className="ml-1 opacity-60">x{medication.count}</span>
+                    <span className="ml-1 opacity-60">{i18nText('MedicalEvents.analysis.countSuffix', { count: medication.count })}</span>
                   </button>
                 ))}
               </div>
@@ -94,12 +96,12 @@ export function MedicalEventsAnalysisPanel({
             {Object.entries(analysis.eventsByType).map(([type, count]) => (
               <div key={type} className="text-[13px] flex items-center gap-1 text-[var(--nimi-text-muted)]">
                 <span className="font-medium text-[var(--nimi-text-primary)]">{EVENT_TYPE_LABELS[type] ?? type}</span>
-                <span>{count}次</span>
+                <span>{i18nText('MedicalEvents.analysis.eventTypeCount', { count })}</span>
               </div>
             ))}
             {analysis.frequentHospitals.length > 0 ? (
               <div className="text-[13px] text-[var(--nimi-text-muted)]">
-                常去：{analysis.frequentHospitals.join('、')}
+                {i18nText('MedicalEvents.analysis.frequentHospitals', { hospitals: analysis.frequentHospitals.join(i18nText('Common.list.separator')) })}
               </div>
             ) : null}
           </div>
@@ -113,7 +115,7 @@ export function MedicalEventsAnalysisPanel({
             <div className="rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] p-3">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <span className="text-[14px]">✨</span>
-                <span className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">AI 综合分析</span>
+                <span className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('MedicalEvents.analysis.aiInsightTitle')}</span>
               </div>
               <p className="text-[14px] leading-relaxed text-[var(--nimi-text-primary)]">{aiInsight}</p>
             </div>

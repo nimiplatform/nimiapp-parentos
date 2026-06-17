@@ -19,6 +19,8 @@ import {
   type NarrativeReportContent,
   type NarrativeSection,
 } from './structured-report.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── Types ── */
 
@@ -305,13 +307,13 @@ function buildChildSummaryLine(child: ChildProfile, period: ReportPeriod, ageMon
 /** Canonical ordering + titles for professional sections. Used to normalize
  * AI output and to build the fallback. */
 const PROFESSIONAL_SECTION_CATALOG: Array<{ id: string; title: string }> = [
-  { id: 'growth',      title: '生长发育测量' },
-  { id: 'health',      title: '健康事件' },
-  { id: 'vaccine',     title: '疫苗接种' },
-  { id: 'sleep',       title: '睡眠与作息' },
-  { id: 'milestones',  title: '发育里程碑' },
-  { id: 'fitness',     title: '体能评估' },
-  { id: 'observation', title: '一般观察' },
+  { id: 'growth',      title: i18nText('Reports.professionalSummary.sections.growth') },
+  { id: 'health',      title: i18nText('Reports.professionalSummary.sections.health') },
+  { id: 'vaccine',     title: i18nText('Reports.professionalSummary.sections.vaccine') },
+  { id: 'sleep',       title: i18nText('Reports.professionalSummary.sections.sleep') },
+  { id: 'milestones',  title: i18nText('Reports.professionalSummary.sections.milestones') },
+  { id: 'fitness',     title: i18nText('Reports.professionalSummary.sections.fitness') },
+  { id: 'observation', title: i18nText('Reports.professionalSummary.sections.observation') },
 ];
 
 interface ProfessionalBuildContext {
@@ -393,7 +395,9 @@ function buildFallbackProfessionalBody(id: string, snap: Snapshot): string {
     }
     case 'health': {
       const items = snap.medicalInPeriod.concat(snap.dentalInPeriod.map((d) => ({
-        eventType: d.eventType ?? '口腔记录', title: d.eventType ?? '口腔记录', eventDate: d.eventDate,
+        eventType: d.eventType ?? i18nText('Reports.professionalSummary.dentalRecord'),
+        title: d.eventType ?? i18nText('Reports.professionalSummary.dentalRecord'),
+        eventDate: d.eventDate,
         severity: d.severity ?? null, hospital: null, medication: null, notes: d.notes,
       })));
       if (items.length === 0) return '本期未记录健康事件。';
@@ -547,10 +551,14 @@ export async function generateNarrativeReportForPeriod(input: {
     closingMessage,
     actionItems, trendSignals,
     metrics: [
-      { id: 'age', label: '年龄', value: `${ageMonthsEnd}个月` },
-      { id: 'measurements', label: '测量', value: String(measurementCount) },
-      { id: 'journals', label: '日志', value: String(journalCount) },
-      { id: 'milestones', label: '里程碑', value: String(milestoneCount) },
+      {
+        id: 'age',
+        label: i18nText('Reports.narrative.metrics.age'),
+        value: i18nText('Reports.narrative.metrics.ageMonths', { months: ageMonthsEnd }),
+      },
+      { id: 'measurements', label: i18nText('Reports.narrative.metrics.measurements'), value: String(measurementCount) },
+      { id: 'journals', label: i18nText('Reports.narrative.metrics.journals'), value: String(journalCount) },
+      { id: 'milestones', label: i18nText('Reports.narrative.metrics.milestones'), value: String(milestoneCount) },
     ],
     userNotes: undefined,
     professionalSummary,

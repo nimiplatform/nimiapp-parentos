@@ -13,18 +13,20 @@ import {
 import { AmbientBackground, Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
 import { ChildAvatar } from '../../shared/child-avatar.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type WelcomeIcon = ComponentType<LucideProps>;
 
 interface FeatureCardSpec {
   icon: WelcomeIcon;
-  title: string;
-  desc: string;
+  titleKey: string;
+  descKey: string;
 }
 
 interface TrustBadgeSpec {
   icon: WelcomeIcon;
-  label: string;
+  labelKey: string;
 }
 
 const INTRO_COMPLETE_MS = 3800;
@@ -32,24 +34,24 @@ const INTRO_COMPLETE_MS = 3800;
 const BENTO: readonly FeatureCardSpec[] = [
   {
     icon: Archive,
-    title: '构建全景健康档案',
-    desc: '把生长、视力、口腔、体检与医疗记录沉淀为同一份本地档案，长期趋势不再散落。',
+    titleKey: 'Timeline.welcome.feature.healthArchive.title',
+    descKey: 'Timeline.welcome.feature.healthArchive.description',
   },
   {
     icon: NotebookPen,
-    title: '让观察成为线索',
-    desc: '日常笔记进入结构化观察框架，语言、动作、情绪与关系质量可以被连续追踪。',
+    titleKey: 'Timeline.welcome.feature.observation.title',
+    descKey: 'Timeline.welcome.feature.observation.description',
   },
   {
     icon: Sparkles,
-    title: '阶段重点主动浮现',
-    desc: '规则引擎按年龄和记录状态推出阶段提醒，AI 只做解释与整理，不替代专业判断。',
+    titleKey: 'Timeline.welcome.feature.reminder.title',
+    descKey: 'Timeline.welcome.feature.reminder.description',
   },
 ] as const;
 
 const TRUST: readonly TrustBadgeSpec[] = [
-  { icon: ShieldCheck, label: '本地优先，儿童数据留在设备内' },
-  { icon: Landmark, label: '中国与 WHO 参考标准并行' },
+  { icon: ShieldCheck, labelKey: 'Timeline.welcome.trust.localFirst' },
+  { icon: Landmark, labelKey: 'Timeline.welcome.trust.standards' },
 ] as const;
 
 /* ── component ───────────────────────────────────────────── */
@@ -82,14 +84,18 @@ export function WelcomePage() {
   }, [hasChildren]);
 
   const today = new Date();
-  const dateStr = today.toLocaleDateString('zh-CN', {
+  const dateStr = today.toLocaleDateString(i18nText('Common.date.locale'), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     weekday: 'long',
   });
   const hour = today.getHours();
-  const greeting = hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好';
+  const greeting = hour < 12
+    ? i18nText('Timeline.welcome.greeting.morning')
+    : hour < 18
+      ? i18nText('Timeline.welcome.greeting.afternoon')
+      : i18nText('Timeline.welcome.greeting.evening');
   const showIntro = !hasChildren && introVisible;
 
   return (
@@ -107,7 +113,7 @@ export function WelcomePage() {
           <header>
             <p className="text-[14px] font-medium tracking-wide text-[var(--nimi-text-muted)]">{dateStr}</p>
             <h1 className="mt-2 text-[24px] font-semibold text-[var(--nimi-text-primary)]">
-              {greeting}，开启今天的育儿之旅。
+              {i18nText('Timeline.welcome.greetingLine', { greeting })}
             </h1>
           </header>
 
@@ -122,15 +128,15 @@ export function WelcomePage() {
             <div className="relative flex flex-col gap-10 xl:flex-row xl:items-center xl:justify-between">
               <div className="max-w-[520px]">
                 <p className="mb-4 text-[13px] font-semibold uppercase tracking-[0.18em] text-[var(--nimi-action-primary-bg)]">
-                  ParentOS / 成长底稿
+                  {i18nText('Timeline.welcome.eyebrow')}
                 </p>
                 <h2 className="text-[30px] font-semibold leading-tight text-[var(--nimi-text-primary)] sm:text-[36px]">
-                  {hasChildren ? '选择一个孩子开始' : '把零散成长，沉淀成可理解的底稿。'}
+                  {hasChildren ? i18nText('Timeline.welcome.hero.withChildrenTitle') : i18nText('Timeline.welcome.hero.emptyTitle')}
                 </h2>
                 <p className="mt-4 max-w-[470px] text-[16px] leading-relaxed text-[var(--nimi-text-muted)]">
                   {hasChildren
-                    ? '请选择一个孩子，进入他的成长时间线与阶段提醒。'
-                    : '从第一笔身高体重，到一次观察笔记，再到下一阶段最该关注的提醒，ParentOS 把家庭记录组织成长期、可追溯的成长系统。'}
+                    ? i18nText('Timeline.welcome.hero.withChildrenDescription')
+                    : i18nText('Timeline.welcome.hero.emptyDescription')}
                 </p>
 
                 {hasChildren ? (
@@ -140,8 +146,8 @@ export function WelcomePage() {
                       const years = Math.floor(age / 12);
                       const months = age % 12;
                       const ageLabel = age < 12
-                        ? `${age}个月`
-                        : months > 0 ? `${years}岁${months}个月` : `${years}岁`;
+                        ? i18nText('Common.age.months', { months: age })
+                        : months > 0 ? i18nText('Common.age.yearsMonths', { years, months }) : i18nText('Common.age.years', { years });
                       return (
                         <button
                           key={child.childId}
@@ -163,7 +169,7 @@ export function WelcomePage() {
                       className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'gap-2 border border-dashed border-[var(--nimi-border-strong)] px-5')}
                     >
                       <Plus size={16} />
-                      添加新孩子
+                      {i18nText('Timeline.welcome.addChild')}
                     </Link>
                   </div>
                 ) : (
@@ -172,7 +178,7 @@ export function WelcomePage() {
                     state={{ intent: 'add-child' }}
                     className={cn(buttonVariants({ tone: 'primary', size: 'lg' }), 'mt-8 gap-2 px-7 py-3.5 text-[16px]')}
                   >
-                    建立宝贝专属档案
+                    {i18nText('Timeline.welcome.createProfile')}
                     <ArrowRight size={18} />
                   </Link>
                 )}
@@ -184,7 +190,7 @@ export function WelcomePage() {
 
           <section>
             <h2 className="mb-5 text-[18px] font-semibold text-[var(--nimi-text-primary)]">
-              我们将这样陪伴你
+              {i18nText('Timeline.welcome.companionTitle')}
             </h2>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
               {BENTO.map((item) => {
@@ -192,7 +198,7 @@ export function WelcomePage() {
                 return (
                   <Surface
                     as="div"
-                    key={item.title}
+                    key={item.titleKey}
                     material="glass-regular"
                     padding="none"
                     tone="card"
@@ -201,8 +207,8 @@ export function WelcomePage() {
                     <div className="mb-5 flex h-11 w-11 items-center justify-center parentos-radius-lg bg-[var(--nimi-surface-card)] text-[var(--nimi-action-primary-bg)] shadow-[var(--nimi-elevation-base)]">
                       <Icon size={22} strokeWidth={1.8} />
                     </div>
-                    <h3 className="text-[18px] font-semibold text-[var(--nimi-text-primary)]">{item.title}</h3>
-                    <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--nimi-text-muted)]">{item.desc}</p>
+                    <h3 className="text-[18px] font-semibold text-[var(--nimi-text-primary)]">{i18nText(item.titleKey)}</h3>
+                    <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--nimi-text-muted)]">{i18nText(item.descKey)}</p>
                   </Surface>
                 );
               })}
@@ -214,11 +220,11 @@ export function WelcomePage() {
               const Icon = item.icon;
               return (
                 <div
-                  key={item.label}
+                  key={item.labelKey}
                   className="flex items-center gap-2 rounded-full border border-[var(--nimi-material-glass-thin-border)] bg-[var(--nimi-material-glass-thin-bg)] px-4 py-2 text-[14px] text-[var(--nimi-text-muted)]"
                 >
                   <Icon size={15} strokeWidth={1.9} />
-                  {item.label}
+                  {i18nText(item.labelKey)}
                 </div>
               );
             })}
@@ -231,7 +237,7 @@ export function WelcomePage() {
 
 function WelcomeIntro({ onSkip }: { onSkip: () => void }) {
   return (
-    <section className="parentos-welcome-intro absolute inset-0 z-20 overflow-hidden" aria-label="成长底稿引导动画">
+    <section className="parentos-welcome-intro absolute inset-0 z-20 overflow-hidden" aria-label={i18nText('Timeline.welcome.intro.ariaLabel')}>
       <button
         type="button"
         onClick={onSkip}
@@ -240,16 +246,16 @@ function WelcomeIntro({ onSkip }: { onSkip: () => void }) {
           'absolute right-6 top-6 z-30 min-h-0 rounded-full px-4 py-2 text-[13px] text-[var(--nimi-text-muted)]',
         )}
       >
-        跳过
+        {i18nText('Timeline.welcome.intro.skip')}
       </button>
 
       <div className="parentos-welcome-intro-stage">
-        <p className="parentos-welcome-intro-line">孩子的成长，应该被理解。</p>
+        <p className="parentos-welcome-intro-line">{i18nText('Timeline.welcome.intro.line')}</p>
 
         <div className="parentos-welcome-brand-lockup">
           <p>ParentOS</p>
-          <h1>成长底稿</h1>
-          <span>AI 驱动的儿童成长操作系统</span>
+          <h1>{i18nText('Timeline.welcome.brandName')}</h1>
+          <span>{i18nText('Timeline.welcome.brandTagline')}</span>
         </div>
       </div>
     </section>
@@ -265,13 +271,13 @@ function ProductSystemVisual() {
 
       <div className="parentos-product-system-core">
         <span>ParentOS</span>
-        <strong>成长底稿</strong>
+        <strong>{i18nText('Timeline.welcome.brandName')}</strong>
       </div>
 
-      <SystemNode className="parentos-system-node-profile" label="健康档案" value="PROFILE" />
-      <SystemNode className="parentos-system-node-journal" label="观察笔记" value="JOURNAL" />
-      <SystemNode className="parentos-system-node-reminder" label="阶段提醒" value="RULES" />
-      <SystemNode className="parentos-system-node-advisor" label="AI 解释" value="ADVISOR" />
+      <SystemNode className="parentos-system-node-profile" label={i18nText('Timeline.welcome.systemNode.profile')} value="PROFILE" />
+      <SystemNode className="parentos-system-node-journal" label={i18nText('Timeline.welcome.systemNode.journal')} value="JOURNAL" />
+      <SystemNode className="parentos-system-node-reminder" label={i18nText('Timeline.welcome.systemNode.reminder')} value="RULES" />
+      <SystemNode className="parentos-system-node-advisor" label={i18nText('Timeline.welcome.systemNode.advisor')} value="ADVISOR" />
     </div>
   );
 }

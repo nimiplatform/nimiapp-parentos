@@ -7,7 +7,6 @@ import { computeAgeMonths, useAppStore } from '../../app-shell/app-store.js';
 import {
   getHealthRecordEvents,
   getHealthRecordValues,
-  type SaveHealthRecordCaptureResult,
 } from '../../bridge/sqlite-bridge.js';
 import {
   buildHealthRecordSnapshot,
@@ -145,7 +144,7 @@ export default function ProfilePage() {
   if (!activeChild) {
     return (
       <div className="flex h-full items-center justify-center text-[var(--nimi-text-muted)]">
-        {t('Profile.empty.noActiveChild', { defaultValue: 'Add a child profile first' })}
+        {t('Profile.empty.noActiveChild')}
       </div>
     );
   }
@@ -177,7 +176,7 @@ export default function ProfilePage() {
             className="mb-5 flex items-center justify-between rounded-lg border-[var(--nimi-status-danger)] bg-[color-mix(in_srgb,var(--nimi-status-danger)_10%,var(--nimi-surface-card))] px-4 py-3 text-[var(--nimi-status-danger)]"
           >
             <span className="text-[14px]">
-              {t('Profile.errors.loadFailed', { defaultValue: 'Health record could not load' })}
+              {t('Profile.errors.loadFailed')}
             </span>
             <Button
               type="button"
@@ -185,14 +184,14 @@ export default function ProfilePage() {
               tone="danger"
               size="sm"
             >
-              {t('Profile.actions.retry', { defaultValue: 'Retry' })}
+              {t('Profile.actions.retry')}
             </Button>
           </Surface>
         ) : null}
 
         {loading || !snapshot ? (
           <div className="flex h-40 items-center justify-center text-[14px] text-[var(--nimi-text-muted)]">
-            {t('Profile.loading', { defaultValue: 'Loading...' })}
+            {t('Profile.loading')}
           </div>
         ) : (
           <>
@@ -200,7 +199,10 @@ export default function ProfilePage() {
               domain="overview"
               childName={activeChild.displayName}
               childId={activeChild.childId}
-              ageLabel={`${Math.floor(ageMonths / 12)}岁${ageMonths % 12}个月`}
+              ageLabel={t('Profile.age.yearsMonths', {
+                years: Math.floor(ageMonths / 12),
+                months: ageMonths % 12,
+              })}
               gender={activeChild.gender}
               dataContext={buildOverviewDataContext(snapshot, t)}
             />
@@ -209,7 +211,7 @@ export default function ProfilePage() {
               <div className="mb-3 flex items-end justify-between gap-3">
                 <div>
                   <h2 className="text-[18px] font-semibold tracking-normal text-[var(--nimi-text-primary)]">
-                    {t('Profile.archive.title', { defaultValue: '她的故事，分门别类' })}
+                    {t('Profile.archive.title')}
                   </h2>
                 </div>
                 <Button
@@ -219,7 +221,7 @@ export default function ProfilePage() {
                   size="sm"
                   leadingIcon={<RefreshCw size={14} />}
                 >
-                  {t('Profile.actions.refresh', { defaultValue: 'Refresh' })}
+                  {t('Profile.actions.refresh')}
                 </Button>
               </div>
               <div className="space-y-4">
@@ -252,7 +254,7 @@ export default function ProfilePage() {
           setCaptureGroupId(null);
           setCaptureMetricId(null);
         }}
-        onSaved={(_: SaveHealthRecordCaptureResult) => {
+        onSaved={() => {
           void loadRecords(activeChild.childId);
         }}
       />

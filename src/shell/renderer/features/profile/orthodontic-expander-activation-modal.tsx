@@ -1,9 +1,9 @@
 import { Surface } from '@nimiplatform/kit/ui';
 /**
  * Records an expander activation turn (PO-ORTHO-005 `expander-activation`
- * checkin / PO-ORTHO-014). Opened from the expander card's "记录转动" action.
- * The bilateral / per-screw turn detail ("左 1 圈 + 右 1 圈") is free-text in
- * `notes` — the schema deliberately does not structure it (PO-ORTHO-014).
+ * checkin / PO-ORTHO-014). Opened from the expander card's activation action.
+ * Bilateral / per-screw turn detail remains free-text in `notes`; the schema
+ * deliberately does not structure it (PO-ORTHO-014).
  */
 import { useState } from 'react';
 import {
@@ -20,6 +20,8 @@ import {
   ModalErrorBanner,
   ModalFooter,
 } from './orthodontic-modal-primitives.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function OrthodonticExpanderActivationModal({
   appliance,
@@ -48,13 +50,13 @@ export function OrthodonticExpanderActivationModal({
 
   const handleSubmit = async () => {
     if (!indexValid) {
-      const msg = '加力序号必须为大于等于 1 的整数';
+      const msg = i18nText('Orthodontic.expanderActivation.error.invalidIndex');
       setLocalError(msg);
       onError(msg);
       return;
     }
     if (!atValid) {
-      const msg = '加力时间无效';
+      const msg = i18nText('Orthodontic.expanderActivation.error.invalidTime');
       setLocalError(msg);
       onError(msg);
       return;
@@ -86,45 +88,51 @@ export function OrthodonticExpanderActivationModal({
   };
 
   return (
-    <Modal title="记录扩弓器加力" onClose={onClose}>
+    <Modal title={i18nText('Orthodontic.expanderActivation.title')} onClose={onClose}>
       {localError && <ModalErrorBanner message={localError} onDismiss={() => setLocalError(null)} />}
 
       <Surface tone="card" material="solid" elevation="base" padding="none" className="rounded-md border border-[color-mix(in_srgb,var(--nimi-border-subtle)_70%,transparent)] bg-[color-mix(in_srgb,var(--nimi-text-primary)_4%,transparent)] px-3 py-2 text-[13px] text-[var(--nimi-text-muted)]">
-        已加力 <strong className="text-[var(--nimi-text-primary)]">{appliance.completedActivations}</strong>
-        {cap !== null ? ` / ${cap}` : ''} 圈
+        {cap !== null
+          ? i18nText('Orthodontic.expanderActivation.completedWithCap', {
+              completed: appliance.completedActivations,
+              cap,
+            })
+          : i18nText('Orthodontic.expanderActivation.completed', {
+              completed: appliance.completedActivations,
+            })}
       </Surface>
 
       <FieldInput
-        label="本次加力序号"
+        label={i18nText('Orthodontic.expanderActivation.indexLabel')}
         type="number"
         value={activationIndex}
         onChange={setActivationIndex}
-        placeholder={`默认 ${nextIndex}`}
+        placeholder={i18nText('Orthodontic.common.defaultValue', { value: nextIndex })}
       />
       {overCap && (
         <div className="text-[13px] text-[var(--nimi-status-danger)]">
-          已达到处方总加力次数 {cap}，无法继续记录加力。
+          {i18nText('Orthodontic.expanderActivation.overCap', { cap })}
         </div>
       )}
 
       <FieldInput
-        label="加力时间"
+        label={i18nText('Orthodontic.expanderActivation.timeLabel')}
         type="datetime-local"
         value={at}
         onChange={setAt}
       />
 
       <FieldTextarea
-        label="备注（可选，如「左 1 圈 + 右 1 圈」）"
+        label={i18nText('Orthodontic.expanderActivation.notesLabel')}
         value={notes}
         onChange={setNotes}
-        placeholder="记录本次加力的细节"
+        placeholder={i18nText('Orthodontic.expanderActivation.notesPlaceholder')}
       />
 
       <ModalFooter
         onCancel={onClose}
         onSubmit={() => void handleSubmit()}
-        submitLabel="保存"
+        submitLabel={i18nText('Orthodontic.expanderActivation.submit')}
         disabled={!formValid}
       />
     </Modal>

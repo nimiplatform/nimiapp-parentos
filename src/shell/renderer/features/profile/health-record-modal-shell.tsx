@@ -1,5 +1,5 @@
 /**
- * Unified modal system for "添加健康数据" pages on the ParentOS profile/档案 surface.
+ * Unified modal system for health-data pages on the ParentOS profile surface.
  *
  * Layout (composed by the shell):
  *   ┌──────────────┬───────────────────────────────────┐
@@ -27,9 +27,10 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { X, type LucideIcon } from 'lucide-react';
-import { Surface } from '@nimiplatform/kit/ui';
+import { DialogTitle, OverlayShell } from '@nimiplatform/kit/ui';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── Tokens ─────────────────────────────────────────────────────────────── */
 
@@ -84,35 +85,28 @@ export function HealthRecordModalShell({
   if (!open) return null;
   const width = SIZE_WIDTH[size];
 
-  const modal = (
-    <div
-      role="dialog"
-      aria-label={ariaLabel}
-      aria-modal="true"
-      className="parentos-health-modal-overlay fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[var(--nimi-scrim-modal)] px-4 py-6"
-      onClick={onClose}
+  return (
+    <OverlayShell
+      open
+      kind="dialog"
+      onClose={onClose}
+      panelClassName="parentos-health-modal-panel rounded-3xl"
+      contentClassName="!p-0"
     >
-      <Surface
-        as="section"
-        tone="card"
-        material="solid"
-        elevation="modal"
-        padding="none"
-        className="parentos-health-modal-panel relative flex overflow-hidden rounded-3xl bg-[var(--nimi-surface-card)]"
-        style={{
-          width,
-          maxWidth: 'calc(100vw - 32px)',
-          maxHeight: HEALTH_MODAL_TOKENS.maxHeight,
-        }}
-        onClick={(event) => event.stopPropagation()}
+      <DialogTitle className="sr-only">{ariaLabel}</DialogTitle>
+    <div
+      className="relative flex overflow-hidden bg-[var(--nimi-surface-card)]"
+      style={{
+        width,
+        maxWidth: 'calc(100vw - 32px)',
+        maxHeight: HEALTH_MODAL_TOKENS.maxHeight,
+      }}
       >
         {sidebar}
         <div className="flex min-w-0 flex-1 flex-col bg-[var(--nimi-surface-card)]">{children}</div>
-      </Surface>
     </div>
+    </OverlayShell>
   );
-
-  return typeof document === 'undefined' ? modal : createPortal(modal, document.body);
 }
 
 /* ── Sidebar ────────────────────────────────────────────────────────────── */
@@ -195,13 +189,13 @@ export function SmartInputButton({
   const inputRef = useRef<HTMLInputElement>(null);
   const status = loading
     ? imageName
-      ? `正在识别 ${imageName}…`
-      : '识别中…'
+      ? i18nText('HealthCapture.ai.recognizingFile', { imageName })
+      : i18nText('HealthCapture.ai.recognizing')
     : error
       ? error
       : imageName
-        ? `✓ 已从 ${imageName} 提取`
-        : (hint ?? '上传图片，AI 自动填表');
+        ? i18nText('HealthCapture.ai.extractedFromFile', { imageName })
+        : (hint ?? i18nText('HealthCapture.ai.uploadHint'));
   const statusClass = loading
     ? 'text-[var(--nimi-action-primary-bg)]'
     : error
@@ -235,7 +229,7 @@ export function SmartInputButton({
           {loading ? '⏳' : '🤖'}
         </span>
         <span className="flex-1 text-left truncate">
-          {loading ? '识别中…' : '智能录入'}
+          {loading ? i18nText('HealthCapture.ai.recognizing') : i18nText('HealthCapture.ai.smartCapture')}
         </span>
       </button>
       <p className={`mt-2 text-[11px] leading-snug ${statusClass}`}>
@@ -288,7 +282,7 @@ export function ModalHeader({ title, subtitle, icon, onClose, trailing }: ModalH
       <button
         type="button"
         onClick={onClose}
-        aria-label="关闭"
+        aria-label={i18nText('HealthCapture.close')}
         className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
       >
         <X size={16} strokeWidth={1.75} />

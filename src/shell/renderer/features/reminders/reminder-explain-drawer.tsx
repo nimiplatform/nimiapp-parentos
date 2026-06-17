@@ -27,6 +27,8 @@ import {
 import { currentProgressionState } from '../../engine/reminder-progression.js';
 import { getLocalToday } from '../../engine/reminder-engine.js';
 import { domainDetailRoute } from './reminder-detail-route.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const DRAWER_WIDTH = 440;
 
@@ -67,81 +69,90 @@ function resolveFooterPrimary(reminder: ActiveReminder): FooterPrimary[] {
 
   if (kind === 'task') {
     if (progression === 'completed') {
-      return [{ variant: 'action', label: '恢复', action: 'restore' }];
+      return [{ variant: 'action', label: i18nText('Reminders.action.restore'), action: 'restore' }];
     }
     switch (reminder.rule.actionType) {
       case 'go_hospital':
         if (reminder.rule.domain === 'vaccine') {
           return [
-            { variant: 'link', label: '记录疫苗', to: domainDetailRoute(reminder.rule.domain) },
-            { variant: 'action', label: '标记完成', action: 'complete' },
+            { variant: 'link', label: i18nText('Reminders.action.recordVaccine'), to: domainDetailRoute(reminder.rule.domain) },
+            { variant: 'action', label: i18nText('Reminders.action.markComplete'), action: 'complete' },
           ];
         }
         return [
-          { variant: 'link', label: '查看档案', to: domainDetailRoute(reminder.rule.domain) },
-          { variant: 'action', label: '标记完成', action: 'complete' },
+          { variant: 'link', label: i18nText('Reminders.action.viewProfile'), to: domainDetailRoute(reminder.rule.domain) },
+          { variant: 'action', label: i18nText('Reminders.action.markComplete'), action: 'complete' },
         ];
       case 'record_data':
         return [
-          { variant: 'capture', label: '去记录' },
+          { variant: 'capture', label: i18nText('Reminders.action.goRecord') },
         ];
       default:
-        return [{ variant: 'action', label: '标记完成', action: 'complete' }];
+        return [{ variant: 'action', label: i18nText('Reminders.action.markComplete'), action: 'complete' }];
     }
   }
 
   if (kind === 'guide') {
     if (progression === 'reflected') {
-      return [{ variant: 'action', label: '恢复', action: 'restore' }];
+      return [{ variant: 'action', label: i18nText('Reminders.action.restore'), action: 'restore' }];
     }
     if (progression === 'acknowledged') {
-      return [{ variant: 'action', label: '我反思了', action: 'reflect' }];
+      return [{ variant: 'action', label: i18nText('Reminders.action.reflect'), action: 'reflect' }];
     }
-    return [{ variant: 'action', label: '我已了解', action: 'acknowledge' }];
+    return [{ variant: 'action', label: i18nText('Reminders.action.acknowledged'), action: 'acknowledge' }];
   }
 
   if (kind === 'practice') {
     if (progression === 'habituated') {
-      return [{ variant: 'action', label: '恢复', action: 'restore' }];
+      return [{ variant: 'action', label: i18nText('Reminders.action.restore'), action: 'restore' }];
     }
     if (progression === 'practicing') {
       return [
-        { variant: 'action', label: '再做一次', action: 'log_practice' },
-        { variant: 'action', label: '已成为习惯', action: 'mark_habituated' },
+        { variant: 'action', label: i18nText('Reminders.action.logPractice'), action: 'log_practice' },
+        { variant: 'action', label: i18nText('Reminders.action.markHabituated'), action: 'mark_habituated' },
       ];
     }
-    return [{ variant: 'action', label: '开始实践', action: 'start_practicing' }];
+    return [{ variant: 'action', label: i18nText('Reminders.action.startPractice'), action: 'start_practicing' }];
   }
 
   // consult
   if (progression === 'consulted') {
     return [
-      { variant: 'link', label: '重新打开对话', to: `/advisor${ruleRoute}` },
+      { variant: 'link', label: i18nText('Reminders.action.reopenAdvisor'), to: `/advisor${ruleRoute}` },
     ];
   }
-  return [{ variant: 'link', label: '问问 AI 顾问', to: `/advisor${ruleRoute}` }];
+  return [{ variant: 'link', label: i18nText('Reminders.action.askAdvisor'), to: `/advisor${ruleRoute}` }];
 }
 
-const KIND_BADGE: Record<ReminderKind, { label: string; fg: string; bg: string }> = {
-  task:     { label: '记录型',   fg: '#1d4ed8', bg: '#dbeafe' },
-  guide:    { label: '指南型',   fg: '#9333ea', bg: '#f3e8ff' },
-  practice: { label: '实践型',   fg: '#047857', bg: '#d1fae5' },
-  consult:  { label: '咨询型',   fg: '#c2410c', bg: '#fed7aa' },
+const KIND_BADGE: Record<ReminderKind, { labelKey: string; fg: string; bg: string }> = {
+  task:     { labelKey: 'Reminders.kind.task',     fg: '#1d4ed8', bg: '#dbeafe' },
+  guide:    { labelKey: 'Reminders.kind.guide',    fg: '#9333ea', bg: '#f3e8ff' },
+  practice: { labelKey: 'Reminders.kind.practice', fg: '#047857', bg: '#d1fae5' },
+  consult:  { labelKey: 'Reminders.kind.consult',  fg: '#c2410c', bg: '#fed7aa' },
 };
 
-const PROGRESSION_LABEL: Record<string, string> = {
-  pending: '等待触发',
-  due: '待处理',
-  acknowledged: '已了解',
-  reflected: '已反思',
-  practicing: '实践中',
-  habituated: '已成为习惯',
-  consulted: '已咨询',
-  completed: '已完成',
-  snoozed: '已推迟',
-  scheduled: '已安排',
-  not_applicable: '不适用',
+const PROGRESSION_LABEL_KEYS: Record<string, string> = {
+  pending: 'Reminders.progression.pending',
+  due: 'Reminders.progression.due',
+  acknowledged: 'Reminders.progression.acknowledged',
+  reflected: 'Reminders.progression.reflected',
+  practicing: 'Reminders.progression.practicing',
+  habituated: 'Reminders.progression.habituated',
+  consulted: 'Reminders.progression.consulted',
+  completed: 'Reminders.progression.completed',
+  snoozed: 'Reminders.progression.snoozed',
+  scheduled: 'Reminders.progression.scheduled',
+  not_applicable: 'Reminders.progression.notApplicable',
 };
+
+function kindLabel(kind: ReminderKind): string {
+  return i18nText(KIND_BADGE[kind].labelKey);
+}
+
+function progressionLabel(progression: string): string {
+  const key = PROGRESSION_LABEL_KEYS[progression];
+  return key ? i18nText(key) : progression;
+}
 
 function isExplainComplete(reminder: ActiveReminder): boolean {
   const explain = reminder.rule.explain;
@@ -191,7 +202,7 @@ export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCaptu
       />
       <aside
         role="dialog"
-        aria-label={`提醒详情：${reminder.rule.title}`}
+        aria-label={i18nText('Reminders.drawer.ariaTitle', { title: reminder.rule.title })}
         className="parentos-reminder-explain-drawer fixed right-0 top-0 z-[100] flex h-full flex-col bg-white shadow-[-18px_0_48px_rgba(15,23,42,0.14)]"
         style={{ width: DRAWER_WIDTH }}
         onKeyDown={(event) => {
@@ -206,14 +217,14 @@ export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCaptu
                 className="inline-flex items-center rounded-full px-2 py-[2px] text-[12px] font-semibold tracking-[0.04em]"
                 style={{ background: kindBadge.bg, color: kindBadge.fg }}
               >
-                {kindBadge.label}
+                {kindLabel(reminder.kind)}
               </span>
               <span className="text-[12px]" style={{ color: '#94a3b8' }}>
-                {PROGRESSION_LABEL[progression] ?? progression}
+                {progressionLabel(progression)}
               </span>
               {reminder.kind === 'practice' && reminder.state?.practiceCount ? (
                 <span className="text-[12px]" style={{ color: '#64748b' }}>
-                  · 实践 {reminder.state.practiceCount} 次
+                  {i18nText('Reminders.drawer.practiceCount', { count: reminder.state.practiceCount })}
                 </span>
               ) : null}
             </div>
@@ -227,7 +238,7 @@ export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCaptu
           <button
             type="button"
             onClick={onClose}
-            aria-label="关闭"
+            aria-label={i18nText('Reminders.action.close')}
             className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-[#f0f0ec]"
             style={{ color: '#b0b5bc' }}
           >
@@ -244,12 +255,12 @@ export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCaptu
           ) : explain ? (
             <>
               {explain.whyNow && (
-                <Section title="为什么现在">
+                <Section title={i18nText('Reminders.drawer.section.whyNow')}>
                   <p className="text-[14px] leading-[1.8]" style={{ color: '#1e293b' }}>{explain.whyNow}</p>
                 </Section>
               )}
               {explain.howTo && explain.howTo.length > 0 && (
-                <Section title="怎么做">
+                <Section title={i18nText('Reminders.drawer.section.howTo')}>
                   <ol className="ml-4 list-decimal space-y-3">
                     {explain.howTo.map((step, index) => (
                       <li key={index} className="pl-1 text-[14px] leading-[1.8]" style={{ color: '#1e293b' }}>
@@ -260,12 +271,12 @@ export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCaptu
                 </Section>
               )}
               {explain.doneWhen && (
-                <Section title="做到什么算到位">
+                <Section title={i18nText('Reminders.drawer.section.doneWhen')}>
                   <p className="text-[14px] leading-[1.8]" style={{ color: '#1e293b' }}>{explain.doneWhen}</p>
                 </Section>
               )}
               {explain.pitfalls && explain.pitfalls.length > 0 && (
-                <Section title="常见陷阱">
+                <Section title={i18nText('Reminders.drawer.section.pitfalls')}>
                   <ul className="ml-4 list-disc space-y-2.5">
                     {explain.pitfalls.map((item, index) => (
                       <li key={index} className="pl-1 text-[14px] leading-[1.8]" style={{ color: '#475569' }}>
@@ -276,12 +287,12 @@ export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCaptu
                 </Section>
               )}
               {explain.ifNotNow && (
-                <Section title="现在不方便">
+                <Section title={i18nText('Reminders.drawer.section.ifNotNow')}>
                   <p className="text-[14px] leading-[1.8]" style={{ color: '#475569' }}>{explain.ifNotNow}</p>
                 </Section>
               )}
               {explain.sources && explain.sources.length > 0 && (
-                <Section title="依据">
+                <Section title={i18nText('Reminders.drawer.section.sources')}>
                   <ul className="space-y-2">
                     {explain.sources.map((source, index) => (
                       <li key={index} className="text-[13px] leading-[1.7]" style={{ color: '#64748b' }}>
@@ -375,7 +386,7 @@ export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCaptu
                 className="inline-flex h-9 items-center rounded-full px-3 text-[13px] transition-colors hover:bg-[#f1f5f9]"
                 style={{ color: '#475569' }}
               >
-                推迟
+                {i18nText('Reminders.action.snooze')}
               </button>
               {notApplicableOk && (
                 <button
@@ -387,7 +398,7 @@ export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCaptu
                   className="inline-flex h-9 items-center rounded-full px-3 text-[13px] transition-colors hover:bg-[#f1f5f9]"
                   style={{ color: '#475569' }}
                 >
-                  不适用
+                  {i18nText('Reminders.action.notApplicable')}
                 </button>
               )}
             </div>
@@ -415,10 +426,10 @@ function ExplainIncompletePlaceholder({ kind }: { kind: ReminderKind }) {
   return (
     <div className="rounded-xl border border-dashed px-4 py-5" style={{ borderColor: '#fde68a', background: '#fffbeb' }}>
       <p className="text-[14px] font-medium" style={{ color: '#b45309' }}>
-        指南正在完善
+        {i18nText('Reminders.drawer.incompleteTitle')}
       </p>
       <p className="mt-1 text-[13px] leading-relaxed" style={{ color: '#92400e' }}>
-        这条 {KIND_BADGE[kind].label} 提醒的结构化指南尚未完整填写。为了不误导家长，抽屉暂时隐藏引导段并禁用主操作。可以到 /reminders 列表查看原始提醒描述，或联系规则作者补齐内容。
+        {i18nText('Reminders.drawer.incompleteDescription', { kind: kindLabel(kind) })}
       </p>
     </div>
   );

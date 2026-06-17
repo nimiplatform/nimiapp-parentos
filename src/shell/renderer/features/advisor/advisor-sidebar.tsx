@@ -2,6 +2,8 @@ import { Plus } from 'lucide-react';
 import { ScrollArea, cn } from '@nimiplatform/kit/ui';
 import type { ConversationRow } from '../../bridge/sqlite-bridge.js';
 import { formatRelativeTimeCn } from './advisor-theme.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export type AdvisorSidebarProps = {
   conversations: ConversationRow[];
@@ -24,7 +26,7 @@ export function AdvisorSidebar({
         className="mb-3 flex min-h-10 w-full items-center justify-center gap-2 parentos-radius-lg border border-[var(--nimi-border-subtle)] bg-[color-mix(in_srgb,var(--nimi-surface-card)_86%,var(--nimi-surface-panel))] px-3 text-[14px] font-semibold text-[var(--nimi-text-primary)] transition-all hover:border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_30%,var(--nimi-border-subtle))] hover:shadow-[var(--nimi-elevation-base)]"
       >
         <Plus size={15} aria-hidden="true" />
-        新对话
+        {i18nText('Advisor.sidebar.newConversation')}
       </button>
 
       <ScrollArea className="min-h-0 flex-1" contentClassName="pr-1">
@@ -47,7 +49,7 @@ export function AdvisorSidebar({
                     active && 'font-semibold text-[var(--nimi-text-primary)]',
                   )}
                 >
-                  {conv.title ?? '新对话'}
+                  {conv.title ?? i18nText('Advisor.sidebar.newConversation')}
                 </p>
                 <span className="text-[11px] text-[var(--nimi-text-muted)]">
                   {formatRelativeTimeCn(conv.lastMessageAt)}

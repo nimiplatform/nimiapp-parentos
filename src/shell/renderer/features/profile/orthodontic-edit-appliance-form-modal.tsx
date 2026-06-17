@@ -16,6 +16,8 @@ import {
   Modal,
   ModalErrorBanner,
 } from './orthodontic-modal-primitives.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /**
  * In-flight edit modal for an existing appliance. Surfaces what
@@ -91,25 +93,25 @@ export function EditApplianceFormModal({
 
   const handleSubmit = async () => {
     if (needsPrescribedHours && !prescribedHoursValid) {
-      const msg = '医嘱每日佩戴小时数必须在 1..24 之间';
+      const msg = i18nText('Orthodontic.modal.appliance.prescribedHoursInvalid');
       setLocalError(msg);
       onError(msg);
       return;
     }
     if (isClearAligner && (!totalAlignersValid || !daysPerAlignerValid)) {
-      const msg = '隐形牙套需要正整数的总副数和每副佩戴天数';
+      const msg = i18nText('Orthodontic.modal.appliance.alignerPlanRequired');
       setLocalError(msg);
       onError(msg);
       return;
     }
     if (!activationIntervalValid) {
-      const msg = '扩弓转动周期必须是大于 0 的整数（天）';
+      const msg = i18nText('Orthodontic.modal.appliance.activationIntervalInvalid');
       setLocalError(msg);
       onError(msg);
       return;
     }
     if (!nextReviewValid) {
-      const msg = '下次复诊日期格式应为 YYYY-MM-DD';
+      const msg = i18nText('Orthodontic.modal.appliance.nextReviewDateInvalid');
       setLocalError(msg);
       onError(msg);
       return;
@@ -150,8 +152,7 @@ export function EditApplianceFormModal({
 
   const handleDelete = async () => {
     if (
-      !window.confirm(
-        '确定删除该矫治器？相关打卡、未戴时段、复诊提醒都会一并删除，操作不可撤销。',
+      !window.confirm(i18nText('Orthodontic.modal.appliance.confirmDelete'),
       )
     ) {
       return;
@@ -172,22 +173,22 @@ export function EditApplianceFormModal({
   };
 
   return (
-    <Modal title="编辑矫治器设置" onClose={onClose}>
+    <Modal title={i18nText('Orthodontic.modal.appliance.editTitle')} onClose={onClose}>
       {localError && <ModalErrorBanner message={localError} onDismiss={() => setLocalError(null)} />}
 
       <Surface tone="panel" material="solid" elevation="base" padding="none" className="px-3 py-2 text-[13px] text-[var(--nimi-text-muted)]">
-        矫治器类型 <strong className="ml-1.5 text-[var(--nimi-text-primary)]">{applianceTypeLabel(appliance.applianceType)}</strong>
-        <span className="ml-3">启用日期</span>
+        {i18nText('Orthodontic.modal.appliance.typeLabel')} <strong className="ml-1.5 text-[var(--nimi-text-primary)]">{applianceTypeLabel(appliance.applianceType)}</strong>
+        <span className="ml-3">{i18nText('Orthodontic.modal.appliance.enabledAt')}</span>
         <strong className="ml-1.5 text-[var(--nimi-text-primary)]">{appliance.startedAt}</strong>
       </Surface>
 
       {needsPrescribedHours && (
         <>
-          <FieldInput label="医嘱每日佩戴小时" type="number" value={prescribedHours} onChange={setPrescribedHours}
-            placeholder="例如 22" />
+          <FieldInput label={i18nText('Orthodontic.modal.appliance.prescribedHoursLabel')} type="number" value={prescribedHours} onChange={setPrescribedHours}
+            placeholder={i18nText('Orthodontic.modal.appliance.prescribedHoursPlaceholder')} />
           {!prescribedHoursValid && (
             <div className="text-[13px] text-[var(--nimi-status-danger)]">
-              医嘱每日佩戴小时数必须在 1..24 之间。
+              {i18nText('Orthodontic.modal.appliance.prescribedHoursInvalid')}
             </div>
           )}
         </>
@@ -195,18 +196,18 @@ export function EditApplianceFormModal({
 
       {isClearAligner && (
         <>
-          <FieldInput label="牙套总副数" type="number" value={totalAligners} onChange={setTotalAligners}
-            placeholder="例如 30" />
+          <FieldInput label={i18nText('Orthodontic.modal.appliance.totalAlignersLabel')} type="number" value={totalAligners} onChange={setTotalAligners}
+            placeholder={i18nText('Orthodontic.modal.appliance.totalAlignersPlaceholder')} />
           {!totalAlignersValid && (
             <div className="text-[13px] text-[var(--nimi-status-danger)]">
-              总副数必须是大于 0 的整数。
+              {i18nText('Orthodontic.modal.appliance.totalAlignersInvalid')}
             </div>
           )}
-          <FieldInput label="每副佩戴天数" type="number" value={daysPerAligner} onChange={setDaysPerAligner}
-            placeholder="例如 7" />
+          <FieldInput label={i18nText('Orthodontic.modal.appliance.daysPerAlignerLabel')} type="number" value={daysPerAligner} onChange={setDaysPerAligner}
+            placeholder={i18nText('Orthodontic.modal.appliance.daysPerAlignerPlaceholder')} />
           {!daysPerAlignerValid && (
             <div className="text-[13px] text-[var(--nimi-status-danger)]">
-              每副佩戴天数必须是大于 0 的整数。
+              {i18nText('Orthodontic.modal.appliance.daysPerAlignerInvalid')}
             </div>
           )}
         </>
@@ -214,26 +215,26 @@ export function EditApplianceFormModal({
 
       {isExpander && (
         <>
-          <FieldInput label="扩弓转动周期（天，可选）" type="number" value={activationInterval}
-            onChange={setActivationInterval} placeholder="例如 3" />
+          <FieldInput label={i18nText('Orthodontic.modal.appliance.activationIntervalLabel')} type="number" value={activationInterval}
+            onChange={setActivationInterval} placeholder={i18nText('Orthodontic.modal.appliance.activationIntervalPlaceholder')} />
           {!activationIntervalValid && (
             <div className="text-[13px] text-[var(--nimi-status-danger)]">
-              转动周期必须是大于 0 的整数。
+              {i18nText('Orthodontic.modal.appliance.activationIntervalInvalid')}
             </div>
           )}
         </>
       )}
 
-      <FieldInput label="下次复诊日期" type="date" value={nextReviewDate} onChange={setNextReviewDate}
-        placeholder="留空清除" />
+      <FieldInput label={i18nText('Orthodontic.modal.appliance.nextReviewDate')} type="date" value={nextReviewDate} onChange={setNextReviewDate}
+        placeholder={i18nText('Orthodontic.modal.appliance.nextReviewDatePlaceholder')} />
       {!nextReviewValid && (
         <div className="text-[13px] text-[var(--nimi-status-danger)]">
-          下次复诊日期格式应为 YYYY-MM-DD。
+          {i18nText('Orthodontic.modal.appliance.nextReviewDateInvalid')}
         </div>
       )}
 
-      <FieldTextarea label="下次复诊议程（可选）" value={nextReviewAgenda}
-        onChange={setNextReviewAgenda} placeholder="例如 评估扩弓量 / 换主弓丝" />
+      <FieldTextarea label={i18nText('Orthodontic.modal.appliance.nextReviewAgenda')} value={nextReviewAgenda}
+        onChange={setNextReviewAgenda} placeholder={i18nText('Orthodontic.modal.appliance.nextReviewAgendaPlaceholder')} />
 
       <div className="mt-2 flex items-center gap-2">
         <Button
@@ -243,11 +244,11 @@ export function EditApplianceFormModal({
           onClick={() => void handleDelete()}
           disabled={deleting}
         >
-          {deleting ? '删除中…' : '删除矫治器'}
+          {deleting ? i18nText('Orthodontic.modal.appliance.deleting') : i18nText('Orthodontic.modal.appliance.delete')}
         </Button>
         <div className="ml-auto flex gap-2">
           <Button type="button" onClick={onClose} tone="ghost" size="sm" disabled={deleting}>
-            取消
+            {i18nText('Orthodontic.modal.appliance.cancel')}
           </Button>
           <Button
             type="button"
@@ -256,7 +257,7 @@ export function EditApplianceFormModal({
             tone="primary"
             size="sm"
           >
-            保存
+            {i18nText('Orthodontic.modal.appliance.save')}
           </Button>
         </div>
       </div>

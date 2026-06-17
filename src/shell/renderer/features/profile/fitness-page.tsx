@@ -1,7 +1,7 @@
 import { Button, IconButton, Surface, Timeline, TimelineGroup } from '@nimiplatform/kit/ui';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
+import { useAppStore, computeAgeMonths, formatAge } from '../../app-shell/app-store.js';
 import { deleteFitnessEvent, getHealthRecordEvents, getHealthRecordValues } from '../../bridge/sqlite-bridge.js';
 import type { HealthRecordEventRow, HealthRecordValueRow } from '../../bridge/sqlite-bridge.js';
 import { AISummaryCard } from './ai-summary-card.js';
@@ -16,55 +16,44 @@ import {
   STANDARD_METRIC_IDS,
   ACTIVITY_CATEGORY_LABELS,
   ACTIVITY_CATEGORY_EMOJI,
+  FITNESS_AGE_TIER_LABELS,
+  FITNESS_SOURCE_LABELS,
+  FITNESS_STANDARD_METRIC_LABELS,
   INTENSITY_LABELS,
   type FitnessEditTarget,
   type FitnessEventEntry,
 } from './fitness-assessment-form.js';
 import { formatDateLabel } from '../journal/journal-page-helpers.js';
-
-const AGE_TIER_LABELS: Record<string, string> = {
-  preschool: '学龄前',
-  grade12: '1-2年级',
-  grade34: '3-4年级',
-  grade56: '5-6年级',
-  grade7plus: '初中及以上',
-};
+import { i18nText } from '../../i18n/index.js';
 
 const FOOT_ARCH_LABELS: Record<string, string> = {
-  normal: '正常',
-  flat: '扁平足',
-  'high-arch': '高弓足',
-  monitoring: '观察中',
-};
-
-const SOURCE_LABELS: Record<string, string> = {
-  'school-pe': '学校体育',
-  'sports-club': '体育俱乐部',
-  clinic: '医疗机构',
-  self: '自测',
+  normal: i18nText('Fitness.footArch.normal'),
+  flat: i18nText('Fitness.footArch.flat'),
+  'high-arch': i18nText('Fitness.footArch.highArch'),
+  monitoring: i18nText('Fitness.footArch.monitoring'),
 };
 
 // National-standard test metrics, grouped for the card body. Each tuple is
 // [metricId, label, unit]; only metrics with a recorded value render a chip.
 const SPEED_METRICS: [string, string, string][] = [
-  ['fitness.run_10m_shuttle', '10米折返跑', 's'],
-  ['fitness.run_50m', '50米跑', 's'],
-  ['fitness.run_800m', '800米跑', 's'],
-  ['fitness.run_1000m', '1000米跑', 's'],
-  ['fitness.run_50x8', '50m×8', 's'],
+  ['fitness.run_10m_shuttle', FITNESS_STANDARD_METRIC_LABELS.run10mShuttle, i18nText('Common.unit.second')],
+  ['fitness.run_50m', FITNESS_STANDARD_METRIC_LABELS.run50m, i18nText('Common.unit.second')],
+  ['fitness.run_800m', FITNESS_STANDARD_METRIC_LABELS.run800m, i18nText('Common.unit.second')],
+  ['fitness.run_1000m', FITNESS_STANDARD_METRIC_LABELS.run1000m, i18nText('Common.unit.second')],
+  ['fitness.run_50x8', FITNESS_STANDARD_METRIC_LABELS.run50x8, i18nText('Common.unit.second')],
 ];
 const STRENGTH_METRICS: [string, string, string][] = [
-  ['fitness.standing_long_jump', '立定跳远', 'cm'],
-  ['fitness.tennis_ball_throw', '网球掷远', 'm'],
-  ['fitness.double_foot_jump', '双脚连续跳', 's'],
-  ['fitness.sit_and_reach', '坐位体前屈', 'cm'],
-  ['fitness.sit_ups', '仰卧起坐', '次/分'],
-  ['fitness.pull_ups', '引体向上', '次'],
+  ['fitness.standing_long_jump', FITNESS_STANDARD_METRIC_LABELS.standingLongJump, i18nText('Common.unit.centimeter')],
+  ['fitness.tennis_ball_throw', FITNESS_STANDARD_METRIC_LABELS.tennisBallThrow, i18nText('Common.unit.meter')],
+  ['fitness.double_foot_jump', FITNESS_STANDARD_METRIC_LABELS.doubleFootJump, i18nText('Common.unit.second')],
+  ['fitness.sit_and_reach', FITNESS_STANDARD_METRIC_LABELS.sitAndReach, i18nText('Common.unit.centimeter')],
+  ['fitness.sit_ups', FITNESS_STANDARD_METRIC_LABELS.sitUps, i18nText('Common.unit.perMinute')],
+  ['fitness.pull_ups', FITNESS_STANDARD_METRIC_LABELS.pullUps, i18nText('Common.unit.count')],
 ];
 const CARDIO_METRICS: [string, string, string][] = [
-  ['fitness.balance_beam', '走平衡木', 's'],
-  ['fitness.rope_skipping', '跳绳', '次/分'],
-  ['fitness.vital_capacity', '肺活量', 'mL'],
+  ['fitness.balance_beam', FITNESS_STANDARD_METRIC_LABELS.balanceBeam, i18nText('Common.unit.second')],
+  ['fitness.rope_skipping', FITNESS_STANDARD_METRIC_LABELS.ropeSkipping, i18nText('Common.unit.perMinute')],
+  ['fitness.vital_capacity', FITNESS_STANDARD_METRIC_LABELS.vitalCapacity, i18nText('Common.unit.milliliter')],
 ];
 
 interface FitnessEntry {
@@ -126,17 +115,20 @@ function summarizeEntry(entry: FitnessEntry): { topic: string; desc: string } {
       const v = entry.valuesByMetric.get(metricId)?.valueNumber;
       if (v != null) parts.push(`${label} ${v}${unit}`);
     }
-    return { topic: '国标体测', desc: [`日期：${entry.date}`, ...parts].join('；') };
+    return {
+      topic: i18nText('Fitness.summary.standardTopic'),
+      desc: [i18nText('Fitness.summary.date', { date: entry.date }), ...parts].join('；'),
+    };
   }
   const category = entry.valuesByMetric.get('fitness.activity_category')?.valueText ?? 'other';
   const duration = entry.valuesByMetric.get('fitness.activity_duration')?.valueNumber;
   const distance = entry.valuesByMetric.get('fitness.activity_distance')?.valueNumber;
   const intensity = entry.valuesByMetric.get('fitness.activity_intensity')?.valueText ?? null;
-  const topic = ACTIVITY_CATEGORY_LABELS[category] ?? '运动记录';
-  const parts = [`日期：${entry.date}`];
-  if (duration != null) parts.push(`时长 ${duration} 分钟`);
-  if (distance != null) parts.push(`距离 ${distance} 米`);
-  if (intensity) parts.push(`强度 ${INTENSITY_LABELS[intensity] ?? intensity}`);
+  const topic = ACTIVITY_CATEGORY_LABELS[category] ?? i18nText('Fitness.summary.activityFallbackTopic');
+  const parts = [i18nText('Fitness.summary.date', { date: entry.date })];
+  if (duration != null) parts.push(i18nText('Fitness.summary.duration', { duration }));
+  if (distance != null) parts.push(i18nText('Fitness.summary.distance', { distance }));
+  if (intensity) parts.push(i18nText('Fitness.summary.intensity', { intensity: INTENSITY_LABELS[intensity] ?? intensity }));
   return { topic, desc: parts.join('；') };
 }
 
@@ -197,7 +189,7 @@ export default function FitnessPage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="体能评估">
+      <ProfileDetailShell title={i18nText('Fitness.page.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -213,7 +205,7 @@ export default function FitnessPage() {
   };
 
   const handleDelete = async (entry: FitnessEntry) => {
-    if (!window.confirm('确定删除这条体能记录？操作不可撤销。')) return;
+    if (!window.confirm(i18nText('Fitness.page.deleteConfirm'))) return;
     try {
       await deleteFitnessEvent(entry.eventId);
       reload(child.childId);
@@ -224,16 +216,16 @@ export default function FitnessPage() {
 
   return (
     <ProfileDetailShell
-      title="体能评估"
+      title={i18nText('Fitness.page.title')}
       actions={!showForm && !editTarget ? (
         <Button tone="primary" size="sm" onClick={() => setShowForm(true)} className="rounded-2xl">
-          添加记录
+          {i18nText('Fitness.page.addRecord')}
         </Button>
       ) : null}
       aiSummary={
         <AISummaryCard domain="fitness" childName={child.displayName} childId={child.childId}
-          ageLabel={`${Math.floor(ageMonths/12)}岁${ageMonths%12}个月`} gender={child.gender}
-          dataContext={entries.length > 0 ? `共 ${entries.length} 条体能记录` : ''}
+          ageLabel={formatAge(ageMonths)} gender={child.gender}
+          dataContext={entries.length > 0 ? i18nText('Common.count.fitnessRecords', { count: entries.length }) : ''}
         />
       }
     >
@@ -263,8 +255,8 @@ export default function FitnessPage() {
         {entries.length === 0 ? (
           <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="rounded-3xl p-8 text-center">
             <span className="text-[24px]">🏃</span>
-            <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">还没有体能记录</p>
-            <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">选择运动类目，记录成绩与运动量</p>
+            <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">{i18nText('Fitness.page.emptyTitle')}</p>
+            <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('Fitness.page.emptyDescription')}</p>
           </Surface>
         ) : (
           <Timeline>
@@ -274,7 +266,7 @@ export default function FitnessPage() {
                 variant="past"
                 tone={gi === 0 ? 'success' : 'neutral'}
                 date={formatDateLabel(group.date)}
-                secondaryLabel={`${group.items.length} 条`}
+                secondaryLabel={i18nText('Common.count.timelineItems', { count: group.items.length })}
                 isLast={gi === dateGroups.length - 1}
               >
                 {group.items.map((entry) => (
@@ -300,7 +292,7 @@ function LatestPill() {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-[color-mix(in_srgb,var(--nimi-status-success)_10%,transparent)] px-2 py-[3px] text-[11px] font-semibold text-[var(--nimi-status-success)]">
       <span className="h-1.5 w-1.5 rounded-full bg-[var(--nimi-status-success)]" />
-      最新
+      {i18nText('Fitness.page.latest')}
     </span>
   );
 }
@@ -343,8 +335,8 @@ function CardActions({
           e.stopPropagation();
           onAskAi();
         }}
-        aria-label="和 AI 聊这条记录"
-        title="和 AI 聊这条记录"
+        aria-label={i18nText('Fitness.page.askAi')}
+        title={i18nText('Fitness.page.askAi')}
         icon={
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z" />
@@ -409,19 +401,19 @@ function StandardCardBody({ entry, isLatest }: { entry: FitnessEntry; isLatest: 
     <>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">
-          {entry.source ? (SOURCE_LABELS[entry.source] ?? entry.source) : '国标体测'}
+          {entry.source ? (FITNESS_SOURCE_LABELS[entry.source] ?? entry.source) : i18nText('Fitness.category.standard')}
         </span>
         {isLatest && <LatestPill />}
         <span className="rounded bg-[var(--nimi-surface-panel)] px-1.5 py-0.5 text-[13px] text-[var(--nimi-text-muted)]">
-          {AGE_TIER_LABELS[ageTier(entry.ageMonths)]}
+          {FITNESS_AGE_TIER_LABELS[ageTier(entry.ageMonths)]}
         </span>
       </div>
       <div className="space-y-2">
-        {speed.length > 0 && <MetricRow label="速度">{speed}</MetricRow>}
-        {strength.length > 0 && <MetricRow label="力量">{strength}</MetricRow>}
-        {cardio.length > 0 && <MetricRow label="心肺">{cardio}</MetricRow>}
+        {speed.length > 0 && <MetricRow label={i18nText('Fitness.card.speed')}>{speed}</MetricRow>}
+        {strength.length > 0 && <MetricRow label={i18nText('Fitness.card.strength')}>{strength}</MetricRow>}
+        {cardio.length > 0 && <MetricRow label={i18nText('Fitness.card.cardio')}>{cardio}</MetricRow>}
         {footArch && (
-          <MetricRow label="足弓">
+          <MetricRow label={i18nText('Fitness.card.footArch')}>
             <span className="inline-flex items-center rounded-full bg-[var(--nimi-surface-panel)] px-2 py-0.5 text-[14px] font-medium text-[var(--nimi-text-primary)]">
               {FOOT_ARCH_LABELS[footArch] ?? footArch}
             </span>
@@ -448,14 +440,14 @@ function ActivityCardBody({ entry, isLatest }: { entry: FitnessEntry; isLatest: 
         {isLatest && <LatestPill />}
         {entry.source && (
           <span className="rounded bg-[var(--nimi-surface-panel)] px-1.5 py-0.5 text-[13px] text-[var(--nimi-text-muted)]">
-            {SOURCE_LABELS[entry.source] ?? entry.source}
+            {FITNESS_SOURCE_LABELS[entry.source] ?? entry.source}
           </span>
         )}
       </div>
       <div className="flex items-center gap-2 flex-wrap">
-        {duration != null && <MetricChip label="时长" value={`${duration} 分钟`} />}
-        {distance != null && <MetricChip label="距离" value={`${distance} 米`} />}
-        {intensity && <MetricChip label="强度" value={INTENSITY_LABELS[intensity] ?? intensity} />}
+        {duration != null && <MetricChip label={i18nText('Fitness.card.duration')} value={i18nText('Common.duration.minutes', { minutes: duration })} />}
+        {distance != null && <MetricChip label={i18nText('Fitness.card.distance')} value={`${distance} ${i18nText('Common.unit.meter')}`} />}
+        {intensity && <MetricChip label={i18nText('Fitness.card.intensity')} value={INTENSITY_LABELS[intensity] ?? intensity} />}
       </div>
     </>
   );

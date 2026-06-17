@@ -19,15 +19,19 @@ import {
   type GrowthReportType, type NarrativeReportContent, type ParsedReportContent,
   type StructuredGrowthReportContent,
 } from './structured-report.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type PersistedReport = Awaited<ReturnType<typeof getGrowthReports>>[number];
 type GenerateState = 'idle' | 'saving' | 'error';
 type PeriodPreset = 'this-month' | 'last-month' | 'this-quarter' | 'last-quarter' | 'custom';
 
-const PRESET_OPTIONS: Array<{ id: PeriodPreset; label: string }> = [
-  { id: 'this-month', label: '本月' }, { id: 'last-month', label: '上月' },
-  { id: 'this-quarter', label: '本季度' }, { id: 'last-quarter', label: '上季度' },
-  { id: 'custom', label: '自定义' },
+const PRESET_OPTIONS: Array<{ id: PeriodPreset; labelKey: string }> = [
+  { id: 'this-month', labelKey: 'Reports.page.preset.thisMonth' },
+  { id: 'last-month', labelKey: 'Reports.page.preset.lastMonth' },
+  { id: 'this-quarter', labelKey: 'Reports.page.preset.thisQuarter' },
+  { id: 'last-quarter', labelKey: 'Reports.page.preset.lastQuarter' },
+  { id: 'custom', labelKey: 'Reports.page.preset.custom' },
 ];
 
 function computePresetDates(preset: PeriodPreset) {
@@ -77,14 +81,14 @@ function resolvePeriodBounds(start: string, end: string) {
 function buildNarrativeTitle(childName: string, reportType: GrowthReportType) {
   switch (reportType) {
     case 'monthly':
-      return `${childName}的月度成长报告`;
+      return i18nText('Reports.page.narrativeTitle.monthly', { childName });
     case 'quarterly':
-      return `${childName}的季度成长报告`;
+      return i18nText('Reports.page.narrativeTitle.quarterly', { childName });
     case 'quarterly-letter':
-      return `${childName}的季度成长来信`;
+      return i18nText('Reports.page.narrativeTitle.quarterlyLetter', { childName });
     case 'custom':
     default:
-      return `${childName}的综合成长报告`;
+      return i18nText('Reports.page.narrativeTitle.custom', { childName });
   }
 }
 
@@ -93,9 +97,14 @@ async function hasAvailableReportsRuntime() {
 }
 
 function reportBadgeLabel(c: ParsedReportContent): string {
-  if (c.version === 2) return c.format === 'narrative-ai' ? 'AI 叙事' : '叙事';
-  const l: Record<string, string> = { monthly: '月度', quarterly: '季度', 'quarterly-letter': '季度信', custom: '自定义' };
-  return l[c.reportType] ?? '综合';
+  if (c.version === 2) return c.format === 'narrative-ai' ? i18nText('Reports.page.badge.aiNarrative') : i18nText('Reports.page.badge.narrative');
+  const l: Record<string, string> = {
+    monthly: i18nText('Reports.page.badge.monthly'),
+    quarterly: i18nText('Reports.page.badge.quarterly'),
+    'quarterly-letter': i18nText('Reports.page.badge.quarterlyLetter'),
+    custom: i18nText('Reports.page.badge.custom'),
+  };
+  return l[c.reportType] ?? i18nText('Reports.page.badge.comprehensive');
 }
 
 /* ── Editable Text ── */
@@ -114,13 +123,13 @@ function EditableText({ text, onSave }: { text: string; onSave: (v: string) => v
       textareaClassName="report-editable-textarea"
     />
     <div className="flex gap-2 mt-2">
-      <Button size="sm" tone="primary" onClick={() => { onSave(draft); setEditing(false); }}>保存</Button>
-      <Button size="sm" tone="ghost" onClick={() => setEditing(false)}>取消</Button>
+      <Button size="sm" tone="primary" onClick={() => { onSave(draft); setEditing(false); }}>{i18nText('Reports.page.save')}</Button>
+      <Button size="sm" tone="ghost" onClick={() => setEditing(false)}>{i18nText('Reports.page.cancel')}</Button>
     </div>
   </div>);
   return (<div className="group relative">
     <p className="report-editable-text">{text}</p>
-    <Button onClick={start} tone="ghost" size="sm" className="report-editable-button opacity-0 transition-opacity group-hover:opacity-100" title="编辑">
+    <Button onClick={start} tone="ghost" size="sm" className="report-editable-button opacity-0 transition-opacity group-hover:opacity-100" title={i18nText('Reports.page.edit')}>
       <Pencil size={12} />
     </Button>
   </div>);
@@ -137,7 +146,7 @@ function NarrativeViewer({ content, reportId, onContentUpdate }: { content: Narr
     <div className="report-glass-card report-card-pad">
       <h2 className="report-card-title-lg">{content.title}</h2>
       <p className="report-card-subtitle">{content.subtitle}</p>
-      {content.format === 'narrative-ai' && <StatusBadge tone="success" className="mt-2">AI 撰写</StatusBadge>}
+      {content.format === 'narrative-ai' && <StatusBadge tone="success" className="mt-2">{i18nText('Reports.page.aiWritten')}</StatusBadge>}
     </div>
 
     {content.opening && (<div className="report-soft-panel report-soft-panel--warning-light">
@@ -157,23 +166,23 @@ function NarrativeViewer({ content, reportId, onContentUpdate }: { content: Narr
     </div>))}
 
     {content.milestoneReplay && (<div className="report-soft-panel report-soft-panel--warning">
-      <div className="report-section-heading-row"><Star size={16} className="report-icon-warning" /><h3 className="report-card-title">里程碑时刻</h3></div>
+      <div className="report-section-heading-row"><Star size={16} className="report-icon-warning" /><h3 className="report-card-title">{i18nText('Reports.page.milestoneMoment')}</h3></div>
       {canEdit ? <EditableText text={content.milestoneReplay} onSave={(v) => editField('milestoneReplay', v)} /> : <p className="report-body-text">{content.milestoneReplay}</p>}
     </div>)}
 
     {((content.highlights?.length ?? 0) > 0 || (content.watchNext?.length ?? 0) > 0) && (<div className="grid gap-3 sm:grid-cols-2">
       {content.highlights && content.highlights.length > 0 && (<div className="report-glass-card report-card-pad">
-        <h3 className="report-section-heading-row report-card-title"><Star size={16} className="report-icon-warning" />本月亮点</h3>
+        <h3 className="report-section-heading-row report-card-title"><Star size={16} className="report-icon-warning" />{i18nText('Reports.page.highlights')}</h3>
         <ul className="space-y-2">{content.highlights.map((h, i) => <li key={i} className="report-list-item report-list-item--accent">{h}</li>)}</ul>
       </div>)}
       {content.watchNext && content.watchNext.length > 0 && (<div className="report-glass-card report-card-pad">
-        <h3 className="report-section-heading-row report-card-title"><Eye size={16} className="report-icon-info" />下月留意</h3>
+        <h3 className="report-section-heading-row report-card-title"><Eye size={16} className="report-icon-info" />{i18nText('Reports.page.watchNext')}</h3>
         <ul className="space-y-2">{content.watchNext.map((w, i) => <li key={i} className="report-list-item report-list-item--warning">{w}</li>)}</ul>
       </div>)}
     </div>)}
 
     {content.trendSignals.length > 0 && (<div className="report-glass-card report-card-pad">
-      <h3 className="report-card-title report-title-spaced">趋势信号</h3>
+      <h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.trendSignals')}</h3>
       <div className="grid gap-3 sm:grid-cols-2">{content.trendSignals.map((sig) => (<div key={sig.id} className="report-trend-card">
         <h4 className="report-trend-title">{sig.title}</h4>
         <p className="report-trend-summary">{sig.summary}</p>
@@ -181,7 +190,7 @@ function NarrativeViewer({ content, reportId, onContentUpdate }: { content: Narr
     </div>)}
 
     {content.actionItems.length > 0 && (<div className="report-glass-card report-card-pad">
-      <h3 className="report-card-title report-title-spaced">下一步行动</h3>
+      <h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.nextActions')}</h3>
       <div className="space-y-2">{content.actionItems.map((a) => (<Link key={a.id} to={a.linkTo ?? '/advisor'} className="report-action-link">
         <ArrowRight size={16} className="report-icon-accent" strokeWidth={2} />
         <span className="report-action-link-text">{a.text}</span>
@@ -193,7 +202,7 @@ function NarrativeViewer({ content, reportId, onContentUpdate }: { content: Narr
     </div>)}
 
     <div className="report-glass-card report-card-pad-sm">
-      <p className="report-footnote">数据来源：{content.sources.join('，')}</p>
+      <p className="report-footnote">{i18nText('Reports.page.sourcesPrefix')}{content.sources.join(i18nText('Common.list.separator'))}</p>
       <p className="report-footnote report-footnote--warning">{content.safetyNote}</p>
     </div>
   </div>);
@@ -209,9 +218,9 @@ function StructuredViewer({ content }: { content: StructuredGrowthReportContent 
       <p className="report-footnote report-footnote--warning report-footnote--spaced">{content.safetyNote}</p>
     </div>
     {content.metrics.length > 0 && <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{content.metrics.map((m) => (<div key={m.id} className="report-glass-card report-metric-card"><div className="report-data-label">{m.label}</div><div className="report-metric-value">{m.value}</div>{m.detail && <div className="report-data-detail">{m.detail}</div>}</div>))}</div>}
-    {content.overview.length > 0 && <div className="report-glass-card report-card-pad"><h3 className="report-card-title report-title-spaced">概览</h3><ul className="space-y-2">{content.overview.map((item) => <li key={item} className="report-list-item report-list-item--panel">{item}</li>)}</ul></div>}
+    {content.overview.length > 0 && <div className="report-glass-card report-card-pad"><h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.overview')}</h3><ul className="space-y-2">{content.overview.map((item) => <li key={item} className="report-list-item report-list-item--panel">{item}</li>)}</ul></div>}
     <div className="grid gap-3 sm:grid-cols-2">{content.sections.map((sec) => (<div key={sec.id} className="report-glass-card report-card-pad"><h3 className="report-card-title report-title-spaced">{sec.title}</h3><ul className="space-y-2">{sec.items.map((item) => <li key={item} className="report-list-item report-list-item--panel">{item}</li>)}</ul></div>))}</div>
-    <div className="report-glass-card report-card-pad-sm"><p className="report-footnote">数据来源：{content.sources.join('，')}</p></div>
+    <div className="report-glass-card report-card-pad-sm"><p className="report-footnote">{i18nText('Reports.page.sourcesPrefix')}{content.sources.join(i18nText('Common.list.separator'))}</p></div>
   </div>);
 }
 
@@ -272,7 +281,7 @@ export default function ReportsPage() {
     return () => { cancelled = true; };
   }, [child]);
 
-  if (!child) return <div className="report-page-shell"><div className="report-page-container"><p className="report-muted-text">请先添加孩子档案。</p></div></div>;
+  if (!child) return <div className="report-page-shell"><div className="report-page-container"><p className="report-muted-text">{i18nText('Reports.page.noChild')}</p></div></div>;
 
   const activeChild = child;
   const latestReport = reports[0] ?? null;
@@ -294,7 +303,7 @@ export default function ReportsPage() {
 
   const handleGenerate = async () => {
     const bounds = resolvePeriodBounds(periodStart, periodEnd);
-    if (!bounds) { setErrorMessage('请选择有效的报告时间范围。'); return; }
+    if (!bounds) { setErrorMessage(i18nText('Reports.page.invalidPeriod')); return; }
     setGenerateState('saving'); setErrorMessage(null); setInfoMessage(null);
     try {
       const now = isoNow();
@@ -339,15 +348,15 @@ export default function ReportsPage() {
               ...narrativeReport.content,
               reportType,
               title: buildNarrativeTitle(activeChild.displayName, reportType),
-              subtitle: `${bounds.startLabel} 至 ${bounds.endLabel}`,
+              subtitle: i18nText('Reports.page.periodSubtitle', { start: bounds.startLabel, end: bounds.endLabel }),
             },
           };
         } catch (error) {
           catchLog('reports', 'action:generate-ai-report-failed', 'warn')(error);
-          setInfoMessage('AI 综合报告暂时不可用，已回退为本地结构化报告。');
+          setInfoMessage(i18nText('Reports.page.aiFallback'));
         }
       } else {
-        setInfoMessage('当前未连通 AI，已生成本地结构化报告。');
+        setInfoMessage(i18nText('Reports.page.localFallback'));
       }
 
       if (!report) {
@@ -371,7 +380,7 @@ export default function ReportsPage() {
     } catch (error) {
       catchLog('reports', 'action:generate-report-failed')(error);
       setGenerateState('error');
-      setErrorMessage('报告生成失败，请重试。');
+      setErrorMessage(i18nText('Reports.page.generateFailed'));
     }
   };
 
@@ -380,14 +389,14 @@ export default function ReportsPage() {
       <div className="report-page-container">
         <header className="mb-6">
           <h1 className="parentos-journal-hero-title parentos-journal-hero-title__bold text-[44px] leading-[1.05] tracking-tight text-[var(--nimi-text-primary)]">
-            成长
+            {i18nText('Reports.page.heroGrowth')}
             <span className="parentos-journal-hero-title__tail">
-              报告
+              {i18nText('Reports.page.heroReports')}
               <span className="parentos-journal-hero-title__dot" aria-hidden="true" />
             </span>
           </h1>
           <NimiText as="p" role="body" className="mt-3 text-[14px] leading-relaxed text-[var(--nimi-text-muted)]">
-            基于本地数据自动生成，每月更新
+            {i18nText('Reports.page.heroSubtitle')}
           </NimiText>
         </header>
 
@@ -400,16 +409,16 @@ export default function ReportsPage() {
           </div>
         ) : (
           <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="report-empty-state">
-            <p className="report-empty-title">还没有成长报告</p>
-            <p className="report-empty-subtitle">报告会在首页自动生成，也可以在下方手动创建</p>
+            <p className="report-empty-title">{i18nText('Reports.page.emptyTitle')}</p>
+            <p className="report-empty-subtitle">{i18nText('Reports.page.emptySubtitle')}</p>
           </Surface>
         )}
 
         {reports.length > 1 && (<div className="mb-6">
-          <p className="report-section-label">历史报告</p>
+          <p className="report-section-label">{i18nText('Reports.page.historyTitle')}</p>
           <div className="space-y-2">{reports.slice(1).map((report) => {
             const isExpanded = expandedReportId === report.reportId;
-            let parsed: ParsedReportContent | null = null; let title = '报告';
+            let parsed: ParsedReportContent | null = null; let title = i18nText('Reports.page.heroReports');
             try { parsed = parseReportContent(report.content); title = parsed.title; } catch { /* */ }
             return (<div key={report.reportId}>
               <button onClick={() => setExpandedReportId((prev) => prev === report.reportId ? null : report.reportId)}
@@ -419,7 +428,7 @@ export default function ReportsPage() {
                   {parsed && <StatusBadge tone="neutral" className="shrink-0">{reportBadgeLabel(parsed)}</StatusBadge>}
                   <ChevronDown size={12} className={`report-icon-muted shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} strokeWidth={2} />
                 </div>
-                <p className="report-history-date">{report.periodStart.slice(0, 10)} 至 {report.periodEnd.slice(0, 10)}</p>
+                <p className="report-history-date">{i18nText('Reports.page.periodRange', { start: report.periodStart.slice(0, 10), end: report.periodEnd.slice(0, 10) })}</p>
               </button>
               {isExpanded && parsed && (<div ref={viewerRef} className="mt-2 pb-4">
                 <ReportViewer content={parsed} reportId={report.reportId} persisted={report} childName={activeChild.displayName} selfRoleName={activeChild.recorderProfiles?.[0]?.name} onContentUpdate={parsed.version === 2 ? (u) => void handleContentUpdate(report.reportId, u) : undefined} />
@@ -431,11 +440,11 @@ export default function ReportsPage() {
         <div className="mb-8">
           <button onClick={() => setShowAdvanced(!showAdvanced)} className="report-advanced-toggle">
             <ChevronDown size={12} strokeWidth={2} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-            高级选项 · 手动生成报告
+            {i18nText('Reports.page.advancedToggle')}
           </button>
           {showAdvanced && (<Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="report-advanced-panel">
             <div className="mb-3">
-              <p className="report-field-label">时间范围</p>
+              <p className="report-field-label">{i18nText('Reports.page.periodField')}</p>
               <div className="flex flex-wrap gap-2">{PRESET_OPTIONS.map((p) => (
                 <Button
                   key={p.id}
@@ -444,17 +453,17 @@ export default function ReportsPage() {
                   tone={periodPreset === p.id ? 'primary' : 'secondary'}
                   className="min-h-0 rounded-full py-1 text-[13px]"
                 >
-                  {p.label}
+                  {i18nText(p.labelKey)}
                 </Button>
               ))}</div>
             </div>
             <div className="flex gap-3 mb-4">
-              <div className="flex-1"><label className="report-date-label">开始日期</label><DatePicker value={periodStart} onChange={(v) => handleDateChange('start', v)} size="small" /></div>
-              <div className="flex-1"><label className="report-date-label">结束日期</label><DatePicker value={periodEnd} onChange={(v) => handleDateChange('end', v)} size="small" /></div>
+              <div className="flex-1"><label className="report-date-label">{i18nText('Reports.page.startDate')}</label><DatePicker value={periodStart} onChange={(v) => handleDateChange('start', v)} size="small" /></div>
+              <div className="flex-1"><label className="report-date-label">{i18nText('Reports.page.endDate')}</label><DatePicker value={periodEnd} onChange={(v) => handleDateChange('end', v)} size="small" /></div>
             </div>
             <Button onClick={() => void handleGenerate()} disabled={generateState === 'saving'}
               fullWidth tone="primary" className="report-generate-button">
-              {generateState === 'saving' ? '正在生成报告...' : '生成综合报告'}
+              {generateState === 'saving' ? i18nText('Reports.page.generating') : i18nText('Reports.page.generate')}
             </Button>
           </Surface>)}
         </div>

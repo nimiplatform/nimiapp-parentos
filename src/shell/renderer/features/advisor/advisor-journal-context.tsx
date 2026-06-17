@@ -1,4 +1,6 @@
 import { ADVISOR_EMPTY_GRADIENT } from './advisor-theme.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export type JournalEntryAdvisorContext = {
   entryId: string;
@@ -10,10 +12,10 @@ export type JournalEntryAdvisorContext = {
   recorderName: string | null;
 };
 
-const JOURNAL_CONTEXT_STARTERS = [
-  '请帮我整理这条记录的关键信息',
-  '这个维度还有哪些值得观察的方面',
-  '有什么需要关注的信号吗',
+const JOURNAL_CONTEXT_STARTER_KEYS = [
+  'Advisor.journalContext.starter.keyInfo',
+  'Advisor.journalContext.starter.moreObservation',
+  'Advisor.journalContext.starter.signals',
 ] as const;
 
 function formatContextDateTime(value: string) {
@@ -35,7 +37,7 @@ export function AdvisorJournalContext({ context, onSelectStarter }: AdvisorJourn
     <div className="flex flex-1 flex-col items-center justify-center px-6">
       <div className={`${ADVISOR_EMPTY_GRADIENT} w-full max-w-md rounded-[30px] border border-white/80 p-6 shadow-[0_20px_52px_rgba(15,23,42,0.08)]`}>
         <p className="mb-4 text-[14px] font-semibold text-slate-900">
-          关于这条随记，你想聊什么？
+          {i18nText('Advisor.journalContext.title')}
         </p>
 
         {/* Journal entry preview card */}
@@ -51,7 +53,7 @@ export function AdvisorJournalContext({ context, onSelectStarter }: AdvisorJourn
             </span>
             {context.recorderName && (
               <span className="text-[12px] text-slate-400">
-                记录人：{context.recorderName}
+                {i18nText('Advisor.journalContext.recorder', { recorderName: context.recorderName })}
               </span>
             )}
           </div>
@@ -65,22 +67,25 @@ export function AdvisorJournalContext({ context, onSelectStarter }: AdvisorJourn
             </div>
           )}
           <p className="line-clamp-3 text-[14px] leading-relaxed text-slate-700">
-            {context.textContent?.trim() || '这条随记以语音或图片为主'}
+            {context.textContent?.trim() || i18nText('Advisor.journalContext.voiceOrImageOnly')}
           </p>
         </div>
 
         {/* Starter buttons */}
         <div className="flex flex-col gap-1.5">
-          {JOURNAL_CONTEXT_STARTERS.map((starter) => (
+          {JOURNAL_CONTEXT_STARTER_KEYS.map((starterKey) => {
+            const starter = i18nText(starterKey);
+            return (
             <button
-              key={starter}
+              key={starterKey}
               type="button"
               onClick={() => onSelectStarter(starter)}
               className="rounded-xl border border-slate-200/60 bg-white/90 px-3.5 py-2.5 text-left text-[14px] text-slate-700 transition-colors hover:bg-slate-50/80"
             >
               {starter}
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

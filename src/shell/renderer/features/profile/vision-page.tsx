@@ -8,8 +8,9 @@ import { Button, Timeline, TimelineDivider, TimelineGroup } from '@nimiplatform/
  *   timeline carrying both past exams and the projected next-visit, with the
  *   reminder-cadence editor folded in) → footer.
  *
- * Quantitative exams come from `growth_measurements` (grouped by date), early
- * screenings come from `medical_events` rows whose notes start with `vision:`.
+ * Quantitative exams come from canonical health record values (grouped by
+ * date), early screenings come from `medical_events` rows whose notes start
+ * with `vision:`.
  * Both streams are merged into a single ExamView list via `buildExamViews`.
  */
 import { useEffect, useMemo, useState } from 'react';
@@ -59,6 +60,8 @@ import {
 } from './vision-page-cards.js';
 import { OrthodonticDetailsSection } from './orthodontic-details-section.js';
 import { formatDateLabel } from '../journal/journal-page-helpers.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── Page ────────────────────────────────────────────────────────── */
 
@@ -120,7 +123,7 @@ export default function VisionPage() {
   }, [exams, selectedAge, child]);
 
   // Date-grouped exams — one TimelineGroup per calendar date, matching the
-  // orthodontic 正畸记录 timeline layout (date header carries the date label).
+  // orthodontic record timeline layout (date header carries the date label).
   const examDateGroups = useMemo(() => {
     const groups: { date: string; exams: ExamView[] }[] = [];
     for (const e of filteredExams) {
@@ -142,8 +145,8 @@ export default function VisionPage() {
   );
 
   // Projected next visit — rendered as a "future" entry at the top of the
-  // exam timeline (above the 今天 divider), mirroring the orthodontic
-  // 正畸记录 timeline.
+  // exam timeline (above the today divider), mirroring the orthodontic
+  // record timeline.
   const today = useMemo(() => new Date(), []);
   const nextVisit = useMemo(
     () => resolveNextVisit(latestBiometricDate, followupSettings),
@@ -175,7 +178,7 @@ export default function VisionPage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="视力档案">
+      <ProfileDetailShell title={i18nText('Vision.page.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -241,7 +244,10 @@ export default function VisionPage() {
           domain="vision"
           childName={child.displayName}
           childId={child.childId}
-          ageLabel={`${Math.floor(ageMonths / 12)}岁${ageMonths % 12}个月`}
+          ageLabel={t('Common.age.yearsMonths', {
+            years: Math.floor(ageMonths / 12),
+            months: ageMonths % 12,
+          })}
           gender={child.gender}
           dataContext={(() => {
             const lines: string[] = [];
@@ -307,7 +313,7 @@ export default function VisionPage() {
         )}
 
         {/* Exam timeline — collapsed by default; expands to the full
-            date-grouped list, matching the orthodontic 正畸记录 timeline. */}
+            date-grouped list, matching the orthodontic record timeline. */}
         <OrthodonticDetailsSection
           title={t('Profile.rich.vision.timelineTitle')}
           count={t('Profile.rich.vision.examCount', { count: exams.length })}
@@ -388,13 +394,13 @@ export default function VisionPage() {
                 <TimelineGroup
                   variant="future"
                   date={formatDateLabel(nextVisit.visitDate)}
-                  secondaryLabel="1 条"
+                  secondaryLabel={t('Common.count.timelineItems', { count: 1 })}
                 >
                   <NextVisitCard resolved={nextVisit} today={today} />
                 </TimelineGroup>
               )}
 
-              {nextVisit && examDateGroups.length > 0 && <TimelineDivider label="今天" />}
+              {nextVisit && examDateGroups.length > 0 && <TimelineDivider label={i18nText('Vision.page.todayDivider')} />}
 
               {examDateGroups.map((group, gi) => (
                 <TimelineGroup
@@ -402,7 +408,7 @@ export default function VisionPage() {
                   variant="past"
                   tone={gi === 0 ? 'success' : 'neutral'}
                   date={formatDateLabel(group.date)}
-                  secondaryLabel={`${group.exams.length} 条`}
+                  secondaryLabel={t('Common.count.timelineItems', { count: group.exams.length })}
                   isLast={gi === examDateGroups.length - 1}
                 >
                   {group.exams.map((e) => (
@@ -436,7 +442,7 @@ export default function VisionPage() {
           className="flex items-center justify-between border-t border-[color-mix(in_srgb,var(--nimi-text-primary)_6%,transparent)]"
         >
           <div className="text-[11px] text-[var(--nimi-text-muted)]">
-            所有数据加密存储 · 仅家庭可见
+            {i18nText('Vision.page.privacyNote')}
           </div>
         </div>
       </div>

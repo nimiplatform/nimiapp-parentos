@@ -44,15 +44,13 @@ describe('HealthRecordModalShell', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'growth-record-modal' });
     expect(dialog.parentElement).toBe(document.body);
+    expect(dialog.parentElement).toBe(document.body);
     expect(dialog.className).toContain('fixed');
-    expect(dialog.className).toContain('inset-0');
-    expect(dialog.className).toContain('z-[100]');
-    expect(dialog.className).toContain('bg-[var(--nimi-scrim-modal)]');
+    expect(dialog.className).toContain('top-1/2');
+    expect(dialog.className).toContain('parentos-health-modal-panel');
 
-    const panel = dialog.querySelector('.parentos-health-modal-panel');
-    expect(panel?.getAttribute('data-nimi-material')).toBe('solid');
-    expect(panel?.getAttribute('data-nimi-tone')).toBe('card');
-    expect(panel?.className).toContain('bg-[var(--nimi-surface-card)]');
+    const backdrop = document.body.querySelector('.nimi-overlay-backdrop');
+    expect(backdrop).not.toBeNull();
 
     const footer = dialog.querySelector('footer');
     expect(footer?.className).toContain('bg-[var(--nimi-surface-card)]');

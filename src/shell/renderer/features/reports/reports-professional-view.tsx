@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { Button, IconButton, Surface, TextareaField, Toggle as KitToggle } from '@nimiplatform/kit/ui';
 import { Pencil, X } from 'lucide-react';
 import type { NarrativeReportContent, ProfessionalSummary, ProfessionalSummarySection } from './structured-report.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface SectionDraftChange {
   body?: string;
@@ -38,7 +40,7 @@ export function serializeProfessionalSummaryToText(
   const lines: string[] = [title, '', summary.childSummary, ''];
   for (const s of enabled) {
     lines.push(`【${s.title}】`);
-    lines.push(s.body.trim() || '本期未记录。');
+    lines.push(s.body.trim() || i18nText('Reports.professional.notRecorded'));
     lines.push('');
   }
   lines.push('──');
@@ -97,12 +99,12 @@ function ProfessionalSectionEditor({
           {section.title}
           {isEdited ? (
             <span className="report-professional-edited">
-              · 已编辑
+              {i18nText('Reports.professional.edited')}
             </span>
           ) : null}
         </h4>
-        <span className="report-professional-toggle-label">{section.enabled ? '包含' : '隐藏'}</span>
-        <Toggle checked={section.enabled} onChange={onToggle} ariaLabel={`是否包含 ${section.title} 到分享版本`} />
+        <span className="report-professional-toggle-label">{section.enabled ? i18nText('Reports.professional.included') : i18nText('Reports.professional.hidden')}</span>
+        <Toggle checked={section.enabled} onChange={onToggle} ariaLabel={i18nText('Reports.professional.includeAria', { title: section.title })} />
       </header>
 
       {editing ? (
@@ -116,26 +118,26 @@ function ProfessionalSectionEditor({
           />
           <div className="mt-2.5 flex gap-2">
             <Button size="sm" tone="primary" onClick={save}>
-              保存
+              {i18nText('Reports.professional.save')}
             </Button>
             <Button size="sm" tone="ghost" onClick={() => { setDraft(section.body); setEditing(false); }}>
-              取消
+              {i18nText('Reports.professional.cancel')}
             </Button>
           </div>
         </>
       ) : (
         <>
           <p className="report-professional-section-body">
-            {section.body || '本期未记录。'}
+            {section.body || i18nText('Reports.professional.notRecorded')}
           </p>
           {section.enabled ? (
             <div className="report-professional-section-actions">
               <Button size="sm" tone="secondary" onClick={start} className="min-h-0 px-3 py-1 text-xs" leadingIcon={<Pencil size={11} />}>
-                编辑
+                {i18nText('Reports.professional.edit')}
               </Button>
               {isEdited ? (
                 <Button size="sm" tone="ghost" onClick={onRestore} className="min-h-0 px-3 py-1 text-[11.5px]">
-                  恢复 AI 原文
+                  {i18nText('Reports.professional.restoreAi')}
                 </Button>
               ) : null}
             </div>
@@ -182,11 +184,11 @@ export function ProfessionalSummaryModal({
   const handleCopy = () => {
     if (!summary) return;
     const text = serializeProfessionalSummaryToText(summary, title);
-    if (onCopy) { onCopy(text); setCopyToast('已复制'); }
+    if (onCopy) { onCopy(text); setCopyToast(i18nText('Reports.professional.copySuccess')); }
     else {
       navigator.clipboard?.writeText(text).then(
-        () => setCopyToast('已复制'),
-        () => setCopyToast('复制失败'),
+        () => setCopyToast(i18nText('Reports.professional.copySuccess')),
+        () => setCopyToast(i18nText('Reports.professional.copyFailed')),
       );
     }
     setTimeout(() => setCopyToast(null), 1800);
@@ -210,24 +212,24 @@ export function ProfessionalSummaryModal({
         <header className="report-professional-modal-header">
           <div>
             <div className="report-professional-eyebrow">
-              SHARE · 给老师 / 医生
+              {i18nText('Reports.professional.eyebrow')}
             </div>
             <h2 id="pro-summary-title" className="report-professional-title">
-              精简版 · {title}
+              {i18nText('Reports.professional.titlePrefix')} {title}
             </h2>
             {summary?.childSummary ? (
               <div className="report-professional-child-summary">{summary.childSummary}</div>
             ) : null}
           </div>
-          <IconButton onClick={onClose} aria-label="关闭" icon={<X size={18} />} size="sm" tone="ghost" />
+          <IconButton onClick={onClose} aria-label={i18nText('Reports.professional.close')} icon={<X size={18} />} size="sm" tone="ghost" />
         </header>
 
         <div className="report-professional-modal-body">
           {summary ? (
             <>
               <div className="report-professional-intro">
-                <span className="report-strong">精简版说明：</span>
-                AI 按客观医学/教育记录语气生成，家长可逐条编辑或隐去敏感内容；未勾选的 section 不会出现在导出或复制内容里。
+                <span className="report-strong">{i18nText('Reports.professional.introTitle')}</span>
+                {i18nText('Reports.professional.introBody')}
               </div>
               <div className="report-professional-section-list">
                 {summary.sections.map((s) => (
@@ -240,9 +242,9 @@ export function ProfessionalSummaryModal({
             </>
           ) : (
             <div className="report-professional-empty">
-              此报告还没有精简版内容。
+              {i18nText('Reports.professional.emptyTitle')}
               <br />
-              请回到报告页「高级选项 · 生成综合报告」重新生成一次，AI 会同时产出精简版。
+              {i18nText('Reports.professional.emptyBody')}
             </div>
           )}
         </div>
@@ -254,10 +256,10 @@ export function ProfessionalSummaryModal({
             </div>
           ) : <div className="report-professional-footer-spacer" />}
           <Button onClick={handleCopy} disabled={!summary} size="sm" tone="secondary">
-            {copyToast ?? '复制精简版'}
+            {copyToast ?? i18nText('Reports.professional.copy')}
           </Button>
           <Button onClick={onPrint} disabled={!summary || !onPrint} size="sm" tone="primary">
-            另存为 PDF
+            {i18nText('Reports.professional.savePdf')}
           </Button>
         </footer>
       </Surface>

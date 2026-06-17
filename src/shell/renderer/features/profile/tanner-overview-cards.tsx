@@ -1,5 +1,7 @@
 import '@nimiplatform/kit/ui';
 import type { MeasurementRow } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type TannerOverviewCardsProps = {
   boneAgeMeasurements: MeasurementRow[];
@@ -24,14 +26,14 @@ export function TannerOverviewCards({
         const actualYears = ageMonths / 12;
         const diff = latest.value - actualYears;
         const status = Math.abs(diff) <= 1
-          ? { label: '正常范围', className: 'border-[color-mix(in_srgb,var(--nimi-status-success)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-success)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-success)]', dot: 'bg-[var(--nimi-status-success)]' }
+          ? { label: i18nText('Tanner.overview.boneAgeMatched'), className: 'border-[color-mix(in_srgb,var(--nimi-status-success)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-success)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-success)]', dot: 'bg-[var(--nimi-status-success)]' }
           : diff > 1
-            ? { label: `偏早 ${Math.abs(diff).toFixed(1)} 年`, className: 'border-[color-mix(in_srgb,var(--nimi-status-warning)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-warning)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-warning)]', dot: 'bg-[var(--nimi-status-warning)]' }
-            : { label: `偏晚 ${Math.abs(diff).toFixed(1)} 年`, className: 'border-[color-mix(in_srgb,var(--nimi-status-info)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-info)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-info)]', dot: 'bg-[var(--nimi-status-info)]' };
+            ? { label: i18nText('Tanner.overview.boneAgeAhead', { years: Math.abs(diff).toFixed(1) }), className: 'border-[color-mix(in_srgb,var(--nimi-status-warning)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-warning)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-warning)]', dot: 'bg-[var(--nimi-status-warning)]' }
+            : { label: i18nText('Tanner.overview.boneAgeBehind', { years: Math.abs(diff).toFixed(1) }), className: 'border-[color-mix(in_srgb,var(--nimi-status-info)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-info)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-info)]', dot: 'bg-[var(--nimi-status-info)]' };
         return (
           <div className={`rounded-2xl border p-4 ${status.className}`}>
-            <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">🦴 骨龄</p>
-            <p className="text-[20px] font-bold mt-1 text-[var(--nimi-text-primary)]">{latest.value} 岁</p>
+            <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Tanner.overview.boneAge')}</p>
+            <p className="text-[20px] font-bold mt-1 text-[var(--nimi-text-primary)]">{latest.value} {i18nText('Common.unit.year')}</p>
             <div className="flex items-center gap-1 mt-1">
               <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
               <span className="text-[13px]">{status.label}</span>
@@ -45,7 +47,7 @@ export function TannerOverviewCards({
         if (!latest) return <div />;
         return (
           <div className="rounded-2xl bg-[var(--nimi-surface-panel)] p-4">
-            <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">📊 体脂率</p>
+            <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Tanner.overview.bodyFat')}</p>
             <p className="text-[20px] font-bold mt-1 text-[var(--nimi-text-primary)]">{latest.value}%</p>
             <p className="text-[12px] mt-1 text-[var(--nimi-text-muted)]">{latest.measuredAt.split('T')[0]}</p>
           </div>

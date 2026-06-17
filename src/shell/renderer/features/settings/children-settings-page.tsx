@@ -8,8 +8,11 @@ import { saveChildAvatar } from '../../bridge/child-avatar-bridge.js';
 import { mapChildRow } from '../../bridge/mappers.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { fileToBase64 } from '../journal/journal-page-helpers.js';
+import { clearJournalLocalDraft } from '../journal/journal-page-local-draft.js';
 import { AvatarCropModal } from './avatar-crop-modal.js';
 import { ChildAvatar } from '../../shared/child-avatar.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /** Convert a local filesystem path to a Tauri 2 asset URL */
 function assetUrl(path: string): string {
@@ -24,17 +27,29 @@ interface RecorderProfile {
   emoji: string;
 }
 
-const RECORDER_PRESETS: Array<{ name: string; emoji: string }> = [
-  { name: '妈妈', emoji: '👩' },
-  { name: '爸爸', emoji: '👨' },
-  { name: '奶奶', emoji: '👵' },
-  { name: '爷爷', emoji: '👴' },
-  { name: '外婆', emoji: '👵' },
-  { name: '外公', emoji: '👴' },
+const RECORDER_PRESET_SPECS: Array<{ nameKey: string; emoji: string }> = [
+  { nameKey: 'Children.recorder.mother', emoji: '👩' },
+  { nameKey: 'Children.recorder.father', emoji: '👨' },
+  { nameKey: 'Children.recorder.grandmaPaternal', emoji: '👵' },
+  { nameKey: 'Children.recorder.grandpaPaternal', emoji: '👴' },
+  { nameKey: 'Children.recorder.grandmaMaternal', emoji: '👵' },
+  { nameKey: 'Children.recorder.grandpaMaternal', emoji: '👴' },
 ];
 
+function recorderPresets(): Array<{ name: string; emoji: string }> {
+  return RECORDER_PRESET_SPECS.map((preset) => ({
+    ...preset,
+    name: i18nText(preset.nameKey),
+  }));
+}
+
+function defaultRecorder(): RecorderProfile {
+  const preset = recorderPresets()[0] ?? { name: i18nText('Children.recorder.mother'), emoji: '👩' };
+  return { id: ulid(), name: preset.name, emoji: preset.emoji };
+}
+
 function recorderEmoji(name: string): string {
-  return RECORDER_PRESETS.find((p) => p.name === name)?.emoji ?? '👤';
+  return recorderPresets().find((p) => p.name === name)?.emoji ?? '👤';
 }
 
 /* ── form state ──────────────────────────────────────────── */
@@ -55,13 +70,15 @@ interface FormState {
   avatarPreview: string | null;
 }
 
-const EMPTY_FORM: FormState = {
-  displayName: '', gender: 'male', birthDate: '', birthWeightKg: '', birthHeightCm: '',
-  birthHeadCircCm: '', nurtureMode: 'balanced', allergies: '', medicalNotes: '',
-  recorder: { id: ulid(), name: '妈妈', emoji: '👩' },
-  customRecorderName: '',
-  avatarFile: null, avatarPreview: null,
-};
+function createEmptyForm(): FormState {
+  return {
+    displayName: '', gender: 'male', birthDate: '', birthWeightKg: '', birthHeightCm: '',
+    birthHeadCircCm: '', nurtureMode: 'balanced', allergies: '', medicalNotes: '',
+    recorder: defaultRecorder(),
+    customRecorderName: '',
+    avatarFile: null, avatarPreview: null,
+  };
+}
 
 function parseCsvList(value: string) {
   const items = value.split(',').map((i) => i.trim()).filter(Boolean);
@@ -73,7 +90,16 @@ function serializeRecorder(recorder: RecorderProfile) {
   return name ? JSON.stringify([{ id: recorder.id, name }]) : null;
 }
 
-const MODE_LABELS: Record<string, string> = { relaxed: '轻松养', balanced: '均衡养', advanced: '进阶养' };
+const MODE_LABEL_KEYS: Record<string, string> = {
+  relaxed: 'Children.nurtureMode.relaxed',
+  balanced: 'Children.nurtureMode.balanced',
+  advanced: 'Children.nurtureMode.advanced',
+};
+
+function nurtureModeLabel(mode: string): string {
+  const key = MODE_LABEL_KEYS[mode];
+  return key ? i18nText(key) : mode;
+}
 
 type ChildrenSettingsLocationState = {
   from?: 'profile';
@@ -92,13 +118,13 @@ export default function ChildrenSettingsPage() {
   const [showForm, setShowForm] = useState(openAddForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingChildId, setDeletingChildId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [form, setForm] = useState<FormState>(() => createEmptyForm());
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [cropImageUrl, setCropImageUrl] = useState<string | null>(null);
   const initialOpenHandledRef = useRef(false);
 
   const resetForm = () => {
-    setForm(EMPTY_FORM);
+    setForm(createEmptyForm());
     setShowForm(false);
     setEditingId(null);
     if (fromProfile) navigate('/profile');
@@ -106,7 +132,7 @@ export default function ChildrenSettingsPage() {
 
   useEffect(() => {
     if (!openAddForm) return;
-    setForm(EMPTY_FORM);
+    setForm(createEmptyForm());
     setEditingId(null);
     setDeletingChildId(null);
     setShowForm(true);
@@ -133,7 +159,7 @@ export default function ChildrenSettingsPage() {
     const shouldEnterDashboard = !fromProfile && (openAddForm || children.length === 0);
     try {
       let fid = familyId;
-      if (!fid) { fid = ulid(); await createFamily(fid, '我的家庭', now); setFamilyId(fid); }
+      if (!fid) { fid = ulid(); await createFamily(fid, i18nText('Children.defaultFamilyName'), now); setFamilyId(fid); }
       const avatarPath = await uploadAvatar(childId);
       await createChild({
         childId, familyId: fid, displayName: form.displayName, gender: form.gender,
@@ -173,6 +199,7 @@ export default function ChildrenSettingsPage() {
   const handleDelete = async (childId: string) => {
     try {
       await deleteChild(childId);
+      clearJournalLocalDraft(childId);
       if (activeChildId === childId) setActiveChildId(null);
       setDeletingChildId(null);
       await refreshChildren(familyId);
@@ -189,10 +216,10 @@ export default function ChildrenSettingsPage() {
       allergies: c.allergies?.join(', ') ?? '', medicalNotes: c.medicalNotes?.join(', ') ?? '',
       recorder: c.recorderProfiles?.[0]
         ? { ...c.recorderProfiles[0], emoji: recorderEmoji(c.recorderProfiles[0].name) }
-        : { id: ulid(), name: '妈妈', emoji: '👩' },
+        : defaultRecorder(),
       customRecorderName: (() => {
         const first = c.recorderProfiles?.[0];
-        return first && !RECORDER_PRESETS.some((p) => p.name === first.name) ? first.name : '';
+        return first && !recorderPresets().some((p) => p.name === first.name) ? first.name : '';
       })(),
       avatarFile: null, avatarPreview: c.avatarPath ? assetUrl(c.avatarPath) : null,
     });
@@ -248,7 +275,7 @@ export default function ChildrenSettingsPage() {
       setForm({ ...form, [field]: v });
     };
 
-  const isCustom = !RECORDER_PRESETS.some((p) => p.name === form.recorder.name);
+  const isCustom = !recorderPresets().some((p) => p.name === form.recorder.name);
 
   return (
     <div className="min-h-full bg-transparent p-6">
@@ -256,19 +283,19 @@ export default function ChildrenSettingsPage() {
         {/* Back link */}
         <Link to={fromProfile ? '/profile' : '/settings'} className="mb-5 inline-flex items-center gap-1 text-[14px] text-[var(--nimi-text-muted)] hover:underline">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
-          {fromProfile ? '返回档案' : '返回设置'}
+          {fromProfile ? i18nText('Children.settings.backToProfile') : i18nText('Children.settings.backToSettings')}
         </Link>
 
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-[var(--nimi-text-primary)]">孩子管理</h1>
-            <p className="mt-0.5 text-[14px] text-[var(--nimi-text-muted)]">管理孩子档案和基本信息</p>
+            <h1 className="text-xl font-bold text-[var(--nimi-text-primary)]">{i18nText('Children.settings.title')}</h1>
+            <p className="mt-0.5 text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.subtitle')}</p>
           </div>
           {!showForm && (
-            <Button onClick={() => { setForm(EMPTY_FORM); setShowForm(true); }} tone="primary" size="md" className="text-[14px]">
+            <Button onClick={() => { setForm(createEmptyForm()); setShowForm(true); }} tone="primary" size="md" className="text-[14px]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-              添加孩子
+              {i18nText('Children.settings.action.addChild')}
             </Button>
           )}
         </div>
@@ -279,8 +306,8 @@ export default function ChildrenSettingsPage() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--nimi-action-secondary-bg)]">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-[var(--nimi-text-muted)]" strokeWidth="1.5" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
             </div>
-            <p className="text-[16px] font-medium text-[var(--nimi-text-primary)]">还没有添加孩子</p>
-            <p className="mt-1 text-[14px] text-[var(--nimi-text-muted)]">点击上方按钮添加第一个孩子</p>
+            <p className="text-[16px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Children.settings.emptyTitle')}</p>
+            <p className="mt-1 text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.emptyDescription')}</p>
           </Surface>
         )}
 
@@ -310,10 +337,10 @@ export default function ChildrenSettingsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">{child.displayName}</h3>
-                    {isActive && <span className="rounded-full bg-[var(--nimi-action-primary-bg)] px-2 py-0.5 text-[12px] text-[var(--nimi-action-primary-text)]">当前</span>}
+                    {isActive && <span className="rounded-full bg-[var(--nimi-action-primary-bg)] px-2 py-0.5 text-[12px] text-[var(--nimi-action-primary-text)]">{i18nText('Children.settings.activeBadge')}</span>}
                   </div>
                   <p className="mt-0.5 text-[14px] text-[var(--nimi-text-muted)]">
-                    {child.gender === 'male' ? '男' : '女'} · {child.birthDate} · {MODE_LABELS[child.nurtureMode] ?? child.nurtureMode}
+                    {child.gender === 'male' ? i18nText('Children.gender.male') : i18nText('Children.gender.female')} · {child.birthDate} · {nurtureModeLabel(child.nurtureMode)}
                   </p>
                   {child.recorderProfiles && child.recorderProfiles.length > 0 && (
                     <div className="mt-1 flex items-center gap-1.5">
@@ -328,28 +355,28 @@ export default function ChildrenSettingsPage() {
                 <div className="flex gap-2 shrink-0">
                   {!isActive && (
                     <Button onClick={() => setActiveChildId(child.childId)} tone="secondary" size="sm" className="text-[13px]">
-                      设为活跃
+                      {i18nText('Children.settings.action.setActive')}
                     </Button>
                   )}
                   <Button onClick={() => startEdit(child.childId)} tone="secondary" size="sm" className="text-[13px]">
-                    编辑
+                    {i18nText('Children.settings.action.edit')}
                   </Button>
                   <Button onClick={() => setDeletingChildId(child.childId)} tone="danger" size="sm" className="text-[13px]">
-                    删除
+                    {i18nText('Children.settings.action.delete')}
                   </Button>
                 </div>
               </div>
               {deletingChildId === child.childId && (
                 <div className="mt-4 parentos-radius-lg border border-[color-mix(in_srgb,var(--nimi-status-danger)_25%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))] p-4">
                   <p className="mb-3 text-[14px] text-[var(--nimi-status-danger)]">
-                    删除 <strong>{child.displayName}</strong> 会级联删除所有关联数据（生长记录、疫苗、日记、AI 对话等），此操作不可撤销。
+                    {i18nText('Children.settings.deleteConfirmation', { childName: child.displayName })}
                   </p>
                   <div className="flex gap-2">
                     <Button onClick={() => void handleDelete(child.childId)} tone="danger" size="sm" className="bg-[var(--nimi-status-danger)] text-[13px] text-[var(--nimi-action-primary-text)]">
-                      确认删除
+                      {i18nText('Children.settings.action.confirmDelete')}
                     </Button>
                     <Button onClick={() => setDeletingChildId(null)} tone="secondary" size="sm" className="text-[13px]">
-                      取消
+                      {i18nText('Children.settings.action.cancel')}
                     </Button>
                   </div>
                 </div>
@@ -362,7 +389,7 @@ export default function ChildrenSettingsPage() {
         {showForm && (
           <Surface tone="card" material="solid" elevation="base" padding="lg" className="parentos-radius-xl">
             <h3 className="mb-5 text-[16px] font-semibold text-[var(--nimi-text-primary)]">
-              {editingId ? '编辑孩子' : '添加孩子'}
+              {editingId ? i18nText('Children.settings.form.editTitle') : i18nText('Children.settings.action.addChild')}
             </h3>
 
             {/* Avatar upload */}
@@ -387,53 +414,53 @@ export default function ChildrenSettingsPage() {
               </button>
               <div>
                 <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">
-                  {form.avatarPreview ? '点击更换头像' : '上传头像'}
+                  {form.avatarPreview ? i18nText('Children.settings.avatar.change') : i18nText('Children.settings.avatar.upload')}
                 </p>
-                <p className="mt-0.5 text-[13px] text-[var(--nimi-text-muted)]">支持 JPG、PNG、WebP 格式</p>
+                <p className="mt-0.5 text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.avatar.hint')}</p>
               </div>
             </div>
 
             {/* Basic info */}
-            <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">基本信息</p>
+            <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">{i18nText('Children.settings.section.basicInfo')}</p>
             <div className="mb-5 grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">姓名 *</label>
+                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.name')}</label>
                 <TextField value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} className="w-full" inputClassName="text-[14px]" />
               </div>
               <div>
-                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">性别 *</label>
+                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.gender')}</label>
                 <SelectField value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v as 'male' | 'female' })}
-                  options={[{ value: 'male', label: '男' }, { value: 'female', label: '女' }]} />
+                  options={[{ value: 'male', label: i18nText('Children.gender.male') }, { value: 'female', label: i18nText('Children.gender.female') }]} />
               </div>
               <div>
-                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">出生日期 *</label>
+                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.birthDate')}</label>
                 <DatePicker value={form.birthDate} onChange={(v) => setForm({ ...form, birthDate: v })}
                   maxDate={new Date().toISOString().slice(0, 10)} size="small" />
               </div>
               <div>
-                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">养育模式</label>
+                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.nurtureMode')}</label>
                 <SelectField value={form.nurtureMode} onValueChange={(v) => setForm({ ...form, nurtureMode: v as NurtureMode })}
-                  options={[{ value: 'relaxed', label: '轻松养' }, { value: 'balanced', label: '均衡养' }, { value: 'advanced', label: '进阶养' }]} />
+                  options={[{ value: 'relaxed', label: nurtureModeLabel('relaxed') }, { value: 'balanced', label: nurtureModeLabel('balanced') }, { value: 'advanced', label: nurtureModeLabel('advanced') }]} />
               </div>
             </div>
 
             {/* Birth measurements */}
-            <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">出生数据</p>
+            <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">{i18nText('Children.settings.section.birthMeasurements')}</p>
             <div className="mb-5 grid grid-cols-3 gap-4">
               <div>
-                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">体重 (kg)</label>
+                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.birthWeight')}</label>
                 <TextField type="number" step="0.01" value={form.birthWeightKg}
                   onChange={numChange('birthWeightKg', '3.50', 0.01)}
                   className="w-full" inputClassName="text-[14px]" placeholder="3.50" />
               </div>
               <div>
-                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">身长 (cm)</label>
+                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.birthHeight')}</label>
                 <TextField type="number" step="0.1" value={form.birthHeightCm}
                   onChange={numChange('birthHeightCm', '50.0', 0.1)}
                   className="w-full" inputClassName="text-[14px]" placeholder="50.0" />
               </div>
               <div>
-                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">头围 (cm)</label>
+                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.birthHeadCirc')}</label>
                 <TextField type="number" step="0.1" value={form.birthHeadCircCm}
                   onChange={numChange('birthHeadCircCm', '34.0', 0.1)}
                   className="w-full" inputClassName="text-[14px]" placeholder="34.0" />
@@ -441,24 +468,24 @@ export default function ChildrenSettingsPage() {
             </div>
 
             {/* Medical info */}
-            <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">健康信息</p>
+            <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">{i18nText('Children.settings.section.healthInfo')}</p>
             <div className="mb-5 grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">过敏史（逗号分隔）</label>
+                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.allergies')}</label>
                 <TextField value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })}
-                  className="w-full" inputClassName="text-[14px]" placeholder="牛奶, 花生" />
+                  className="w-full" inputClassName="text-[14px]" placeholder={i18nText('Children.settings.placeholder.allergies')} />
               </div>
               <div>
-                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">医疗备注（逗号分隔）</label>
+                <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.medicalNotes')}</label>
                 <TextField value={form.medicalNotes} onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })}
-                  className="w-full" inputClassName="text-[14px]" placeholder="早产, G6PD缺乏" />
+                  className="w-full" inputClassName="text-[14px]" placeholder={i18nText('Children.settings.placeholder.medicalNotes')} />
               </div>
             </div>
 
             {/* Recorder profile (single select) */}
-            <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">记录者</p>
+            <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">{i18nText('Children.settings.section.recorder')}</p>
             <div className="mb-3 flex flex-wrap gap-2">
-              {RECORDER_PRESETS.map((p) => {
+              {recorderPresets().map((p) => {
                 const active = form.recorder.name === p.name;
                 return (
                   <button key={p.name} onClick={() => selectRecorder(p)}
@@ -479,23 +506,23 @@ export default function ChildrenSettingsPage() {
                     ? 'bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)]'
                     : 'bg-[var(--nimi-action-secondary-bg)] text-[var(--nimi-text-muted)] hover:bg-[var(--nimi-action-ghost-hover)]',
                 )}>
-                👤 自定义
+                {i18nText('Children.settings.recorder.custom')}
               </button>
             </div>
             {isCustom && (
               <TextField value={form.customRecorderName}
                 onChange={(e) => setForm((prev) => ({ ...prev, customRecorderName: e.target.value, recorder: { ...prev.recorder, name: e.target.value, emoji: '👤' } }))}
-                className="w-full" inputClassName="text-[14px]" placeholder="输入自定义记录者名称" />
+                className="w-full" inputClassName="text-[14px]" placeholder={i18nText('Children.settings.recorder.customPlaceholder')} />
             )}
             <div className="mb-5" />
 
             {/* Actions */}
             <div className="flex gap-3 border-t border-[var(--nimi-border-subtle)] pt-2">
               <Button onClick={() => void (editingId ? handleUpdate() : handleAdd())} tone="primary" size="md" className="px-6 text-[14px]">
-                {editingId ? '保存' : '添加'}
+                {editingId ? i18nText('Children.settings.action.save') : i18nText('Children.settings.action.add')}
               </Button>
               <Button onClick={resetForm} tone="secondary" size="md" className="px-6 text-[14px]">
-                取消
+                {i18nText('Children.settings.action.cancel')}
               </Button>
             </div>
           </Surface>

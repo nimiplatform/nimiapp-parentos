@@ -8,6 +8,8 @@ import {
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import type { CompareMode } from './orthodontic-teeth-selfies-header.js';
 import { formatThumbLabel } from './orthodontic-teeth-selfies-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 // ── Compare view ────────────────────────────────────────────
 
@@ -32,7 +34,7 @@ export function CompareView({
           aspectRatio: '16 / 10',
         }}
       >
-        当前视角下两组照片不完整，先切换角度或拍一组补齐。
+        {i18nText('Orthodontic.selfies.compare.incomplete')}
       </div>
     );
   }
@@ -45,8 +47,8 @@ export function CompareView({
           aspectRatio: '16 / 10',
         }}
       >
-        <PhotoTile attachment={a} role="之前" session={aBundle?.session ?? null} />
-        <PhotoTile attachment={b} role="之后" session={bBundle?.session ?? null} />
+        <PhotoTile attachment={a} role="before" session={aBundle?.session ?? null} />
+        <PhotoTile attachment={b} role="after" session={bBundle?.session ?? null} />
       </div>
     );
   }
@@ -112,7 +114,7 @@ function CompareSlider({
       style={{ aspectRatio: '16 / 10' }}
     >
       <div style={{ position: 'absolute', inset: 0 }}>
-        <PhotoTile attachment={b} role="之后" session={bBundle?.session ?? null} />
+        <PhotoTile attachment={b} role="after" session={bBundle?.session ?? null} />
       </div>
       <div
         style={{
@@ -121,7 +123,7 @@ function CompareSlider({
           clipPath: `polygon(0 0, ${pos}% 0, ${pos}% 100%, 0 100%)`,
         }}
       >
-        <PhotoTile attachment={a} role="之前" session={aBundle?.session ?? null} />
+        <PhotoTile attachment={a} role="before" session={aBundle?.session ?? null} />
       </div>
       <div
         className="absolute bottom-0 top-0 w-0.5 bg-[var(--nimi-surface-card)] shadow-[var(--nimi-elevation-base)]"
@@ -156,14 +158,17 @@ function CompareSlider({
 
 interface PhotoTileProps {
   attachment: OrthodonticPhotoAttachmentRow;
-  role: '之前' | '之后' | null;
+  role: 'before' | 'after' | null;
   session: OrthodonticPhotoSessionBundle['session'] | null;
 }
 
 function PhotoTile({ attachment, role, session }: PhotoTileProps) {
   const dataUrl = usePhotoBlob(attachment.attachmentId, attachment.mimeType);
   const label = role
-    ? `${role} · ${session ? formatThumbLabel(session) : ''}`
+    ? i18nText('Orthodontic.selfies.compare.roleLabel', {
+        role: i18nText(`Orthodontic.selfies.compare.role.${role}`),
+        session: session ? formatThumbLabel(session) : '',
+      })
     : null;
   return (
     <Surface
@@ -193,7 +198,7 @@ function PhotoTile({ attachment, role, session }: PhotoTileProps) {
           style={{
           }}
         >
-          加载中…
+          {i18nText('Orthodontic.selfies.loading')}
         </div>
       )}
       {label && (

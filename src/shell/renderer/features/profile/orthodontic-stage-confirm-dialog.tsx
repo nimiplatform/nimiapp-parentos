@@ -7,6 +7,8 @@ import {
 import { isoNow } from '../../bridge/ulid.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { stageLabel } from './orthodontic-derive.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface ConfirmProps {
   stage: OrthodonticStage;
@@ -26,7 +28,7 @@ export function OrthodonticStageConfirmDialog({ stage, onCancel, onConfirm }: Co
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="确认推进阶段"
+      aria-label={i18nText('Orthodontic.stageConfirm.ariaLabel')}
       className="fixed inset-0 z-[100] grid place-items-center bg-[var(--nimi-scrim-modal)]"
     >
       <Surface
@@ -37,10 +39,10 @@ export function OrthodonticStageConfirmDialog({ stage, onCancel, onConfirm }: Co
         className="flex min-w-[320px] max-w-[400px] flex-col gap-3 rounded-2xl p-6"
       >
         <h3 className="m-0 text-[16px] font-semibold text-[var(--nimi-text-primary)]">
-          推进到「{stageLabel(stage)}」?
+          {i18nText('Orthodontic.stageConfirm.title', { stage: stageLabel(stage) })}
         </h3>
         <p className="m-0 text-[14px] text-[var(--nimi-text-muted)]">
-          阶段一旦推进，提醒规则与日程会按新阶段调整。如果是误操作，可以再次手动回滚。
+          {i18nText('Orthodontic.stageConfirm.body')}
         </p>
         <div className="mt-2 flex justify-end gap-2">
           <Button
@@ -49,7 +51,7 @@ export function OrthodonticStageConfirmDialog({ stage, onCancel, onConfirm }: Co
             tone="ghost"
             size="sm"
           >
-            取消
+            {i18nText('Orthodontic.stageConfirm.cancel')}
           </Button>
           <Button
             type="button"
@@ -57,7 +59,7 @@ export function OrthodonticStageConfirmDialog({ stage, onCancel, onConfirm }: Co
             tone="primary"
             size="sm"
           >
-            确认推进
+            {i18nText('Orthodontic.stageConfirm.confirm')}
           </Button>
         </div>
       </Surface>

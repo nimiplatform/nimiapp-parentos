@@ -33,7 +33,7 @@ export interface RecordDataReminderSelection {
 
 /**
  * Resolve the sidebar group + reminder linkage for a record_data reminder so the
- * 记录 button can open the same sidebar modal that the profile page uses. The
+ * record button can open the same sidebar modal that the profile page uses. The
  * `linkedReminder` payload satisfies capture-orchestrator-contract.md and lands
  * in `health_record_events.linkedReminderStateId/RuleId` via the per-group
  * form's insert path.

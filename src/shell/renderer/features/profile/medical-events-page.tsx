@@ -16,6 +16,8 @@ import {
 import { MedicalEventsTimeline } from './medical-events-timeline.js';
 import { useMedicalEventsFormState } from './medical-events-page-form-state.js';
 import { useMedicalEventsInsights } from './medical-events-page-insights.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export default function MedicalEventsPage() {
   const { activeChildId, children } = useAppStore();
@@ -56,7 +58,7 @@ export default function MedicalEventsPage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="就医记录">
+      <ProfileDetailShell title={i18nText('MedicalEvents.page.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -66,7 +68,7 @@ export default function MedicalEventsPage() {
 
   return (
     <ProfileDetailShell
-      title="就医记录"
+      title={i18nText('MedicalEvents.page.title')}
       actions={
         <>
           {events.length > 0 ? (
@@ -84,20 +86,20 @@ export default function MedicalEventsPage() {
                 <path d="m21 21-4.35-4.35" />
                 <path d="M11 8v6M8 11h6" />
               </svg>
-              {insights.showAnalysis ? '收起分析' : '智能识别'}
+              {insights.showAnalysis ? i18nText('MedicalEvents.page.hideAnalysis') : i18nText('MedicalEvents.page.smartAnalysis')}
             </Button>
           ) : null}
           {!formState.showForm ? (
             <Button tone="primary" size="sm" onClick={() => formState.setShowForm(true)} className="rounded-2xl">
-              添加事件
+              {i18nText('MedicalEvents.page.addEvent')}
             </Button>
           ) : null}
         </>
       }
       aiSummary={
         <AISummaryCard domain="medical" childName={child.displayName} childId={child.childId}
-          ageLabel={`${Math.floor(ageMonths / 12)}岁${ageMonths % 12}个月`} gender={child.gender}
-          dataContext={events.length > 0 ? `共 ${events.length} 条就医记录` : ''}
+          ageLabel={i18nText('Common.age.yearsMonths', { years: Math.floor(ageMonths / 12), months: ageMonths % 12 })} gender={child.gender}
+          dataContext={events.length > 0 ? i18nText('MedicalEvents.page.dataContext', { count: events.length }) : ''}
         />
       }
     >
@@ -126,19 +128,19 @@ export default function MedicalEventsPage() {
               stroke={'var(--nimi-text-muted)'} strokeWidth="2" strokeLinecap="round">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
             </svg>
-            <input placeholder="搜索诊断、医院、用药..." value={searchQuery}
+            <input placeholder={i18nText('MedicalEvents.page.searchPlaceholder')} value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)] py-1.5 pl-8 pr-14 text-sm text-[var(--nimi-text-primary)]" />
             {searchQuery && (
               <button onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[13px] text-[var(--nimi-text-muted)]">清除</button>
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[13px] text-[var(--nimi-text-muted)]">{i18nText('MedicalEvents.page.clearSearch')}</button>
             )}
           </div>
           <AppSelect
             value={filterType}
             onChange={setFilterType}
-            options={[{ value: 'all', label: '全部类型' }, ...Object.entries(EVENT_TYPE_LABELS).map(([val, label]) => ({ value: val, label }))]}
-            aria-label="筛选就医事件类型"
+            options={[{ value: 'all', label: i18nText('MedicalEvents.page.allTypes') }, ...Object.entries(EVENT_TYPE_LABELS).map(([val, label]) => ({ value: val, label }))]}
+            aria-label={i18nText('MedicalEvents.page.filterTypeAria')}
             className="w-40 shrink-0"
           />
         </div>

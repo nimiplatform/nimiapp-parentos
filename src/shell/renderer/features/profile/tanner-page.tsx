@@ -17,6 +17,16 @@ import {
   GENITAL_STAGES,
   sortAssessmentsDesc,
 } from './tanner-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
+function formatTannerAge(ageMonths: number): string {
+  const years = Math.floor(ageMonths / 12);
+  const months = ageMonths % 12;
+  if (ageMonths < 24) return i18nText('Common.age.months', { months: ageMonths });
+  return months > 0
+    ? i18nText('Common.age.yearsMonths', { years, months })
+    : i18nText('Common.age.years', { years });
+}
 
 export default function TannerPage() {
   const { activeChildId, children } = useAppStore();
@@ -49,7 +59,7 @@ export default function TannerPage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="青春期发育评估">
+      <ProfileDetailShell title={i18nText('Tanner.page.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -57,8 +67,10 @@ export default function TannerPage() {
 
   const ageMonths = computeAgeMonths(child.birthDate);
   const isFemale = child.gender === 'female';
-  const bgLabel = isFemale ? '乳房发育 (B期)' : '外生殖器发育 (G期)';
+  const bgLabel = isFemale ? i18nText('Tanner.page.breastStageLabel') : i18nText('Tanner.page.genitalStageLabel');
   const bgStages = isFemale ? BREAST_STAGES : GENITAL_STAGES;
+  const ageLabel = formatTannerAge(ageMonths);
+  const genderLabel = isFemale ? i18nText('Tanner.page.gender.female') : i18nText('Tanner.page.gender.male');
 
   const sorted = sortAssessmentsDesc(assessments);
 
@@ -78,7 +90,7 @@ export default function TannerPage() {
         ageMonths: am, breastOrGenitalStage: formBG, pubicHairStage: formPH,
         assessedBy: formAssessedBy || null, notes: formNotes || null, now,
       });
-      // Save bone age as measurement if provided
+      // Save bone age as measurement if provided.
       if (formBoneAge.trim()) {
         await insertMeasurement({
           measurementId: ulid(), childId: child.childId, typeId: 'bone-age',
@@ -86,7 +98,7 @@ export default function TannerPage() {
           ageMonths: am, percentile: null, source: 'manual', notes: null, now,
         });
       }
-      // Save body fat as measurement if provided
+      // Save body fat as measurement if provided.
       if (formBodyFat.trim()) {
         await insertMeasurement({
           measurementId: ulid(), childId: child.childId, typeId: 'body-fat-percentage',
@@ -103,7 +115,7 @@ export default function TannerPage() {
     <ProfileDetailShell
       title={
         <span className="flex items-center gap-2">
-          <span>青春期发育评估</span>
+          <span>{i18nText('Tanner.page.title')}</span>
           <span className="group relative inline-flex">
             <span className="flex h-[18px] w-[18px] cursor-help items-center justify-center rounded-full text-[var(--nimi-text-muted)] hover:bg-[var(--nimi-action-ghost-hover)]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -111,19 +123,19 @@ export default function TannerPage() {
               </svg>
             </span>
             <span className="pointer-events-none absolute left-0 top-7 z-50 w-[320px] rounded-xl bg-[var(--nimi-surface-overlay)] p-4 text-[13px] leading-relaxed text-[var(--nimi-text-secondary)] opacity-0 shadow-[var(--nimi-elevation-floating)] transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
-              <span className="mb-2 block text-[14px] font-semibold text-[var(--nimi-text-primary)]">参考标准</span>
+              <span className="mb-2 block text-[14px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Tanner.page.reference.title')}</span>
               <ul className="space-y-2">
                 <li>
-                  <span className="font-medium text-[var(--nimi-action-primary-bg)]">Tanner 分期标准</span>
-                  <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-muted)]">Marshall WA, Tanner JM. Variations in pattern of pubertal changes in girls/boys.</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-muted)]">Arch Dis Child 1969;44:291-303 / 1970;45:13-23</span>
+                  <span className="font-medium text-[var(--nimi-action-primary-bg)]">{i18nText('Tanner.page.reference.tannerStandard')}</span>
+                  <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.page.reference.tannerCitation')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.page.reference.tannerJournal')}</span>
                 </li>
                 <li>
-                  <span className="font-medium text-[var(--nimi-action-primary-bg)]">中国儿童青春期参考</span>
-                  <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-muted)]">中华医学会儿科学分会内分泌遗传代谢学组. 中枢性性早熟诊断与治疗专家共识（2022）</span>
+                  <span className="font-medium text-[var(--nimi-action-primary-bg)]">{i18nText('Tanner.page.reference.chinaReference')}</span>
+                  <span className="mt-0.5 block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.page.reference.chinaCitation')}</span>
                 </li>
               </ul>
-              <span className="mt-2 block border-t border-[color-mix(in_srgb,var(--nimi-border-subtle)_70%,transparent)] pt-2 text-[12px] text-[var(--nimi-text-muted)]">女孩 B2 通常 8-13 岁出现 · 男孩 G2 通常 9-14 岁出现</span>
+              <span className="mt-2 block border-t border-[color-mix(in_srgb,var(--nimi-border-subtle)_70%,transparent)] pt-2 text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.page.reference.normalTiming')}</span>
             </span>
           </span>
         </span>
@@ -135,24 +147,24 @@ export default function TannerPage() {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-            评估指引
+            {i18nText('Tanner.page.guideToggle')}
           </button>
           {!showForm && (
             <Button onClick={() => setShowForm(true)} tone="primary" size="sm" className="rounded-2xl">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-              添加评估
+              {i18nText('Tanner.page.addAssessment')}
             </Button>
           )}
         </>
       }
       aiSummary={
         <AISummaryCard domain="tanner" childName={child.displayName} childId={child.childId}
-          ageLabel={`${Math.floor(ageMonths / 12)}岁${ageMonths % 12}个月`} gender={child.gender}
-          dataContext={assessments.length > 0 ? `共 ${assessments.length} 次评估` : ''} />
+          ageLabel={ageLabel} gender={child.gender}
+          dataContext={assessments.length > 0 ? i18nText('Tanner.page.assessmentDataContext', { count: assessments.length }) : ''} />
       }
     >
       <div className="mb-4">
-        <p className="text-[13px] text-[var(--nimi-text-muted)]">{isFemale ? '女孩' : '男孩'} · 共 {assessments.length} 次评估</p>
+        <p className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.page.summary', { gender: genderLabel, count: assessments.length })}</p>
       </div>
 
       <TannerOverviewCards
@@ -165,45 +177,45 @@ export default function TannerPage() {
       {showGuide && (
         <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="mb-5 overflow-hidden rounded-3xl">
           <div className="bg-[linear-gradient(135deg,var(--nimi-status-info),var(--nimi-action-primary-bg))] px-5 py-4">
-            <h3 className="mb-1 text-[16px] font-bold text-[var(--nimi-action-primary-text)]">什么是 Tanner 分期？</h3>
-            <p className="text-[13px] text-[color-mix(in_srgb,var(--nimi-action-primary-text)_70%,transparent)]">Tanner 分期是国际通用的青春期发育评估标准，将{isFemale ? '乳房' : '外生殖器'}和阴毛发育各分为 5 期。</p>
+            <h3 className="mb-1 text-[16px] font-bold text-[var(--nimi-action-primary-text)]">{i18nText('Tanner.page.guide.title')}</h3>
+            <p className="text-[13px] text-[color-mix(in_srgb,var(--nimi-action-primary-text)_70%,transparent)]">{i18nText('Tanner.page.guide.description', { bodySystem: isFemale ? i18nText('Tanner.page.guide.bodySystem.breast') : i18nText('Tanner.page.guide.bodySystem.genital') })}</p>
           </div>
           <div className="space-y-4 bg-[var(--nimi-surface-card)] p-5">
             <div>
-              <h4 className="text-[14px] font-semibold mb-1 text-[var(--nimi-text-primary)]">如何判断？</h4>
+              <h4 className="text-[14px] font-semibold mb-1 text-[var(--nimi-text-primary)]">{i18nText('Tanner.page.guide.howToJudgeTitle')}</h4>
               <p className="text-[13px] leading-relaxed text-[var(--nimi-text-muted)]">
                 {isFemale
-                  ? '观察乳房的大小、形态和乳晕变化。B1 期是青春前期没有任何发育，B2 期（花蕾期）是乳头下方出现小硬块，这是青春期的第一个信号。如果 8 岁前出现 B2 需警惕性早熟。'
-                  : '观察睾丸大小和阴茎长度变化。G1 期是青春前期，G2 期是睾丸开始增大（通常用睾丸容积仪测量>4ml）。如果 9 岁前出现 G2 需警惕性早熟。'}
+                  ? i18nText('Tanner.page.guide.howToJudgeFemale')
+                  : i18nText('Tanner.page.guide.howToJudgeMale')}
               </p>
             </div>
             <div>
-              <h4 className="text-[14px] font-semibold mb-1 text-[var(--nimi-text-primary)]">正常发育时间参考</h4>
+              <h4 className="text-[14px] font-semibold mb-1 text-[var(--nimi-text-primary)]">{i18nText('Tanner.page.guide.timingTitle')}</h4>
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] p-3">
-                  <p className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">{isFemale ? '乳房发育 B2 出现' : '睾丸增大 G2 出现'}</p>
-                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{isFemale ? '正常: 8-13 岁 · 平均 10.5 岁' : '正常: 9-14 岁 · 平均 11.5 岁'}</p>
-                  <p className="text-[12px] mt-1 text-[var(--nimi-status-danger)]">{isFemale ? '<8 岁出现需排查性早熟' : '<9 岁出现需排查性早熟'}</p>
+                  <p className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">{isFemale ? i18nText('Tanner.page.guide.primarySignalFemale') : i18nText('Tanner.page.guide.primarySignalMale')}</p>
+                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{isFemale ? i18nText('Tanner.page.guide.primaryTimingFemale') : i18nText('Tanner.page.guide.primaryTimingMale')}</p>
+                  <p className="text-[12px] mt-1 text-[var(--nimi-status-danger)]">{isFemale ? i18nText('Tanner.page.guide.primaryAttentionFemale') : i18nText('Tanner.page.guide.primaryAttentionMale')}</p>
                 </div>
                 <div className="rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] p-3">
-                  <p className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">阴毛 PH2 出现</p>
-                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{isFemale ? '通常在 B2 后 6-12 个月出现' : '通常与 G2 同时或稍后出现'}</p>
-                  <p className="text-[12px] mt-1 text-[var(--nimi-text-muted)]">单纯阴毛早现可能为肾上腺功能早现</p>
+                  <p className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Tanner.page.guide.pubicHairSignal')}</p>
+                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{isFemale ? i18nText('Tanner.page.guide.pubicHairTimingFemale') : i18nText('Tanner.page.guide.pubicHairTimingMale')}</p>
+                  <p className="text-[12px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('Tanner.page.guide.pubicHairNote')}</p>
                 </div>
               </div>
             </div>
             <div>
-              <h4 className="text-[14px] font-semibold mb-1 text-[var(--nimi-text-primary)]">何时需要就医？</h4>
+              <h4 className="text-[14px] font-semibold mb-1 text-[var(--nimi-text-primary)]">{i18nText('Tanner.page.guide.medicalHelpTitle')}</h4>
               <ul className="text-[13px] leading-relaxed space-y-0.5 text-[var(--nimi-text-muted)]">
-                <li>• {isFemale ? '8 岁前出现乳房发育（B2）' : '9 岁前出现睾丸增大（G2）'}——可能是性早熟</li>
-                <li>• {isFemale ? '13 岁仍无任何发育迹象' : '14 岁仍无任何发育迹象'}——可能是青春期延迟</li>
-                <li>• 发育进展过快（1年内跨越2个分期）或伴随身高增长加速</li>
-                <li>• 建议配合骨龄检查评估发育进程</li>
+                <li>• {isFemale ? i18nText('Tanner.page.guide.medicalEarlyFemale') : i18nText('Tanner.page.guide.medicalEarlyMale')}</li>
+                <li>• {isFemale ? i18nText('Tanner.page.guide.medicalDelayFemale') : i18nText('Tanner.page.guide.medicalDelayMale')}</li>
+                <li>• {i18nText('Tanner.page.guide.medicalRapidProgress')}</li>
+                <li>• {i18nText('Tanner.page.guide.medicalBoneAge')}</li>
               </ul>
             </div>
           </div>
           <div className="flex justify-end border-t border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-5 py-3">
-            <Button onClick={() => setShowGuide(false)} tone="primary" size="sm" className="rounded-2xl">我知道了</Button>
+            <Button onClick={() => setShowGuide(false)} tone="primary" size="sm" className="rounded-2xl">{i18nText('Tanner.page.guide.confirm')}</Button>
           </div>
         </Surface>
       )}
@@ -236,12 +248,12 @@ export default function TannerPage() {
         latestBG={sorted[0]?.breastOrGenitalStage ?? null}
         latestPH={sorted[0]?.pubicHairStage ?? null}
         childName={child.displayName}
-        ageLabel={`${Math.floor(ageMonths / 12)}岁${ageMonths % 12 > 0 ? `${ageMonths % 12}月` : ''}`}
+        ageLabel={ageLabel}
         gender={child.gender}
       />
 
       <h2 className="text-[14px] font-semibold mb-3 mt-6 text-[var(--nimi-text-primary)]">
-        {sorted.length > 0 ? `评估记录（${sorted.length} 次）` : '暂无评估记录'}
+        {sorted.length > 0 ? i18nText('Tanner.page.historyTitle', { count: sorted.length }) : i18nText('Tanner.page.historyEmpty')}
       </h2>
       <TannerTimeline assessments={sorted} bgStages={bgStages} isFemale={isFemale} showForm={showForm} />
     </ProfileDetailShell>

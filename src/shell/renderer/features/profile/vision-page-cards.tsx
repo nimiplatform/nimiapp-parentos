@@ -16,6 +16,8 @@ import {
   type GlanceMetric,
   type VisionRecord,
 } from './vision-data.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const MONO = "var(--nimi-font-mono, 'JetBrains Mono', 'SF Mono', ui-monospace, monospace)";
 
@@ -121,8 +123,11 @@ function ChevronDown({ size = 14 }: { size?: number }) {
 const examTypeStroke = (kind: ExamView['kind']) =>
   kind === 'full' ? 'var(--nimi-accent)' : kind === 'biometric' ? 'var(--nimi-status-info)' : 'var(--nimi-text-muted)';
 
-const EXAM_TYPE_LABEL = (kind: ExamView['kind']) =>
-  kind === 'full' ? '完整检查' : kind === 'biometric' ? '眼轴跟踪' : '视力筛查';
+function examTypeLabel(kind: ExamView['kind']): string {
+  if (kind === 'full') return i18nText('Vision.examType.full');
+  if (kind === 'biometric') return i18nText('Vision.examType.biometric');
+  return i18nText('Vision.examType.screen');
+}
 
 export function AgeFilter({
   exams,
@@ -159,7 +164,7 @@ export function AgeFilter({
       style={{ padding: '20px 18px 16px', boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }}
     >
       <div className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-3.5" style={{ color: 'var(--nimi-fg-4)' }}>
-        按年龄查看
+        {i18nText('Vision.timeline.ageFilterTitle')}
       </div>
 
       <div className="relative h-16 px-1">
@@ -191,7 +196,7 @@ export function AgeFilter({
                   background: isSelected ? 'var(--nimi-accent-soft)' : 'transparent',
                 }}
               >
-                {y}岁
+                {i18nText('Vision.age.yearsShort', { years: y })}
               </span>
               <span
                 className="w-0.5 h-3 transition-all duration-150"
@@ -230,7 +235,7 @@ export function AgeFilter({
                     {e.date}
                   </span>
                   <span className="text-[9px]" style={{ color: 'var(--nimi-fg-3)' }}>
-                    {a.toFixed(1)}岁 · {EXAM_TYPE_LABEL(e.kind)}
+                    {i18nText('Vision.timeline.examTooltipAgeKind', { age: a.toFixed(1), kind: examTypeLabel(e.kind) })}
                   </span>
                 </div>
               )}
@@ -238,7 +243,7 @@ export function AgeFilter({
                 onMouseEnter={() => setHoverId(e.id)}
                 onMouseLeave={() => setHoverId(null)}
                 onClick={() => onExamClick?.(e.id)}
-                title={`${e.date} · ${EXAM_TYPE_LABEL(e.kind)}`}
+                title={i18nText('Vision.timeline.examTitle', { date: e.date, kind: examTypeLabel(e.kind) })}
                 className="grid place-items-center border-0 bg-transparent p-1 cursor-pointer"
               >
                 <span
@@ -272,13 +277,13 @@ export function AgeFilter({
       >
         <div className="flex gap-3">
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-[7px] h-[7px] rounded-full" style={{ background: 'var(--nimi-accent)' }} />完整检查
+            <span className="w-[7px] h-[7px] rounded-full" style={{ background: 'var(--nimi-accent)' }} />{i18nText('Vision.examType.full')}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-[7px] h-[7px] rounded-full" style={{ background: '#0ea5e9' }} />眼轴跟踪
+            <span className="w-[7px] h-[7px] rounded-full" style={{ background: '#0ea5e9' }} />{i18nText('Vision.examType.biometric')}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-[7px] h-[7px] rounded-full" style={{ background: '#94a3b8' }} />视力筛查
+            <span className="w-[7px] h-[7px] rounded-full" style={{ background: '#94a3b8' }} />{i18nText('Vision.examType.screen')}
           </span>
         </div>
         {selectedAge != null && (
@@ -287,7 +292,7 @@ export function AgeFilter({
             className="border-0 bg-transparent text-[11px] cursor-pointer"
             style={{ color: 'var(--nimi-accent)' }}
           >
-            清除筛选
+            {i18nText('Vision.timeline.clearAgeFilter')}
           </button>
         )}
       </div>
@@ -297,20 +302,26 @@ export function AgeFilter({
 
 /* ── ExamTimelineCard — vertical-rail dot + expandable details ───── */
 
-const SCREENING_LABELS: Record<string, string> = {
-  'red-reflex': '红光反射',
-  'fixation-tracking': '注视追视',
-  'cover-test': '遮盖试验',
-  photoscreener: '光筛查仪',
-  'tear-duct': '泪道检查',
-  'eye-checkup': '眼科检查',
+const SCREENING_LABEL_KEYS: Record<string, string> = {
+  'red-reflex': 'Vision.screening.label.redReflex',
+  'fixation-tracking': 'Vision.screening.label.fixationTracking',
+  'cover-test': 'Vision.screening.label.coverTest',
+  photoscreener: 'Vision.screening.label.photoscreener',
+  'tear-duct': 'Vision.screening.label.tearDuct',
+  'eye-checkup': 'Vision.screening.label.eyeCheckup',
 };
 
 const SCREENING_RESULT: Record<string, { label: string; tone: PillTone }> = {
-  pass: { label: '通过', tone: 'ok' },
-  refer: { label: '转诊', tone: 'danger' },
-  inconclusive: { label: '待定', tone: 'warn' },
+  pass: { label: i18nText('Vision.screening.result.pass'), tone: 'ok' },
+  refer: { label: i18nText('Vision.screening.result.refer'), tone: 'danger' },
+  inconclusive: { label: i18nText('Vision.screening.result.inconclusive'), tone: 'warn' },
 };
+
+function screeningLabel(key: string | null | undefined): string {
+  if (!key) return i18nText('Vision.screening.label.eyeCheckup');
+  const labelKey = SCREENING_LABEL_KEYS[key];
+  return labelKey ? i18nText(labelKey) : key;
+}
 
 /* ── Collapsed-card metric panel — OD/OS tabular preview ───────────── */
 
@@ -332,12 +343,13 @@ function surplusColorTone(v: number): string {
 }
 
 interface MetricRow {
+  key?: string;
   label: string;
   od: number | null;
   os: number | null;
   format: (v: number) => string;
   /** Per-row unit shown inline after the value when the section header
-   *  cannot carry a single unit (eg mixed-unit groups like 屈光). */
+   *  cannot carry a single unit, such as mixed-unit refraction groups. */
   unit?: string;
   odColor?: string;
   osColor?: string;
@@ -369,8 +381,8 @@ function MetricSection({
           {title}
           {unit && <span className="ml-1 text-[10px] font-normal" style={{ color: 'var(--nimi-fg-4)' }}>({unit})</span>}
         </span>
-        <span className="text-[10px] text-right pr-3" style={{ color: 'var(--nimi-fg-4)' }}>右 OD</span>
-        <span className="text-[10px] text-right pr-3" style={{ color: 'var(--nimi-fg-4)' }}>左 OS</span>
+        <span className="text-[10px] text-right pr-3" style={{ color: 'var(--nimi-fg-4)' }}>{i18nText('Vision.eye.od')}</span>
+        <span className="text-[10px] text-right pr-3" style={{ color: 'var(--nimi-fg-4)' }}>{i18nText('Vision.eye.os')}</span>
       </div>
       {rows.map((r) => {
         const valueWeight = r.emphasis ? 600 : 500;
@@ -391,7 +403,7 @@ function MetricSection({
         };
         return (
           <div
-            key={r.label}
+            key={r.key ?? r.label}
             className="grid items-baseline py-1"
             style={{ gridTemplateColumns: 'minmax(0, 1.1fr) repeat(2, minmax(0, 1fr))' }}
           >
@@ -452,10 +464,11 @@ function CollapsedMetricStrip({
     { label: 'AL', od: alOD, os: alOS, format: (v: number) => v.toFixed(2), emphasis: true },
     ...(ref
       ? ([
-          { label: '均值 P50', od: ref.mean, os: ref.mean, format: (v: number) => v.toFixed(2), muted: true },
-          { label: '临界 P75', od: ref.critical, os: ref.critical, format: (v: number) => v.toFixed(2), muted: true },
+          { key: 'same-age-mean', label: i18nText('Vision.reference.sameAgeMean'), od: ref.mean, os: ref.mean, format: (v: number) => v.toFixed(2), muted: true },
+          { key: 'same-age-critical', label: i18nText('Vision.reference.sameAgeCritical'), od: ref.critical, os: ref.critical, format: (v: number) => v.toFixed(2), muted: true },
           {
-            label: '轴余',
+            key: 'surplus',
+            label: i18nText('Vision.reference.surplus'),
             od: surplusOD,
             os: surplusOS,
             format: (v: number) => v.toFixed(2),
@@ -474,9 +487,9 @@ function CollapsedMetricStrip({
       className="grid"
       style={{ gridTemplateColumns: showSplit ? '1fr 1px 1.25fr' : '1fr' }}
     >
-      {hasRefraction && <MetricSection title="屈光" unit="D" rows={refractionRows} />}
+      {hasRefraction && <MetricSection title={i18nText('Vision.group.refractionSheet')} unit="D" rows={refractionRows} />}
       {showSplit && <div style={{ background: 'rgba(15,23,42,0.08)' }} />}
-      {hasAL && <MetricSection title="眼轴" unit="mm" rows={axialRows} />}
+      {hasAL && <MetricSection title={i18nText('Vision.group.biometrySheet')} unit="mm" rows={axialRows} />}
     </div>
   );
 }
@@ -511,10 +524,10 @@ export function ExamTimelineCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[14px] font-semibold tracking-[-0.01em]" style={{ color: 'var(--nimi-fg-1)' }}>
-                {EXAM_TYPE_LABEL(exam.kind)}
+                {examTypeLabel(exam.kind)}
               </span>
-              {isLatest && <StatusPill tone="ok">最新</StatusPill>}
-              <span className="text-[11px]" style={{ color: 'var(--nimi-fg-4)' }}>· {exam.daysAgo} 天前</span>
+              {isLatest && <StatusPill tone="ok">{i18nText('Vision.timeline.latest')}</StatusPill>}
+              <span className="text-[11px]" style={{ color: 'var(--nimi-fg-4)' }}>· {i18nText('Vision.timeline.daysAgo', { days: exam.daysAgo })}</span>
             </div>
             <div className="mt-1 text-[12px] flex items-center gap-2 flex-wrap" style={{ color: 'var(--nimi-fg-3)' }}>
               <span>{fmtAge(exam.ageMonths)}</span>
@@ -560,7 +573,7 @@ export function ExamTimelineCard({
                   className="text-[12px] px-3 py-1.5 rounded-full border-0 cursor-pointer"
                   style={{ background: 'rgba(15,23,42,0.05)', color: 'var(--nimi-fg-2)' }}
                 >
-                  编辑
+                  {i18nText('Vision.timeline.edit')}
                 </button>
               )}
               {onDelete && (
@@ -570,7 +583,7 @@ export function ExamTimelineCard({
                   className="text-[12px] px-3 py-1.5 rounded-full border-0 cursor-pointer"
                   style={{ background: 'rgba(239,68,68,0.10)', color: '#b91c1c' }}
                 >
-                  删除
+                  {i18nText('Vision.timeline.delete')}
                 </button>
               )}
             </div>
@@ -582,12 +595,12 @@ export function ExamTimelineCard({
 }
 
 function ScreeningDetail({ exam }: { exam: ExamView }) {
-  const screeningLabel = exam.screeningKey ? SCREENING_LABELS[exam.screeningKey] ?? exam.screeningKey : '眼科检查';
+  const currentScreeningLabel = screeningLabel(exam.screeningKey);
   const result = exam.result ? SCREENING_RESULT[exam.result] : null;
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium" style={{ color: 'var(--nimi-fg-1)' }}>{screeningLabel}</span>
+        <span className="text-[13px] font-medium" style={{ color: 'var(--nimi-fg-1)' }}>{currentScreeningLabel}</span>
         {result && <StatusPill tone={result.tone}>{result.label}</StatusPill>}
       </div>
       {exam.notes && (
@@ -631,6 +644,7 @@ function MeasurementDetail({
     const rows: MetricRow[] = g.metrics
       .filter((m) => readMetric(record, m, 'OD') != null || readMetric(record, m, 'OS') != null)
       .map((m) => ({
+        key: m.key,
         label: m.label,
         od: readMetric(record, m, 'OD'),
         os: readMetric(record, m, 'OS'),
@@ -641,13 +655,14 @@ function MeasurementDetail({
       }));
 
     if (g.key === 'biometric' && ref && (alOD != null || alOS != null)) {
-      const alIdx = rows.findIndex((r) => r.label === 'AL 眼轴长');
+      const alIdx = rows.findIndex((r) => r.key === 'al');
       const insertAfter = alIdx >= 0 ? alIdx + 1 : 0;
       const refRows: MetricRow[] = [
-        { label: '均值 P50', od: ref.mean, os: ref.mean, format: fmt2, unit: 'mm', muted: true },
-        { label: `${ageY}岁临界 P75`, od: ref.critical, os: ref.critical, format: fmt2, unit: 'mm', muted: true },
+        { key: 'same-age-mean', label: i18nText('Vision.reference.sameAgeMean'), od: ref.mean, os: ref.mean, format: fmt2, unit: 'mm', muted: true },
+        { key: 'same-age-critical', label: i18nText('Vision.reference.sameAgeCriticalWithAge', { age: ageY }), od: ref.critical, os: ref.critical, format: fmt2, unit: 'mm', muted: true },
         {
-          label: '轴余',
+          key: 'surplus',
+          label: i18nText('Vision.reference.surplus'),
           od: surplusOD,
           os: surplusOS,
           format: fmt2,
@@ -675,7 +690,7 @@ function MeasurementDetail({
             color: 'var(--nimi-fg-2)',
           }}
         >
-          <span className="font-semibold mr-1" style={{ color: '#92400e' }}>本次说明 ·</span>
+          <span className="font-semibold mr-1" style={{ color: '#92400e' }}>{i18nText('Vision.timeline.notesPrefix')}</span>
           {exam.notes}
         </div>
       )}

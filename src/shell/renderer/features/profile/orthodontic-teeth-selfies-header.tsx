@@ -1,5 +1,7 @@
 import type { OrthodonticPhotoAngle, OrthodonticPhotoSessionBundle } from '../../bridge/sqlite-bridge.js';
 import { CapsLabel } from './orthodontic-teeth-selfies-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export type CompareMode = 'slide' | 'split';
 
@@ -43,7 +45,7 @@ export function Header({
       }}
     >
       <div>
-        <CapsLabel>影像档案</CapsLabel>
+        <CapsLabel>{i18nText('Orthodontic.selfies.header.eyebrow')}</CapsLabel>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 6 }}>
           <span
             style={{
@@ -53,11 +55,14 @@ export function Header({
               color: 'var(--nimi-text-primary)',
             }}
           >
-            牙齿成长相册
+            {i18nText('Orthodontic.selfies.header.title')}
           </span>
           {count > 0 && (
             <span style={{ fontSize: 13, color: 'var(--nimi-text-muted)' }}>
-              {count} 组{trayDelta !== null ? ` · 已记录 ${trayDelta} 副变化` : ''}
+              {i18nText('Orthodontic.selfies.header.count', { count })}
+              {trayDelta !== null
+                ? i18nText('Orthodontic.selfies.header.trayDelta', { trayDelta })
+                : ''}
             </span>
           )}
         </div>
@@ -67,16 +72,24 @@ export function Header({
           <Segmented<OrthodonticPhotoAngle>
             value={angle}
             options={[
-              { id: 'front', label: '正面' },
-              { id: 'side', label: '侧面' },
+              { id: 'front', label: i18nText('Orthodontic.selfies.angle.front') },
+              { id: 'side', label: i18nText('Orthodontic.selfies.angle.side') },
             ]}
             onChange={onAngleChange}
           />
           <Segmented<CompareMode>
             value={mode}
             options={[
-              { id: 'slide', label: '叠加', title: '拖动分割线对比' },
-              { id: 'split', label: '平铺', title: '左右并排' },
+              {
+                id: 'slide',
+                label: i18nText('Orthodontic.selfies.mode.slide'),
+                title: i18nText('Orthodontic.selfies.mode.slideTitle'),
+              },
+              {
+                id: 'split',
+                label: i18nText('Orthodontic.selfies.mode.split'),
+                title: i18nText('Orthodontic.selfies.mode.splitTitle'),
+              },
             ]}
             onChange={onModeChange}
           />

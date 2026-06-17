@@ -16,8 +16,11 @@ import {
 } from './checkup-ocr.js';
 import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.js';
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type Status = 'idle' | 'analyzing' | 'review' | 'importing' | 'done';
+type ReportMeasurementCategory = 'lab' | 'eye' | 'boneAge' | 'growth';
 
 const TYPE_EMOJI: Record<string, string> = {
   height: '📏', weight: '⚖️', 'head-circumference': '📐', bmi: '🏃',
@@ -31,17 +34,54 @@ const TYPE_EMOJI: Record<string, string> = {
   'bone-age': '🦴',
 };
 
-const OWNER_TABLE_LABELS: Record<string, { label: string; emoji: string }> = {
-  dental_records: { label: '口腔记录', emoji: '🦷' },
-  growth_measurements: { label: '体检报告', emoji: '📄' },
-  medical_events: { label: '就医事件', emoji: '🏥' },
-  vaccine_records: { label: '疫苗接种', emoji: '💉' },
-  milestone_records: { label: '发育里程碑', emoji: '🎯' },
+const OWNER_TABLE_LABELS: Record<string, { labelKey: string; emoji: string }> = {
+  dental_records: { labelKey: 'ReportUpload.ownerTable.dentalRecords', emoji: '🦷' },
+  health_record_events: { labelKey: 'ReportUpload.ownerTable.healthRecordEvents', emoji: '📄' },
+  medical_events: { labelKey: 'ReportUpload.ownerTable.medicalEvents', emoji: '🏥' },
+  vaccine_records: { labelKey: 'ReportUpload.ownerTable.vaccineRecords', emoji: '💉' },
+  milestone_records: { labelKey: 'ReportUpload.ownerTable.milestoneRecords', emoji: '🎯' },
+};
+
+const REPORT_CATEGORY_META: Record<ReportMeasurementCategory, { labelKey: string; emoji: string }> = {
+  lab: { labelKey: 'ReportUpload.category.lab', emoji: '🧪' },
+  eye: { labelKey: 'ReportUpload.category.eye', emoji: '👁️' },
+  boneAge: { labelKey: 'ReportUpload.category.boneAge', emoji: '🦴' },
+  growth: { labelKey: 'ReportUpload.category.growth', emoji: '📏' },
 };
 
 function getDisplayInfo(typeId: string) {
   const std = GROWTH_STANDARDS.find((s) => s.typeId === typeId);
   return { name: std?.displayName ?? typeId, unit: std?.unit ?? '', emoji: TYPE_EMOJI[typeId] ?? '📋' };
+}
+
+function ownerTableLabel(ownerTable: string): string {
+  const meta = OWNER_TABLE_LABELS[ownerTable];
+  return meta ? `${meta.emoji} ${i18nText(meta.labelKey)}` : ownerTable;
+}
+
+function formatAgeMonths(ageMonths: number): string {
+  const years = Math.floor(ageMonths / 12);
+  const months = ageMonths % 12;
+  if (ageMonths < 24) return i18nText('Common.age.months', { months: ageMonths });
+  if (months > 0) return i18nText('Common.age.yearsMonths', { years, months });
+  return i18nText('Common.age.years', { years });
+}
+
+function measurementCategory(typeId: string): ReportMeasurementCategory {
+  if (typeId.startsWith('lab-')) return 'lab';
+  if (
+    typeId.includes('vision')
+    || typeId.includes('axial')
+    || typeId.includes('refraction')
+    || typeId.includes('corneal')
+    || typeId.includes('iop')
+    || typeId.includes('acd')
+    || typeId.includes('lt-')
+  ) {
+    return 'eye';
+  }
+  if (typeId === 'bone-age') return 'boneAge';
+  return 'growth';
 }
 
 export default function ReportUploadPage() {
@@ -135,7 +175,7 @@ export default function ReportUploadPage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="智能识别 & 影像档案">
+      <ProfileDetailShell title={i18nText('ReportUpload.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -151,7 +191,7 @@ export default function ReportUploadPage() {
       setStatus('idle');
       setCandidates([]);
     } catch (_error) {
-      setError('无法读取图片，请重新选择');
+      setError(i18nText('ReportUpload.error.readImageFailed'));
     }
   };
 
@@ -162,14 +202,13 @@ export default function ReportUploadPage() {
     try {
       const result = await analyzeCheckupSheetOCR({ imageUrl: imagePreview });
       if (result.measurements.length === 0) {
-        setError('未识别到支持的数据指标，请确认图片清晰且为医疗报告');
+        setError(i18nText('ReportUpload.error.noSupportedMeasurements'));
         setStatus('idle');
         return;
       }
       setCandidates(result.measurements.map((c) => ({ ...c, selected: true })));
       setStatus('review');
     } catch (error) {
-      setError('AI 识别失败，请重试或检查网络连接');
       setError(getCheckupOCRDisplayMessage(error));
       setStatus('idle');
     }
@@ -187,7 +226,7 @@ export default function ReportUploadPage() {
 
   const handleImport = async () => {
     const selected = candidates.filter((c) => c.selected);
-    if (selected.length === 0) { setError('请至少选择一条数据'); return; }
+    if (selected.length === 0) { setError(i18nText('ReportUpload.error.selectAtLeastOne')); return; }
 
     setStatus('importing');
     setError(null);
@@ -232,7 +271,7 @@ export default function ReportUploadPage() {
       setStatus('done');
       reloadMeasurements();
     } catch {
-      setError(`导入部分失败，已成功导入 ${count} 条`);
+      setError(i18nText('ReportUpload.error.partialImportFailed', { count }));
       setStatus('review');
     }
   };
@@ -248,17 +287,17 @@ export default function ReportUploadPage() {
 
   return (
     <ProfileDetailShell
-      title="智能识别 & 影像档案"
+      title={i18nText('ReportUpload.title')}
       actions={
         <>
           {reportGroups.length > 0 && (
             <span className="rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,var(--nimi-surface-card))] px-2.5 py-0.5 text-[13px] text-[var(--nimi-action-primary-bg)]">
-              {reportGroups.length} 份报告
+              {i18nText('ReportUpload.badge.reportCount', { count: reportGroups.length })}
             </span>
           )}
           {allAttachments.length > 0 && (
             <span className="rounded-full bg-[color-mix(in_srgb,var(--nimi-status-info)_10%,var(--nimi-surface-card))] px-2.5 py-0.5 text-[13px] text-[var(--nimi-status-info)]">
-              {allAttachments.length} 张影像
+              {i18nText('ReportUpload.badge.imageCount', { count: allAttachments.length })}
             </span>
           )}
         </>
@@ -266,10 +305,14 @@ export default function ReportUploadPage() {
       subnav={
         <div className="flex flex-col gap-3">
           <p className="text-[14px] text-[var(--nimi-text-muted)]">
-            上传医院报告自动提取数据，所有影像资料统一归档
+            {i18nText('ReportUpload.subtitle')}
           </p>
           <div className="flex gap-1 rounded-full bg-[var(--nimi-action-ghost-hover)] p-1 w-fit">
-            {([['upload', '📄 上传报告'], ['library', '📚 报告库'], ['attachments', '🖼️ 影像档案']] as const).map(([k, l]) => (
+            {([
+              ['upload', i18nText('ReportUpload.tab.upload')],
+              ['library', i18nText('ReportUpload.tab.library')],
+              ['attachments', i18nText('ReportUpload.tab.attachments')],
+            ] as const).map(([k, l]) => (
               <button key={k} onClick={() => setActiveView(k)}
                 className={`px-4 py-1.5 text-[13px] font-medium rounded-full transition-all ${activeView === k ? 'bg-[var(--nimi-surface-card)] text-[var(--nimi-text-primary)] shadow-[var(--nimi-elevation-base)]' : 'text-[var(--nimi-text-muted)]'}`}>
                 {l}
@@ -291,8 +334,8 @@ export default function ReportUploadPage() {
             <DashedAddButton
               shape="dropzone"
               icon={<span className="text-[36px]">📄</span>}
-              label="点击选择或拖放报告图片"
-              description="支持 JPG、PNG 格式"
+              label={i18nText('ReportUpload.upload.dropzoneLabel')}
+              description={i18nText('ReportUpload.upload.dropzoneDescription')}
               onClick={() => {
                 const input = document.createElement('input');
                 input.type = 'file';
@@ -304,16 +347,16 @@ export default function ReportUploadPage() {
           ) : (
             /* Preview + analyze */
             <div className="flex gap-4">
-              <img src={imagePreview} alt="报告预览"
+              <img src={imagePreview} alt={i18nText('ReportUpload.upload.previewAlt')}
                 className="w-[160px] h-[200px] rounded-2xl border border-[var(--nimi-border-subtle)] object-cover" />
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                   <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{imageName}</p>
                   <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">
-                    {status === 'analyzing' ? '正在识别中，请稍候...' : '图片已就绪，点击开始识别'}
+                    {status === 'analyzing' ? i18nText('ReportUpload.upload.analyzingHint') : i18nText('ReportUpload.upload.readyHint')}
                   </p>
                   {runtimeAvailable === false && (
-                    <p className="text-[13px] mt-2 text-amber-600">AI 运行时不可用，无法进行识别</p>
+                    <p className="text-[13px] mt-2 text-amber-600">{i18nText('ReportUpload.error.ocrRuntimeUnavailable')}</p>
                   )}
                 </div>
                 <div className="flex gap-2 mt-3">
@@ -324,11 +367,11 @@ export default function ReportUploadPage() {
                     {status === 'analyzing' ? (
                       <span className="flex items-center gap-2">
                         <span className="inline-block w-3.5 h-3.5 border-2 border-[color-mix(in_srgb,var(--nimi-action-primary-text)_30%,transparent)] border-t-[var(--nimi-action-primary-text)] rounded-full animate-spin" />
-                        识别中...
+                        {i18nText('ReportUpload.action.recognizing')}
                       </span>
-                    ) : '🔍 开始识别'}
+                    ) : i18nText('ReportUpload.action.startRecognition')}
                   </Button>
-                  <Button onClick={reset} tone="ghost" size="md">重新选择</Button>
+                  <Button onClick={reset} tone="ghost" size="md">{i18nText('ReportUpload.action.reselect')}</Button>
                 </div>
               </div>
             </div>
@@ -349,14 +392,14 @@ export default function ReportUploadPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">
-                识别到 {candidates.length} 项数据
+                {i18nText('ReportUpload.review.title', { count: candidates.length })}
               </h3>
               <p className="text-[13px] mt-0.5 text-[var(--nimi-text-muted)]">
-                请确认以下数据，取消不需要的项目
+                {i18nText('ReportUpload.review.hint')}
               </p>
             </div>
             <span className="rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,var(--nimi-surface-card))] px-2 py-0.5 text-[13px] text-[var(--nimi-action-primary-bg)]">
-              已选 {candidates.filter((c) => c.selected).length}/{candidates.length}
+              {i18nText('ReportUpload.review.selectedCount', { selected: candidates.filter((c) => c.selected).length, total: candidates.length })}
             </span>
           </div>
 
@@ -404,9 +447,9 @@ export default function ReportUploadPage() {
               tone="primary"
               size="md"
               fullWidth>
-              ✅ 确认导入 {candidates.filter((c) => c.selected).length} 条数据
+              {i18nText('ReportUpload.action.confirmImport', { count: candidates.filter((c) => c.selected).length })}
             </Button>
-            <Button onClick={reset} tone="ghost" size="md">取消</Button>
+            <Button onClick={reset} tone="ghost" size="md">{i18nText('ReportUpload.action.cancel')}</Button>
           </div>
         </Surface>
       )}
@@ -415,7 +458,7 @@ export default function ReportUploadPage() {
       {status === 'importing' && (
         <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="flex flex-col items-center rounded-3xl p-8">
           <span className="inline-block w-8 h-8 border-3 border-[var(--nimi-border-subtle)] border-t-[var(--nimi-text-primary)] rounded-full animate-spin mb-3" />
-          <p className="text-[14px] text-[var(--nimi-text-primary)]">正在导入数据...</p>
+          <p className="text-[14px] text-[var(--nimi-text-primary)]">{i18nText('ReportUpload.importing')}</p>
         </Surface>
       )}
 
@@ -423,13 +466,13 @@ export default function ReportUploadPage() {
       {status === 'done' && (
         <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="flex flex-col items-center rounded-3xl p-8">
           <span className="text-[48px] mb-3">🎉</span>
-          <h3 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">导入成功</h3>
+          <h3 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{i18nText('ReportUpload.success.title')}</h3>
           <p className="text-[14px] mt-1 mb-5 text-[var(--nimi-text-muted)]">
-            已成功导入 {importedCount} 条数据到 {child.displayName} 的档案
+            {i18nText('ReportUpload.success.description', { count: importedCount, childName: child.displayName })}
           </p>
           <div className="flex gap-3">
-            <Button onClick={() => { reset(); setActiveView('library'); }} tone="primary" size="md">查看报告库</Button>
-            <Button onClick={reset} tone="ghost" size="md">继续上传</Button>
+            <Button onClick={() => { reset(); setActiveView('library'); }} tone="primary" size="md">{i18nText('ReportUpload.action.viewLibrary')}</Button>
+            <Button onClick={reset} tone="ghost" size="md">{i18nText('ReportUpload.action.continueUpload')}</Button>
           </div>
         </Surface>
       )}
@@ -444,8 +487,8 @@ export default function ReportUploadPage() {
           {reportGroups.length === 0 ? (
             <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="rounded-3xl p-10 text-center">
               <span className="text-[36px]">📂</span>
-              <p className="text-[16px] font-medium mt-3 text-[var(--nimi-text-primary)]">暂无报告记录</p>
-              <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">通过智能识别提取的数据会自动归档到这里</p>
+              <p className="text-[16px] font-medium mt-3 text-[var(--nimi-text-primary)]">{i18nText('ReportUpload.library.emptyTitle')}</p>
+              <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('ReportUpload.library.emptyDescription')}</p>
             </Surface>
           ) : (
             <div className="relative">
@@ -453,16 +496,12 @@ export default function ReportUploadPage() {
               <div className="absolute left-[18px] top-0 bottom-0 w-[2px] bg-[var(--nimi-border-subtle)]" />
 
               {reportGroups.map((group) => {
-                const ageY = Math.floor(group.ageMonths / 12);
-                const ageR = group.ageMonths % 12;
-                const ageStr = group.ageMonths < 24 ? `${group.ageMonths}月` : ageR > 0 ? `${ageY}岁${ageR}月` : `${ageY}岁`;
+                const ageStr = formatAgeMonths(group.ageMonths);
 
                 // Categorize items
-                const categories = new Map<string, MeasurementRow[]>();
+                const categories = new Map<ReportMeasurementCategory, MeasurementRow[]>();
                 for (const item of group.items) {
-                  const cat = item.typeId.startsWith('lab-') ? '血检' :
-                    item.typeId.includes('vision') || item.typeId.includes('axial') || item.typeId.includes('refraction') || item.typeId.includes('corneal') || item.typeId.includes('iop') || item.typeId.includes('acd') || item.typeId.includes('lt-') ? '眼科' :
-                    item.typeId === 'bone-age' ? '骨龄' : '生长';
+                  const cat = measurementCategory(item.typeId);
                   const existing = categories.get(cat);
                   if (existing) existing.push(item);
                   else categories.set(cat, [item]);
@@ -479,7 +518,7 @@ export default function ReportUploadPage() {
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-[14px] font-bold text-[var(--nimi-text-primary)]">{group.date}</span>
                       <span className="rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,var(--nimi-surface-card))] px-2 py-0.5 text-[12px] text-[var(--nimi-action-primary-bg)]">{ageStr}</span>
-                      <span className="text-[12px] text-[var(--nimi-text-muted)]">{group.items.length} 项数据</span>
+                      <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('ReportUpload.library.dataItemCount', { count: group.items.length })}</span>
                     </div>
 
                     {/* Report card */}
@@ -487,7 +526,7 @@ export default function ReportUploadPage() {
                       {[...categories.entries()].map(([cat, items]) => (
                         <div key={cat}>
                           <div className="bg-[var(--nimi-surface-panel)] px-4 py-2 text-[12px] font-medium text-[var(--nimi-text-muted)]">
-                            {cat === '眼科' ? '👁️' : cat === '血检' ? '🧪' : cat === '骨龄' ? '🦴' : '📏'} {cat}
+                            {REPORT_CATEGORY_META[cat].emoji} {i18nText(REPORT_CATEGORY_META[cat].labelKey)}
                           </div>
                           {items.map((item) => {
                             const info = getDisplayInfo(item.typeId);
@@ -514,7 +553,7 @@ export default function ReportUploadPage() {
                             <img src={convertFileSrc(att.filePath)} alt={att.fileName}
                               className="h-16 w-12 rounded-2xl border border-[var(--nimi-border-subtle)] object-cover" />
                             <div>
-                              <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">原始报告</p>
+                              <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('ReportUpload.library.originalReport')}</p>
                               <p className="text-[12px] text-[var(--nimi-text-muted)]">{att.fileName}</p>
                             </div>
                           </div>
@@ -539,14 +578,13 @@ export default function ReportUploadPage() {
             <div className="flex gap-1 rounded-full bg-[var(--nimi-action-ghost-hover)] p-1 mb-4 w-fit">
               <button onClick={() => setAttachFilter('all')}
                 className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-all ${attachFilter === 'all' ? 'bg-[var(--nimi-surface-card)] text-[var(--nimi-text-primary)] shadow-[var(--nimi-elevation-base)]' : 'text-[var(--nimi-text-muted)]'}`}>
-                全部
+                {i18nText('ReportUpload.attachments.allFilter')}
               </button>
               {attachOwnerTables.map((ot) => {
-                const meta = OWNER_TABLE_LABELS[ot];
                 return (
                   <button key={ot} onClick={() => setAttachFilter(ot)}
                     className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-all ${attachFilter === ot ? 'bg-[var(--nimi-surface-card)] text-[var(--nimi-text-primary)] shadow-[var(--nimi-elevation-base)]' : 'text-[var(--nimi-text-muted)]'}`}>
-                    {meta ? `${meta.emoji} ${meta.label}` : ot}
+                    {ownerTableLabel(ot)}
                   </button>
                 );
               })}
@@ -557,8 +595,8 @@ export default function ReportUploadPage() {
           {allAttachments.length === 0 && (
             <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="rounded-3xl p-10 text-center">
               <span className="text-[36px]">📂</span>
-              <p className="text-[16px] font-medium mt-3 text-[var(--nimi-text-primary)]">暂无影像资料</p>
-              <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">各模块上传的照片和报告等原图均会在此统一存档</p>
+              <p className="text-[16px] font-medium mt-3 text-[var(--nimi-text-primary)]">{i18nText('ReportUpload.attachments.emptyTitle')}</p>
+              <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('ReportUpload.attachments.emptyDescription')}</p>
             </Surface>
           )}
 
@@ -575,12 +613,11 @@ export default function ReportUploadPage() {
 
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-[14px] font-bold text-[var(--nimi-text-primary)]">{date}</span>
-                    <span className="text-[12px] text-[var(--nimi-text-muted)]">{items.length} 张</span>
+                    <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('ReportUpload.attachments.imageItemCount', { count: items.length })}</span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     {items.map((a) => {
-                      const meta = OWNER_TABLE_LABELS[a.ownerTable];
                       return (
                         <Surface key={a.attachmentId} tone="card" material="glass-regular" elevation="raised" padding="none" className="group relative overflow-hidden rounded-3xl">
                           <img
@@ -592,7 +629,7 @@ export default function ReportUploadPage() {
                           <div className="px-2.5 py-2">
                             <p className="text-[12px] truncate text-[var(--nimi-text-primary)]">{a.fileName}</p>
                             <p className="text-[12px] mt-0.5 text-[var(--nimi-text-muted)]">
-                              {meta ? `${meta.emoji} ${meta.label}` : a.ownerTable}
+                              {ownerTableLabel(a.ownerTable)}
                             </p>
                           </div>
                           <button
@@ -616,7 +653,7 @@ export default function ReportUploadPage() {
       {previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--nimi-scrim-modal)]"
           onClick={() => setPreviewUrl(null)}>
-          <img src={previewUrl} alt="preview" className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg" />
+          <img src={previewUrl} alt={i18nText('ReportUpload.attachments.previewAlt')} className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg" />
           <button onClick={() => setPreviewUrl(null)}
             className="absolute top-6 right-6 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--nimi-surface-overlay)] text-[16px] text-[var(--nimi-text-primary)] shadow-[var(--nimi-elevation-floating)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]">
             ✕

@@ -6,6 +6,8 @@ import { getCustomTodos } from '../../bridge/sqlite-bridge.js';
 import type { CustomTodoRow } from '../../bridge/sqlite-bridge.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { ReminderPanelSurface } from '../timeline/reminder-panel-controller.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const DRAWER_WIDTH = 360;
 
@@ -18,7 +20,7 @@ export function ProfileTodoDrawer() {
   const [todos, setTodos] = useState<CustomTodoRow[]>([]);
 
   // The floating-button badge + drawer subtitle count pending personal todos.
-  // The drawer body itself reuses the dashboard 待办事项 panel, which loads its
+  // The drawer body itself reuses the dashboard task panel, which loads its
   // own data; this lightweight fetch only feeds the glanceable count.
   const pendingCount = useMemo(
     () => todos.filter((todo) => !todo.completedAt).length,
@@ -68,8 +70,8 @@ export function ProfileTodoDrawer() {
       <button
         type="button"
         onClick={() => (open ? closeDrawer() : openDrawer())}
-        aria-label="打开待办事项"
-        title="待办事项"
+        aria-label={i18nText('Timeline.todoDrawer.openAria')}
+        title={i18nText('Timeline.todoDrawer.title')}
         className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[var(--nimi-action-primary-bg)] bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-floating)] transition-all hover:-translate-y-0.5"
       >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -109,10 +111,12 @@ export function ProfileTodoDrawer() {
             <div className="flex items-center justify-between border-b border-[var(--nimi-border-subtle)] px-5 py-4">
               <div>
                 <h2 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">
-                  待办事项
+                  {i18nText('Timeline.todoDrawer.title')}
                 </h2>
                 <p className="mt-0.5 text-[13px] text-[var(--nimi-text-muted)]">
-                  {child.displayName} · {pendingCount > 0 ? `${pendingCount} 条未完成` : '全部已完成'}
+                  {child.displayName} · {pendingCount > 0
+                    ? i18nText('Timeline.todoDrawer.pendingCount', { count: pendingCount })
+                    : i18nText('Timeline.todoDrawer.allDone')}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -121,13 +125,13 @@ export function ProfileTodoDrawer() {
                   onClick={closeDrawer}
                   className="text-[13px] font-medium transition-colors hover:underline text-[var(--nimi-text-muted)]"
                 >
-                  查看全部
+                  {i18nText('Timeline.todoDrawer.viewAll')}
                 </Link>
                 <IconButton
                   tone="ghost"
                   size="sm"
                   onClick={closeDrawer}
-                  aria-label="关闭"
+                  aria-label={i18nText('Timeline.todoDrawer.close')}
                   className="h-7 w-7 rounded-lg text-[var(--nimi-text-muted)]"
                   icon={(
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

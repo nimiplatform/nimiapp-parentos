@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import type { OrthoCycleSummary } from './timeline-data-types.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /**
  * Compact cycle-progress widget for the dashboard right rail. Renders only
  * for an active clear-aligner appliance with a known daysPerAligner. Shows
- * "第 N/M 副" + a daysPerAligner-segment progress bar + status line keyed off
+ * tray N/M + a daysPerAligner-segment progress bar + status line keyed off
  * `daysUntilSwitch` (still wearing / today's the day / overdue / final tray).
  *
  * Calendar-based projection (anchor + daysPerAligner). The orthodontic page
@@ -17,20 +19,23 @@ export function OrthoCycleProgressWidget({ cycle }: { cycle: OrthoCycleSummary }
   const overdueDays = filledRaw > segments ? filledRaw - segments : 0;
   const status = (() => {
     if (cycle.isFinalAligner && cycle.daysUntilSwitch <= 0) {
-      return { tone: 'final' as const, text: '最后一副 · 完成后请在档案里登记结束' };
+      return { tone: 'final' as const, text: i18nText('Timeline.orthoCycle.status.final') };
     }
     if (overdueDays > 0) {
-      return { tone: 'overdue' as const, text: `已逾期 ${overdueDays} 天未换` };
+      return { tone: 'overdue' as const, text: i18nText('Timeline.orthoCycle.status.overdue', { days: overdueDays }) };
     }
     if (cycle.daysUntilSwitch === 0) {
-      return { tone: 'due' as const, text: '今天该换下一副' };
+      return { tone: 'due' as const, text: i18nText('Timeline.orthoCycle.status.dueToday') };
     }
     if (cycle.daysUntilSwitch === 1) {
-      return { tone: 'soon' as const, text: '明天该换下一副' };
+      return { tone: 'soon' as const, text: i18nText('Timeline.orthoCycle.status.dueTomorrow') };
     }
     return {
       tone: 'normal' as const,
-      text: `还有 ${cycle.daysUntilSwitch} 天 · 预计 ${cycle.predictedSwitchDate}`,
+      text: i18nText('Timeline.orthoCycle.status.remaining', {
+        days: cycle.daysUntilSwitch,
+        predictedDate: cycle.predictedSwitchDate,
+      }),
     };
   })();
   const accent = (() => {
@@ -56,10 +61,10 @@ export function OrthoCycleProgressWidget({ cycle }: { cycle: OrthoCycleSummary }
     >
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-[12px] font-semibold tracking-[0.04em]" style={{ color: '#1e293b' }}>
-          牙套周期 · 第 {cycle.currentAlignerIndex} / {cycle.totalAligners} 副
+          {i18nText('Timeline.orthoCycle.trayProgress', { current: cycle.currentAlignerIndex, total: cycle.totalAligners })}
         </span>
         <span className="text-[11px]" style={{ color: '#64748b' }}>
-          {filled}/{segments} 天
+          {i18nText('Timeline.orthoCycle.dayProgress', { filled, total: segments })}
         </span>
       </div>
       <div className="mt-2 flex gap-[3px]" aria-hidden="true">

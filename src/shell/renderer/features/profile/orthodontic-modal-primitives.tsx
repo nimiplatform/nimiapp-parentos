@@ -1,5 +1,7 @@
 import { Button, DialogTitle, OverlayShell, SelectField, Surface, TextareaField, TextField } from '@nimiplatform/kit/ui';
 import type { ReactNode } from 'react';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── Primitives ────────────────────────────────────────── */
 
@@ -35,7 +37,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
           tone="ghost"
           size="sm"
           className="h-7 min-h-7 w-7 rounded-full px-0 text-[18px]"
-          aria-label="关闭"
+          aria-label={i18nText('Orthodontic.modal.common.close')}
         >
           ×
         </Button>
@@ -62,7 +64,7 @@ export function ModalErrorBanner({ message, onDismiss }: { message: string; onDi
         tone="ghost"
         size="sm"
         className="h-6 min-h-6 w-6 shrink-0 rounded-full px-0 text-[var(--nimi-status-danger)]"
-        aria-label="关闭错误提示"
+        aria-label={i18nText('Orthodontic.modal.common.closeError')}
       >
         ×
       </Button>
@@ -79,7 +81,7 @@ export function ModalFooter({ onCancel, onSubmit, submitLabel, disabled }: {
   return (
     <div className="flex justify-end gap-2 mt-2">
       <Button type="button" onClick={onCancel} tone="ghost" size="sm">
-        取消
+        {i18nText('Orthodontic.modal.common.cancel')}
       </Button>
       <Button type="button" onClick={onSubmit} disabled={disabled} tone="primary" size="sm">
         {submitLabel}

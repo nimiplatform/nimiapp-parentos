@@ -4,6 +4,8 @@ import { ChevronRight, PersonStanding } from 'lucide-react';
 import { Surface } from '@nimiplatform/kit/ui';
 import { getPostureAssessments, type PostureAssessmentRow } from '../../bridge/sqlite-bridge.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /**
  * Posture console card. Posture is a retained-owner stateful domain
@@ -48,16 +50,16 @@ export function ProfilePostureCard({ childId }: { childId: string }) {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h3 className="text-[15px] font-semibold tracking-normal text-[var(--nimi-text-primary)]">
-                体态档案
+                {i18nText('Posture.page.title')}
               </h3>
               <span className="text-[12px] font-medium text-[var(--nimi-text-muted)]">
-                {count > 0 ? `${count} 次评估` : '未记录'}
+                {count > 0 ? i18nText('Posture.card.assessmentCount', { count }) : i18nText('Posture.notRecorded')}
               </span>
             </div>
             <p className="mt-1 truncate text-[12px] text-[var(--nimi-text-muted)]">
               {latest
-                ? `最近评估 ${latest.split('T')[0]}`
-                : '脊柱、肩部、骨盆与下肢对齐评估'}
+                ? i18nText('Posture.card.latestAssessment', { date: latest.split('T')[0] })
+                : i18nText('Posture.card.summaryFallback')}
             </p>
           </div>
           <ChevronRight size={18} className="text-[var(--nimi-text-muted)]" />

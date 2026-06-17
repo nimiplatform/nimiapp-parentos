@@ -1,3 +1,4 @@
+import { i18nText } from '../../i18n/index.js';
 /**
  * Journal entry "recordedAt" helpers.
  *
@@ -25,20 +26,20 @@ function diffInDays(target: Date, reference: Date): number {
 }
 
 export function formatRecordedAtLabel(iso: string | null, now: Date = new Date()): string {
-  if (!iso) return '现在';
+  if (!iso) return i18nText('Common.time.now');
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '现在';
+  if (Number.isNaN(date.getTime())) return i18nText('Common.time.now');
 
   const time = `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
   const days = diffInDays(date, now);
 
   if (days === 0) {
     const minutesAgo = Math.round((now.getTime() - date.getTime()) / 60000);
-    if (minutesAgo >= 0 && minutesAgo < 5) return '刚刚';
-    return `今天 ${time}`;
+    if (minutesAgo >= 0 && minutesAgo < 5) return i18nText('Common.time.justNow');
+    return i18nText('Common.time.todayAt', { time });
   }
-  if (days === 1) return `昨天 ${time}`;
-  if (days === 2) return `前天 ${time}`;
+  if (days === 1) return i18nText('Common.time.yesterdayAt', { time });
+  if (days === 2) return i18nText('Common.time.dayBeforeYesterdayAt', { time });
 
   const sameYear = date.getFullYear() === now.getFullYear();
   const md = `${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
@@ -78,15 +79,15 @@ export interface RecordedAtPreset {
 }
 
 export const RECORDED_AT_PRESETS: RecordedAtPreset[] = [
-  { key: 'now', label: '现在', resolve: () => null },
+  { key: 'now', label: i18nText('Journal.recordedAtPreset.now'), resolve: () => null },
   {
     key: '1h-ago',
-    label: '1 小时前',
+    label: i18nText('Journal.recordedAtPreset.oneHourAgo'),
     resolve: (now) => new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
   },
   {
     key: 'yesterday-evening',
-    label: '昨天 19:00',
+    label: i18nText('Journal.recordedAtPreset.yesterdayEvening'),
     resolve: (now) => {
       const d = new Date(now);
       d.setDate(d.getDate() - 1);
@@ -96,7 +97,7 @@ export const RECORDED_AT_PRESETS: RecordedAtPreset[] = [
   },
   {
     key: 'day-before-yesterday-evening',
-    label: '前天 19:00',
+    label: i18nText('Journal.recordedAtPreset.dayBeforeYesterdayEvening'),
     resolve: (now) => {
       const d = new Date(now);
       d.setDate(d.getDate() - 2);

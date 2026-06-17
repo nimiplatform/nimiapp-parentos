@@ -19,6 +19,7 @@
  * ───────────────────────────────────────────────────────────── */
 
 import { invoke } from '@tauri-apps/api/core';
+import { i18nText } from '../../i18n/index.js';
 
 export type PrintMode = 'letter' | 'professional';
 
@@ -448,7 +449,7 @@ export async function exportReportAsImage(
   }
 
   const filename = options.filename ?? `growth-report-${formatTimestamp(new Date())}.png`;
-  const chosenPath = await pickSavePath(filename, 'png', '另存为图片');
+  const chosenPath = await pickSavePath(filename, 'png', i18nText('Reports.export.saveImageTitle'));
   if (!chosenPath) return { savedPath: null, filename };
 
   const canvas = await renderTargetToCanvas(target, options);
@@ -472,7 +473,7 @@ export async function exportReportAsPdf(
   }
 
   const filename = options.filename ?? `growth-report-${formatTimestamp(new Date())}.pdf`;
-  const chosenPath = await pickSavePath(filename, 'pdf', '另存为 PDF');
+  const chosenPath = await pickSavePath(filename, 'pdf', i18nText('Reports.export.savePdfTitle'));
   if (!chosenPath) return { savedPath: null, filename };
 
   const canvas = await renderTargetToCanvas(target, options);

@@ -12,6 +12,8 @@ import {
   getStaleMeasurementDays,
   type GrowthMetricDefinition,
 } from './growth-curve-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 // growth-curve-controls.tsx — restyled to pill-tabs with a recency stamp
 // (wave-B). The other-metric select, standard pill toggle, and stale-hint
@@ -60,7 +62,7 @@ export function GrowthCurveControls({
         data-testid="growth-curve-controls-pill-tabs"
       >
         <PillTabs
-          ariaLabel="生长指标"
+          ariaLabel={i18nText('GrowthCurve.controls.metricTabsAriaLabel')}
           size="sm"
           value={selectedType}
           onValueChange={onSelectType}
@@ -79,7 +81,7 @@ export function GrowthCurveControls({
             className="ml-1 text-[12px] text-[var(--nimi-text-muted)]"
             data-testid="growth-curve-controls-recency"
           >
-            最近更新 {recencyLabel}
+            {i18nText('GrowthCurve.controls.latestUpdated', { label: recencyLabel })}
           </span>
         ) : null}
       </div>

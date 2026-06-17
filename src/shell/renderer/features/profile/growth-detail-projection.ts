@@ -38,6 +38,8 @@ import {
   type HistoryPoint,
 } from './growth-milestone-rules.js';
 import type { GrowthStandard, WHOLMSDataset } from './who-lms-loader.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 // ---------------------------------------------------------------------------
 // Public types (PO-GROWTH-DETAIL-002)
@@ -95,7 +97,7 @@ export interface GrowthNextCheckScheduled {
   daysFromNow: number;
   badgeLabel: string;
   ledeTemplate: 'next_check_due_soon' | 'next_check_overdue' | 'next_check_upcoming';
-  /** Age-active growth record_data rule the 更改 CTA reschedules (PO-GROWTH-DETAIL-006);
+  /** Age-active growth record_data rule the reschedule CTA targets (PO-GROWTH-DETAIL-006);
    *  null when no growth record_data rule covers the child's age, disabling the CTA. */
   recheckRuleId: string | null;
 }
@@ -189,10 +191,12 @@ function ageMonthsFromBirthIso(birthIso: string, nowIso: string): number {
 }
 
 function ageLabelFromMonths(months: number): string {
-  if (months < 24) return `${months} 个月`;
+  if (months < 24) return i18nText('GrowthDetail.age.months', { months });
   const years = Math.floor(months / 12);
   const remainderMonths = months % 12;
-  return remainderMonths > 0 ? `${years} 岁 ${remainderMonths} 个月` : `${years} 岁`;
+  return remainderMonths > 0
+    ? i18nText('GrowthDetail.age.yearsMonths', { years, months: remainderMonths })
+    : i18nText('GrowthDetail.age.years', { years });
 }
 
 function sourceKeyFromEvent(event: HealthRecordEvent): GrowthFilterSourceKey {
@@ -349,7 +353,7 @@ function pickLedeTemplate(
 }
 
 function percentileLabel(percentile: number | null): string {
-  if (percentile == null) return '参考数据未加载';
+  if (percentile == null) return i18nText('GrowthDetail.reference.unavailable');
   return `P${percentile}`;
 }
 
@@ -440,10 +444,10 @@ function paginateHistory(
 }
 
 function badgeLabelFromDaysFromNow(daysFromNow: number): string {
-  if (daysFromNow < 0) return '已逾期';
-  if (daysFromNow <= 30) return '月度复测';
-  if (daysFromNow <= 90) return '季度复测';
-  return '半年复测';
+  if (daysFromNow < 0) return i18nText('GrowthDetail.nextCheck.overdue');
+  if (daysFromNow <= 30) return i18nText('GrowthDetail.nextCheck.monthly');
+  if (daysFromNow <= 90) return i18nText('GrowthDetail.nextCheck.quarterly');
+  return i18nText('GrowthDetail.nextCheck.halfYear');
 }
 
 function nextCheckFromSnapshotMetric(
@@ -466,7 +470,7 @@ function nextCheckFromSnapshotMetric(
     daysFromNow,
     badgeLabel: badgeLabelFromDaysFromNow(daysFromNow),
     ledeTemplate,
-    // Age-active growth record_data rule the 更改 reschedule modal targets
+    // Age-active growth record_data rule the reschedule modal targets
     // (PO-GROWTH-DETAIL-006). Null disables the CTA per PO-GROWTH-DETAIL-009.
     recheckRuleId: resolveGrowthRecheckRuleId(ageMonths),
   };
@@ -509,26 +513,30 @@ function buildTrendStats(
   const latest = selectedPoints[selectedPoints.length - 1];
   if (!latest) {
     return [
-      { label: '年增速', value: '—', unit: selectedUnit, caption: '需要更多数据' },
-      { label: '距 P50', value: '—', unit: selectedUnit, caption: '需要更多数据' },
-      { label: '百分位', value: '—', unit: '', caption: '需要更多数据' },
+      { label: i18nText('GrowthDetail.trendStats.yearGrowth'), value: '—', unit: selectedUnit, caption: i18nText('GrowthDetail.trendStats.needMoreData') },
+      { label: i18nText('GrowthDetail.trendStats.distanceToP50'), value: '—', unit: selectedUnit, caption: i18nText('GrowthDetail.trendStats.needMoreData') },
+      { label: i18nText('GrowthDetail.trendStats.percentile'), value: '—', unit: '', caption: i18nText('GrowthDetail.trendStats.needMoreData') },
     ];
   }
   const yearAgoValue = priorYearValue(selectedPoints, latest.measuredAt);
   const yoy = formatYearOverYearDelta(latest.value, yearAgoValue, selectedUnit);
-  // Year-over-year framed against the prior-year value as a percentage, e.g.
-  // "较去年同期 138.5 cm，增长了 4.0%". Falls back when no prior-year point.
+  // Year-over-year framed against the prior-year value as a percentage. Falls
+  // back when no prior-year point exists.
   const yoyCaption = ((): string => {
-    if (yearAgoValue == null || yearAgoValue <= 0) return '暂无去年同期数据';
+    if (yearAgoValue == null || yearAgoValue <= 0) return i18nText('GrowthDetail.trendStats.noPriorYear');
     const unitSuffix = selectedUnit ? ` ${selectedUnit}` : '';
     const pctText = Math.abs(((latest.value - yearAgoValue) / yearAgoValue) * 100).toFixed(1);
     const direction =
       latest.value > yearAgoValue
-        ? `增长了 ${pctText}%`
+        ? i18nText('GrowthDetail.trendStats.increased', { percent: pctText })
         : latest.value < yearAgoValue
-          ? `降低了 ${pctText}%`
-          : '基本持平';
-    return `较去年同期 ${yearAgoValue}${unitSuffix}，${direction}`;
+          ? i18nText('GrowthDetail.trendStats.decreased', { percent: pctText })
+          : i18nText('GrowthDetail.trendStats.flat');
+    return i18nText('GrowthDetail.trendStats.yearOverYearCaption', {
+      value: yearAgoValue,
+      unit: unitSuffix,
+      direction,
+    });
   })();
   const currentPercentile = computeApproxPercentile(latest.value, latest.ageMonths, whoDataset);
 
@@ -572,13 +580,13 @@ function buildTrendStats(
   // referenced here so the parameter participates in the type signature.
   void selectedMetricId;
   return [
-    { label: '年增速', value: yoy, unit: '', caption: yoyCaption },
-    { label: '距 P50', value: distanceToP50, unit: selectedUnit, caption: recencyCaption },
+    { label: i18nText('GrowthDetail.trendStats.yearGrowth'), value: yoy, unit: '', caption: yoyCaption },
+    { label: i18nText('GrowthDetail.trendStats.distanceToP50'), value: distanceToP50, unit: selectedUnit, caption: recencyCaption },
     {
-      label: '百分位',
+      label: i18nText('GrowthDetail.trendStats.percentile'),
       value: currentPercentile != null ? `P${currentPercentile}` : '—',
       unit: '',
-      caption: `近 6 月 ${percentileChange6m}`,
+      caption: i18nText('GrowthDetail.trendStats.percentileChange6m', { change: percentileChange6m }),
     },
   ];
 }

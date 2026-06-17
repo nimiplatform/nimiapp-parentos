@@ -21,25 +21,27 @@ import {
 } from './todo-recurrence.js';
 import { TodoReminderPicker } from './todo-reminder-picker.js';
 import { CustomTodoReminderBanner, useCustomTodoReminders } from './todo-reminder-scheduler.js';
+import { i18n, i18nText } from '../../i18n/index.js';
+
 
 function formatDueDate(dueDate: string): string {
   const today = getLocalToday();
-  if (dueDate === today) return '今天';
+  if (dueDate === today) return i18nText('Timeline.customTodo.due.today');
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().slice(0, 10);
-  if (dueDate === tomorrowStr) return '明天';
+  if (dueDate === tomorrowStr) return i18nText('Timeline.customTodo.due.tomorrow');
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toISOString().slice(0, 10);
-  if (dueDate === yesterdayStr) return '昨天（已逾期）';
+  if (dueDate === yesterdayStr) return i18nText('Timeline.customTodo.due.yesterdayOverdue');
   if (dueDate < today) {
     const days = Math.floor((Date.now() - new Date(dueDate).getTime()) / (24 * 60 * 60 * 1000));
-    return `逾期${days}天`;
+    return i18nText('Timeline.customTodo.due.overdueDays', { days });
   }
   const days = Math.floor((new Date(dueDate).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
-  if (days <= 7) return `${days}天后`;
-  return new Date(dueDate).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+  if (days <= 7) return i18nText('Timeline.customTodo.due.daysLater', { days });
+  return new Intl.DateTimeFormat(i18n.language, { month: 'short', day: 'numeric' }).format(new Date(dueDate));
 }
 
 export function CustomTodoComposer({
@@ -160,7 +162,7 @@ export function CustomTodoComposer({
         >
           <path d="M12 5v14M5 12h14" />
         </svg>
-        <span className="text-[14px] transition-all duration-300 ease-out group-hover:translate-x-0.5 group-hover:tracking-wide group-hover:text-[#3BB88A]" style={{ color: '#9aa0a7' }}>添加日常待办...</span>
+        <span className="text-[14px] transition-all duration-300 ease-out group-hover:translate-x-0.5 group-hover:tracking-wide group-hover:text-[#3BB88A]" style={{ color: '#9aa0a7' }}>{i18nText('Timeline.customTodo.addPlaceholderCollapsed')}</span>
       </button>
     );
   }
@@ -192,7 +194,7 @@ export function CustomTodoComposer({
             e.preventDefault();
             void handleAdd();
           }}
-          placeholder="比如：提醒我每晚读 10 分钟绘本"
+          placeholder={i18nText('Timeline.customTodo.titlePlaceholder')}
           disabled={adding}
           rows={1}
           className={`todo-input-textarea block w-full resize-none border-0 bg-transparent py-1 text-[14px] leading-[1.55] outline-none placeholder:text-[#9ca3af] ${showScrollbar ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
@@ -205,7 +207,7 @@ export function CustomTodoComposer({
           <TodoRecurrencePicker value={recurrenceRule} onChange={setRecurrenceRule} />
           <button
             type="button"
-            title="添加"
+            title={i18nText('Timeline.customTodo.add')}
             onClick={() => void handleAdd()}
             disabled={!canSubmit}
             className="ml-auto flex h-8 w-8 items-center justify-center rounded-full transition-all"
@@ -295,7 +297,7 @@ export function CustomTodoInlineList({
             >
               <button
                 type="button"
-                title="标记完成"
+                title={i18nText('Timeline.customTodo.complete')}
                 onClick={() => void handleToggle(todo)}
                 className="mt-[2px] flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full border transition-all hover:border-[#4ECCA3]"
                 style={{ borderColor: '#D0D3D8' }}
@@ -315,7 +317,7 @@ export function CustomTodoInlineList({
                     )}
                     <button
                       type="button"
-                      title="删除"
+                      title={i18nText('Timeline.customTodo.delete')}
                       onClick={() => void handleDelete(todo.todoId)}
                       className="hidden h-[15px] w-[15px] items-center justify-center rounded-full transition-colors group-hover:flex hover:bg-[#f3f4f6]"
                       style={{ color: '#9aa0a7' }}
@@ -370,7 +372,7 @@ export function CustomTodoInlineList({
               >
                 <button
                   type="button"
-                  title="取消完成"
+                  title={i18nText('Timeline.customTodo.uncomplete')}
                   onClick={() => void handleToggle(todo)}
                   className="mt-[2px] flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full border"
                   style={{ borderColor: '#9aa0a7', background: '#9aa0a7' }}
@@ -384,7 +386,7 @@ export function CustomTodoInlineList({
                     <p className="text-[14px] leading-snug line-through [overflow-wrap:anywhere]" style={{ color: '#9aa0a7' }}>{todo.title}</p>
                     <button
                       type="button"
-                      title="删除"
+                      title={i18nText('Timeline.customTodo.delete')}
                       onClick={() => void handleDelete(todo.todoId)}
                       className="hidden h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full transition-colors group-hover:flex hover:bg-[#f3f4f6]"
                       style={{ color: '#9aa0a7' }}

@@ -1,5 +1,7 @@
 import type { JournalEntryRow, MeasurementRow, SleepRecordRow } from '../../bridge/sqlite-bridge.js';
 import { GROWTH_STANDARDS, OBSERVATION_DIMENSIONS } from '../../knowledge-base/index.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export interface StructuredTrendSignal {
   id: string;
@@ -64,13 +66,24 @@ function buildMeasurementTrendSignals(
 
     signals.push({
       id: `measurement-${typeId}`,
-      title: `${label}趋势`,
-      summary: `${label}在 ${formatDate(previous.measuredAt)} 至 ${formatDate(latestInPeriod.measuredAt)} 期间变化了 ${formatSignedDelta(delta)}${unit ? ` ${unit}` : ''}。`,
+      title: i18nText('Reports.trend.measurement.title', { label }),
+      summary: i18nText('Reports.trend.measurement.summary', {
+        label,
+        fromDate: formatDate(previous.measuredAt),
+        toDate: formatDate(latestInPeriod.measuredAt),
+        delta: `${formatSignedDelta(delta)}${unit ? ` ${unit}` : ''}`,
+      }),
       evidence: [
-        `上次记录：${previous.value}${unit ? ` ${unit}` : ''}，${formatDate(previous.measuredAt)}。`,
-        `最新记录：${latestInPeriod.value}${unit ? ` ${unit}` : ''}，${formatDate(latestInPeriod.measuredAt)}。`,
+        i18nText('Reports.trend.measurement.previousEvidence', {
+          value: `${previous.value}${unit ? ` ${unit}` : ''}`,
+          date: formatDate(previous.measuredAt),
+        }),
+        i18nText('Reports.trend.measurement.latestEvidence', {
+          value: `${latestInPeriod.value}${unit ? ` ${unit}` : ''}`,
+          date: formatDate(latestInPeriod.measuredAt),
+        }),
       ],
-      sources: ['本地生长测量数据'],
+      sources: [i18nText('Reports.trend.measurement.source')],
     });
   }
 
@@ -96,13 +109,21 @@ function buildJournalVolumeSignal(
 
   return {
     id: 'journal-volume',
-    title: '日志活跃度趋势',
-    summary: `当前周期日志记录 ${currentWindow.length} 条，上一同等周期 ${previousWindow.length} 条。`,
+    title: i18nText('Reports.trend.journalVolume.title'),
+    summary: i18nText('Reports.trend.journalVolume.summary', {
+      currentCount: currentWindow.length,
+      previousCount: previousWindow.length,
+    }),
     evidence: [
-      `当前周期内 ${currentVoice} 条纯语音记录，${currentMixed} 条语音+文字记录。`,
-      `当前周期内 ${currentKeepsakes} 条标记为珍藏。`,
+      i18nText('Reports.trend.journalVolume.voiceMixedEvidence', {
+        voiceCount: currentVoice,
+        mixedCount: currentMixed,
+      }),
+      i18nText('Reports.trend.journalVolume.keepsakeEvidence', {
+        keepsakeCount: currentKeepsakes,
+      }),
     ],
-    sources: ['本地观察日志'],
+    sources: [i18nText('Reports.trend.journalVolume.source')],
   };
 }
 
@@ -128,13 +149,16 @@ function buildJournalDimensionSignal(
 
   return {
     id: 'journal-dimension',
-    title: '观察维度趋势',
-    summary: `${label}是当前周期记录最多的观察维度，共 ${count} 条。`,
+    title: i18nText('Reports.trend.journalDimension.title'),
+    summary: i18nText('Reports.trend.journalDimension.summary', { label, count }),
     evidence: [
-      `维度 ID：${dimensionId}。`,
-      `当前周期记录条数：${count}。`,
+      i18nText('Reports.trend.journalDimension.dimensionIdEvidence', { dimensionId }),
+      i18nText('Reports.trend.journalDimension.countEvidence', { count }),
     ],
-    sources: ['本地观察日志', '观察框架'],
+    sources: [
+      i18nText('Reports.trend.journalVolume.source'),
+      i18nText('Reports.trend.journalDimension.frameworkSource'),
+    ],
   };
 }
 

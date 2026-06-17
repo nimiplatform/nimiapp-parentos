@@ -4,6 +4,8 @@ import { Area, AreaChart, CartesianGrid, ReferenceArea, ResponsiveContainer, Too
 import type { TooltipValueType } from 'recharts';
 import type { SleepRecordRow } from '../../bridge/sqlite-bridge.js';
 import { referenceSleepRange } from './sleep-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function SleepTrendChart({
   records,
@@ -29,8 +31,8 @@ export function SleepTrendChart({
   return (
     <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="mb-4 rounded-3xl p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">睡眠趋势</span>
-        <span className="text-[13px] text-[var(--nimi-text-muted)]">参考 {refLo}-{refHi}h/天</span>
+        <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Sleep.trend.title')}</span>
+        <span className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Sleep.trend.referenceRange', { low: refLo, high: refHi })}</span>
       </div>
       <ResponsiveContainer width="100%" height={120}>
         <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
@@ -48,7 +50,7 @@ export function SleepTrendChart({
             contentStyle={{ fontSize: 11, borderRadius: 8, border: `1px solid ${'var(--nimi-border-subtle)'}`, boxShadow: 'var(--nimi-elevation-raised)' }}
             formatter={(value: TooltipValueType | undefined) => {
               const displayValue = typeof value === 'number' ? `${value}h` : `${value ?? '-'}h`;
-              return [displayValue, '睡眠时长'];
+              return [displayValue, i18nText('Sleep.trend.durationLabel')];
             }}
           />
           <Area type="monotone" dataKey="hours" stroke={'var(--nimi-action-primary-bg)'} strokeWidth={2} fill="url(#sleepGrad)" dot={{ r: 3, fill: 'var(--nimi-action-primary-bg)' }} />

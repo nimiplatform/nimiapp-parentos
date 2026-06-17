@@ -9,7 +9,7 @@ import {
   type OCRMeasurementCandidate,
 } from './checkup-ocr.js';
 import {
-  EYE_SET, FORM_SECTIONS, PUPIL_OPTIONS, getPickerConfig,
+  EYE_SET, EXAM_NOTE_PREFIXES, FORM_SECTIONS, PUPIL_LABELS, PUPIL_OPTIONS, getPickerConfig,
   type VisionRecord,
 } from './vision-data.js';
 import { Button, DatePicker, TextField } from '@nimiplatform/kit/ui';
@@ -25,15 +25,7 @@ import {
   ModalHeader,
   SectionCard,
 } from './health-record-modal-shell.js';
-
-const NOTE_PREFIXES = {
-  hospital: '医院: ',
-  doctor: '医生: ',
-  pupil: '瞳孔: ',
-  screenTime: '日近距离用眼: ',
-  outdoorTime: '日户外: ',
-  controls: '防控: ',
-} as const;
+import { i18nText } from '../../i18n/index.js';
 
 type VisionRecordNoteDraft = {
   hospital: string;
@@ -78,28 +70,28 @@ function parseVisionRecordNoteDraft(record?: VisionRecord): VisionRecordNoteDraf
       .filter(Boolean);
 
     for (const token of tokens) {
-      if (token.startsWith(NOTE_PREFIXES.hospital)) {
-        hospital ||= token.slice(NOTE_PREFIXES.hospital.length).trim();
+      if (token.startsWith(EXAM_NOTE_PREFIXES.hospital)) {
+        hospital ||= token.slice(EXAM_NOTE_PREFIXES.hospital.length).trim();
         continue;
       }
-      if (token.startsWith(NOTE_PREFIXES.doctor)) {
-        doctor ||= token.slice(NOTE_PREFIXES.doctor.length).trim();
+      if (token.startsWith(EXAM_NOTE_PREFIXES.doctor)) {
+        doctor ||= token.slice(EXAM_NOTE_PREFIXES.doctor.length).trim();
         continue;
       }
-      if (token.startsWith(NOTE_PREFIXES.pupil)) {
-        pupil ||= token.slice(NOTE_PREFIXES.pupil.length).trim();
+      if (token.startsWith(EXAM_NOTE_PREFIXES.pupil)) {
+        pupil ||= token.slice(EXAM_NOTE_PREFIXES.pupil.length).trim();
         continue;
       }
-      if (token.startsWith(NOTE_PREFIXES.screenTime)) {
-        screenTime ||= token.slice(NOTE_PREFIXES.screenTime.length).trim();
+      if (token.startsWith(EXAM_NOTE_PREFIXES.screenTime)) {
+        screenTime ||= token.slice(EXAM_NOTE_PREFIXES.screenTime.length).trim();
         continue;
       }
-      if (token.startsWith(NOTE_PREFIXES.outdoorTime)) {
-        outdoorTime ||= token.slice(NOTE_PREFIXES.outdoorTime.length).trim();
+      if (token.startsWith(EXAM_NOTE_PREFIXES.outdoorTime)) {
+        outdoorTime ||= token.slice(EXAM_NOTE_PREFIXES.outdoorTime.length).trim();
         continue;
       }
-      if (token.startsWith(NOTE_PREFIXES.controls)) {
-        controls ||= token.slice(NOTE_PREFIXES.controls.length).trim();
+      if (token.startsWith(EXAM_NOTE_PREFIXES.controls)) {
+        controls ||= token.slice(EXAM_NOTE_PREFIXES.controls.length).trim();
         continue;
       }
       extras.push(token);
@@ -185,7 +177,7 @@ export function NumberPickerPopover({ typeId, label, unit, value, onSelect, onCl
           {step === 'dec' && (
             <button onClick={() => setStep('int')} className="text-[14px] font-medium" style={{ color: 'var(--nimi-action-primary-bg)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="inline -mt-0.5 mr-1"><path d="M15 18l-6-6 6-6" /></svg>
-              返回
+              {i18nText('Profile.rich.common.back')}
             </button>
           )}
           {step === 'int' && <span />}
@@ -230,12 +222,12 @@ export function NumberPickerPopover({ typeId, label, unit, value, onSelect, onCl
         </div>
 
         <div className="flex items-center gap-2 px-4 pb-4">
-          <input type="number" placeholder="或手动输入..." value={value}
+          <input type="number" placeholder={i18nText('Profile.rich.visionBatch.manualInputPlaceholder')} value={value}
             onChange={(e) => onSelect(e.target.value)}
             className="flex-1 rounded-xl px-3 py-2 text-[14px] border-0 outline-none"
             style={{ background: '#fff', color: 'var(--nimi-text-primary)' }} />
           <button onClick={onClose} className="px-4 py-2 rounded-xl text-[14px] font-medium text-white"
-            style={{ background: 'var(--nimi-action-primary-bg)' }}>确定</button>
+            style={{ background: 'var(--nimi-action-primary-bg)' }}>{i18nText('Profile.rich.visionBatch.confirm')}</button>
         </div>
       </div>
     </div>
@@ -289,8 +281,18 @@ export function BatchForm(props: VisionBatchFormProps) {
   );
 }
 
-const SCREEN_TIME_OPTIONS = ['0-1小时', '2-3小时', '4-5小时', '6小时以上'] as const;
-const OUTDOOR_TIME_OPTIONS = ['0-1小时', '2-3小时', '4-5小时', '5小时以上'] as const;
+const SCREEN_TIME_OPTIONS = [
+  { value: '0-1h', label: i18nText('Vision.behavior.nearWork.zeroToOne') },
+  { value: '2-3h', label: i18nText('Vision.behavior.nearWork.twoToThree') },
+  { value: '4-5h', label: i18nText('Vision.behavior.nearWork.fourToFive') },
+  { value: '6h-plus', label: i18nText('Vision.behavior.nearWork.sixPlus') },
+] as const;
+const OUTDOOR_TIME_OPTIONS = [
+  { value: '0-1h', label: i18nText('Vision.behavior.outdoor.zeroToOne') },
+  { value: '2-3h', label: i18nText('Vision.behavior.outdoor.twoToThree') },
+  { value: '4-5h', label: i18nText('Vision.behavior.outdoor.fourToFive') },
+  { value: '5h-plus', label: i18nText('Vision.behavior.outdoor.fivePlus') },
+] as const;
 
 export function VisionBatchFormContent({ childId, birthDate, onSave, onClose, initialRecord }: VisionBatchFormProps) {
   const { t } = useTranslation();
@@ -389,12 +391,12 @@ export function VisionBatchFormContent({ childId, birthDate, onSave, onClose, in
     if (hrValue.trim()) nextEntries.push(['hyperopia-reserve', hrValue.trim()]);
 
     const nextNoteParts: string[] = [];
-    if (hospital) nextNoteParts.push(`${NOTE_PREFIXES.hospital}${hospital}`);
-    if (doctor) nextNoteParts.push(`${NOTE_PREFIXES.doctor}${doctor}`);
-    if (pupil) nextNoteParts.push(`${NOTE_PREFIXES.pupil}${pupil}`);
-    if (screenTime) nextNoteParts.push(`${NOTE_PREFIXES.screenTime}${screenTime}`);
-    if (outdoorTime) nextNoteParts.push(`${NOTE_PREFIXES.outdoorTime}${outdoorTime}`);
-    if (controls) nextNoteParts.push(`${NOTE_PREFIXES.controls}${controls}`);
+    if (hospital) nextNoteParts.push(`${EXAM_NOTE_PREFIXES.hospital}${hospital}`);
+    if (doctor) nextNoteParts.push(`${EXAM_NOTE_PREFIXES.doctor}${doctor}`);
+    if (pupil) nextNoteParts.push(`${EXAM_NOTE_PREFIXES.pupil}${pupil}`);
+    if (screenTime) nextNoteParts.push(`${EXAM_NOTE_PREFIXES.screenTime}${screenTime}`);
+    if (outdoorTime) nextNoteParts.push(`${EXAM_NOTE_PREFIXES.outdoorTime}${outdoorTime}`);
+    if (controls) nextNoteParts.push(`${EXAM_NOTE_PREFIXES.controls}${controls}`);
     if (notes) nextNoteParts.push(notes);
     const nextNoteStr = nextNoteParts.length > 0 ? nextNoteParts.join(' | ') : null;
 
@@ -461,9 +463,9 @@ export function VisionBatchFormContent({ childId, birthDate, onSave, onClose, in
 
   const filledCount = Object.values(values).filter((v) => v.trim()).length + (hrValue.trim() ? 1 : 0);
 
-  const pupilChips: ChipOption<string>[] = PUPIL_OPTIONS.map((p) => ({ value: p, label: p }));
-  const screenChips: ChipOption<string>[] = SCREEN_TIME_OPTIONS.map((opt) => ({ value: opt, label: opt }));
-  const outdoorChips: ChipOption<string>[] = OUTDOOR_TIME_OPTIONS.map((opt) => ({ value: opt, label: opt }));
+  const pupilChips: ChipOption<string>[] = PUPIL_OPTIONS.map((p) => ({ value: p, label: PUPIL_LABELS[p] }));
+  const screenChips: ChipOption<string>[] = SCREEN_TIME_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }));
+  const outdoorChips: ChipOption<string>[] = OUTDOOR_TIME_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }));
 
   const ocrButton = (
     <button
@@ -600,7 +602,7 @@ export function VisionBatchFormContent({ childId, birthDate, onSave, onClose, in
           type="button"
           onClick={() => void handleSubmit()}
           disabled={saving || filledCount === 0}
-          aria-label="vision-record-save"
+          aria-label={i18nText('Profile.rich.visionBatch.saveAria')}
           tone="primary"
           size="md"
         >

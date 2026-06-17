@@ -1,26 +1,28 @@
 import type { OrthoClinicalEventType, OrthodonticApplianceType, OrthodonticStage, WritableOrthodonticCaseType } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export const CASE_TYPE_OPTIONS: { value: WritableOrthodonticCaseType; label: string }[] = [
-  { value: 'early-intervention', label: '早期矫治' },
-  { value: 'fixed-braces', label: '固定矫治' },
-  { value: 'clear-aligners', label: '隐形矫治' },
+  { value: 'early-intervention', label: i18nText('Orthodontic.caseType.earlyIntervention') },
+  { value: 'fixed-braces', label: i18nText('Orthodontic.caseType.fixedBraces') },
+  { value: 'clear-aligners', label: i18nText('Orthodontic.caseType.clearAligners') },
 ];
 
 export const STAGE_OPTIONS: { value: OrthodonticStage; label: string }[] = [
-  { value: 'assessment', label: '初评' },
-  { value: 'planning', label: '方案规划' },
-  { value: 'active', label: '治疗中' },
-  { value: 'retention', label: '保持期' },
-  { value: 'completed', label: '已完成' },
+  { value: 'assessment', label: i18nText('Orthodontic.stage.assessment') },
+  { value: 'planning', label: i18nText('Orthodontic.stage.planning') },
+  { value: 'active', label: i18nText('Orthodontic.stage.active') },
+  { value: 'retention', label: i18nText('Orthodontic.stage.retention') },
+  { value: 'completed', label: i18nText('Orthodontic.stage.completed') },
 ];
 
 export const CASE_CREATE_STAGE_OPTIONS = STAGE_OPTIONS.filter((option) => option.value !== 'completed');
 
 export const ORTHO_CLINICAL_EVENT_OPTIONS: { value: OrthoClinicalEventType; label: string; desc: string }[] = [
-  { value: 'ortho-review',     label: '复诊',  desc: '医生例行检查进度' },
-  { value: 'ortho-adjustment', label: '调整',  desc: '弓丝/结扎/附件调整' },
-  { value: 'ortho-issue',      label: '异常',  desc: '断裂、脱落、疼痛等' },
-  { value: 'ortho-end',        label: '结束',  desc: '正畸结束或保持期开始' },
+  { value: 'ortho-review', label: i18nText('Orthodontic.clinicalEvent.review.label'), desc: i18nText('Orthodontic.clinicalEvent.review.description') },
+  { value: 'ortho-adjustment', label: i18nText('Orthodontic.clinicalEvent.adjustment.label'), desc: i18nText('Orthodontic.clinicalEvent.adjustment.description') },
+  { value: 'ortho-issue', label: i18nText('Orthodontic.clinicalEvent.issue.label'), desc: i18nText('Orthodontic.clinicalEvent.issue.description') },
+  { value: 'ortho-end', label: i18nText('Orthodontic.clinicalEvent.end.label'), desc: i18nText('Orthodontic.clinicalEvent.end.description') },
 ];
 
 export function eventTypeAdvancesReview(t: OrthoClinicalEventType): boolean {

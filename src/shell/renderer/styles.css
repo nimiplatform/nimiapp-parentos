@@ -721,11 +721,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .advisor-sidebar-panel {
-  border: 1px solid color-mix(in srgb, var(--nimi-border-subtle) 72%, transparent);
+  border: 1px solid var(--nimi-material-glass-regular-border);
   border-radius: var(--nimi-radius-xl);
-  background: color-mix(in srgb, var(--nimi-surface-card) 64%, transparent);
+  background: var(--nimi-material-glass-regular-bg);
   box-shadow: var(--nimi-elevation-base);
-  backdrop-filter: blur(18px);
 }
 
 .advisor-main-panel {
@@ -819,11 +818,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .advisor-composer-box {
-  border: 1px solid color-mix(in srgb, var(--nimi-border-subtle) 76%, transparent);
+  border: 1px solid var(--nimi-material-glass-regular-border);
   border-radius: var(--nimi-radius-xl);
-  background: color-mix(in srgb, var(--nimi-surface-card) 82%, transparent);
+  background: var(--nimi-material-glass-regular-bg);
   box-shadow: var(--nimi-elevation-raised);
-  backdrop-filter: blur(18px);
 }
 
 .advisor-composer-textarea {

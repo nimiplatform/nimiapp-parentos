@@ -1,16 +1,26 @@
 import type { TodoRecurrenceRule, TodoRecurrenceUnit } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
 
-const WEEKDAY_LABELS_CN = ['日', '一', '二', '三', '四', '五', '六'];
+
+const WEEKDAY_LABELS = [
+  i18nText('TodoRecurrence.weekday.sunday'),
+  i18nText('TodoRecurrence.weekday.monday'),
+  i18nText('TodoRecurrence.weekday.tuesday'),
+  i18nText('TodoRecurrence.weekday.wednesday'),
+  i18nText('TodoRecurrence.weekday.thursday'),
+  i18nText('TodoRecurrence.weekday.friday'),
+  i18nText('TodoRecurrence.weekday.saturday'),
+];
 
 export const REMINDER_OFFSET_PRESETS: ReadonlyArray<{ minutes: number; label: string }> = [
-  { minutes: 5, label: '5分钟前' },
-  { minutes: 10, label: '10分钟前' },
-  { minutes: 30, label: '30分钟前' },
-  { minutes: 60, label: '1小时前' },
-  { minutes: 120, label: '2小时前' },
-  { minutes: 60 * 24, label: '1天前' },
-  { minutes: 60 * 24 * 2, label: '2天前' },
-  { minutes: 60 * 24 * 7, label: '1周前' },
+  { minutes: 5, label: i18nText('Common.relative.minutesAgoCompact', { minutes: 5 }) },
+  { minutes: 10, label: i18nText('Common.relative.minutesAgoCompact', { minutes: 10 }) },
+  { minutes: 30, label: i18nText('Common.relative.minutesAgoCompact', { minutes: 30 }) },
+  { minutes: 60, label: i18nText('Common.relative.hoursAgoCompact', { hours: 1 }) },
+  { minutes: 120, label: i18nText('Common.relative.hoursAgoCompact', { hours: 2 }) },
+  { minutes: 60 * 24, label: i18nText('Common.relative.daysAgoCompact', { days: 1 }) },
+  { minutes: 60 * 24 * 2, label: i18nText('Common.relative.daysAgoCompact', { days: 2 }) },
+  { minutes: 60 * 24 * 7, label: i18nText('Common.relative.weeksAgoCompact', { weeks: 1 }) },
 ];
 
 export function parseRecurrenceRule(raw: string | null): TodoRecurrenceRule | null {
@@ -34,29 +44,33 @@ export function describeRecurrenceRule(rule: TodoRecurrenceRule | null): string 
   if (!rule) return '';
   switch (rule.preset) {
     case 'daily':
-      return '每天';
+      return i18nText('TodoRecurrence.preset.daily');
     case 'weekly':
-      return '每周';
+      return i18nText('TodoRecurrence.preset.weekly');
     case 'monthly':
-      return '每月';
+      return i18nText('TodoRecurrence.preset.monthly');
     case 'yearly':
-      return '每年';
+      return i18nText('TodoRecurrence.preset.yearly');
     case 'custom': {
       const interval = Math.max(1, rule.interval ?? 1);
       const unit = rule.unit ?? 'day';
-      const unitLabel = unitLabelCn(unit);
-      const base = interval === 1 ? `每${unitLabel}` : `每 ${interval} ${unitLabel}`;
+      const recurrenceUnitLabel = unitLabel(unit, interval);
+      const base = interval === 1
+        ? i18nText('TodoRecurrence.custom.everyUnit', { unit: recurrenceUnitLabel })
+        : i18nText('TodoRecurrence.custom.everyIntervalUnit', { interval, unit: recurrenceUnitLabel });
       if (unit === 'week' && rule.weekdays && rule.weekdays.length > 0) {
         const days = [...rule.weekdays]
           .sort((a, b) => a - b)
-          .map((d) => `周${WEEKDAY_LABELS_CN[d] ?? '?'}`)
-          .join('、');
-        return `${base} · ${days}`;
+          .map((d) => i18nText('TodoRecurrence.weekday.prefixed', {
+            day: WEEKDAY_LABELS[d] ?? i18nText('TodoRecurrence.weekday.unknown'),
+          }))
+          .join(i18nText('Common.list.separator'));
+        return i18nText('TodoRecurrence.custom.weekdays', { base, days });
       }
       return base;
     }
     default:
-      return '重复';
+      return i18nText('TodoRecurrence.fallback');
   }
 }
 
@@ -64,19 +78,19 @@ export function describeReminderOffset(minutes: number | null): string {
   if (minutes === null || minutes === undefined) return '';
   const preset = REMINDER_OFFSET_PRESETS.find((p) => p.minutes === minutes);
   if (preset) return preset.label;
-  if (minutes < 60) return `${minutes}分钟前`;
-  if (minutes < 60 * 24) return `${Math.round(minutes / 60)}小时前`;
+  if (minutes < 60) return i18nText('Common.relative.minutesAgoCompact', { minutes });
+  if (minutes < 60 * 24) return i18nText('Common.relative.hoursAgoCompact', { hours: Math.round(minutes / 60) });
   const days = Math.round(minutes / (60 * 24));
-  return `${days}天前`;
+  return i18nText('Common.relative.daysAgoCompact', { days });
 }
 
-function unitLabelCn(unit: TodoRecurrenceUnit): string {
+function unitLabel(unit: TodoRecurrenceUnit, count: number): string {
   switch (unit) {
-    case 'day': return '天';
-    case 'week': return '周';
-    case 'month': return '月';
-    case 'year': return '年';
-    default: return '天';
+    case 'day': return i18nText('TodoRecurrence.unit.day', { count });
+    case 'week': return i18nText('TodoRecurrence.unit.week', { count });
+    case 'month': return i18nText('TodoRecurrence.unit.month', { count });
+    case 'year': return i18nText('TodoRecurrence.unit.year', { count });
+    default: return i18nText('TodoRecurrence.unit.day', { count });
   }
 }
 

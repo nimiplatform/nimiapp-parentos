@@ -1,5 +1,7 @@
 import { Button, IconButton, Surface } from '@nimiplatform/kit/ui';
 import { useState } from 'react';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── Guide data ── */
 
@@ -18,142 +20,200 @@ interface GuideStep {
 
 const GUIDE_STEPS: GuideStep[] = [
   {
-    title: '为什么要关注体态',
+    title: i18nText('PostureGuide.steps.why.title'),
     sections: [
       {
-        heading: '体态问题越早发现越好',
-        body: '脊柱侧弯、高低肩、驼背等体态问题在儿童快速生长期（6-14 岁）最容易出现和加重。早期发现时，通过运动干预和姿势纠正就能改善；如果发现太晚，可能需要支具甚至手术。',
+        heading: i18nText('PostureGuide.steps.why.early.heading'),
+        body: i18nText('PostureGuide.steps.why.early.body'),
       },
       {
-        heading: '家长可以做什么',
+        heading: i18nText('PostureGuide.steps.why.parentActions.heading'),
         items: [
-          { label: '定期观察', desc: '每 3-6 个月在家做一次简单的体态筛查，记录下来对比变化。', tag: '推荐' },
-          { label: '留意信号', desc: '注意孩子是否有歪头写字、坐姿歪斜、书包总往一边滑、衣领一边高等日常表现。', tag: '日常' },
-          { label: '配合体检', desc: '学校脊柱筛查结果及时录入，如果有 Cobb 角数据一定要记录。', tag: '重要' },
+          {
+            label: i18nText('PostureGuide.steps.why.parentActions.regularObservation.label'),
+            desc: i18nText('PostureGuide.steps.why.parentActions.regularObservation.desc'),
+            tag: i18nText('PostureGuide.tag.recommended'),
+          },
+          {
+            label: i18nText('PostureGuide.steps.why.parentActions.signalWatch.label'),
+            desc: i18nText('PostureGuide.steps.why.parentActions.signalWatch.desc'),
+            tag: i18nText('PostureGuide.tag.daily'),
+          },
+          {
+            label: i18nText('PostureGuide.steps.why.parentActions.checkupData.label'),
+            desc: i18nText('PostureGuide.steps.why.parentActions.checkupData.desc'),
+            tag: i18nText('PostureGuide.tag.important'),
+          },
         ],
       },
     ],
   },
   {
-    title: '在家怎么观察',
+    title: i18nText('PostureGuide.steps.observe.title'),
     sections: [
       {
-        heading: '准备工作',
-        body: '让孩子穿贴身衣服或裸露背部，自然站立在光线充足的地方。双脚并拢、双臂自然下垂、目视前方。不要刻意挺胸或耸肩。',
+        heading: i18nText('PostureGuide.steps.observe.preparation.heading'),
+        body: i18nText('PostureGuide.steps.observe.preparation.body'),
       },
       {
-        heading: '四步观察法',
+        heading: i18nText('PostureGuide.steps.observe.fourSteps.heading'),
         items: [
           {
-            label: '① 看肩膀',
-            desc: '站在孩子正后方，观察左右肩最高点是否等高。如果一侧明显偏高，记录为"左高"或"右高"。基本齐平就选"对称"。',
-            tag: '简单',
+            label: i18nText('PostureGuide.steps.observe.fourSteps.shoulder.label'),
+            desc: i18nText('PostureGuide.steps.observe.fourSteps.shoulder.desc'),
+            tag: i18nText('PostureGuide.tag.simple'),
           },
           {
-            label: '② 看肩胛骨',
-            desc: '观察两侧肩胛骨是否对称。一侧突出或翼状隆起，可能提示脊柱旋转。用手机拍照记录。',
-            tag: '重要',
+            label: i18nText('PostureGuide.steps.observe.fourSteps.scapula.label'),
+            desc: i18nText('PostureGuide.steps.observe.fourSteps.scapula.desc'),
+            tag: i18nText('PostureGuide.tag.important'),
           },
           {
-            label: '③ 前屈试验（Adam 试验）',
-            desc: '让孩子双脚并拢，缓慢弯腰前屈，双手自然下垂。从后方观察背部两侧是否等高。如果一侧明显隆起（"剃刀背"），提示可能有脊柱旋转或侧弯。这是学校筛查最常用的方法。',
-            tag: '关键',
+            label: i18nText('PostureGuide.steps.observe.fourSteps.adam.label'),
+            desc: i18nText('PostureGuide.steps.observe.fourSteps.adam.desc'),
+            tag: i18nText('PostureGuide.tag.key'),
           },
           {
-            label: '④ 看整体对称',
-            desc: '观察头部是否居中、腰线两侧是否对称、骨盆是否等高。从正面看腋窝三角是否对称。',
+            label: i18nText('PostureGuide.steps.observe.fourSteps.symmetry.label'),
+            desc: i18nText('PostureGuide.steps.observe.fourSteps.symmetry.desc'),
           },
         ],
       },
       {
-        heading: '拍照建议',
-        body: '每次观察时从正后方、左侧、右侧各拍一张站立照片，以及一张前屈试验的照片。保持相同距离和角度，方便日后对比。照片可以在"备注"里附上说明。',
+        heading: i18nText('PostureGuide.steps.observe.photo.heading'),
+        body: i18nText('PostureGuide.steps.observe.photo.body'),
       },
     ],
   },
   {
-    title: '看懂 Cobb 角',
+    title: i18nText('PostureGuide.steps.cobb.title'),
     sections: [
       {
-        heading: '什么是 Cobb 角',
-        body: 'Cobb 角是脊柱侧弯最重要的量化指标，由脊柱 X 光片测量得出，表示弯曲的角度大小。数值越大说明侧弯越严重。它不是靠肉眼估计的，必须由医生根据 X 光片测量。',
+        heading: i18nText('PostureGuide.steps.cobb.definition.heading'),
+        body: i18nText('PostureGuide.steps.cobb.definition.body'),
       },
       {
-        heading: 'Cobb 角分级',
+        heading: i18nText('PostureGuide.steps.cobb.grading.heading'),
         table: [
-          { field: '< 10°', meaning: '正常范围', note: '脊柱有轻微不对称是正常的，不需要干预' },
-          { field: '10° - 20°', meaning: '轻度侧弯', note: '定期观察，每 6 个月复查一次。加强核心肌群锻炼' },
-          { field: '20° - 40°', meaning: '中度侧弯', note: '需要佩戴矫形支具（特别是骨骼未发育完成的儿童），每 3-6 个月复查' },
-          { field: '> 40°', meaning: '重度侧弯', note: '可能需要手术干预。需要在专科医院持续随访' },
+          {
+            field: i18nText('PostureGuide.steps.cobb.grading.normal.field'),
+            meaning: i18nText('PostureGuide.steps.cobb.grading.normal.meaning'),
+            note: i18nText('PostureGuide.steps.cobb.grading.normal.note'),
+          },
+          {
+            field: i18nText('PostureGuide.steps.cobb.grading.mild.field'),
+            meaning: i18nText('PostureGuide.steps.cobb.grading.mild.meaning'),
+            note: i18nText('PostureGuide.steps.cobb.grading.mild.note'),
+          },
+          {
+            field: i18nText('PostureGuide.steps.cobb.grading.moderate.field'),
+            meaning: i18nText('PostureGuide.steps.cobb.grading.moderate.meaning'),
+            note: i18nText('PostureGuide.steps.cobb.grading.moderate.note'),
+          },
+          {
+            field: i18nText('PostureGuide.steps.cobb.grading.severe.field'),
+            meaning: i18nText('PostureGuide.steps.cobb.grading.severe.meaning'),
+            note: i18nText('PostureGuide.steps.cobb.grading.severe.note'),
+          },
         ],
       },
       {
-        heading: '数据从哪来',
-        body: '优先填写学校脊柱筛查单、医院体检报告或骨科评估里的 Cobb 角数值。如果没有做过 X 光检查，这里留空就好——肩部对称性的记录同样有价值。',
+        heading: i18nText('PostureGuide.steps.cobb.source.heading'),
+        body: i18nText('PostureGuide.steps.cobb.source.body'),
       },
     ],
   },
   {
-    title: '在家看足弓',
+    title: i18nText('PostureGuide.steps.footArch.title'),
     sections: [
       {
-        heading: '为什么要关注足弓',
-        body: '足弓是脚底的天然"弹簧"，负责缓冲和支撑。儿童的足弓在 3-6 岁逐渐成型，6 岁前一定程度的扁平足是正常的。但如果 6 岁以后仍然明显扁平、走路容易累、或者出现 X 型腿/内八字，就需要关注了。',
+        heading: i18nText('PostureGuide.steps.footArch.why.heading'),
+        body: i18nText('PostureGuide.steps.footArch.why.body'),
       },
       {
-        heading: '湿脚印测试法',
+        heading: i18nText('PostureGuide.steps.footArch.wetFootprint.heading'),
         items: [
           {
-            label: '① 准备',
-            desc: '准备一张深色纸板或干燥的地砖地面。让孩子光脚踩水，把脚底打湿。',
-            tag: '简单',
+            label: i18nText('PostureGuide.steps.footArch.wetFootprint.prepare.label'),
+            desc: i18nText('PostureGuide.steps.footArch.wetFootprint.prepare.desc'),
+            tag: i18nText('PostureGuide.tag.simple'),
           },
           {
-            label: '② 踩印',
-            desc: '让孩子正常站立在纸板上，自然承重，然后抬脚查看脚印。',
+            label: i18nText('PostureGuide.steps.footArch.wetFootprint.observe.label'),
+            desc: i18nText('PostureGuide.steps.footArch.wetFootprint.observe.desc'),
           },
           {
-            label: '③ 判读',
-            desc: '正常足弓：脚印中间部分有明显的弧形缺口（约占脚宽的 1/3 到 1/2）。扁平足：脚印几乎是完整的脚掌形状，中间没有缺口。高弓足：中间缺口过大，只有脚跟和前脚掌有印。',
-            tag: '关键',
+            label: i18nText('PostureGuide.steps.footArch.wetFootprint.compare.label'),
+            desc: i18nText('PostureGuide.steps.footArch.wetFootprint.compare.desc'),
+            tag: i18nText('PostureGuide.tag.key'),
           },
         ],
       },
       {
-        heading: '日常观察要点',
+        heading: i18nText('PostureGuide.steps.footArch.daily.heading'),
         items: [
-          { label: '看鞋底磨损', desc: '正常磨损在脚后跟外侧偏多。如果内侧磨损严重，可能提示扁平足或足外翻。', tag: '日常' },
-          { label: '看站姿', desc: '从后方观察孩子站立时，跟腱（脚踝后面的筋）是否垂直。如果明显向内倾斜，提示足外翻。' },
-          { label: '问感受', desc: '长时间走路或运动后是否容易脚疼、腿酸？这可能是足弓支撑不足的信号。' },
+          {
+            label: i18nText('PostureGuide.steps.footArch.daily.wear.label'),
+            desc: i18nText('PostureGuide.steps.footArch.daily.wear.desc'),
+            tag: i18nText('PostureGuide.tag.daily'),
+          },
+          {
+            label: i18nText('PostureGuide.steps.footArch.daily.fatigue.label'),
+            desc: i18nText('PostureGuide.steps.footArch.daily.fatigue.desc'),
+          },
+          {
+            label: i18nText('PostureGuide.steps.footArch.daily.gait.label'),
+            desc: i18nText('PostureGuide.steps.footArch.daily.gait.desc'),
+          },
         ],
       },
       {
-        heading: '数据来源',
-        body: '体态档案中的足弓状态会自动读取体能评估里的记录，不需要在这里重复录入。如果体能评估里还没有足弓数据，可以先去体能评估页面补录。',
+        heading: i18nText('PostureGuide.steps.footArch.dataSource.heading'),
+        body: i18nText('PostureGuide.steps.footArch.dataSource.body'),
       },
     ],
   },
   {
-    title: '什么时候该就医',
+    title: i18nText('PostureGuide.steps.care.title'),
     sections: [
       {
-        heading: '需要关注的信号',
+        heading: i18nText('PostureGuide.steps.care.signals.heading'),
         items: [
-          { label: '前屈试验异常', desc: '弯腰后背部一侧明显隆起，即使很轻微也建议做进一步检查。', tag: '尽早' },
-          { label: '肩膀持续不对称', desc: '多次观察都发现明显高低肩，且有加重趋势。', tag: '关注' },
-          { label: 'Cobb 角 ≥ 10°', desc: '筛查或体检发现 Cobb 角达到或超过 10°，需要定期随访。', tag: '随访' },
-          { label: 'Cobb 角快速增加', desc: '半年内 Cobb 角增加 5° 以上，提示侧弯在进展，需要积极干预。', tag: '紧急' },
-          { label: '6 岁后仍明显扁平足', desc: '走路容易累、经常脚疼腿酸、鞋底内侧严重磨损，建议去骨科或足踝外科评估。', tag: '足弓' },
+          {
+            label: i18nText('PostureGuide.steps.care.signals.shoulderOrWaist.label'),
+            desc: i18nText('PostureGuide.steps.care.signals.shoulderOrWaist.desc'),
+            tag: i18nText('PostureGuide.tag.early'),
+          },
+          {
+            label: i18nText('PostureGuide.steps.care.signals.adamProminence.label'),
+            desc: i18nText('PostureGuide.steps.care.signals.adamProminence.desc'),
+            tag: i18nText('PostureGuide.tag.attention'),
+          },
+          {
+            label: i18nText('PostureGuide.steps.care.signals.cobbProgress.label'),
+            desc: i18nText('PostureGuide.steps.care.signals.cobbProgress.desc'),
+            tag: i18nText('PostureGuide.tag.followUp'),
+          },
+          {
+            label: i18nText('PostureGuide.steps.care.signals.cobbRapidIncrease.label'),
+            desc: i18nText('PostureGuide.steps.care.signals.cobbRapidIncrease.desc'),
+            tag: i18nText('PostureGuide.tag.urgent'),
+          },
+          {
+            label: i18nText('PostureGuide.steps.care.signals.footArch.label'),
+            desc: i18nText('PostureGuide.steps.care.signals.footArch.desc'),
+            tag: i18nText('PostureGuide.tag.footArch'),
+          },
         ],
       },
       {
-        heading: '该去哪个科',
-        body: '脊柱问题首选骨科或脊柱外科，部分医院设有脊柱侧弯专病门诊。足弓问题可去骨科或足踝外科，也可先去康复科评估，制定运动矫正或矫形鞋垫方案。',
+        heading: i18nText('PostureGuide.steps.care.department.heading'),
+        body: i18nText('PostureGuide.steps.care.department.body'),
       },
       {
         warning: {
-          title: '快速生长期要特别注意',
-          body: '青春期前后（女孩 10-14 岁、男孩 12-16 岁）是脊柱侧弯进展最快的时期。如果这个阶段发现侧弯，建议缩短复查间隔到每 3 个月一次。',
+          title: i18nText('PostureGuide.steps.care.growthSpurt.title'),
+          body: i18nText('PostureGuide.steps.care.growthSpurt.body'),
         },
       },
     ],
@@ -172,9 +232,9 @@ export function PostureGuide({ onClose }: { onClose: () => void }) {
       {/* Step header */}
       <div className="bg-[image:var(--nimi-surface-hero)] px-5 py-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[12px] text-white/60">体态观察指引</span>
+          <span className="text-[12px] text-white/60">{i18nText('PostureGuide.ui.eyebrow')}</span>
           <IconButton
-            aria-label="关闭体态观察指引"
+            aria-label={i18nText('PostureGuide.ui.close')}
             icon="✕"
             onClick={onClose}
             size="sm"
@@ -224,7 +284,7 @@ export function PostureGuide({ onClose }: { onClose: () => void }) {
             {'table' in sec && sec.table && (
               <div className="overflow-hidden rounded-2xl border border-[var(--nimi-border-subtle)]">
                 <div className="grid grid-cols-[0.8fr_1fr_1.5fr] bg-[var(--nimi-surface-panel)] px-3 py-2 text-[12px] font-medium text-[var(--nimi-text-muted)]">
-                  <span>角度</span><span>分级</span><span>建议</span>
+                  <span>{i18nText('PostureGuide.table.angle')}</span><span>{i18nText('PostureGuide.table.grade')}</span><span>{i18nText('PostureGuide.table.suggestion')}</span>
                 </div>
                 {sec.table.map((row, ri) => (
                   <div
@@ -252,15 +312,15 @@ export function PostureGuide({ onClose }: { onClose: () => void }) {
       {/* Navigation */}
       <div className="flex items-center justify-between border-t border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-5 py-3">
         <Button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} tone="ghost" size="sm" className="disabled:opacity-30">
-          ← 上一步
+          {i18nText('PostureGuide.ui.previous')}
         </Button>
         {step < GUIDE_STEPS.length - 1 ? (
           <Button onClick={() => setStep(step + 1)} tone="primary" size="sm" className="rounded-2xl">
-            下一步 →
+            {i18nText('PostureGuide.ui.next')}
           </Button>
         ) : (
           <Button onClick={onClose} tone="primary" size="sm" className="rounded-2xl">
-            我知道了 ✓
+            {i18nText('PostureGuide.ui.done')}
           </Button>
         )}
       </div>

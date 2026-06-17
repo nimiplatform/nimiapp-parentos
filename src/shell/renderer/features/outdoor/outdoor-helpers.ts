@@ -1,4 +1,5 @@
 import type { OutdoorRecordRow } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
 
 // ── Week boundary helpers (ISO week: Monday = day 1) ──────
 
@@ -24,19 +25,29 @@ export function shiftWeek(weekStart: string, weeks: number): string {
   return fmtDate(d);
 }
 
-/** Short Chinese label for a week range, e.g. "4月7日 – 4月13日". */
 export function formatWeekRange(weekStart: string): string {
   const start = parseDate(weekStart);
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
-  const fmt = (d: Date) => `${d.getMonth() + 1}月${d.getDate()}日`;
+  const fmt = (d: Date) =>
+    i18nText('Outdoor.date.shortMonthDay', {
+      month: d.getMonth() + 1,
+      day: d.getDate(),
+    });
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
-/** Chinese weekday label: "周一" … "周日". */
-const WEEKDAY_LABELS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'] as const;
+const WEEKDAY_LABEL_KEYS = [
+  'Outdoor.date.weekday.sun',
+  'Outdoor.date.weekday.mon',
+  'Outdoor.date.weekday.tue',
+  'Outdoor.date.weekday.wed',
+  'Outdoor.date.weekday.thu',
+  'Outdoor.date.weekday.fri',
+  'Outdoor.date.weekday.sat',
+] as const;
 export function weekdayLabel(date: Date): string {
-  return WEEKDAY_LABELS[date.getDay()]!;
+  return i18nText(WEEKDAY_LABEL_KEYS[date.getDay()]!);
 }
 
 // ── Week summary computation ─────────────────────────────
@@ -163,22 +174,27 @@ export function buildOutdoorMessage(summary: WeekSummary, isPastWeek: boolean): 
     if (summary.isComplete) {
       return {
         type: 'past-complete',
-        primary: `本周完成 ${summary.totalMinutes} 分钟，已达标`,
-        secondary: summary.overMinutes > 0 ? `超出目标 ${summary.overMinutes} 分钟` : '刚好完成目标',
+        primary: i18nText('Outdoor.weekMessage.pastCompletePrimary', { minutes: summary.totalMinutes }),
+        secondary: summary.overMinutes > 0
+          ? i18nText('Outdoor.weekMessage.overTarget', { minutes: summary.overMinutes })
+          : i18nText('Outdoor.weekMessage.justMetGoal'),
       };
     }
     return {
       type: 'past-incomplete',
-      primary: `本周累计 ${summary.totalMinutes} / ${summary.goalMinutes} 分钟`,
-      secondary: `差 ${summary.remainingMinutes} 分钟`,
+      primary: i18nText('Outdoor.weekMessage.pastIncompletePrimary', {
+        total: summary.totalMinutes,
+        goal: summary.goalMinutes,
+      }),
+      secondary: i18nText('Outdoor.weekMessage.remainingMinutes', { minutes: summary.remainingMinutes }),
     };
   }
 
   if (summary.totalMinutes === 0) {
     return {
       type: 'empty',
-      primary: '本周还没有户外记录',
-      secondary: '从今天开始记录吧',
+      primary: i18nText('Outdoor.weekMessage.emptyPrimary'),
+      secondary: i18nText('Outdoor.weekMessage.emptySecondary'),
     };
   }
 
@@ -186,14 +202,14 @@ export function buildOutdoorMessage(summary: WeekSummary, isPastWeek: boolean): 
     if (summary.overMinutes > 0) {
       return {
         type: 'over-complete',
-        primary: `本周已达标！累计 ${summary.totalMinutes} 分钟`,
-        secondary: `超出目标 ${summary.overMinutes} 分钟`,
+        primary: i18nText('Outdoor.weekMessage.completePrimary', { minutes: summary.totalMinutes }),
+        secondary: i18nText('Outdoor.weekMessage.overTarget', { minutes: summary.overMinutes }),
       };
     }
     return {
       type: 'complete',
-      primary: `本周已达标！累计 ${summary.totalMinutes} 分钟`,
-      secondary: '继续保持',
+      primary: i18nText('Outdoor.weekMessage.completePrimary', { minutes: summary.totalMinutes }),
+      secondary: i18nText('Outdoor.weekMessage.keepGoing'),
     };
   }
 
@@ -205,8 +221,8 @@ export function buildOutdoorMessage(summary: WeekSummary, isPastWeek: boolean): 
   if (isOnTrack) {
     return {
       type: 'in-progress-on-track',
-      primary: `本周已累计 ${summary.totalMinutes} 分钟，进度不错`,
-      secondary: `还差 ${summary.remainingMinutes} 分钟`,
+      primary: i18nText('Outdoor.weekMessage.onTrackPrimary', { minutes: summary.totalMinutes }),
+      secondary: i18nText('Outdoor.weekMessage.stillNeeds', { minutes: summary.remainingMinutes }),
     };
   }
 
@@ -214,15 +230,24 @@ export function buildOutdoorMessage(summary: WeekSummary, isPastWeek: boolean): 
   if (summary.remainingDays <= 2) {
     return {
       type: 'in-progress-behind',
-      primary: `本周已累计 ${summary.totalMinutes} 分钟，还差 ${summary.remainingMinutes} 分钟`,
-      secondary: `这周还有 ${summary.remainingDays} 天，可以多安排一些户外活动`,
+      primary: i18nText('Outdoor.weekMessage.behindPrimary', {
+        total: summary.totalMinutes,
+        remaining: summary.remainingMinutes,
+      }),
+      secondary: i18nText('Outdoor.weekMessage.remainingDaysPlan', { days: summary.remainingDays }),
     };
   }
 
   return {
     type: 'in-progress-behind',
-    primary: `本周已累计 ${summary.totalMinutes} 分钟，还差 ${summary.remainingMinutes} 分钟`,
-    secondary: `这周还有 ${summary.remainingDays} 天，平均每天再补 ${summary.pacePerDay} 分钟即可接近目标`,
+    primary: i18nText('Outdoor.weekMessage.behindPrimary', {
+      total: summary.totalMinutes,
+      remaining: summary.remainingMinutes,
+    }),
+    secondary: i18nText('Outdoor.weekMessage.pacePlan', {
+      days: summary.remainingDays,
+      pace: summary.pacePerDay,
+    }),
   };
 }
 
@@ -267,7 +292,7 @@ export interface HeatmapCell {
 export interface HeatmapMonthLabel {
   /** Column (week) index where this month's first Monday falls. */
   weekIndex: number;
-  label: string; // e.g. "4月"
+  label: string;
 }
 
 export interface Heatmap {
@@ -328,7 +353,7 @@ export function computeHeatmap(
     const colIdx = weeks.length;
     const mondayMonth = base.getMonth();
     if (mondayMonth !== lastMonth) {
-      monthLabels.push({ weekIndex: colIdx, label: `${mondayMonth + 1}月` });
+      monthLabels.push({ weekIndex: colIdx, label: i18nText('Outdoor.date.monthLabel', { month: mondayMonth + 1 }) });
       lastMonth = mondayMonth;
     }
     weeks.push(col);

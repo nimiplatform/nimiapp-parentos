@@ -25,6 +25,8 @@ import postureIcon from '../profile/assets/archive-icons/posture.png';
 import outdoorIcon from '../profile/assets/archive-icons/outdoor.png';
 import smartScanIcon from '../profile/assets/archive-icons/smart-scan.png';
 import journalQuickLinkIcon from './assets/journal-quick-link.png';
+import { i18nText } from '../../i18n/index.js';
+
 
 const ICON_BY_DOMAIN: Record<RecentChangeIconName, ComponentType<{ size?: number; strokeWidth?: number; className?: string }>> = {
   moon: Moon,
@@ -161,7 +163,7 @@ export function ChildContextCard({ child, ageMonths }: { child: ChildProfile; ag
             {child.displayName}
           </h2>
           <p className="mt-1.5 text-[14px]" style={{ color: '#86868b' }}>
-            {formatAgeLabel(ageMonths)} · {child.gender === 'female' ? '女孩' : '男孩'}
+            {formatAgeLabel(ageMonths)} · {child.gender === 'female' ? i18nText('Timeline.gender.female') : i18nText('Timeline.gender.male')}
           </p>
         </div>
         <div className="relative mt-auto flex w-full flex-col items-center gap-3">
@@ -170,7 +172,7 @@ export function ChildContextCard({ child, ageMonths }: { child: ChildProfile; ag
             {describeNurtureMode(child.nurtureMode)}
           </span>
           <Link to="/profile" className="flex w-full items-center justify-center whitespace-nowrap rounded-xl px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-black/[0.04]" style={{ color: '#1d1d1f' }}>
-            查看完整档案
+            {i18nText('Timeline.home.viewFullProfile')}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1 opacity-60">
               <path d="M9 5l7 7-7 7" />
             </svg>
@@ -238,13 +240,13 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
     <Cd cls="min-w-0 flex-1" material="glass-thick">
       <div className="mb-6 flex items-start justify-between gap-3">
         <div>
-          <p className="text-[13px] font-medium tracking-[0.08em]" style={{ color: textSoft }}>最近 7 天</p>
+          <p className="text-[13px] font-medium tracking-[0.08em]" style={{ color: textSoft }}>{i18nText('Timeline.home.recentWindow')}</p>
           <h2 className="mt-1.5 text-[24px] font-semibold tracking-tight" style={{ color: textMain, letterSpacing: '-0.5px' }}>
-            最近变化
+            {i18nText('Timeline.home.recentChangesTitle')}
           </h2>
         </div>
         <Link to="/profile" className="text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>
-          查看档案
+          {i18nText('Timeline.home.viewProfile')}
         </Link>
       </div>
 
@@ -255,9 +257,9 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
             {secondary.map((item) => <RecentChangeSecondaryCell key={item.id} item={item} />)}
             {secondary.length === 0 ? (
               <div className="rounded-[18px] p-4 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
-                <p className="text-[14px] font-semibold" style={{ color: textMain }}>再记录一点会更完整</p>
+                <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.recentNeedsMoreTitle')}</p>
                 <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>
-                  继续补充睡眠、测量或观察后，这里会把最近变化串成更完整的脉络。
+                  {i18nText('Timeline.home.recentNeedsMoreBody')}
                 </p>
               </div>
             ) : null}
@@ -265,12 +267,12 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
         </div>
       ) : (
         <div className="rounded-[22px] p-7 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
-          <p className="text-[16px] font-semibold" style={{ color: textMain }}>最近 7 天还没有新的变化</p>
+          <p className="text-[16px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.noRecentTitle')}</p>
           <p className="mt-2 text-[14px] leading-relaxed" style={{ color: textMuted }}>
-            先记录一次测量、观察或睡眠数据，首页会在这里归纳最近的变化。
+            {i18nText('Timeline.home.noRecentBody')}
           </p>
           <Link to="/journal" className="mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[14px] font-medium text-white transition-all hover:-translate-y-0.5" style={{ background: textMain, boxShadow: '0 4px 14px rgba(0,0,0,0.08)' }}>
-            去记录一条 <span>→</span>
+            {i18nText('Timeline.home.recordOne')} <span>→</span>
           </Link>
         </div>
       )}
@@ -281,26 +283,26 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
 export function StageFocusCard({ periods }: { periods: Array<{ periodId: string; title: string; observableSigns: string[]; ageRange: { peakMonths: number } }> }) {
   return (
     <Cd cls="col-span-4">
-      <Hdr title="当前发展阶段" to="/reminders" link="查看全部提醒" />
+      <Hdr title={i18nText('Timeline.home.stageFocusTitle')} to="/reminders" link={i18nText('Timeline.home.viewAllReminders')} />
       {periods.length > 0 ? (
         <div className="space-y-4">
           {periods.slice(0, 2).map((period) => (
             <div key={period.periodId} className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[12px] font-semibold text-amber-600">敏感期</span>
+                <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[12px] font-semibold text-amber-600">{i18nText('Timeline.home.sensitivePeriodBadge')}</span>
                 <p className="text-[14px] font-semibold" style={{ color: textMain }}>{period.title}</p>
               </div>
-              <p className="mt-2 text-[14px] leading-relaxed" style={{ color: textMuted }}>{period.observableSigns[0] ?? '这个阶段值得继续观察孩子最近的变化。'}</p>
+              <p className="mt-2 text-[14px] leading-relaxed" style={{ color: textMuted }}>{period.observableSigns[0] ?? i18nText('Timeline.home.stageFocusFallback')}</p>
               <Link to={`/journal?topic=${encodeURIComponent(period.title)}`}
                 className="mt-3 inline-flex rounded-full px-4 py-1.5 text-[13px] font-medium text-white hover:-translate-y-0.5"
-                style={{ background: textMain, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>去记录</Link>
+                style={{ background: textMain, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>{i18nText('Timeline.home.recordAction')}</Link>
             </div>
           ))}
         </div>
       ) : (
         <div className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
-          <p className="text-[14px] font-semibold" style={{ color: textMain }}>当前阶段相对平稳</p>
-          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>下一个敏感期命中后，这里会解释为什么值得关注。</p>
+          <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.stageStableTitle')}</p>
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText('Timeline.home.stageStableBody')}</p>
         </div>
       )}
     </Cd>
@@ -311,7 +313,7 @@ export function QuickLinksStrip({ ageMonths }: { ageMonths: number }) {
   const links = buildQuickLinks(ageMonths);
   return (
     <Cd cls="col-span-8">
-      <Hdr title="常用入口" />
+      <Hdr title={i18nText('Timeline.home.quickLinksTitle')} />
       <div className="grid grid-cols-6 gap-4">
         {links.map((item) => (
           (() => {

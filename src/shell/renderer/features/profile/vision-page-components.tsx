@@ -24,17 +24,19 @@ import { AppSelect } from '../../app-shell/app-select.js';
 import { ulid, isoNow } from '../../bridge/ulid.js';
 import { buildReferenceBand, CHART_OPTIONS, describeReferenceStatus } from './vision-data.js';
 import type { ReferencePoint } from './vision-data.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export const EARLY_SCREENING_MAX_AGE_MONTHS = 72;
 export const VISION_SCREENING_PREFIX = 'vision:';
 
 const SCREENING_TYPES = [
-  { key: 'red-reflex', labelKey: 'redReflex', emoji: '🔴', desc: '筛查先天性白内障', minAge: 0, maxAge: 12 },
-  { key: 'fixation-tracking', labelKey: 'fixationTracking', emoji: '👁️', desc: '追踪物体能力', minAge: 2, maxAge: 12 },
-  { key: 'cover-test', labelKey: 'coverTest', emoji: '🫣', desc: '筛查斜视', minAge: 4, maxAge: EARLY_SCREENING_MAX_AGE_MONTHS },
-  { key: 'photoscreener', labelKey: 'photoscreener', emoji: '📷', desc: '屈光异常筛查', minAge: 6, maxAge: 48 },
-  { key: 'tear-duct', labelKey: 'tearDuct', emoji: '💧', desc: '泪道阻塞筛查', minAge: 0, maxAge: 24 },
-  { key: 'eye-checkup', labelKey: 'eyeCheckup', emoji: '🩺', desc: '通用眼科就诊', minAge: 0, maxAge: EARLY_SCREENING_MAX_AGE_MONTHS },
+  { key: 'red-reflex', labelKey: 'redReflex', emoji: '🔴', desc: i18nText('Vision.screening.description.redReflex'), minAge: 0, maxAge: 12 },
+  { key: 'fixation-tracking', labelKey: 'fixationTracking', emoji: '👁️', desc: i18nText('Vision.screening.description.fixationTracking'), minAge: 2, maxAge: 12 },
+  { key: 'cover-test', labelKey: 'coverTest', emoji: '🫣', desc: i18nText('Vision.screening.description.coverTest'), minAge: 4, maxAge: EARLY_SCREENING_MAX_AGE_MONTHS },
+  { key: 'photoscreener', labelKey: 'photoscreener', emoji: '📷', desc: i18nText('Vision.screening.description.photoscreener'), minAge: 6, maxAge: 48 },
+  { key: 'tear-duct', labelKey: 'tearDuct', emoji: '💧', desc: i18nText('Vision.screening.description.tearDuct'), minAge: 0, maxAge: 24 },
+  { key: 'eye-checkup', labelKey: 'eyeCheckup', emoji: '🩺', desc: i18nText('Vision.screening.description.eyeCheckup'), minAge: 0, maxAge: EARLY_SCREENING_MAX_AGE_MONTHS },
 ] as const;
 
 const SCREENING_RESULT_OPTIONS = [
@@ -191,25 +193,25 @@ export function SourcesTooltip() {
       <div
         className="pointer-events-none absolute left-0 top-7 z-50 w-[340px] rounded-xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-overlay)] p-4 text-[13px] leading-relaxed text-[var(--nimi-text-secondary)] opacity-0 shadow-[var(--nimi-elevation-floating)] transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
       >
-        <p className="text-[14px] font-semibold text-[var(--nimi-text-primary)] mb-2.5">数据参考文献</p>
+        <p className="text-[14px] font-semibold text-[var(--nimi-text-primary)] mb-2.5">{i18nText('Vision.sources.title')}</p>
         <ul className="space-y-2.5">
           <li>
-            <span className="text-[var(--nimi-action-primary-bg)] font-medium">眼轴 P50/P75 百分位（分性别 · 4-18岁）</span>
-            <span className="block text-[12px] text-[var(--nimi-text-secondary)] mt-0.5">He X, Sankaridurg P, Naduvilath T, et al. Normative data and percentile curves for axial length and axial length/corneal curvature in Chinese children and adolescents aged 4-18 years.</span>
-            <span className="block text-[12px] text-[var(--nimi-text-muted)]">Br J Ophthalmol 2023;107:167-175</span>
+            <span className="text-[var(--nimi-action-primary-bg)] font-medium">{i18nText('Vision.sources.axialPercentile.title')}</span>
+            <span className="block text-[12px] text-[var(--nimi-text-secondary)] mt-0.5">{i18nText('Vision.sources.axialPercentile.citation')}</span>
+            <span className="block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Vision.sources.axialPercentile.journal')}</span>
           </li>
           <li>
-            <span className="text-[var(--nimi-action-primary-bg)] font-medium">远视储备 · 角膜曲率参考区间（6-15岁）</span>
-            <span className="block text-[12px] text-[var(--nimi-text-secondary)] mt-0.5">中华预防医学会公共卫生眼科分会. 中国学龄儿童眼球远视储备、眼轴长度、角膜曲率参考区间及相关遗传因素专家共识（2022年）.</span>
-            <span className="block text-[12px] text-[var(--nimi-text-muted)]">中华眼科杂志 2022;58(2):96-102</span>
+            <span className="text-[var(--nimi-action-primary-bg)] font-medium">{i18nText('Vision.sources.hyperopiaReserve.title')}</span>
+            <span className="block text-[12px] text-[var(--nimi-text-secondary)] mt-0.5">{i18nText('Vision.sources.hyperopiaReserve.citation')}</span>
+            <span className="block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Vision.sources.hyperopiaReserve.journal')}</span>
           </li>
           <li>
-            <span className="text-[var(--nimi-action-primary-bg)] font-medium">眼轴防控应用共识</span>
-            <span className="block text-[12px] text-[var(--nimi-text-secondary)] mt-0.5">中华医学会眼科学分会眼视光学组. 眼轴长度在近视防控管理中的应用专家共识（2023）.</span>
+            <span className="text-[var(--nimi-action-primary-bg)] font-medium">{i18nText('Vision.sources.axialManagement.title')}</span>
+            <span className="block text-[12px] text-[var(--nimi-text-secondary)] mt-0.5">{i18nText('Vision.sources.axialManagement.citation')}</span>
           </li>
           <li>
-            <span className="text-[var(--nimi-action-primary-bg)] font-medium">近视防控技术指南</span>
-            <span className="block text-[12px] text-[var(--nimi-text-secondary)] mt-0.5">国家卫生健康委员会. 儿童青少年近视防控适宜技术指南（更新版）. 2023</span>
+            <span className="text-[var(--nimi-action-primary-bg)] font-medium">{i18nText('Vision.sources.myopiaPreventionGuide.title')}</span>
+            <span className="block text-[12px] text-[var(--nimi-text-secondary)] mt-0.5">{i18nText('Vision.sources.myopiaPreventionGuide.citation')}</span>
           </li>
         </ul>
       </div>
@@ -219,11 +221,11 @@ export function SourcesTooltip() {
 
 /* ── Next-visit — projected follow-up + user-customised cadence ───── */
 
-const CADENCE_PRESETS: Array<{ months: number; label: string }> = [
-  { months: 1, label: '1 个月' },
-  { months: 3, label: '3 个月' },
-  { months: 6, label: '6 个月' },
-  { months: 12, label: '12 个月' },
+const CADENCE_PRESETS: Array<{ months: number }> = [
+  { months: 1 },
+  { months: 3 },
+  { months: 6 },
+  { months: 12 },
 ];
 
 interface NextStepsResolved {
@@ -251,9 +253,9 @@ function monthsUntil(iso: string, today: Date): number {
 
 function fmtRelative(iso: string, today: Date): string {
   const m = monthsUntil(iso, today);
-  if (m < 0) return `已过 ${Math.abs(m)} 个月`;
-  if (m === 0) return '本月内';
-  return `约 ${m} 个月后`;
+  if (m < 0) return i18nText('Vision.followup.relative.pastMonths', { months: Math.abs(m) });
+  if (m === 0) return i18nText('Vision.followup.relative.thisMonth');
+  return i18nText('Vision.followup.relative.futureMonths', { months: m });
 }
 
 export function resolveNextVisit(
@@ -280,8 +282,8 @@ export function resolveNextVisit(
 
 /**
  * Projected next-visit card — rendered as the single "future" entry at the
- * top of the exam timeline (above the 今天 divider). Visually mirrors the
- * orthodontic 正畸记录 journey card: emoji/icon chip + title + 预计 badge.
+ * top of the exam timeline. Visually mirrors the orthodontic journey card:
+ * emoji/icon chip, title, and projected badge.
  */
 export function NextVisitCard({
   resolved,
@@ -311,7 +313,7 @@ export function NextVisitCard({
           <div className="flex flex-wrap items-center gap-2 text-[14px] font-semibold text-[var(--nimi-text-primary)]">
             <span>{t('Profile.rich.vision.nextReview')}</span>
             <StatusBadge tone="info" className="px-2 py-0.5 text-[10px] font-medium">
-              预计
+              {i18nText('Vision.followup.projectedBadge')}
             </StatusBadge>
             {resolved.isCustomDate && (
               <StatusBadge tone="neutral" className="px-1.5 py-0.5 text-[10px]">
@@ -445,7 +447,7 @@ export function NextStepsEditor({
               if (Number.isFinite(n)) setCadence(Math.round(n));
             }}
             className="w-12 text-center bg-transparent border-0 outline-none text-[12px] tabular-nums font-mono"
-            aria-label="vision-followup-cadence-custom"
+            aria-label={i18nText('Vision.followup.aria.customCadence')}
           />
           <span className="text-[12px]">{t('Profile.rich.vision.monthsShort')}</span>
         </div>
@@ -464,7 +466,7 @@ export function NextStepsEditor({
           <button
             onClick={() => setCustomDate('')}
             className="text-[11px] px-2.5 py-1.5 rounded-full border-0 cursor-pointer bg-[var(--nimi-action-secondary-bg)] text-[var(--nimi-text-muted)] hover:bg-[var(--nimi-action-ghost-hover)]"
-            aria-label="vision-followup-clear-custom-date"
+            aria-label={i18nText('Vision.followup.aria.clearCustomDate')}
           >
             {t('Profile.rich.vision.clear')}
           </button>
@@ -503,7 +505,7 @@ export function NextStepsEditor({
           <button
             onClick={() => void handleSave()}
             disabled={saving}
-            aria-label="vision-followup-save"
+            aria-label={i18nText('Vision.followup.aria.save')}
             className="text-[12px] px-4 py-1.5 rounded-full border-0 cursor-pointer bg-[var(--nimi-accent)] text-[var(--nimi-action-primary-text)] disabled:opacity-50"
           >
             {saving ? t('Profile.rich.common.saving') : t('Profile.rich.common.save')}
@@ -593,7 +595,7 @@ export function TrendChartCard({
               <XAxis
                 dataKey="age"
                 tick={{ fontSize: 10 }}
-                label={{ value: '月龄', position: 'insideBottom', offset: -4, fontSize: 10 }}
+                label={{ value: i18nText('Vision.chart.ageMonthsAxis'), position: 'insideBottom', offset: -4, fontSize: 10 }}
               />
               <YAxis
                 tick={{ fontSize: 10 }}
@@ -604,13 +606,13 @@ export function TrendChartCard({
                   const text = Array.isArray(v) ? `${v[0]}~${v[1]}` : `${v}`;
                   return [`${text}${typeInfo?.unit ? ` ${typeInfo.unit}` : ''}`, name];
                 }}
-                labelFormatter={(a) => `${a} 个月`}
+                labelFormatter={(a) => i18nText('Vision.chart.ageMonthsTooltip', { months: a })}
               />
               {reference?.kind === 'band' && (
                 <Area
                   type="monotone"
                   dataKey="band"
-                  name="同龄参考范围"
+                  name={i18nText('Vision.chart.sameAgeReferenceRange')}
                   stroke="none"
                   fill="var(--nimi-accent)"
                   fillOpacity={0.12}
@@ -624,7 +626,7 @@ export function TrendChartCard({
                 <Line
                   type="monotone"
                   dataKey="median"
-                  name="同龄中位 P50"
+                  name={i18nText('Vision.chart.sameAgeMedianP50')}
                   stroke="var(--nimi-text-muted)"
                   strokeWidth={1}
                   strokeDasharray="5 3"
@@ -638,7 +640,7 @@ export function TrendChartCard({
                 <Line
                   type="monotone"
                   dataKey="critical"
-                  name="同龄临界 P75"
+                  name={i18nText('Vision.chart.sameAgeCriticalP75')}
                   stroke="var(--nimi-status-warning)"
                   strokeWidth={1}
                   strokeDasharray="5 3"
@@ -651,7 +653,7 @@ export function TrendChartCard({
               <Line
                 type="monotone"
                 dataKey="value"
-                name={typeInfo?.displayName ?? '数值'}
+                name={typeInfo?.displayName ?? i18nText('Vision.chart.valueFallback')}
                 stroke="var(--nimi-accent)"
                 strokeWidth={2}
                 dot={{ r: 3, fill: 'var(--nimi-accent)' }}

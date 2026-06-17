@@ -12,6 +12,8 @@ import { applianceTypeLabel } from './orthodontic-derive.js';
 import type { ApplianceNextAction } from './appliance-next-action.js';
 import type { AppliancePhaseProgress } from './orthodontic-derive.js';
 import { GearIcon } from './orthodontic-treatment-card-parts.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /** Cross-card per-appliance action callbacks, keyed by the appliance row. */
 export interface ApplianceCardHandlers {
@@ -22,19 +24,21 @@ export interface ApplianceCardHandlers {
   onNextAction: (appliance: OrthodonticApplianceRow, action: ApplianceNextAction) => void;
 }
 
-/** "M 月 D 日" from a yyyy-mm-dd date. */
+/** Month/day label from a yyyy-mm-dd date. */
 export function formatMonthDay(ymd: string): string {
   const [, m, d] = ymd.split('-');
   if (!m || !d) return ymd;
-  return `${Number(m)} 月 ${Number(d)} 日`;
+  return i18nText('Orthodontic.applianceCard.monthDay', { month: Number(m), day: Number(d) });
 }
 
-/** "9 岁 6 月" — child age at the appliance start date. */
+/** Child age at the appliance start date. */
 export function ageAtLabel(birthDate: string, startedAt: string): string {
   const months = computeAgeMonthsAt(birthDate, startedAt);
   const years = Math.floor(months / 12);
   const rem = months % 12;
-  return rem > 0 ? `${years} 岁 ${rem} 月` : `${years} 岁`;
+  return rem > 0
+    ? i18nText('Orthodontic.applianceCard.ageYearsMonths', { years, months: rem })
+    : i18nText('Orthodontic.applianceCard.ageYears', { years });
 }
 
 export function DaysAwayPill({ daysAway }: { daysAway: number }) {
@@ -43,7 +47,9 @@ export function DaysAwayPill({ daysAway }: { daysAway: number }) {
       tone={daysAway < 0 ? 'warning' : 'success'}
       className="whitespace-nowrap px-2.5 py-1 text-[11px] font-semibold"
     >
-      {daysAway < 0 ? `已过期 ${-daysAway} 天` : `还有 ${daysAway} 天`}
+      {daysAway < 0
+        ? i18nText('Orthodontic.applianceCard.daysOverdue', { days: -daysAway })
+        : i18nText('Orthodontic.applianceCard.daysAway', { days: daysAway })}
     </StatusBadge>
   );
 }
@@ -78,8 +84,8 @@ export function ApplianceCardHeader({
         {trailing}
         <IconButton
           onClick={() => onEditAppliance(appliance)}
-          aria-label="矫治器设置"
-          title="矫治器设置"
+          aria-label={i18nText('Orthodontic.applianceCard.settings')}
+          title={i18nText('Orthodontic.applianceCard.settings')}
           tone="ghost"
           size="sm"
           className="h-7 min-h-7 w-7 rounded-full text-[var(--nimi-text-muted)]"
@@ -90,7 +96,7 @@ export function ApplianceCardHeader({
   );
 }
 
-/** "上颌螺旋扩弓 · 起始 2026-02-12 · 9 岁 6 月" meta line. */
+/** Appliance start metadata line. */
 export function ApplianceMetaLine({
   appliance,
   childBirthDate,
@@ -100,16 +106,20 @@ export function ApplianceMetaLine({
 }) {
   return (
     <div className="mt-1 text-[12px] text-[var(--nimi-text-muted)]">
-      起始 {appliance.startedAt} · {ageAtLabel(childBirthDate, appliance.startedAt)}
+      {i18nText('Orthodontic.applianceCard.startMeta', {
+        date: appliance.startedAt,
+        age: ageAtLabel(childBirthDate, appliance.startedAt),
+      })}
     </div>
   );
 }
 
 /**
- * "第 N / 共 M 副" indicator for clear-aligners only. Rides inline next to
+ * Clear-aligner tray index indicator. Rides inline next to
  * the appliance name in `ApplianceCardHeader` so the which-tray-of-the-series
  * context sits right next to the appliance identity, not buried by the phase
- * pill row. When `totalAligners` is null the indicator degrades to "第 N 副".
+ * pill row. When `totalAligners` is null the indicator only shows the current
+ * tray index.
  */
 export function AlignerIndexPill({
   currentAlignerIndex,
@@ -120,8 +130,11 @@ export function AlignerIndexPill({
 }) {
   const label =
     totalAligners !== null
-      ? `第 ${currentAlignerIndex} / 共 ${totalAligners} 副`
-      : `第 ${currentAlignerIndex} 副`;
+      ? i18nText('Orthodontic.applianceCard.alignerIndexWithTotal', {
+          current: currentAlignerIndex,
+          total: totalAligners,
+        })
+      : i18nText('Orthodontic.applianceCard.alignerIndex', { current: currentAlignerIndex });
   return (
     <span
       className="inline-flex min-h-7 items-center gap-1.5 whitespace-nowrap rounded-full bg-[color-mix(in_srgb,var(--nimi-text-primary)_5%,transparent)] px-3 text-[12px] font-semibold text-[var(--nimi-text-primary)]"
@@ -133,7 +146,7 @@ export function AlignerIndexPill({
 
 /**
  * Per-appliance treatment-phase pill (PO-ORTHO-013). Renders the phase label +
- * month counter when a phase is set, otherwise a muted "设置阶段" affordance
+ * month counter when a phase is set, otherwise a muted phase-setting affordance
  * that opens the phase-advance dialog (the first advance sets the initial phase).
  */
 export function AppliancePhasePill({
@@ -153,14 +166,14 @@ export function AppliancePhasePill({
         size="sm"
         className="min-h-7 rounded-full border-dashed border-[var(--nimi-border-subtle)] px-3 text-[12px] text-[var(--nimi-text-muted)]"
       >
-        设置治疗阶段
+        {i18nText('Orthodontic.applianceCard.setPhase')}
       </Button>
     );
   }
   return (
     <Button
       onClick={() => onAdvancePhase(appliance)}
-      title="推进治疗阶段"
+      title={i18nText('Orthodontic.applianceCard.advancePhase')}
       tone="ghost"
       size="sm"
       className="min-h-7 whitespace-nowrap rounded-full bg-[color-mix(in_srgb,var(--nimi-status-info)_15%,transparent)] px-3 text-[12px] text-[var(--nimi-status-info)]"
@@ -169,14 +182,18 @@ export function AppliancePhasePill({
         aria-hidden="true"
         className="h-1.5 w-1.5 rounded-full bg-[var(--nimi-status-info)]"
       />
-      {phase.label} · 第 {phase.monthsInPhase} / {phase.expectedMonths} 个月
+      {i18nText('Orthodontic.applianceCard.phaseProgress', {
+        phase: phase.label,
+        months: phase.monthsInPhase,
+        expectedMonths: phase.expectedMonths,
+      })}
     </Button>
   );
 }
 
 /**
- * Log-action row shown under the ring. `补记未戴时段` only appears for
- * wear-gap appliance types (PO-ORTHO-005a); `记录异常` is always present.
+ * Log-action row shown under the ring. Backfill is limited to wear-gap
+ * appliance types (PO-ORTHO-005a); issue logging is always present.
  */
 export function ApplianceLogActions({
   appliance,
@@ -204,7 +221,7 @@ export function ApplianceLogActions({
           size="md"
           className="rounded-full px-4 text-[13px]"
         >
-          补记未戴时段
+          {i18nText('Orthodontic.applianceCard.backfillUnwearInterval')}
         </Button>
       )}
       <Button
@@ -213,7 +230,7 @@ export function ApplianceLogActions({
         size="md"
         className={cn('rounded-full px-4 text-[13px]', !supportsWearGap && 'min-w-[128px]')}
       >
-        记录不适
+        {i18nText('Orthodontic.applianceCard.logIssue')}
       </Button>
     </div>
   );

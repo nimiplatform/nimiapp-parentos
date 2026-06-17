@@ -27,6 +27,7 @@ import {
   getParentosAISurfacePolicy,
   type ParentosAISurfaceId,
 } from './parentos-ai-surface-policy.js';
+import { i18nText } from '../../i18n/index.js';
 
 export type ParentosCallParams = {
   model?: string;
@@ -134,7 +135,7 @@ export interface ParentosSpeechTranscribeOutput {
 
 export const PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS = 180_000;
 const TEXT_IMAGE_INPUT_CAPABILITY = 'text.generate.vision' satisfies ParentosCapabilityId;
-const IMAGE_INPUT_UNSUPPORTED_ERROR_MESSAGE = '当前 AI 智能识别模型未配置，请在 AI 设置中为“智能识别”选择支持视觉输入的模型后重试。';
+const IMAGE_INPUT_UNSUPPORTED_ERROR_MESSAGE = i18nText('AISettings.runtime.imageInputUnsupported');
 
 function getCapabilityParams(capabilityId: ParentosCapabilityId): { readonly [key: string]: NimiJsonValue } {
   const value = useAppStore.getState().aiConfig?.capabilities.selectedParams?.[capabilityId];
@@ -189,11 +190,11 @@ function parentosCallParamsFromTargetRef(targetRef: NimiAIConfigTargetRef): Pare
 
 function createMissingBindingError(capabilityId: ParentosCapabilityId, surfaceId: ParentosAISurfaceId): Error {
   const capabilityLabel = capabilityId === TEXT_IMAGE_INPUT_CAPABILITY
-    ? '智能识别'
+    ? i18nText('AISettings.runtime.visionCapability')
     : capabilityId === 'audio.transcribe'
-      ? '语音转写'
-      : 'AI 对话';
-  return new Error(`ParentOS ${capabilityLabel}模型未配置，请先在 AI 设置中为 ${surfaceId} 选择模型。`);
+      ? i18nText('AISettings.runtime.speechCapability')
+      : i18nText('AISettings.runtime.textCapability');
+  return new Error(i18nText('AISettings.runtime.modelMissing', { capabilityLabel, surfaceId }));
 }
 
 function createLocalOnlyBindingError(capabilityId: ParentosCapabilityId, surfaceId: ParentosAISurfaceId): Error {

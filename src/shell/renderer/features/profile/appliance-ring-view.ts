@@ -5,7 +5,7 @@
  * tracks depends on the appliance type and treatment context:
  *
  *   - clear-aligner            → PO-ORTHO-008 per-cycle continuous projection
- *   - expander (w/ prescribed) → PO-ORTHO-014 activation count (圈数)
+ *   - expander (w/ prescribed) → PO-ORTHO-014 activation count
  *   - retention removables     → PO-ORTHO-008a daily net-wear view
  *   - everything else          → PO-ORTHO-013 phase month counter
  *
@@ -29,6 +29,8 @@ import {
   computeOpenIntervalState,
 } from './orthodontic-derive.js';
 import { computeTreatmentRingCopy } from './orthodontic-treatment-ring-copy.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const UNWEAR_AMBER = '#f59e0b';
 
@@ -97,12 +99,14 @@ export function computeApplianceRingView(params: {
     });
     return {
       kind: 'metric',
-      caption: proj.isComplete ? '扩弓已完成' : '扩弓进度',
+      caption: proj.isComplete ? i18nText('Orthodontic.ring.expanderComplete') : i18nText('Orthodontic.ring.expanderProgress'),
       value: String(proj.completedActivations),
-      unit: ` / ${proj.prescribedActivations} 圈`,
+      unit: i18nText('Orthodontic.ring.activationUnit', { total: proj.prescribedActivations }),
       footer: proj.isComplete
-        ? '已完成加力'
-        : `还差 ${Math.max(0, (proj.prescribedActivations ?? 0) - proj.completedActivations)} 圈`,
+        ? i18nText('Orthodontic.ring.activationCompleteFooter')
+        : i18nText('Orthodontic.ring.activationRemainingFooter', {
+          count: Math.max(0, (proj.prescribedActivations ?? 0) - proj.completedActivations),
+        }),
       ratio: proj.ratio,
       accent,
     };
@@ -121,10 +125,10 @@ export function computeApplianceRingView(params: {
     const rounded = Math.round(daily.todayNetWearHours);
     return {
       kind: 'metric',
-      caption: openState.hasOpen ? '未戴中' : '今日佩戴',
+      caption: openState.hasOpen ? i18nText('Orthodontic.ring.unworn') : i18nText('Orthodontic.ring.todayWear'),
       value: String(rounded),
       unit: daily.todayTargetHours !== null ? ` / ${daily.todayTargetHours} h` : ' h',
-      footer: '今日净戴近似',
+      footer: i18nText('Orthodontic.ring.todayNetWearApprox'),
       ratio:
         daily.todayTargetHours !== null && daily.todayTargetHours > 0
           ? Math.max(0, Math.min(1, daily.todayNetWearHours / daily.todayTargetHours))
@@ -136,14 +140,14 @@ export function computeApplianceRingView(params: {
   // ── everything else: PO-ORTHO-013 phase month counter ────────────────
   const phase = computeAppliancePhaseProgress(appliance, nowIso);
   if (!phase) {
-    return { kind: 'message', message: '尚未设置治疗阶段', accent: identityColor };
+    return { kind: 'message', message: i18nText('Orthodontic.ring.phaseNotSet'), accent: identityColor };
   }
   return {
     kind: 'metric',
     caption: phase.label,
     value: String(phase.monthsInPhase),
-    unit: ` / ${phase.expectedMonths} 个月`,
-    footer: `第 ${phase.phaseNumber} / ${phase.phaseTotal} 阶段`,
+    unit: i18nText('Orthodontic.ring.phaseMonthUnit', { months: phase.expectedMonths }),
+    footer: i18nText('Orthodontic.ring.phaseFooter', { current: phase.phaseNumber, total: phase.phaseTotal }),
     ratio: Math.max(0, Math.min(1, phase.monthsInPhase / phase.expectedMonths)),
     accent,
   };

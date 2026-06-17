@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Button, cn, DashedAddButton, DatePicker, PillTabs, TextField, TextareaField } from '@nimiplatform/kit/ui';
 import { AppSelect } from '../../app-shell/app-select.js';
 import { computeAgeMonthsAt } from '../../app-shell/app-store.js';
-import { deleteFitnessEvent, insertFitnessAssessment, saveHealthRecordCapture } from '../../bridge/sqlite-bridge.js';
-import type { HealthRecordCaptureValueInput } from '../../bridge/sqlite-bridge.js';
+import { insertFitnessAssessment, replaceHealthRecordCapture, saveHealthRecordCapture } from '../../bridge/sqlite-bridge.js';
+import type { HealthRecordCaptureValueInput, SaveHealthRecordCaptureInput } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import type { LinkedHealthRecordReminder } from './health-capture-orchestrator.js';
 import {
@@ -17,15 +17,17 @@ import {
   ModalFooter,
   ModalHeader,
 } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const NUMBER_INPUT_CLASS = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
 const SOURCE_OPTIONS = ['school-pe', 'sports-club', 'clinic', 'self'] as const;
-const SOURCE_LABELS: Record<string, string> = {
-  'school-pe': '学校体育',
-  'sports-club': '体育俱乐部',
-  clinic: '医疗机构',
-  self: '自测',
+export const FITNESS_SOURCE_LABELS: Record<string, string> = {
+  'school-pe': i18nText('Fitness.source.schoolPe'),
+  'sports-club': i18nText('Fitness.source.sportsClub'),
+  clinic: i18nText('Fitness.source.clinic'),
+  self: i18nText('Fitness.source.self'),
 };
 
 /* ── Sport-activity categories ─────────────────────────────────────────────
@@ -40,21 +42,21 @@ export interface ActivityCategoryOption {
 }
 
 export const ACTIVITY_CATEGORIES: ActivityCategoryOption[] = [
-  { id: 'running', label: '跑步', emoji: '🏃' },
-  { id: 'swimming', label: '游泳', emoji: '🏊' },
-  { id: 'cycling', label: '骑行', emoji: '🚴' },
-  { id: 'skating', label: '轮滑', emoji: '🛼' },
-  { id: 'basketball', label: '篮球', emoji: '🏀' },
-  { id: 'soccer', label: '足球', emoji: '⚽' },
-  { id: 'badminton', label: '羽毛球', emoji: '🏸' },
-  { id: 'table-tennis', label: '乒乓球', emoji: '🏓' },
-  { id: 'tennis', label: '网球', emoji: '🎾' },
-  { id: 'gymnastics', label: '体操', emoji: '🤸' },
-  { id: 'martial-arts', label: '武术 / 跆拳道', emoji: '🥋' },
-  { id: 'dance', label: '舞蹈', emoji: '💃' },
-  { id: 'climbing', label: '攀岩', emoji: '🧗' },
-  { id: 'hiking', label: '徒步', emoji: '🥾' },
-  { id: 'other', label: '其他运动', emoji: '✨' },
+  { id: 'running', label: i18nText('Fitness.activity.running'), emoji: '🏃' },
+  { id: 'swimming', label: i18nText('Fitness.activity.swimming'), emoji: '🏊' },
+  { id: 'cycling', label: i18nText('Fitness.activity.cycling'), emoji: '🚴' },
+  { id: 'skating', label: i18nText('Fitness.activity.skating'), emoji: '🛼' },
+  { id: 'basketball', label: i18nText('Fitness.activity.basketball'), emoji: '🏀' },
+  { id: 'soccer', label: i18nText('Fitness.activity.soccer'), emoji: '⚽' },
+  { id: 'badminton', label: i18nText('Fitness.activity.badminton'), emoji: '🏸' },
+  { id: 'table-tennis', label: i18nText('Fitness.activity.tableTennis'), emoji: '🏓' },
+  { id: 'tennis', label: i18nText('Fitness.activity.tennis'), emoji: '🎾' },
+  { id: 'gymnastics', label: i18nText('Fitness.activity.gymnastics'), emoji: '🤸' },
+  { id: 'martial-arts', label: i18nText('Fitness.activity.martialArts'), emoji: '🥋' },
+  { id: 'dance', label: i18nText('Fitness.activity.dance'), emoji: '💃' },
+  { id: 'climbing', label: i18nText('Fitness.activity.climbing'), emoji: '🧗' },
+  { id: 'hiking', label: i18nText('Fitness.activity.hiking'), emoji: '🥾' },
+  { id: 'other', label: i18nText('Fitness.activity.other'), emoji: '✨' },
 ];
 
 export const ACTIVITY_CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
@@ -65,25 +67,25 @@ export const ACTIVITY_CATEGORY_EMOJI: Record<string, string> = Object.fromEntrie
 );
 
 export const INTENSITY_OPTIONS = [
-  { value: 'light', label: '轻松' },
-  { value: 'moderate', label: '适中' },
-  { value: 'vigorous', label: '高强度' },
+  { value: 'light', label: i18nText('Fitness.intensity.light') },
+  { value: 'moderate', label: i18nText('Fitness.intensity.moderate') },
+  { value: 'vigorous', label: i18nText('Fitness.intensity.vigorous') },
 ] as const;
 export const INTENSITY_LABELS: Record<string, string> = {
-  light: '轻松',
-  moderate: '适中',
-  vigorous: '高强度',
+  light: i18nText('Fitness.intensity.light'),
+  moderate: i18nText('Fitness.intensity.moderate'),
+  vigorous: i18nText('Fitness.intensity.vigorous'),
 };
 
-// `标准` (national-standard test) is category id 0; activities follow.
+// The national-standard test is category id 0; activities follow.
 const STANDARD_CATEGORY = 'standard';
 const CATEGORY_META: Record<string, { label: string; emoji: string }> = {
-  [STANDARD_CATEGORY]: { label: '国标体测', emoji: '📋' },
+  [STANDARD_CATEGORY]: { label: i18nText('Fitness.category.standard'), emoji: '📋' },
   ...Object.fromEntries(ACTIVITY_CATEGORIES.map((c) => [c.id, { label: c.label, emoji: c.emoji }])),
 };
-// `类型` splits into two tabs: 体测 (the single national-standard test) and
-// 日常运动 (the sport-activity chips). The standard test is not a chip — picking
-// the 体测 tab is itself the selection.
+// Record type splits into two tabs: the single national-standard test and
+// sport-activity chips. The standard test is not a chip; picking that tab is
+// itself the selection.
 const ACTIVITY_TAB = 'activity';
 const ACTIVITY_CHIPS: ChipOption<string>[] = ACTIVITY_CATEGORIES.map((c) => ({
   value: c.id,
@@ -91,14 +93,14 @@ const ACTIVITY_CHIPS: ChipOption<string>[] = ACTIVITY_CATEGORIES.map((c) => ({
   emoji: c.emoji,
 }));
 
-type AgeTier = 'preschool' | 'grade12' | 'grade34' | 'grade56' | 'grade7plus';
+export type AgeTier = 'preschool' | 'grade12' | 'grade34' | 'grade56' | 'grade7plus';
 
-const AGE_TIER_LABELS: Record<AgeTier, string> = {
-  preschool: '学龄前',
-  grade12: '1-2年级',
-  grade34: '3-4年级',
-  grade56: '5-6年级',
-  grade7plus: '初中及以上',
+export const FITNESS_AGE_TIER_LABELS: Record<AgeTier, string> = {
+  preschool: i18nText('Fitness.ageTier.preschool'),
+  grade12: i18nText('Fitness.ageTier.grade12'),
+  grade34: i18nText('Fitness.ageTier.grade34'),
+  grade56: i18nText('Fitness.ageTier.grade56'),
+  grade7plus: i18nText('Fitness.ageTier.grade7plus'),
 };
 
 export function ageTier(ageMonths: number): AgeTier {
@@ -125,30 +127,67 @@ interface StandardFieldDef {
   min?: string;
 }
 
+export const FITNESS_STANDARD_METRIC_LABELS: Record<StandardFieldKey, string> = {
+  run10mShuttle: i18nText('Fitness.metric.run10mShuttle'),
+  run50m: i18nText('Fitness.metric.run50m'),
+  run800m: i18nText('Fitness.metric.run800m'),
+  run1000m: i18nText('Fitness.metric.run1000m'),
+  run50x8: i18nText('Fitness.metric.run50x8'),
+  standingLongJump: i18nText('Fitness.metric.standingLongJump'),
+  tennisBallThrow: i18nText('Fitness.metric.tennisBallThrow'),
+  doubleFootJump: i18nText('Fitness.metric.doubleFootJump'),
+  sitAndReach: i18nText('Fitness.metric.sitAndReach'),
+  sitUps: i18nText('Fitness.metric.sitUps'),
+  pullUps: i18nText('Fitness.metric.pullUps'),
+  balanceBeam: i18nText('Fitness.metric.balanceBeam'),
+  ropeSkipping: i18nText('Fitness.metric.ropeSkipping'),
+  vitalCapacity: i18nText('Fitness.metric.vitalCapacity'),
+};
+
 const STANDARD_FIELDS: StandardFieldDef[] = [
-  { key: 'run10mShuttle', label: '10米折返跑 (秒)', group: 'speed', step: '0.1', min: '0' },
-  { key: 'run50m', label: '50米跑 (秒)', group: 'speed', step: '0.1', min: '0' },
-  { key: 'run800m', label: '800米跑 (秒)', group: 'speed', step: '1', min: '0' },
-  { key: 'run1000m', label: '1000米跑 (秒)', group: 'speed', step: '1', min: '0' },
-  { key: 'run50x8', label: '50m×8往返跑 (秒)', group: 'speed', step: '0.1', min: '0' },
-  { key: 'standingLongJump', label: '立定跳远 (cm)', group: 'strength', step: '1', min: '0' },
-  { key: 'tennisBallThrow', label: '网球掷远 (米)', group: 'strength', step: '0.1', min: '0' },
-  { key: 'doubleFootJump', label: '双脚连续跳 (秒)', group: 'strength', step: '0.1', min: '0' },
-  { key: 'sitUps', label: '仰卧起坐 (次/分)', group: 'strength', step: '1', min: '0' },
-  { key: 'pullUps', label: '引体向上 (次)', group: 'strength', step: '1', min: '0' },
-  { key: 'sitAndReach', label: '坐位体前屈 (cm)', group: 'flex', step: '0.1' },
-  { key: 'balanceBeam', label: '走平衡木 (秒)', group: 'flex', step: '0.1', min: '0' },
-  { key: 'ropeSkipping', label: '跳绳 (次/分)', group: 'flex', step: '1', min: '0' },
-  { key: 'vitalCapacity', label: '肺活量 (mL)', group: 'flex', step: '1', min: '0' },
+  { key: 'run10mShuttle', label: FITNESS_STANDARD_METRIC_LABELS.run10mShuttle, group: 'speed', step: '0.1', min: '0' },
+  { key: 'run50m', label: FITNESS_STANDARD_METRIC_LABELS.run50m, group: 'speed', step: '0.1', min: '0' },
+  { key: 'run800m', label: FITNESS_STANDARD_METRIC_LABELS.run800m, group: 'speed', step: '1', min: '0' },
+  { key: 'run1000m', label: FITNESS_STANDARD_METRIC_LABELS.run1000m, group: 'speed', step: '1', min: '0' },
+  { key: 'run50x8', label: FITNESS_STANDARD_METRIC_LABELS.run50x8, group: 'speed', step: '0.1', min: '0' },
+  { key: 'standingLongJump', label: FITNESS_STANDARD_METRIC_LABELS.standingLongJump, group: 'strength', step: '1', min: '0' },
+  { key: 'tennisBallThrow', label: FITNESS_STANDARD_METRIC_LABELS.tennisBallThrow, group: 'strength', step: '0.1', min: '0' },
+  { key: 'doubleFootJump', label: FITNESS_STANDARD_METRIC_LABELS.doubleFootJump, group: 'strength', step: '0.1', min: '0' },
+  { key: 'sitUps', label: FITNESS_STANDARD_METRIC_LABELS.sitUps, group: 'strength', step: '1', min: '0' },
+  { key: 'pullUps', label: FITNESS_STANDARD_METRIC_LABELS.pullUps, group: 'strength', step: '1', min: '0' },
+  { key: 'sitAndReach', label: FITNESS_STANDARD_METRIC_LABELS.sitAndReach, group: 'flex', step: '0.1' },
+  { key: 'balanceBeam', label: FITNESS_STANDARD_METRIC_LABELS.balanceBeam, group: 'flex', step: '0.1', min: '0' },
+  { key: 'ropeSkipping', label: FITNESS_STANDARD_METRIC_LABELS.ropeSkipping, group: 'flex', step: '1', min: '0' },
+  { key: 'vitalCapacity', label: FITNESS_STANDARD_METRIC_LABELS.vitalCapacity, group: 'flex', step: '1', min: '0' },
 ];
 
 const STANDARD_GROUP_LABELS: Record<StandardFieldGroup, string> = {
-  speed: '⚡ 速度 & 耐力',
-  strength: '💪 力量',
-  flex: '🤸 柔韧 & 心肺',
+  speed: i18nText('Fitness.standardGroup.speed'),
+  strength: i18nText('Fitness.standardGroup.strength'),
+  flex: i18nText('Fitness.standardGroup.flex'),
 };
 
 const STANDARD_INT_KEYS = new Set<StandardFieldKey>(['sitUps', 'pullUps', 'ropeSkipping', 'vitalCapacity']);
+const STANDARD_CAPTURE_FIELDS: ReadonlyArray<{
+  key: StandardFieldKey;
+  metricId: string;
+  unit: string;
+}> = [
+  { key: 'run50m', metricId: 'fitness.run_50m', unit: 's' },
+  { key: 'run800m', metricId: 'fitness.run_800m', unit: 's' },
+  { key: 'run1000m', metricId: 'fitness.run_1000m', unit: 's' },
+  { key: 'run50x8', metricId: 'fitness.run_50x8', unit: 's' },
+  { key: 'sitAndReach', metricId: 'fitness.sit_and_reach', unit: 'cm' },
+  { key: 'standingLongJump', metricId: 'fitness.standing_long_jump', unit: 'cm' },
+  { key: 'sitUps', metricId: 'fitness.sit_ups', unit: 'count' },
+  { key: 'pullUps', metricId: 'fitness.pull_ups', unit: 'count' },
+  { key: 'ropeSkipping', metricId: 'fitness.rope_skipping', unit: 'count_per_min' },
+  { key: 'vitalCapacity', metricId: 'fitness.vital_capacity', unit: 'ml' },
+  { key: 'run10mShuttle', metricId: 'fitness.run_10m_shuttle', unit: 's' },
+  { key: 'tennisBallThrow', metricId: 'fitness.tennis_ball_throw', unit: 'm' },
+  { key: 'doubleFootJump', metricId: 'fitness.double_foot_jump', unit: 's' },
+  { key: 'balanceBeam', metricId: 'fitness.balance_beam', unit: 's' },
+];
 
 // Standard field key ↔ canonical metricId — used to reconstruct an edit entry
 // from stored `health_record_values`.
@@ -295,21 +334,74 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
     const now = isoNow();
     const ageAtDate = computeAgeMonthsAt(child.birthDate, date);
     try {
-      // Edit = replace: drop the original event, then write the (single) entry.
-      if (editTarget) {
-        await deleteFitnessEvent(editTarget.eventId);
-      }
       for (let i = 0; i < entries.length; i++) {
         const entry = entries[i]!;
         // A reminder is fulfilled once — attach it to the first event only.
         const linkedStateId = i === 0 ? linkedReminder?.stateId ?? null : null;
         const linkedRuleId = i === 0 ? linkedReminder?.ruleId ?? null : null;
+        if (Boolean(linkedStateId) !== Boolean(linkedRuleId)) {
+          throw new Error('Fitness reminder-linked capture requires both linkedReminderStateId and linkedReminderRuleId');
+        }
+        const recordKind = linkedStateId ? 'reminder_linked' : 'manual';
+        const sourceSurface = linkedStateId ? 'reminder' : 'profile_detail';
+        const value = (
+          metricId: string,
+          patch: Partial<HealthRecordCaptureValueInput>,
+        ): HealthRecordCaptureValueInput => ({
+          valueId: ulid(),
+          metricId,
+          valueNumber: null,
+          valueText: null,
+          valueJson: null,
+          unit: null,
+          qualifier: null,
+          recordKind: 'measured',
+          sourceValueIds: null,
+          ...patch,
+        });
+        const captureInput = (
+          eventId: string,
+          protocolId: 'fitness-school-assessment' | 'fitness-sport-activity',
+          values: HealthRecordCaptureValueInput[],
+        ): SaveHealthRecordCaptureInput => ({
+          eventId,
+          childId: child.childId,
+          protocolId,
+          groupId: 'fitness',
+          recordKind,
+          sourceSurface,
+          recordedAt: now,
+          effectiveDate: date,
+          ageMonths: ageAtDate,
+          recorderId: null,
+          linkedReminderStateId: linkedStateId,
+          linkedReminderRuleId: linkedRuleId,
+          notes: notes || null,
+          metadataJson: source ? JSON.stringify({ assessmentSource: source }) : null,
+          now,
+          values,
+        });
 
         if (entry.category === STANDARD_CATEGORY) {
           const num = (key: StandardFieldKey) => {
             const raw = entry.standardValues[key] ?? '';
             return STANDARD_INT_KEYS.has(key) ? parseIntNum(raw) : parseNum(raw);
           };
+          if (editTarget) {
+            const values = STANDARD_CAPTURE_FIELDS
+              .map((field) => {
+                const valueNumber = num(field.key);
+                return valueNumber == null
+                  ? null
+                  : value(field.metricId, { valueNumber, unit: field.unit });
+              })
+              .filter((item): item is HealthRecordCaptureValueInput => item != null);
+            await replaceHealthRecordCapture(
+              editTarget.eventId,
+              captureInput(ulid(), 'fitness-school-assessment', values),
+            );
+            continue;
+          }
           await insertFitnessAssessment({
             assessmentId: ulid(),
             childId: child.childId,
@@ -337,21 +429,6 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
             linkedReminderRuleId: linkedRuleId,
           });
         } else {
-          const value = (
-            metricId: string,
-            patch: Partial<HealthRecordCaptureValueInput>,
-          ): HealthRecordCaptureValueInput => ({
-            valueId: ulid(),
-            metricId,
-            valueNumber: null,
-            valueText: null,
-            valueJson: null,
-            unit: null,
-            qualifier: null,
-            recordKind: 'measured',
-            sourceValueIds: null,
-            ...patch,
-          });
           const values: HealthRecordCaptureValueInput[] = [
             value('fitness.activity_category', { valueText: entry.category }),
             value('fitness.activity_duration', { valueNumber: parseNum(entry.duration), unit: 'min' }),
@@ -363,24 +440,12 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
           if (entry.intensity) {
             values.push(value('fitness.activity_intensity', { valueText: entry.intensity }));
           }
-          await saveHealthRecordCapture({
-            eventId: ulid(),
-            childId: child.childId,
-            protocolId: 'fitness-sport-activity',
-            groupId: 'fitness',
-            recordKind: 'manual',
-            sourceSurface: 'profile_detail',
-            recordedAt: now,
-            effectiveDate: date,
-            ageMonths: ageAtDate,
-            recorderId: null,
-            linkedReminderStateId: linkedStateId,
-            linkedReminderRuleId: linkedRuleId,
-            notes: notes || null,
-            metadataJson: source ? JSON.stringify({ assessmentSource: source }) : null,
-            now,
-            values,
-          });
+          const input = captureInput(ulid(), 'fitness-sport-activity', values);
+          if (editTarget) {
+            await replaceHealthRecordCapture(editTarget.eventId, input);
+          } else {
+            await saveHealthRecordCapture(input);
+          }
         }
       }
       await onSaved();
@@ -394,18 +459,18 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
 
   return (
     <>
-      <ModalHeader title={editing ? '编辑体能记录' : '添加体能记录'} icon={editing ? '✏️' : '🏃'} onClose={onClose} />
+      <ModalHeader title={editing ? i18nText('Fitness.form.editTitle') : i18nText('Fitness.form.addTitle')} icon={editing ? '✏️' : '🏃'} onClose={onClose} />
       <ModalContent>
         <div className="space-y-5">
           <FormGrid cols={2}>
-            <FormField label="日期">
+            <FormField label={i18nText('Fitness.form.date')}>
               <DatePicker value={date} onChange={setDate} className="h-12" />
             </FormField>
-            <FormField label="来源">
+            <FormField label={i18nText('Fitness.form.source')}>
               <AppSelect
                 value={source}
                 onChange={setSource}
-                options={SOURCE_OPTIONS.map((v) => ({ value: v, label: SOURCE_LABELS[v] ?? v }))}
+                options={SOURCE_OPTIONS.map((v) => ({ value: v, label: FITNESS_SOURCE_LABELS[v] ?? v }))}
                 className="min-h-12"
                 contentClassName="z-[120]"
               />
@@ -433,7 +498,9 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
                       isActive ? 'text-[var(--nimi-action-primary-bg)]' : 'text-[var(--nimi-text-primary)]',
                     )}
                   >
-                    事件 {idx + 1} {meta ? `· ${meta.emoji} ${meta.label}` : ''}
+                    {meta
+                      ? i18nText('Fitness.form.eventTitleWithCategory', { index: idx + 1, category: `${meta.emoji} ${meta.label}` })
+                      : i18nText('Fitness.form.eventTitle', { index: idx + 1 })}
                   </p>
                   {entries.length > 1 ? (
                     <button
@@ -444,21 +511,21 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
                       }}
                       className="rounded-full px-2 py-0.5 text-[12px] text-[var(--nimi-status-danger)] transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,transparent)]"
                     >
-                      删除
+                      {i18nText('Fitness.form.deleteEvent')}
                     </button>
                   ) : null}
                 </div>
 
                 {isActive ? (
                   <div className="mt-2 space-y-3" onClick={(event) => event.stopPropagation()}>
-                    <FormField label="类型">
+                    <FormField label={i18nText('Fitness.form.type')}>
                       <div className="space-y-2.5">
                         <PillTabs
                           size="sm"
-                          ariaLabel="记录类型"
+                          ariaLabel={i18nText('Fitness.field.recordType')}
                           items={[
-                            { value: STANDARD_CATEGORY, label: '📋 体测' },
-                            { value: ACTIVITY_TAB, label: '🏃 日常运动' },
+                            { value: STANDARD_CATEGORY, label: i18nText('Fitness.form.tabStandard') },
+                            { value: ACTIVITY_TAB, label: i18nText('Fitness.form.tabActivity') },
                           ]}
                           value={entry.category === STANDARD_CATEGORY ? STANDARD_CATEGORY : ACTIVITY_TAB}
                           onValueChange={(tab) => {
@@ -502,14 +569,14 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
           })}
 
           {!editing ? (
-            <DashedAddButton shape="row" onClick={addEntry} label="添加另一个事件" />
+            <DashedAddButton shape="row" onClick={addEntry} label={i18nText('Fitness.form.addAnotherEvent')} />
           ) : null}
 
-          <FormField label="备注">
+          <FormField label={i18nText('Fitness.form.notes')}>
             <TextareaField
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="选填"
+              placeholder={i18nText('Fitness.form.notesPlaceholder')}
               rows={2}
               className="w-full"
             />
@@ -517,9 +584,9 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('Fitness.form.cancel')}</Button>
         <Button type="button" onClick={() => void handleSubmit()} disabled={saving || !canSave} tone="primary" size="md">
-          {saving ? '保存中...' : editing ? '保存修改' : '保存'}
+          {saving ? i18nText('Fitness.form.saving') : editing ? i18nText('Fitness.form.saveChanges') : i18nText('Fitness.form.save')}
         </Button>
       </ModalFooter>
     </>
@@ -541,7 +608,7 @@ function StandardEventFields({
   return (
     <div className="space-y-3">
       <InfoBanner tone="accent">
-        📋 {AGE_TIER_LABELS[tier]} · 依据《国家学生体质健康标准》测试项目，按需填写
+        {i18nText('Fitness.form.standardBanner', { tier: FITNESS_AGE_TIER_LABELS[tier] })}
       </InfoBanner>
       {groups.map((group) => {
         const groupFields = STANDARD_FIELDS.filter((f) => f.group === group && fields[f.key]);
@@ -584,24 +651,24 @@ function ActivityEventFields({
   return (
     <div className="space-y-3">
       <FormGrid cols={2}>
-        <FormField label="时长 (分钟)" required>
+        <FormField label={i18nText('Fitness.form.durationLabel')} required>
           <TextField
             type="number"
             step="1"
             min="0"
-            placeholder="例如 30"
+            placeholder={i18nText('Fitness.form.durationPlaceholder')}
             value={entry.duration}
             onChange={(event) => onChange({ duration: event.target.value })}
             className="w-full min-h-12"
             inputClassName={NUMBER_INPUT_CLASS}
           />
         </FormField>
-        <FormField label="距离 (米)" hint="可选 — 适用于跑步、游泳、骑行等">
+        <FormField label={i18nText('Fitness.form.distanceLabel')} hint={i18nText('Fitness.form.distanceHint')}>
           <TextField
             type="number"
             step="1"
             min="0"
-            placeholder="例如 800"
+            placeholder={i18nText('Fitness.form.distancePlaceholder')}
             value={entry.distance}
             onChange={(event) => onChange({ distance: event.target.value })}
             className="w-full min-h-12"
@@ -609,7 +676,7 @@ function ActivityEventFields({
           />
         </FormField>
       </FormGrid>
-      <FormField label="强度">
+      <FormField label={i18nText('Fitness.form.intensityLabel')}>
         <ChipGroup
           size="sm"
           layout="fill"

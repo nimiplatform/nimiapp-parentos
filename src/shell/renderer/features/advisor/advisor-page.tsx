@@ -19,6 +19,7 @@ import {
   buildAdvisorNeedsReviewRuntimeUserMessage,
   buildAdvisorUnknownClarifierRuntimeUserMessage,
   buildAdvisorRuntimeUserMessage,
+  buildMinimalAdvisorSnapshot,
   buildAdvisorSnapshot,
   buildStructuredAdvisorFallback,
   inferRequestedDomains,
@@ -41,6 +42,8 @@ import { AdvisorSuggestions, AdvisorSuggestionsSkeleton } from './advisor-sugges
 import { generateAdvisorSuggestions, type AdvisorSuggestion } from './advisor-suggestion-engine.js';
 import { AdvisorOpeningCard } from './advisor-opening-card.js';
 import type { AdvisorSnapshot } from './advisor-boundary.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type StreamingState = 'idle' | 'streaming';
 
@@ -266,6 +269,43 @@ function buildAdvisorRuntimeFailureNote(error: unknown) {
   return `补充说明：运行时响应失败（${reasonCode}），已退回本地结构化事实。`;
 }
 
+function buildAdvisorSnapshotFailureNote(error: unknown) {
+  const detail = error instanceof Error ? error.message : String(error || '').trim();
+  return detail
+    ? `补充说明：本地快照读取失败（${detail}），已退回仅含儿童基础资料的结构化事实。`
+    : '补充说明：本地快照读取失败，已退回仅含儿童基础资料的结构化事实。';
+}
+
+function buildAdvisorUserPersistenceFailureNote(error: unknown) {
+  const detail = error instanceof Error ? error.message : String(error || '').trim();
+  return detail
+    ? `补充说明：用户消息持久化失败（${detail}），本轮没有调用运行时，已退回本地结构化事实。`
+    : '补充说明：用户消息持久化失败，本轮没有调用运行时，已退回本地结构化事实。';
+}
+
+function buildAdvisorAssistantPersistenceFailureNote(error: AdvisorAssistantPersistenceError) {
+  const cause = error.cause instanceof Error ? error.cause.message : String(error.cause || '').trim();
+  return cause
+    ? `补充说明：首条咨询回复持久化失败（${cause}），未写回提醒咨询状态，已退回本地结构化事实。`
+    : '补充说明：首条咨询回复持久化失败，未写回提醒咨询状态，已退回本地结构化事实。';
+}
+
+function createLocalAdvisorMessage(input: {
+  conversationId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  contextSnapshot: string | null;
+}): AiMessageRow {
+  return {
+    messageId: `local-${ulid()}`,
+    conversationId: input.conversationId,
+    role: input.role,
+    content: input.content,
+    contextSnapshot: input.contextSnapshot,
+    createdAt: isoNow(),
+  };
+}
+
 export default function AdvisorPage() {
   const { activeChildId, children } = useAppStore();
   const child = children.find((item) => item.childId === activeChildId);
@@ -346,6 +386,41 @@ export default function AdvisorPage() {
     setMessages(await getAiMessages(convId));
   };
 
+  const displayLocalAssistantMsg = (
+    convId: string,
+    content: string,
+    contextSnapshot: string | null,
+  ) => {
+    setMessages((prev) => [
+      ...prev,
+      createLocalAdvisorMessage({
+        conversationId: convId,
+        role: 'assistant',
+        content,
+        contextSnapshot,
+      }),
+    ]);
+  };
+
+  const saveOrDisplayStructuredFallback = async (
+    convId: string,
+    content: string,
+    contextSnapshot: string | null,
+    consultationAnchor?: ReminderConsultationAnchor,
+  ) => {
+    try {
+      await saveAssistantMsg(convId, content, contextSnapshot, consultationAnchor);
+    } catch (err) {
+      if (err instanceof AdvisorAssistantPersistenceError) {
+        catchLog('advisor', 'action:persist-consultation-structured-fallback-failed')(err);
+        displayLocalAssistantMsg(convId, content, contextSnapshot);
+        return;
+      }
+      catchLog('advisor', 'action:persist-structured-fallback-failed')(err);
+      displayLocalAssistantMsg(convId, content, contextSnapshot);
+    }
+  };
+
   const startConversationWithOpening = async (params: {
     title: string | null;
     question: string;
@@ -389,33 +464,75 @@ export default function AdvisorPage() {
     const activeChild = child;
     const domains = inferRequestedDomains(params.question);
     const strategy = resolveAdvisorPromptStrategy(params.question, domains);
-    const snapshot = await buildAdvisorSnapshot({
+    const snapshotInput = {
       childId: activeChild.childId,
       displayName: activeChild.displayName,
       gender: activeChild.gender,
       birthDate: activeChild.birthDate,
       nurtureMode: activeChild.nurtureMode,
       ageMonths: params.ageMonthsAtRequest,
-    });
+    };
+    let snapshot: AdvisorSnapshot;
+    let snapshotFailureNote: string | null = null;
+    try {
+      snapshot = await buildAdvisorSnapshot(snapshotInput);
+    } catch (err) {
+      snapshot = buildMinimalAdvisorSnapshot(snapshotInput);
+      snapshotFailureNote = buildAdvisorSnapshotFailureNote(err);
+      catchLog('advisor', 'action:build-turn-snapshot-failed')(err);
+    }
     const snapshotJson = serializeAdvisorSnapshot(snapshot);
 
-    await insertAiMessage({
-      messageId: ulid(),
-      conversationId: params.conversationId,
-      role: 'user',
-      content: params.question,
-      contextSnapshot: snapshotJson,
-      now: isoNow(),
-    });
-    setMessages(await getAiMessages(params.conversationId));
+    try {
+      await insertAiMessage({
+        messageId: ulid(),
+        conversationId: params.conversationId,
+        role: 'user',
+        content: params.question,
+        contextSnapshot: snapshotJson,
+        now: isoNow(),
+      });
+      setMessages(await getAiMessages(params.conversationId));
+    } catch (err) {
+      catchLog('advisor', 'action:persist-user-message-failed')(err);
+      const fallbackContent = buildStructuredAdvisorFallback(params.question, domains, snapshot, {
+        note: buildAdvisorUserPersistenceFailureNote(err),
+      });
+      setMessages((prev) => [
+        ...prev,
+        createLocalAdvisorMessage({
+          conversationId: params.conversationId,
+          role: 'user',
+          content: params.question,
+          contextSnapshot: snapshotJson,
+        }),
+        createLocalAdvisorMessage({
+          conversationId: params.conversationId,
+          role: 'assistant',
+          content: fallbackContent,
+          contextSnapshot: snapshotJson,
+        }),
+      ]);
+      return;
+    }
+
+    if (snapshotFailureNote) {
+      await saveOrDisplayStructuredFallback(
+        params.conversationId,
+        buildStructuredAdvisorFallback(params.question, domains, snapshot, { note: snapshotFailureNote }),
+        snapshotJson,
+        params.reminderConsultationAnchor,
+      );
+      return;
+    }
 
     if (!runtimeAvailable) {
-      await saveAssistantMsg(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot), snapshotJson, params.reminderConsultationAnchor);
+      await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot), snapshotJson, params.reminderConsultationAnchor);
       return;
     }
 
     if (strategy === 'generic-chat' || strategy === 'needs-review-descriptive') {
-      await saveAssistantMsg(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot), snapshotJson, params.reminderConsultationAnchor);
+      await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot), snapshotJson, params.reminderConsultationAnchor);
       return;
     }
 
@@ -482,7 +599,7 @@ export default function AdvisorPage() {
       }
       const filtered = filterAIResponse(full);
       if (!filtered.safe) {
-        await saveAssistantMsg(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
+        await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
           note: '补充说明：运行时响应触发了安全过滤，已退回本地结构化事实。',
         }), snapshotJson, params.reminderConsultationAnchor);
         return;
@@ -493,8 +610,14 @@ export default function AdvisorPage() {
       await saveAssistantMsg(params.conversationId, finalContent, snapshotJson, params.reminderConsultationAnchor);
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
-      if (err instanceof AdvisorAssistantPersistenceError) return;
-      await saveAssistantMsg(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
+      if (err instanceof AdvisorAssistantPersistenceError) {
+        catchLog('advisor', 'action:persist-consultation-assistant-failed')(err);
+        displayLocalAssistantMsg(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
+          note: buildAdvisorAssistantPersistenceFailureNote(err),
+        }), snapshotJson);
+        return;
+      }
+      await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
         note: buildAdvisorRuntimeFailureNote(err),
       }), snapshotJson, params.reminderConsultationAnchor);
     } finally {
@@ -635,7 +758,7 @@ export default function AdvisorPage() {
     };
   }, [activeConvId, openingSnapshot, runtimeAvailable, messages.length]);
 
-  if (!child) return <div className="p-8 text-slate-400">请先添加孩子</div>;
+  if (!child) return <div className="p-8 text-slate-400">{i18nText('Advisor.page.noActiveChild')}</div>;
 
   const ageMonths = computeAgeMonths(child.birthDate);
 

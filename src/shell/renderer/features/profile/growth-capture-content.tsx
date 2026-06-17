@@ -23,6 +23,8 @@ import {
   ModalFooter,
   ModalHeader,
 } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const NUMBER_INPUT_CLASS = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
@@ -162,15 +164,15 @@ export function GrowthAddRecordContent({
 
   return (
     <>
-      <ModalHeader title="添加生长记录" icon="📏" onClose={onClose} />
+      <ModalHeader title={i18nText('GrowthCurve.capture.title')} icon="📏" onClose={onClose} />
       <ModalContent>
         <div className="space-y-5">
-          <FormField label="测量日期">
+          <FormField label={i18nText('GrowthCurve.capture.measuredAt')}>
             <DatePicker value={formDate} onChange={setFormDate} className="h-12" />
           </FormField>
 
           <FormGrid cols={isUnder6 ? 3 : 2}>
-            <FormField label="身高 (cm)">
+            <FormField label={i18nText('GrowthCurve.capture.heightCm')}>
               <TextField
                 type="number"
                 step="0.1"
@@ -181,7 +183,7 @@ export function GrowthAddRecordContent({
                 inputClassName={NUMBER_INPUT_CLASS}
               />
             </FormField>
-            <FormField label="体重 (kg)">
+            <FormField label={i18nText('GrowthCurve.capture.weightKg')}>
               <TextField
                 type="number"
                 step="0.01"
@@ -193,7 +195,7 @@ export function GrowthAddRecordContent({
               />
             </FormField>
             {isUnder6 ? (
-              <FormField label="头围 (cm)">
+              <FormField label={i18nText('GrowthCurve.capture.headCircumferenceCm')}>
                 <TextField
                   type="number"
                   step="0.1"
@@ -216,14 +218,14 @@ export function GrowthAddRecordContent({
             )}
           >
             <span className="text-[13px] font-medium text-[var(--nimi-text-muted)]">
-              BMI 自动计算
+              {i18nText('GrowthCurve.capture.bmiAuto')}
             </span>
             {hasBMI && bmi != null && bmiMeta ? (
               <>
-                <span className={`ml-auto text-[16px] font-bold ${bmiToneClassName(bmiMeta.tag)}`}>
+                <span className={`ml-auto text-[16px] font-bold ${bmiToneClassName(bmiMeta.tone)}`}>
                   {bmi}
                 </span>
-                <span className={`text-[13px] font-medium ${bmiToneClassName(bmiMeta.tag)}`}>
+                <span className={`text-[13px] font-medium ${bmiToneClassName(bmiMeta.tone)}`}>
                   {bmiMeta.tag}
                 </span>
               </>
@@ -234,22 +236,22 @@ export function GrowthAddRecordContent({
             )}
           </div>
 
-          <FormField label="备注">
+          <FormField label={i18nText('GrowthCurve.capture.notes')}>
             <TextareaField
               rows={2}
               value={formNotes}
               onChange={(event) => setFormNotes(event.target.value)}
-              placeholder="记录一些观察..."
+              placeholder={i18nText('GrowthCurve.capture.notesPlaceholder')}
               className="w-full"
             />
           </FormField>
 
-          <FormField label={`照片${formPhotos.length > 0 ? ` (${formPhotos.length}/9)` : ''}`}>
+          <FormField label={i18nText('GrowthCurve.capture.photos', { countSuffix: formPhotos.length > 0 ? ` (${formPhotos.length}/9)` : '' })}>
             <div className="space-y-2">
               <PhotoGrid
                 photos={formPhotos}
                 maxPhotos={9}
-                hint="点击或拖拽上传照片（最多 9 张）"
+                hint={i18nText('GrowthCurve.capture.photoHint')}
                 onChange={setFormPhotos}
               />
             </div>
@@ -257,18 +259,18 @@ export function GrowthAddRecordContent({
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('GrowthCurve.capture.cancel')}</Button>
         <Button type="button" onClick={() => void handleSave()} disabled={saving} tone="primary" size="md">
-          {saving ? '保存中...' : '保存'}
+          {saving ? i18nText('GrowthCurve.capture.saving') : i18nText('GrowthCurve.capture.save')}
         </Button>
       </ModalFooter>
     </>
   );
 }
 
-function bmiToneClassName(tag: string): string {
-  if (tag.includes('偏轻')) return 'text-[var(--nimi-status-info)]';
-  if (tag.includes('正常')) return 'text-[var(--nimi-status-success)]';
-  if (tag.includes('偏重')) return 'text-[var(--nimi-status-warning)]';
+function bmiToneClassName(tone: ReturnType<typeof bmiLabel>['tone']): string {
+  if (tone === 'info') return 'text-[var(--nimi-status-info)]';
+  if (tone === 'success') return 'text-[var(--nimi-status-success)]';
+  if (tone === 'warning') return 'text-[var(--nimi-status-warning)]';
   return 'text-[var(--nimi-status-danger)]';
 }

@@ -1,7 +1,7 @@
 /**
  * Case-level shell for the orthodontic surface. Replaces the legacy single
- * `OrthodonticTreatmentCard`: it owns the case-level chrome (the "正在并行 N
- * 件矫治器" header, the bottom 疗程总进度 strip, the ⋯ case menu, the
+ * `OrthodonticTreatmentCard`: it owns the case-level chrome (parallel
+ * appliance-count header, bottom progress strip, case menu, the
  * stage-advance dialog, the unknown-legacy banner, the no-appliance empty
  * state) and composes the per-appliance grid + the consolidated review card
  * in between. Per-appliance identity (name + start date) is owned by each
@@ -38,6 +38,8 @@ import { OrthodonticCaseReviewCard } from './orthodontic-case-review-card.js';
 import { ApplianceNextActionRow } from './appliance-next-action-row.js';
 import { ApplianceHeroCard } from './appliance-hero-card.js';
 import type { ApplianceCardHandlers } from './appliance-card-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export interface OrthodonticCaseShellHandlers extends ApplianceCardHandlers {
   onEditCase: () => void;
@@ -96,11 +98,7 @@ export function OrthodonticCaseShell({
   const appliances = items.map((i) => i.appliance);
 
   const handleDeleteCase = async () => {
-    if (
-      !window.confirm(
-        '确定删除该疗程？相关矫治器、打卡、未戴记录都会级联删除，操作不可撤销。',
-      )
-    ) {
+    if (!window.confirm(i18nText('Orthodontic.caseShell.deleteConfirm'))) {
       return;
     }
     setMenuOpen(false);
@@ -118,7 +116,7 @@ export function OrthodonticCaseShell({
       {/* ── header strip: parallel-appliance count only. Per-appliance
           identity + start date live on each card below, so duplicating
           them here just clutters the chrome. Hidden at count=1 because the
-          "1 件" wording carries zero information when there's no parallel
+          one-appliance wording carries zero information when there's no parallel
           set to size up — it's just visual debt above the single hero. ── */}
       {items.length > 1 && (
         <Surface
@@ -129,8 +127,7 @@ export function OrthodonticCaseShell({
           className="flex items-center px-5 py-3"
         >
           <span className="text-[13px] text-[var(--nimi-text-muted)]">
-            正在并行{' '}
-            <strong className="font-bold text-[var(--nimi-text-primary)]">{items.length}</strong> 件矫治器
+            {i18nText('Orthodontic.caseShell.parallelAppliances', { count: items.length })}
           </span>
         </Surface>
       )}
@@ -229,7 +226,7 @@ export function OrthodonticCaseShell({
         })()
       )}
 
-      {/* ── bottom: case-level 疗程总进度 strip + ⋯ menu ── */}
+      {/* ── bottom: case-level progress strip + menu ── */}
       <Surface
         as="section"
         material="glass-thick"
@@ -244,7 +241,7 @@ export function OrthodonticCaseShell({
           trailingAction={
             <div ref={menuRef} style={{ position: 'relative' }}>
               <IconButton
-                aria-label="疗程管理菜单"
+                aria-label={i18nText('Orthodontic.caseShell.menuAria')}
                 onClick={() => setMenuOpen((v) => !v)}
                 tone="ghost"
                 size="sm"
@@ -274,7 +271,7 @@ export function OrthodonticCaseShell({
                     fullWidth
                     className="justify-start rounded-none px-3 text-left text-[14px]"
                   >
-                    编辑当前疗程
+                    {i18nText('Orthodontic.caseShell.editCase')}
                   </Button>
                   {!isLegacy && canAddAppliance && (
                     <Button
@@ -288,7 +285,7 @@ export function OrthodonticCaseShell({
                       fullWidth
                       className="justify-start rounded-none px-3 text-left text-[14px]"
                     >
-                      添加矫治器
+                      {i18nText('Orthodontic.page.addAppliance')}
                     </Button>
                   )}
                   {advanceTarget ? (
@@ -303,7 +300,7 @@ export function OrthodonticCaseShell({
                       fullWidth
                       className="justify-start rounded-none px-3 text-left text-[14px]"
                     >
-                      推进到「{stageLabel(advanceTarget.stage)}」
+                      {i18nText('Orthodontic.caseShell.advanceToStage', { stage: stageLabel(advanceTarget.stage) })}
                     </Button>
                   ) : (
                     <Button
@@ -315,7 +312,7 @@ export function OrthodonticCaseShell({
                       className="justify-start rounded-none px-3 text-left text-[14px] italic text-[var(--nimi-text-muted)]"
                       title={blockedAdvanceReason(stageOptions)}
                     >
-                      没有可推进的下一阶段
+                      {i18nText('Orthodontic.caseShell.noAdvanceStage')}
                     </Button>
                   )}
                   <div className="my-0.5 border-t border-[var(--nimi-border-subtle)]" />
@@ -327,7 +324,7 @@ export function OrthodonticCaseShell({
                     fullWidth
                     className="justify-start rounded-none px-3 text-left text-[14px]"
                   >
-                    删除当前疗程
+                    {i18nText('Orthodontic.caseShell.deleteCase')}
                   </Button>
                 </Surface>
               )}
@@ -366,10 +363,10 @@ function UnknownLegacyBanner() {
       className="border-[var(--nimi-status-warning)]"
     >
       <div className="mb-1 text-[14px] font-semibold text-[var(--nimi-status-warning)]">
-        待确认历史疗程
+        {i18nText('Orthodontic.caseShell.legacyTitle')}
       </div>
       <p className="text-[13px] text-[var(--nimi-text-muted)]">
-        该疗程由历史 ortho-start 记录回补生成。请在「⋯ 菜单 → 删除当前疗程」后新建一个正式疗程，或先把它改归类为正式类型再加矫治器（PO-ORTHO-002a）。
+        {i18nText('Orthodontic.caseShell.legacyBody')}
       </p>
     </Surface>
   );
@@ -384,7 +381,7 @@ function NoActiveApplianceCard({ canAdd, onAdd }: { canAdd: boolean; onAdd: () =
       padding="lg"
     >
       <p className="m-0 text-[14px] text-[var(--nimi-text-muted)]">
-        当前疗程还没有进行中的矫治器。添加矫治器后可以开始记录每日状态。
+        {i18nText('Orthodontic.caseShell.noActiveAppliance')}
       </p>
       {canAdd && (
         <Button
@@ -393,7 +390,7 @@ function NoActiveApplianceCard({ canAdd, onAdd }: { canAdd: boolean; onAdd: () =
           size="md"
           className="mt-3"
         >
-          添加矫治器
+          {i18nText('Orthodontic.page.addAppliance')}
         </Button>
       )}
     </Surface>

@@ -20,6 +20,8 @@ import type {
   VisionSnapshotSummary,
 } from './timeline-data-types.js';
 import { C } from './timeline-data-types.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const milestoneById = new Map(MILESTONE_CATALOG.map((item) => [item.milestoneId, item]));
@@ -27,13 +29,13 @@ const MEASUREMENT_META: Record<
   string,
   { label: string; unit: string; domain: RecentChangeItem['domain']; to: string; icon: string }
 > = {
-  height: { label: '身高', unit: 'cm', domain: 'growth', to: '/profile', icon: '📏' },
-  weight: { label: '体重', unit: 'kg', domain: 'growth', to: '/profile', icon: '⚖️' },
-  'head-circumference': { label: '头围', unit: 'cm', domain: 'growth', to: '/profile', icon: '🍼' },
+  height: { label: i18nText('Profile.metrics.growth.height'), unit: i18nText('Common.unit.centimeter'), domain: 'growth', to: '/profile', icon: '📏' },
+  weight: { label: i18nText('Profile.metrics.growth.weight'), unit: i18nText('Common.unit.kilogram'), domain: 'growth', to: '/profile', icon: '⚖️' },
+  'head-circumference': { label: i18nText('Profile.metrics.growth.headCircumference'), unit: i18nText('Common.unit.centimeter'), domain: 'growth', to: '/profile', icon: '🍼' },
   bmi: { label: 'BMI', unit: '', domain: 'growth', to: '/profile', icon: '📈' },
-  'vision-left': { label: '左眼视力', unit: '', domain: 'vision', to: '/profile', icon: '👀' },
-  'vision-right': { label: '右眼视力', unit: '', domain: 'vision', to: '/profile', icon: '👀' },
-  'bone-age': { label: '骨龄', unit: '岁', domain: 'bone-age', to: '/profile', icon: '🦴' },
+  'vision-left': { label: i18nText('Profile.metrics.vision.leftVisualAcuity'), unit: '', domain: 'vision', to: '/profile', icon: '👀' },
+  'vision-right': { label: i18nText('Profile.metrics.vision.rightVisualAcuity'), unit: '', domain: 'vision', to: '/profile', icon: '👀' },
+  'bone-age': { label: i18nText('Profile.metrics.development.boneAgeYears'), unit: i18nText('Common.unit.year'), domain: 'bone-age', to: '/profile', icon: '🦴' },
 };
 
 interface QuickLink {
@@ -45,19 +47,19 @@ interface QuickLink {
 }
 
 const QLINKS_REGISTRY: QuickLink[] = [
-  { id: 'growth', to: '/profile', label: '生长曲线', emoji: '📏' },
-  { id: 'vaccines', to: '/profile', label: '疫苗', emoji: '💉', ageGate: (age) => age <= 84 },
-  { id: 'sleep', to: '/profile', label: '睡眠', emoji: '😴' },
-  { id: 'journal', to: '/journal', label: '成长随记', emoji: '📝' },
-  { id: 'reports', to: '/reports', label: '报告', emoji: '📄' },
-  { id: 'medical', to: '/profile', label: '就医记录', emoji: '🏥' },
-  { id: 'milestones', to: '/profile', label: '里程碑', emoji: '🎯', ageGate: (age) => age <= 72 },
-  { id: 'outdoor', to: '/profile', label: '户外目标', emoji: '🌳', ageGate: (age) => age >= 6 },
-  { id: 'vision', to: '/profile', label: '视力', emoji: '👁️', ageGate: (age) => age >= 36 },
-  { id: 'dental', to: '/profile', label: '口腔', emoji: '🦷', ageGate: (age) => age >= 6 },
-  { id: 'fitness', to: '/profile', label: '体能', emoji: '🏃', ageGate: (age) => age >= 36 },
-  { id: 'tanner', to: '/profile', label: '青春期', emoji: '🌱', ageGate: (age) => age >= 84 },
-  { id: 'posture', to: '/profile', label: '体态', emoji: '🧍', ageGate: (age) => age >= 60 },
+  { id: 'growth', to: '/profile', label: i18nText('Timeline.quickLink.growth'), emoji: '📏' },
+  { id: 'vaccines', to: '/profile', label: i18nText('Timeline.quickLink.vaccines'), emoji: '💉', ageGate: (age) => age <= 84 },
+  { id: 'sleep', to: '/profile', label: i18nText('Timeline.quickLink.sleep'), emoji: '😴' },
+  { id: 'journal', to: '/journal', label: i18nText('Timeline.quickLink.journal'), emoji: '📝' },
+  { id: 'reports', to: '/reports', label: i18nText('Timeline.quickLink.reports'), emoji: '📄' },
+  { id: 'medical', to: '/profile', label: i18nText('Timeline.quickLink.medical'), emoji: '🏥' },
+  { id: 'milestones', to: '/profile', label: i18nText('Timeline.quickLink.milestones'), emoji: '🎯', ageGate: (age) => age <= 72 },
+  { id: 'outdoor', to: '/profile', label: i18nText('Timeline.quickLink.outdoor'), emoji: '🌳', ageGate: (age) => age >= 6 },
+  { id: 'vision', to: '/profile', label: i18nText('Timeline.quickLink.vision'), emoji: '👁️', ageGate: (age) => age >= 36 },
+  { id: 'dental', to: '/profile', label: i18nText('Timeline.quickLink.dental'), emoji: '🦷', ageGate: (age) => age >= 6 },
+  { id: 'fitness', to: '/profile', label: i18nText('Timeline.quickLink.fitness'), emoji: '🏃', ageGate: (age) => age >= 36 },
+  { id: 'tanner', to: '/profile', label: i18nText('Timeline.quickLink.tanner'), emoji: '🌱', ageGate: (age) => age >= 84 },
+  { id: 'posture', to: '/profile', label: i18nText('Timeline.quickLink.posture'), emoji: '🧍', ageGate: (age) => age >= 60 },
 ];
 
 const QLINKS_TIERS: Array<{ maxAge: number; topIds: string[] }> = [
@@ -177,27 +179,30 @@ export function buildObservationDistribution(journalEntries: DashData['journalEn
 
 export function fmtRel(value: string) {
   const days = Math.floor((Date.now() - new Date(value).getTime()) / DAY_MS);
-  if (days <= 0) return '今天';
-  if (days === 1) return '昨天';
-  if (days < 7) return `${days}天前`;
-  return new Date(value).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+  if (days <= 0) return i18nText('Common.relative.today');
+  if (days === 1) return i18nText('Common.relative.yesterday');
+  if (days < 7) return i18nText('Common.relative.daysAgoCompact', { days });
+  const date = new Date(value);
+  return i18nText('Timeline.relativeDateFallback', { month: date.getMonth() + 1, day: date.getDate() });
 }
 
 export function formatAgeLabel(ageMonths: number) {
-  if (ageMonths < 12) return `${ageMonths}个月`;
+  if (ageMonths < 12) return i18nText('Common.age.months', { months: ageMonths });
   const years = Math.floor(ageMonths / 12);
   const months = ageMonths % 12;
-  return months > 0 ? `${years}岁${months}个月` : `${years}岁`;
+  return months > 0
+    ? i18nText('Common.age.yearsMonths', { years, months })
+    : i18nText('Common.age.years', { years });
 }
 
 export function describeNurtureMode(mode: NurtureMode) {
   switch (mode) {
     case 'relaxed':
-      return '轻松模式';
+      return i18nText('Timeline.nurtureMode.relaxed');
     case 'advanced':
-      return '进阶模式';
+      return i18nText('Timeline.nurtureMode.advanced');
     default:
-      return '平衡模式';
+      return i18nText('Timeline.nurtureMode.balanced');
   }
 }
 
@@ -248,7 +253,11 @@ function buildMeasurementChanges(measurements: DashData['measurements']): Recent
       const latestValue = toNumber(latest.value);
       const previousValue = toNumber(previous.value);
       if (latestValue != null && previousValue != null) {
-        detail = `${currentValue}，与上次相比 ${formatDelta(latestValue - previousValue, meta.unit)} · ${fmtRel(latest.measuredAt)}`;
+        detail = i18nText('Timeline.recent.updatedComparedToPrevious', {
+          value: currentValue,
+          delta: formatDelta(latestValue - previousValue, meta.unit),
+          time: fmtRel(latest.measuredAt),
+        });
       }
     }
     const iconName: RecentChangeItem['iconName'] = meta.domain === 'vision'
@@ -259,8 +268,8 @@ function buildMeasurementChanges(measurements: DashData['measurements']): Recent
     changes.push({
       id: `measurement:${latest.measurementId}`,
       domain: meta.domain,
-      label: meta.domain === 'growth' ? '生长' : meta.label,
-      title: `${meta.label}已更新`,
+      label: meta.domain === 'growth' ? i18nText('Timeline.domain.growth') : meta.label,
+      title: i18nText('Timeline.recent.metricUpdated', { metric: meta.label }),
       detail,
       metric: null,
       subtitle: fmtRel(latest.measuredAt),
@@ -279,17 +288,17 @@ function sleepDurationLabel(record: DashData['sleepRecords'][number]) {
   if (record.durationMinutes != null && record.durationMinutes > 0) {
     const hours = Math.floor(record.durationMinutes / 60);
     const minutes = record.durationMinutes % 60;
-    if (minutes === 0) return `${hours}小时`;
-    return `${hours}小时${minutes}分钟`;
+    if (minutes === 0) return i18nText('Timeline.sleep.durationHours', { hours });
+    return i18nText('Timeline.sleep.durationHoursMinutes', { hours, minutes });
   }
-  return '已记录时长';
+  return i18nText('Timeline.sleep.recordedDuration');
 }
 
 function heroSleepDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
+  if (m === 0) return i18nText('Common.duration.shortHours', { hours: h });
+  return i18nText('Common.duration.shortHoursMinutes', { hours: h, minutes: m });
 }
 
 /** Age-banded nighttime sleep floors (minutes). Based on NSF / AAP guidance. */
@@ -301,11 +310,11 @@ function sleepThresholdsByAge(ageMonths: number | null | undefined): { enough: n
 }
 
 function sleepHeadline(minutes: number | null | undefined, ageMonths: number | null | undefined): string {
-  if (minutes == null || minutes <= 0) return '昨夜睡眠';
+  if (minutes == null || minutes <= 0) return i18nText('Timeline.sleep.headline');
   const { enough, stable } = sleepThresholdsByAge(ageMonths);
-  if (minutes >= enough) return '昨夜睡眠充足';
-  if (minutes >= stable) return '昨夜睡眠稳定';
-  return '昨夜睡眠偏短';
+  if (minutes >= enough) return i18nText('Timeline.sleep.headlineEnough');
+  if (minutes >= stable) return i18nText('Timeline.sleep.headlineStable');
+  return i18nText('Timeline.sleep.headlineShort');
 }
 
 function buildSleepRecordChanges(sleepRecords: DashData['sleepRecords']): RecentChangeItem[] {
@@ -314,7 +323,7 @@ function buildSleepRecordChanges(sleepRecords: DashData['sleepRecords']): Recent
       .filter((record) => isWithinDays(record.sleepDate, 7))
       .map((record) => {
         const parts = [record.bedtime, record.wakeTime].filter(Boolean);
-        const timeLabel = parts.length === 2 ? `${parts[0]} - ${parts[1]}` : '作息时间';
+        const timeLabel = parts.length === 2 ? `${parts[0]} - ${parts[1]}` : i18nText('Timeline.sleep.scheduleTime');
         const durationMinutes = record.durationMinutes ?? null;
         const metric = durationMinutes && durationMinutes > 0
           ? { value: heroSleepDuration(durationMinutes) }
@@ -322,7 +331,7 @@ function buildSleepRecordChanges(sleepRecords: DashData['sleepRecords']): Recent
         return {
           id: `sleep:${record.recordId}`,
           domain: 'sleep' as const,
-          label: '睡眠',
+          label: i18nText('Timeline.domain.sleep'),
           title: sleepHeadline(durationMinutes, record.ageMonths),
           detail: `${timeLabel} · ${sleepDurationLabel(record)}`,
           metric,
@@ -343,9 +352,13 @@ function journalHeadline(entry: DashData['journalEntries'][number]): string {
     const trimmed = entry.keepsakeTitle?.trim();
     if (trimmed) return trimmed;
     const reason = getKeepsakeReasonLabel(entry.keepsakeReason);
-    return reason ? `珍藏时刻 · ${reason}` : '新的珍藏时刻';
+    return reason
+      ? i18nText('Timeline.journal.keepsakeMomentWithReason', { reason })
+      : i18nText('Timeline.journal.newKeepsakeMoment');
   }
-  return entry.contentType === 'voice' ? '最新语音观察' : '最新观察记录';
+  return entry.contentType === 'voice'
+    ? i18nText('Timeline.journal.latestVoiceObservation')
+    : i18nText('Timeline.journal.latestObservation');
 }
 
 function buildJournalChanges(journalEntries: DashData['journalEntries']): RecentChangeItem[] {
@@ -365,16 +378,16 @@ function buildJournalChanges(journalEntries: DashData['journalEntries']): Recent
             : 'book';
         const detailPrefix = summary ? summary.slice(0, 56) : headline;
         const detailMeta = isKeepsake && reasonLabel
-          ? `珍藏 · ${reasonLabel} · ${relTime}`
+          ? i18nText('Timeline.journal.keepsakeMeta', { reason: reasonLabel, time: relTime })
           : relTime;
         return {
           id: `journal:${entry.entryId}`,
           domain: 'journal' as const,
-          label: isKeepsake ? '珍藏' : '观察',
+          label: isKeepsake ? i18nText('Timeline.domain.keepsake') : i18nText('Timeline.domain.journal'),
           title: headline,
           detail: `${detailPrefix} · ${detailMeta}`,
           metric: null,
-          subtitle: isKeepsake && reasonLabel ? `珍藏 · ${reasonLabel} · ${relTime}` : relTime,
+          subtitle: isKeepsake && reasonLabel ? i18nText('Timeline.journal.keepsakeSubtitle', { reason: reasonLabel, time: relTime }) : relTime,
           summary: summary || null,
           timestamp: entry.recordedAt,
           to: isKeepsake ? '/journal?filter=keepsake' : '/journal',
@@ -392,9 +405,9 @@ export function buildRecentChanges(dash: DashData): RecentChangeItem[] {
       .map((record) => ({
         id: `milestone:${record.milestoneId}`,
         domain: 'milestone' as const,
-        label: '里程碑',
-        title: milestoneById.get(record.milestoneId)?.title ?? '新里程碑',
-        detail: `已记录 · ${fmtRel(record.achievedAt!)}`,
+        label: i18nText('Timeline.domain.milestone'),
+        title: milestoneById.get(record.milestoneId)?.title ?? i18nText('Timeline.milestone.newMilestone'),
+        detail: i18nText('Timeline.recent.recorded', { time: fmtRel(record.achievedAt!) }),
         metric: null,
         subtitle: fmtRel(record.achievedAt!),
         summary: null,
@@ -410,9 +423,9 @@ export function buildRecentChanges(dash: DashData): RecentChangeItem[] {
       .map((record) => ({
         id: `vaccine:${record.recordId}`,
         domain: 'vaccine' as const,
-        label: '疫苗',
+        label: i18nText('Timeline.domain.vaccine'),
         title: record.vaccineName,
-        detail: `疫苗已接种 · ${fmtRel(record.vaccinatedAt)}`,
+        detail: i18nText('Timeline.recent.vaccineRecorded', { time: fmtRel(record.vaccinatedAt) }),
         metric: null,
         subtitle: fmtRel(record.vaccinatedAt),
         summary: null,
@@ -460,8 +473,8 @@ export function buildDataGapAlert(
   if (!height && !weight && ageMonths > 3) {
     return {
       id: 'growth_missing_baseline',
-      title: '尚未建立生长基线',
-      detail: '首页还没有本地身高或体重记录。补充一次测量数据即可解锁更实用的趋势分析。',
+      title: i18nText('Timeline.dataGap.missingBaselineTitle'),
+      detail: i18nText('Timeline.dataGap.missingBaselineDetail'),
       to: '/profile',
     };
   }
@@ -471,15 +484,15 @@ export function buildDataGapAlert(
       const meta = MEASUREMENT_META[record.typeId];
       if (!meta) return null;
       const staleDays = Math.floor((Date.now() - new Date(record.measuredAt).getTime()) / DAY_MS);
-      return staleDays > 90 ? `${meta.label}上次更新在 ${staleDays} 天前` : null;
+      return staleDays > 90 ? i18nText('Timeline.dataGap.stalePart', { metric: meta.label, days: staleDays }) : null;
     })
     .filter((value): value is string => Boolean(value));
   if (staleParts.length === 0) return null;
 
   return {
     id: 'growth_freshness_gap',
-    title: '生长数据需要更新',
-    detail: `${staleParts.join('，')}。及时更新可以让首页摘要更准确。`,
+    title: i18nText('Timeline.dataGap.staleTitle'),
+    detail: i18nText('Timeline.dataGap.staleDetail', { parts: staleParts.join(i18nText('Common.list.separator')) }),
     to: '/profile',
   };
 }
@@ -534,7 +547,9 @@ function buildGrowthSnapshot(measurements: DashData['measurements']): TimelineHo
 
   return {
     updatedAt: latestGrowthRecord?.measuredAt ?? null,
-    updatedLabel: latestGrowthRecord ? `${fmtRel(latestGrowthRecord.measuredAt)}更新` : '暂无成长测量记录',
+    updatedLabel: latestGrowthRecord
+      ? i18nText('Timeline.growthSnapshot.updated', { time: fmtRel(latestGrowthRecord.measuredAt) })
+      : i18nText('Timeline.growthSnapshot.empty'),
     metrics,
     trends,
   };
@@ -552,7 +567,9 @@ function buildVisionSnapshot(measurements: DashData['measurements']): VisionSnap
     leftEye: left ? `${left.value}` : null,
     rightEye: right ? `${right.value}` : null,
     measuredAt: latestRecord?.measuredAt ?? null,
-    measuredLabel: latestRecord ? `${fmtRel(latestRecord.measuredAt)}检查` : '暂无视力记录',
+    measuredLabel: latestRecord
+      ? i18nText('Timeline.visionSnapshot.checked', { time: fmtRel(latestRecord.measuredAt) })
+      : i18nText('Timeline.visionSnapshot.empty'),
   };
 }
 
@@ -565,15 +582,15 @@ function buildRecentLines(journalEntries: DashData['journalEntries']): RecentLin
       const isKeepsake = entry.keepsake === 1;
       return {
         id: entry.entryId,
-        title: entry.keepsakeTitle?.trim() || entry.textContent?.slice(0, 56) || (entry.contentType === 'voice' ? '语音记录' : '观察记录'),
+        title: entry.keepsakeTitle?.trim() || entry.textContent?.slice(0, 56) || (entry.contentType === 'voice' ? i18nText('Timeline.journal.voiceRecord') : i18nText('Timeline.journal.observationRecord')),
         detail: isKeepsake
           ? reasonLabel
-            ? `珍藏原因：${reasonLabel}`
-            : '值得回看的成长瞬间'
+            ? i18nText('Timeline.journal.keepsakeReason', { reason: reasonLabel })
+            : i18nText('Timeline.journal.keepsakeReplayMoment')
           : fmtRel(entry.recordedAt),
         recordedAt: entry.recordedAt,
         to: isKeepsake ? '/journal?filter=keepsake' : '/journal',
-        badge: isKeepsake ? '珍藏' : '随记',
+        badge: isKeepsake ? i18nText('Timeline.journal.badgeKeepsake') : i18nText('Timeline.journal.badgeNote'),
         badgeTone: isKeepsake ? 'keepsake' : 'default',
         tag: reasonLabel,
       };

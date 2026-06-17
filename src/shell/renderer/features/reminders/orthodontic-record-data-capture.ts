@@ -1,6 +1,6 @@
 /**
  * Dispatch helper for orthodontic-protocol record_data reminders surfaced in
- * the dashboard 待办事项 panel.
+ * the dashboard task panel.
  *
  * Orthodontic record_data rules (PO-ORTHO-EXPANDER-ACTIVATION,
  * PO-ORTHO-ALIGNER-CHANGE, PO-ORTHO-UNWEAR-OPEN) deliberately do NOT live in

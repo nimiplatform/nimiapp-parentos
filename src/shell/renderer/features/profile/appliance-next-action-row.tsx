@@ -2,15 +2,14 @@ import { Button, Surface } from '@nimiplatform/kit/ui';
 import type { CSSProperties } from 'react';
 /**
  * Row of per-appliance "next action" cards for the hero appliances in the
- * grid. Hero cards are narrow, so their forward-looking action (下次换套 /
- * 下次转动) is externalised here. Compact-card appliances embed their own
- * next-action inline and are excluded from this row.
+ * grid. Hero cards are narrow, so their forward-looking action is externalised
+ * here. Compact-card appliances embed their own next-action inline and are
+ * excluded from this row.
  *
- * Log-review actions (下次复诊) are intentionally omitted: PO-ORTHO-015's
- * case-level review card is the single 下次复诊 surface for the case,
- * enumerating every active appliance + agenda. Duplicating a per-appliance
- * 下次复诊 entry here clutters the surface and was flagged by parents as
- * redundant.
+ * Log-review actions are intentionally omitted: PO-ORTHO-015's case-level
+ * review card is the single review surface for the case, enumerating every
+ * active appliance + agenda. Duplicating a per-appliance review entry here
+ * clutters the surface and was flagged by parents as redundant.
  */
 import type {
   OrthodonticApplianceRow,

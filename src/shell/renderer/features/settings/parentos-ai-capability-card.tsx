@@ -36,6 +36,8 @@ import type { NimiAIConfig, NimiAIConfigTargetRef } from '@nimiplatform/sdk/ai';
 import type { NimiJsonValue } from '@nimiplatform/sdk/contracts';
 import type { ParentosCapabilityId } from './parentos-ai-config.js';
 import { commitParentosAIConfig } from './parentos-ai-config-service.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export type ParentosAICapabilityDescriptor = {
   id: ParentosCapabilityId;
@@ -66,7 +68,7 @@ function targetRefLabel(targetRef: NimiAIConfigTargetRef | null): string | null 
 
 function targetSourceLabel(targetRef: NimiAIConfigTargetRef | null): string {
   if (!targetRef) {
-    return '未绑定';
+    return i18nText('AISettings.card.notBound');
   }
   if (targetRef.kind === 'cloud-connector') {
     return targetRef.provider || targetRef.connectorId || 'Cloud';
@@ -226,7 +228,7 @@ export function ParentosAICapabilityCard({
     try {
       await commitCapabilityPatch(surface, capability.id, patch);
     } catch (error) {
-      setCommitError(error instanceof Error ? error.message : String(error || 'AI 配置保存失败'));
+      setCommitError(error instanceof Error ? error.message : String(error || i18nText('AISettings.card.saveFailed')));
     } finally {
       setCommitting(false);
     }
@@ -238,7 +240,7 @@ export function ParentosAICapabilityCard({
         targetRef: pickerSelectionToTargetRef(pickerSelection),
       });
     } catch (error) {
-      setCommitError(error instanceof Error ? error.message : String(error || 'AI 配置保存失败'));
+      setCommitError(error instanceof Error ? error.message : String(error || i18nText('AISettings.card.saveFailed')));
     }
   };
 
@@ -254,7 +256,7 @@ export function ParentosAICapabilityCard({
               <h2 className="text-[15px] font-bold text-[var(--nimi-text-primary)]">{capability.label}</h2>
               <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold', statusClasses(status))}>
                 {status.supported ? <CheckCircle2 size={12} aria-hidden="true" /> : <AlertTriangle size={12} aria-hidden="true" />}
-                {status.badgeLabel || (status.supported ? '已绑定' : '需要绑定')}
+                {status.badgeLabel || (status.supported ? i18nText('AISettings.capability.bound') : i18nText('AISettings.capability.needsBinding'))}
               </span>
             </div>
             <p className="mt-1 text-[13px] leading-[1.6] text-[var(--nimi-text-muted)]">{capability.detail}</p>
@@ -284,7 +286,9 @@ export function ParentosAICapabilityCard({
             ) : null}
             <span className="min-w-0 flex-1">
               <span className={cn('block truncate text-[13px] font-semibold', modelLabel ? 'text-[var(--nimi-text-primary)]' : 'text-[var(--nimi-text-muted)]')}>
-                {committing ? '保存中...' : modelLabel || (provider ? '选择 Runtime 模型' : surface.runtimeNotReadyLabel || 'Runtime 未就绪')}
+                {committing
+                  ? i18nText('AISettings.card.saving')
+                  : modelLabel || (provider ? i18nText('AISettings.card.chooseModel') : surface.runtimeNotReadyLabel || i18nText('AISettings.card.runtimeNotReady'))}
               </span>
               {modelLabel ? (
                 <span className="mt-0.5 block truncate text-[11px] text-[var(--nimi-text-muted)]">{targetSourceLabel(targetRef)}</span>
@@ -303,8 +307,8 @@ export function ParentosAICapabilityCard({
               )}
             >
               <SlidersHorizontal size={13} aria-hidden="true" />
-              参数
-              {paramsConfigured ? <span className="text-[var(--nimi-action-primary-bg)]">已自定义</span> : null}
+              {i18nText('AISettings.card.params')}
+              {paramsConfigured ? <span className="text-[var(--nimi-action-primary-bg)]">{i18nText('AISettings.card.customized')}</span> : null}
               <ChevronDown
                 size={13}
                 className={cn('transition-transform', paramsOpen && 'rotate-180')}
@@ -319,7 +323,7 @@ export function ParentosAICapabilityCard({
                 className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'h-8 min-h-8 gap-1.5 px-2.5 text-[12px] text-[var(--nimi-text-muted)] disabled:opacity-50')}
               >
                 <X size={13} aria-hidden="true" />
-                清除绑定
+                {i18nText('AISettings.card.clearBinding')}
               </button>
             ) : null}
           </div>

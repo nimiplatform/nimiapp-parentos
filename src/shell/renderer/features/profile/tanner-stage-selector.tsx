@@ -1,6 +1,8 @@
 import '@nimiplatform/kit/ui';
 import { useState } from 'react';
 import type { StageDesc } from './tanner-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type TannerStageSelectorProps = {
   stages: StageDesc[];
@@ -44,7 +46,7 @@ export function TannerStageSelector({
                     }}
                     className={`cursor-pointer rounded px-1.5 py-0.5 text-[12px] transition-colors ${active ? 'bg-[color-mix(in_srgb,var(--nimi-action-primary-text)_20%,transparent)] text-[var(--nimi-action-primary-text)]' : 'bg-[var(--nimi-surface-card)] text-[var(--nimi-text-muted)]'}`}
                   >
-                    {expanded ? '收起' : '如何判断?'}
+                    {expanded ? i18nText('Tanner.action.collapse') : i18nText('Tanner.action.expand')}
                   </span>
                 </div>
                 <p className={`ml-8 mt-1 text-[12px] leading-relaxed ${active ? 'text-[color-mix(in_srgb,var(--nimi-action-primary-text)_80%,transparent)]' : 'text-[var(--nimi-text-muted)]'}`}>

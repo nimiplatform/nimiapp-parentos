@@ -1,6 +1,8 @@
 import { IconButton, Surface } from '@nimiplatform/kit/ui';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function DentalRecordActionMenu({
   onEdit,
@@ -66,8 +68,8 @@ export function DentalRecordActionMenu({
             <circle cx="12" cy="19" r="1.5" />
           </svg>
         )}
-        aria-label="更多操作"
-        title="更多操作"
+        aria-label={i18nText('Dental.actionMenu.more')}
+        title={i18nText('Dental.actionMenu.more')}
       />
       {open && pos ? createPortal(
         <div
@@ -94,7 +96,7 @@ export function DentalRecordActionMenu({
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
               </svg>
-              编辑
+              {i18nText('Dental.actionMenu.edit')}
             </button>
             {onDelete ? (
               <button
@@ -107,7 +109,7 @@ export function DentalRecordActionMenu({
                   <path d="M19 6l-1 14H6L5 6" />
                   <path d="M10 11v6" /><path d="M14 11v6" />
                 </svg>
-                删除
+                {i18nText('Dental.actionMenu.delete')}
               </button>
             ) : null}
           </Surface>

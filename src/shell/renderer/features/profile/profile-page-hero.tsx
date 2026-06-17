@@ -5,6 +5,7 @@ import { Button, Surface } from '@nimiplatform/kit/ui';
 import { ChildAvatar } from '../../shared/child-avatar.js';
 import { formatAgeText } from './health-record-display.js';
 
+
 export interface ProfileHeroChild {
   childId: string;
   displayName: string;
@@ -26,7 +27,7 @@ export function ProfileHero({ child, ageMonths, completeness, recordCount, lastR
   const { t } = useTranslation();
   const navigate = useNavigate();
   const subtitleParts = [
-    t(child.gender === 'male' ? 'Profile.gender.male' : 'Profile.gender.female', { defaultValue: child.gender === 'male' ? '男' : '女' }),
+    t(child.gender === 'male' ? 'Profile.gender.male' : 'Profile.gender.female'),
     formatAgeText(ageMonths, t),
     child.birthDate,
   ];
@@ -55,15 +56,16 @@ export function ProfileHero({ child, ageMonths, completeness, recordCount, lastR
           <p className="mt-2 text-[13px] text-[var(--nimi-text-muted)]">
             {t('Profile.hero.recordSummary', {
               count: recordCount,
-              defaultValue: '已经陪她记录了 {{count}} 条',
             })}
             {lastRecordedDaysAgo !== null
-              ? ` · ${t('Profile.hero.recordRecency', { days: lastRecordedDaysAgo, defaultValue: '最近一次记录是 {{days}} 天前' })}`
+              ? t('Profile.hero.recordRecencySuffix', {
+                recency: t('Profile.hero.recordRecency', { days: lastRecordedDaysAgo }),
+              })
               : ''}
           </p>
           <div className="mt-3 flex items-center gap-3">
             <span className="text-[12px] uppercase tracking-[0.06em] text-[var(--nimi-text-muted)]">
-              {t('Profile.hero.completeness', { defaultValue: '档案完整度' })}
+              {t('Profile.hero.completeness')}
             </span>
             <div className="h-[6px] flex-1 overflow-hidden rounded-full bg-[var(--nimi-surface-overlay)]">
               <div
@@ -81,7 +83,7 @@ export function ProfileHero({ child, ageMonths, completeness, recordCount, lastR
             size="md"
             leadingIcon={<Plus size={15} />}
           >
-            {t('Profile.actions.addHealthData', { defaultValue: '记录新数据' })}
+            {t('Profile.actions.addHealthData')}
           </Button>
           <Button
             onClick={() => {
@@ -91,7 +93,7 @@ export function ProfileHero({ child, ageMonths, completeness, recordCount, lastR
             size="md"
             leadingIcon={<Pencil size={13} />}
           >
-            {t('Profile.actions.editChild', { defaultValue: '编辑资料' })}
+            {t('Profile.actions.editChild')}
           </Button>
         </div>
       </div>

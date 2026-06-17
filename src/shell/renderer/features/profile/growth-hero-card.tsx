@@ -5,6 +5,8 @@ import type {
   GrowthTrendKind,
   GrowthTrendStat,
 } from './growth-detail-projection.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 // growth-hero-card.tsx — PO-GROWTH-DETAIL-002 hero composition.
 // Pure render of `GrowthHeadline` + `GrowthTrendStat[]` projected by wave-A.
@@ -41,14 +43,14 @@ const CHIP_TONE_CLASSNAMES: Record<GrowthChip['tone'], string> = {
 // Status pill reflects the growth trend (steady / accelerating / …), which is
 // derived from the child's own measurement series and needs no reference data.
 const TREND_PILL: Record<GrowthTrendKind, { label: string; tone: GrowthChip['tone'] }> = {
-  steady: { label: '生长稳定', tone: 'success' },
-  accelerating: { label: '生长加速', tone: 'success' },
-  decelerating: { label: '生长放缓', tone: 'warn' },
-  plateau: { label: '生长平台期', tone: 'warn' },
+  steady: { label: i18nText('GrowthCurve.hero.trend.steady'), tone: 'success' },
+  accelerating: { label: i18nText('GrowthCurve.hero.trend.accelerating'), tone: 'success' },
+  decelerating: { label: i18nText('GrowthCurve.hero.trend.decelerating'), tone: 'warn' },
+  plateau: { label: i18nText('GrowthCurve.hero.trend.plateau'), tone: 'warn' },
 };
 
 function statusPillForHeadline(headline: GrowthHeadline): { label: string; tone: GrowthChip['tone'] } {
-  if (headline.state === 'no_data') return { label: '暂无数据', tone: 'neutral' };
+  if (headline.state === 'no_data') return { label: i18nText('GrowthCurve.hero.noData'), tone: 'neutral' };
   return TREND_PILL[headline.trend];
 }
 
@@ -81,7 +83,7 @@ function SemiCircleGauge({ percentile }: { percentile: number | null }) {
     <div className="relative inline-flex shrink-0">
       <svg
         role="img"
-        aria-label={percentile == null ? '百分位未知' : `百分位 P${percentile}`}
+        aria-label={percentile == null ? i18nText('GrowthCurve.hero.percentileUnknown') : i18nText('GrowthCurve.hero.percentileAria', { percentile })}
         width={width}
         height={height}
         viewBox={`0 0 ${width} ${height}`}
@@ -242,9 +244,9 @@ export function GrowthHeroCard(props: GrowthHeroCardProps) {
         <div className="flex items-center gap-3">
           <span className="text-[24px]">📏</span>
           <div>
-            <p className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">暂无生长记录</p>
+            <p className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('GrowthCurve.hero.emptyTitle')}</p>
             <p className="mt-1 text-[13px] text-[var(--nimi-text-muted)]">
-              添加首次{selectedMetricDisplayName}测量后即可生成趋势描述。
+              {i18nText('GrowthCurve.hero.emptyDescription', { metric: selectedMetricDisplayName })}
             </p>
           </div>
         </div>
@@ -264,15 +266,17 @@ export function GrowthHeroCard(props: GrowthHeroCardProps) {
   const hasUnit = numberPart !== valueText;
 
   const findStat = (label: string) => trendStats.find((stat) => stat.label === label);
-  const yoyStat = findStat('年增速');
-  const distP50Stat = findStat('距 P50');
-  const pctStat = findStat('百分位');
+  const yoyStat = findStat(i18nText('GrowthDetail.trendStats.yearGrowth'));
+  const distP50Stat = findStat(i18nText('GrowthDetail.trendStats.distanceToP50'));
+  const pctStat = findStat(i18nText('GrowthDetail.trendStats.percentile'));
 
   // 6-month percentile change, surfaced as a hero footer chip. The projection
-  // builds `pctStat.caption` as "近 6 月 <↑n|↓n|持平|—>"; strip the window
+  // builds `pctStat.caption` as a localized window prefix + change value; strip the window
   // prefix and append "%" only to the numeric arrow forms.
-  const pctChange = pctStat?.caption?.replace('近 6 月 ', '').trim() ?? '—';
-  const pctChangeDisplay = pctChange === '—' || pctChange === '持平' ? pctChange : `${pctChange}%`;
+  const pctChangePrefix = i18nText('GrowthDetail.trendStats.percentileChange6mPrefix');
+  const pctChange = pctStat?.caption?.replace(pctChangePrefix, '').trim() ?? '—';
+  const flatChange = i18nText('GrowthCurve.trend.flat');
+  const pctChangeDisplay = pctChange === '—' || pctChange === flatChange ? pctChange : `${pctChange}%`;
 
   return (
     <Surface
@@ -321,8 +325,8 @@ export function GrowthHeroCard(props: GrowthHeroCardProps) {
         className="mt-6 flex flex-wrap gap-2 border-t border-[var(--nimi-border-subtle)] pt-4"
         data-testid="growth-hero-chips"
       >
-        <HeroChip label="距 P50" value={distP50Stat ? `${distP50Stat.value} ${distP50Stat.unit}`.trim() : '—'} />
-        <HeroChip label="近 6 个月" value={pctChangeDisplay} />
+        <HeroChip label={i18nText('GrowthDetail.trendStats.distanceToP50')} value={distP50Stat ? `${distP50Stat.value} ${distP50Stat.unit}`.trim() : '—'} />
+        <HeroChip label={i18nText('GrowthCurve.hero.sixMonthPercentile')} value={pctChangeDisplay} />
       </div>
     </Surface>
   );

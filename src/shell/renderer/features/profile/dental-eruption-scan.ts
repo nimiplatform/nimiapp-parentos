@@ -4,6 +4,7 @@ import {
   runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
 import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import { i18nText } from '../../i18n/index.js';
 
 const PRIMARY_FDI = new Set([
   '51', '52', '53', '54', '55',
@@ -32,9 +33,25 @@ export interface DentalEruptionExtraction {
   warnings: string[];
 }
 
-const DENTAL_SCAN_INVALID_JSON_MESSAGE = 'AI 识别返回的结果格式不完整，请重试或换一张更清晰的照片。';
-const DENTAL_SCAN_IMAGE_INPUT_UNSUPPORTED_MESSAGE = '当前 AI 对话模型不支持图片识别，请在 AI 设置中切换到支持视觉输入的模型后重试。';
-const DENTAL_SCAN_FAILED_MESSAGE = 'AI 识别失败，请重试。';
+type DentalScanErrorCode = 'invalid-json' | 'image-input-unsupported' | 'failed';
+
+class DentalScanError extends Error {
+  constructor(readonly scanCode: DentalScanErrorCode, message: string) {
+    super(message);
+    this.name = 'DentalScanError';
+  }
+}
+
+function dentalScanError(code: DentalScanErrorCode): DentalScanError {
+  switch (code) {
+    case 'invalid-json':
+      return new DentalScanError(code, i18nText('DentalEruptionScan.error.invalidJson'));
+    case 'image-input-unsupported':
+      return new DentalScanError(code, i18nText('DentalEruptionScan.error.imageInputUnsupported'));
+    case 'failed':
+      return new DentalScanError(code, i18nText('DentalEruptionScan.error.failed'));
+  }
+}
 
 function isValidToothId(value: string): value is string {
   return PRIMARY_FDI.has(value) || PERMANENT_FDI.has(value);
@@ -138,7 +155,7 @@ function parseDentalEruptionExtraction(raw: string): DentalEruptionExtraction {
   }
 
   if (lastError) throw lastError;
-  throw new Error(DENTAL_SCAN_INVALID_JSON_MESSAGE);
+  throw dentalScanError('invalid-json');
 }
 
 function buildScanPrompt(context: { ageMonths: number }): string {
@@ -224,21 +241,21 @@ function isImageInputUnsupportedError(error: unknown): boolean {
 }
 
 function isStructuredParseError(error: Error): boolean {
-  return error.message === DENTAL_SCAN_INVALID_JSON_MESSAGE
+  return (error instanceof DentalScanError && error.scanCode === 'invalid-json')
     || error.message.startsWith('dental scan');
 }
 
 export function normalizeDentalScanError(error: unknown): Error {
   if (isImageInputUnsupportedError(error)) {
-    return new Error(DENTAL_SCAN_IMAGE_INPUT_UNSUPPORTED_MESSAGE);
+    return dentalScanError('image-input-unsupported');
   }
   if (error instanceof Error) {
     if (isStructuredParseError(error)) {
-      return new Error(DENTAL_SCAN_INVALID_JSON_MESSAGE);
+      return dentalScanError('invalid-json');
     }
     return error;
   }
-  return new Error(DENTAL_SCAN_FAILED_MESSAGE);
+  return dentalScanError('failed');
 }
 
 export function getDentalScanDisplayMessage(error: unknown): string {
@@ -269,7 +286,7 @@ export async function analyzeDentalEruptionImage(input: {
     try {
       return parseDentalEruptionExtraction(output.text);
     } catch (error) {
-      if (!(error instanceof Error) || error.message !== DENTAL_SCAN_INVALID_JSON_MESSAGE) {
+      if (!(error instanceof DentalScanError) || error.scanCode !== 'invalid-json') {
         throw error;
       }
       return await repairDentalEruptionExtraction({

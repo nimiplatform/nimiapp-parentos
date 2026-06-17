@@ -26,6 +26,8 @@ import {
   type GrowthMetricDefinition,
   type MergedPoint,
 } from './growth-curve-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type GrowthCurveChartPanelProps = {
   chartData: Array<{ age: number; value: number; date?: string }>;
@@ -56,13 +58,15 @@ function computeXTicks(minAge: number, maxAge: number, span: number): number[] {
 }
 
 function formatXTick(age: number, span: number): string {
-  if (span > 48) return `${age / 12}岁`;
+  if (span > 48) return i18nText('GrowthCurve.age.yearsShort', { years: age / 12 });
   if (span > 24) {
     const years = Math.floor(age / 12);
     const months = age % 12;
-    return months > 0 ? `${years}岁${months}月` : `${years}岁`;
+    return months > 0
+      ? i18nText('GrowthCurve.age.yearsMonthsShort', { years, months })
+      : i18nText('GrowthCurve.age.yearsShort', { years });
   }
-  return `${age}月`;
+  return i18nText('GrowthCurve.age.monthsShort', { months: age });
 }
 
 export function GrowthCurveChartPanel({
@@ -78,7 +82,7 @@ export function GrowthCurveChartPanel({
 }: GrowthCurveChartPanelProps) {
   const standardLabel = GROWTH_STANDARD_LABELS[growthStandard];
   const referenceNote = whoDataset && !canShowWhoLines
-    ? `当前年龄超出${standardLabel}百分位参考线覆盖范围，仅显示已记录数据。`
+    ? i18nText('GrowthCurve.chart.referenceOutOfCoverage', { standardLabel })
     : null;
 
   const colors = growthBandPalette();
@@ -145,9 +149,9 @@ export function GrowthCurveChartPanel({
           <div className="p-8 text-center">
             <span className="text-[24px]">📏</span>
             <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">
-              还没有{typeInfo?.displayName ?? selectedType}记录
+              {i18nText('GrowthCurve.chart.emptyTitle', { metric: typeInfo?.displayName ?? selectedType })}
             </p>
-            <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">点击右上角添加第一条记录</p>
+            <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('GrowthCurve.chart.emptyHint')}</p>
           </div>
         ) : (
           (() => {
@@ -179,7 +183,7 @@ export function GrowthCurveChartPanel({
                     tick={{ fontSize: 10, fill: 'var(--nimi-text-muted)' }}
                     axisLine={{ stroke: 'var(--nimi-border-subtle)' }}
                     tickLine={{ stroke: 'var(--nimi-border-subtle)', strokeWidth: 0.5 }}
-                    label={{ value: span > 24 ? '年龄' : '月龄', position: 'insideBottom', offset: -16, style: { fontSize: 10, fill: 'var(--nimi-text-muted)', fontWeight: 500 } }}
+                    label={{ value: span > 24 ? i18nText('GrowthCurve.chart.axisAge') : i18nText('GrowthCurve.chart.axisMonthAge'), position: 'insideBottom', offset: -16, style: { fontSize: 10, fill: 'var(--nimi-text-muted)', fontWeight: 500 } }}
                   />
                   <YAxis
                     domain={yDomain}
@@ -223,7 +227,7 @@ export function GrowthCurveChartPanel({
                           <p className="text-[20px] font-bold mt-1 tracking-tight text-[var(--nimi-text-primary)]">
                             {value}<span className="text-[14px] font-medium ml-1 text-[var(--nimi-text-muted)]">{unit}</span>
                           </p>
-                          {hint ? <p className={`mt-1.5 text-[13px] font-medium ${percentileHintClassName(hint.text)}`}>{hint.text}</p> : null}
+                          {hint ? <p className={`mt-1.5 text-[13px] font-medium ${percentileHintClassName(hint.tone)}`}>{hint.text}</p> : null}
                         </div>
                       );
                     }}
@@ -326,7 +330,7 @@ export function GrowthCurveChartPanel({
                 className="ml-auto text-[13px] text-[var(--nimi-text-muted)]"
                 data-testid="growth-curve-sample-span"
               >
-                样本 {chartData.length} 条 · 时间跨度 {spanYears.toFixed(1)} 年
+                {i18nText('GrowthCurve.chart.sampleSpan', { count: chartData.length, years: spanYears.toFixed(1) })}
               </span>
             ) : null}
           </div>
@@ -345,28 +349,31 @@ export function GrowthCurveChartPanel({
           const diff = boneAgeYears - actualAgeYears;
           const absDiff = Math.abs(diff);
           const status = absDiff <= 1
-            ? { label: '正常范围', className: 'border-[color-mix(in_srgb,var(--nimi-status-success)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-success)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-success)]', dot: 'bg-[var(--nimi-status-success)]' }
+            ? { label: i18nText('GrowthCurve.boneAge.normal'), className: 'border-[color-mix(in_srgb,var(--nimi-status-success)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-success)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-success)]', dot: 'bg-[var(--nimi-status-success)]' }
             : diff > 1
-              ? { label: `偏早 ${absDiff.toFixed(1)} 年`, className: 'border-[color-mix(in_srgb,var(--nimi-status-warning)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-warning)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-warning)]', dot: 'bg-[var(--nimi-status-warning)]' }
-              : { label: `偏晚 ${absDiff.toFixed(1)} 年`, className: 'border-[color-mix(in_srgb,var(--nimi-status-info)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-info)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-info)]', dot: 'bg-[var(--nimi-status-info)]' };
-          const actualAgeStr = `${Math.floor(ageMonths / 12)} 岁 ${ageMonths % 12} 月`;
+              ? { label: i18nText('GrowthCurve.boneAge.early', { years: absDiff.toFixed(1) }), className: 'border-[color-mix(in_srgb,var(--nimi-status-warning)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-warning)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-warning)]', dot: 'bg-[var(--nimi-status-warning)]' }
+              : { label: i18nText('GrowthCurve.boneAge.late', { years: absDiff.toFixed(1) }), className: 'border-[color-mix(in_srgb,var(--nimi-status-info)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-info)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-info)]', dot: 'bg-[var(--nimi-status-info)]' };
+          const actualAgeStr = i18nText('GrowthCurve.age.yearsMonthsSpaced', {
+            years: Math.floor(ageMonths / 12),
+            months: ageMonths % 12,
+          });
           return (
             <div className={`mb-4 flex items-start gap-3 rounded-3xl border p-4 ${status.className}`}>
               <span className="text-[20px] mt-0.5">🦴</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">骨龄 {boneAgeYears} 岁</span>
-                  <span className="text-[13px] text-[var(--nimi-text-muted)]">（实际 {actualAgeStr}）</span>
+                  <span className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('GrowthCurve.boneAge.titleWithValue', { years: boneAgeYears })}</span>
+                  <span className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('GrowthCurve.boneAge.actualAge', { age: actualAgeStr })}</span>
                 </div>
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className={`inline-block h-2 w-2 rounded-full ${status.dot}`} />
                   <span className="text-[14px]">{status.label}</span>
-                  {absDiff > 1 ? <span className="text-[13px] text-[var(--nimi-text-muted)]"> — 建议关注身高增长趋势</span> : null}
+                  {absDiff > 1 ? <span className="text-[13px] text-[var(--nimi-text-muted)]"> {i18nText('GrowthCurve.boneAge.growthTrendAttention')}</span> : null}
                 </div>
                 <div className="flex items-center gap-3 mt-1.5">
-                  <span className="text-[12px] text-[var(--nimi-text-muted)]">评估日期：{latest.measuredAt.split('T')[0]}</span>
+                  <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('GrowthCurve.boneAge.evaluatedAt', { date: latest.measuredAt.split('T')[0] })}</span>
             <Link to="/profile" className="text-[12px] hover:underline text-[var(--nimi-action-primary-bg)]">
-                    详细记录 → 青春期发育
+                    {i18nText('GrowthCurve.boneAge.tannerLink')}
                   </Link>
                 </div>
               </div>
@@ -396,9 +403,11 @@ function growthBandPalette(): { band: string; line: string } {
   return { band: accent, line: accent };
 }
 
-function percentileHintClassName(text: string): string {
-  if (text.includes('建议')) return 'text-[var(--nimi-status-danger)]';
-  if (text.includes('偏低') || text.includes('偏高')) return 'text-[var(--nimi-status-warning)]';
-  if (text.includes('平均')) return 'text-[var(--nimi-text-secondary)]';
+type PercentileHintTone = NonNullable<ReturnType<typeof getPercentileHint>>['tone'];
+
+function percentileHintClassName(tone: PercentileHintTone): string {
+  if (tone === 'danger') return 'text-[var(--nimi-status-danger)]';
+  if (tone === 'warning') return 'text-[var(--nimi-status-warning)]';
+  if (tone === 'neutral') return 'text-[var(--nimi-text-secondary)]';
   return 'text-[var(--nimi-status-success)]';
 }

@@ -2,6 +2,10 @@ import { Surface } from '@nimiplatform/kit/ui';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { type PediatricDrug, PEDIATRIC_DRUGS, matchDrugs } from './pediatric-drugs.js';
+import { i18nText } from '../../i18n/index.js';
+
+
+const DEFAULT_DRUG_UNIT = i18nText('DrugCombobox.defaultUnit');
 
 export interface DrugSelection {
   name: string;
@@ -33,7 +37,7 @@ export function DrugComboBox({ value, onChange, onSelect, historyDrugs, placehol
     const histEntries: PediatricDrug[] = (historyDrugs ?? []).map((h, i) => ({
       id: `hist-${i}`,
       name: h.name,
-      unit: h.unit ?? '次',
+      unit: h.unit ?? DEFAULT_DRUG_UNIT,
       frequency: h.frequency ?? '',
       py: '',
       tags: [],
@@ -82,7 +86,7 @@ export function DrugComboBox({ value, onChange, onSelect, historyDrugs, placehol
       name: drug.generic ? `${drug.name} (${drug.generic})` : drug.name,
       unit: drug.unit,
       frequency: drug.frequency,
-      tags: drug.tags ?? [],
+      tags: [...(drug.tags ?? [])],
       fromDict: !drug.id.startsWith('hist-'),
     });
     closePanel();
@@ -90,7 +94,7 @@ export function DrugComboBox({ value, onChange, onSelect, historyDrugs, placehol
 
   const handleCustom = () => {
     const name = value.trim();
-    onSelect({ name, unit: '次', frequency: '', tags: [], fromDict: false });
+    onSelect({ name, unit: DEFAULT_DRUG_UNIT, frequency: '', tags: [], fromDict: false });
     closePanel();
   };
 
@@ -108,7 +112,7 @@ export function DrugComboBox({ value, onChange, onSelect, historyDrugs, placehol
         value={value}
         onChange={(e) => { onChange(e.target.value); if (e.target.value.trim().length >= 2) { if (!mounted) openPanel(); } else { closePanel(); } }}
         onFocus={() => { if (queryLen >= 2 && !mounted) openPanel(); }}
-        placeholder={placeholder ?? '搜索药品名称或拼音首字母'}
+        placeholder={placeholder ?? i18nText('DrugCombobox.placeholder')}
         className="w-full bg-transparent text-[14px] text-[var(--nimi-text-primary)] outline-none"
       />
 
@@ -129,7 +133,7 @@ export function DrugComboBox({ value, onChange, onSelect, historyDrugs, placehol
           <div className="max-h-[240px] overflow-y-auto">
             {matches.length === 0 && !showCustom && shouldSearch && (
               <div className="px-3 py-4 text-center">
-                <p className="text-[13px] text-[var(--nimi-text-muted)]">未找到匹配药品</p>
+                <p className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('DrugCombobox.noMatch')}</p>
               </div>
             )}
 
@@ -154,7 +158,7 @@ export function DrugComboBox({ value, onChange, onSelect, historyDrugs, placehol
               <button onClick={handleCustom}
                 className="flex items-center gap-2 w-full border-t border-[var(--nimi-border-subtle)] px-3 py-2.5 text-left transition-colors hover:bg-[var(--nimi-action-ghost-hover)]">
                 <span className="text-[14px] font-medium text-[var(--nimi-action-primary-bg)]">
-                  + 添加自定义药品: "{value.trim()}"
+                  {i18nText('DrugCombobox.addCustom', { value: value.trim() })}
                 </span>
               </button>
             )}

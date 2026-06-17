@@ -2,6 +2,8 @@ import { GROWTH_STANDARDS, REMINDER_RULES } from '../../knowledge-base/index.js'
 import type { MeasurementRow } from '../../bridge/sqlite-bridge.js';
 import type { GrowthTypeId } from '../../knowledge-base/gen/growth-standards.gen.js';
 import type { WHOLMSDataset } from './who-lms-loader.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export type GrowthMetricDefinition = (typeof GROWTH_STANDARDS)[number];
 
@@ -19,9 +21,9 @@ export const METRIC_CARDS: Array<{
   maxAgeMonths?: number;
   minAgeMonths?: number;
 }> = [
-  { typeId: 'height', emoji: '📏', label: '身高', unit: 'cm' },
-  { typeId: 'weight', emoji: '⚖️', label: '体重', unit: 'kg' },
-  { typeId: 'head-circumference', emoji: '📐', label: '头围', unit: 'cm', maxAgeMonths: 72 },
+  { typeId: 'height', emoji: '📏', label: i18nText('GrowthCurve.metric.height'), unit: 'cm' },
+  { typeId: 'weight', emoji: '⚖️', label: i18nText('GrowthCurve.metric.weight'), unit: 'kg' },
+  { typeId: 'head-circumference', emoji: '📐', label: i18nText('GrowthCurve.metric.headCircumference'), unit: 'cm', maxAgeMonths: 72 },
   { typeId: 'bmi', emoji: '🏃', label: 'BMI', unit: 'kg/m²', minAgeMonths: 24 },
 ];
 
@@ -33,7 +35,7 @@ export const CARD_TYPE_IDS = new Set(METRIC_CARDS.map((card) => card.typeId));
  * admitted `domain: growth`, `actionType: record_data` rule whose `triggerAge`
  * window contains `ageMonths` (PO-GROWTH-DETAIL-006). Returns `null` when no
  * growth record_data rule covers the age, which disables the next-check
- * `更改` CTA per PO-GROWTH-DETAIL-009.
+ * the change CTA per PO-GROWTH-DETAIL-009.
  */
 export function resolveGrowthRecheckRuleId(ageMonths: number): string | null {
   const matches = REMINDER_RULES.filter(
@@ -65,11 +67,13 @@ export function computeBMI(heightCm: number, weightKg: number): number {
   return Math.round((weightKg / (hm * hm)) * 10) / 10;
 }
 
-export function bmiLabel(bmi: number): { tag: string; color: string } {
-  if (bmi < 14) return { tag: '🔵 偏轻', color: '#3b82f6' };
-  if (bmi < 18.5) return { tag: '🟢 正常', color: '#22c55e' };
-  if (bmi < 24) return { tag: '🟡 偏重', color: '#eab308' };
-  return { tag: '🔴 肥胖', color: '#ef4444' };
+export function bmiLabel(
+  bmi: number,
+): { tag: string; color: string; tone: 'info' | 'success' | 'warning' | 'danger' } {
+  if (bmi < 14) return { tag: i18nText('GrowthCurve.bmi.light'), color: '#3b82f6', tone: 'info' };
+  if (bmi < 18.5) return { tag: i18nText('GrowthCurve.bmi.normal'), color: '#22c55e', tone: 'success' };
+  if (bmi < 24) return { tag: i18nText('GrowthCurve.bmi.heavy'), color: '#eab308', tone: 'warning' };
+  return { tag: i18nText('GrowthCurve.bmi.obese'), color: '#ef4444', tone: 'danger' };
 }
 
 export function fmtMeasDate(dateStr: string): string {
@@ -77,12 +81,18 @@ export function fmtMeasDate(dateStr: string): string {
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffDays = Math.floor(diffMs / 86400000);
-  if (diffDays === 0) return '今天记录';
-  if (diffDays === 1) return '昨天记录';
-  if (diffDays < 7) return `${diffDays}天前记录`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}周前记录`;
-  if (diffDays < 365) return `${d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })} 记录`;
-  return `${d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' })} 记录`;
+  if (diffDays === 0) return i18nText('GrowthCurve.recency.measurementToday');
+  if (diffDays === 1) return i18nText('GrowthCurve.recency.measurementYesterday');
+  if (diffDays < 7) return i18nText('GrowthCurve.recency.measurementDaysAgo', { days: diffDays });
+  if (diffDays < 30) return i18nText('GrowthCurve.recency.measurementWeeksAgo', { weeks: Math.floor(diffDays / 7) });
+  if (diffDays < 365) {
+    return i18nText('GrowthCurve.recency.measurementDate', {
+      date: d.toLocaleDateString(i18nText('Common.date.locale'), { month: 'short', day: 'numeric' }),
+    });
+  }
+  return i18nText('GrowthCurve.recency.measurementDate', {
+    date: d.toLocaleDateString(i18nText('Common.date.locale'), { year: 'numeric', month: 'short', day: 'numeric' }),
+  });
 }
 
 export function getLatestMeasurement(measurements: MeasurementRow[], typeId: string): MeasurementRow | undefined {
@@ -161,14 +171,14 @@ export function getPercentileHint(
     p97?: number;
   },
 ) {
-  if (refs.p97 != null && value >= refs.p97) return { text: '超过同龄 97% 的孩子（偏高）', color: '#f59e0b' };
-  if (refs.p90 != null && value >= refs.p90) return { text: '超过同龄 90% 的孩子', color: '#22c55e' };
-  if (refs.p75 != null && value >= refs.p75) return { text: '超过同龄 75% 的孩子', color: '#22c55e' };
-  if (refs.p50 != null && value >= refs.p50) return { text: '处于同龄中等偏上水平', color: '#22c55e' };
-  if (refs.p25 != null && value >= refs.p25) return { text: '处于同龄平均水平', color: '#475569' };
-  if (refs.p10 != null && value >= refs.p10) return { text: '偏低，建议关注', color: '#f59e0b' };
-  if (refs.p3 != null && value >= refs.p3) return { text: '明显偏低', color: '#ef4444' };
-  if (refs.p3 != null) return { text: '低于同龄 97% 的孩子，建议就医评估', color: '#ef4444' };
+  if (refs.p97 != null && value >= refs.p97) return { text: i18nText('GrowthCurve.percentileHint.aboveP97'), color: '#f59e0b', tone: 'warning' };
+  if (refs.p90 != null && value >= refs.p90) return { text: i18nText('GrowthCurve.percentileHint.aboveP90'), color: '#22c55e', tone: 'success' };
+  if (refs.p75 != null && value >= refs.p75) return { text: i18nText('GrowthCurve.percentileHint.aboveP75'), color: '#22c55e', tone: 'success' };
+  if (refs.p50 != null && value >= refs.p50) return { text: i18nText('GrowthCurve.percentileHint.aboveP50'), color: '#22c55e', tone: 'success' };
+  if (refs.p25 != null && value >= refs.p25) return { text: i18nText('GrowthCurve.percentileHint.average'), color: '#475569', tone: 'neutral' };
+  if (refs.p10 != null && value >= refs.p10) return { text: i18nText('GrowthCurve.percentileHint.lowAttention'), color: '#f59e0b', tone: 'warning' };
+  if (refs.p3 != null && value >= refs.p3) return { text: i18nText('GrowthCurve.percentileHint.clearlyLow'), color: '#ef4444', tone: 'danger' };
+  if (refs.p3 != null) return { text: i18nText('GrowthCurve.percentileHint.belowP3Professional'), color: '#ef4444', tone: 'danger' };
   return null;
 }
 
@@ -240,9 +250,11 @@ export function formatAgeLabel(age: number): string {
   if (age >= 24) {
     const years = Math.floor(age / 12);
     const months = age % 12;
-    return months > 0 ? `${years}岁${months}个月` : `${years}岁`;
+    return months > 0
+      ? i18nText('GrowthCurve.age.yearsMonthsLong', { years, months })
+      : i18nText('GrowthCurve.age.yearsLong', { years });
   }
-  return `${age}个月`;
+  return i18nText('GrowthCurve.age.monthsLong', { months: age });
 }
 
 export function buildGrowthSummaryContext(
@@ -253,11 +265,11 @@ export function buildGrowthSummaryContext(
   const latestWeight = getLatestMeasurement(measurements, 'weight');
   const latestHeadCirc = getLatestMeasurement(measurements, 'head-circumference');
   const lines: string[] = [];
-  if (latestHeight) lines.push(`身高: ${latestHeight.value}cm (${latestHeight.measuredAt.split('T')[0]})`);
-  if (latestWeight) lines.push(`体重: ${latestWeight.value}kg (${latestWeight.measuredAt.split('T')[0]})`);
+  if (latestHeight) lines.push(i18nText('GrowthCurve.dataContext.height', { value: latestHeight.value, date: latestHeight.measuredAt.split('T')[0] }));
+  if (latestWeight) lines.push(i18nText('GrowthCurve.dataContext.weight', { value: latestWeight.value, date: latestWeight.measuredAt.split('T')[0] }));
   if (computedBmi != null) lines.push(`BMI: ${computedBmi}`);
-  if (latestHeadCirc) lines.push(`头围: ${latestHeadCirc.value}cm (${latestHeadCirc.measuredAt.split('T')[0]})`);
-  lines.push(`共 ${measurements.length} 条测量记录`);
+  if (latestHeadCirc) lines.push(i18nText('GrowthCurve.dataContext.headCircumference', { value: latestHeadCirc.value, date: latestHeadCirc.measuredAt.split('T')[0] }));
+  lines.push(i18nText('GrowthCurve.dataContext.totalMeasurements', { count: measurements.length }));
   return lines.length > 1 ? lines.join('\n') : '';
 }
 
@@ -268,25 +280,25 @@ export function getStaleMeasurementDays(measurements: MeasurementRow[]): number 
 }
 
 export function getMeasurementSourceLabel(source: MeasurementRow['source']): string {
-  if (source === 'manual') return '手动';
+  if (source === 'manual') return i18nText('GrowthCurve.source.manual');
   if (source === 'ocr') return 'OCR';
-  if (source === 'computed') return '计算';
+  if (source === 'computed') return i18nText('GrowthCurve.source.computed');
+  if (source === 'imported') return i18nText('GrowthCurve.source.imported');
   return '-';
 }
 
 export function getGrowthStandardTooltip(standard: 'china' | 'who'): string {
   if (standard === 'china') {
-    return '0-7岁: WS/T 423-2022《7岁以下儿童生长标准》\n(国家卫健委, 2023年实施, 基于2015年九市调查)\n\n7-18岁: 《中国0-18岁儿童青少年身高体重标准化生长曲线》\n(李辉等, 首都儿科研究所, 2009)';
+    return i18nText('GrowthCurve.standardTooltip.china');
   }
-  return 'WHO Child Growth Standards (2006)\n0-5岁多中心生长参照研究\n\nWHO Growth Reference (2007)\n5-19岁生长参照数据';
+  return i18nText('GrowthCurve.standardTooltip.who');
 }
 
 // ===== LEDE_TEMPLATES (PO-GROWTH-DETAIL-002 ledeTemplate registry) =====
 //
 // Deterministic lede-paragraph templates consumed by the growth detail
 // projection. Each template returns ≤ 140 Chinese characters and uses
-// descriptive vocabulary only (per parentos AGENTS.md + advisor-contract:
-// "观察到", "倾向于", "处于…水平"; never "异常", "落后", "警告", etc.).
+// descriptive vocabulary only (per parentos AGENTS.md + advisor-contract).
 //
 // All templates take the same `LedeTemplateInputs` shape so the projection
 // can fill them with already-computed display strings without re-deriving.
@@ -314,32 +326,36 @@ export interface LedeTemplateInputs {
   currentPercentileLabel: string;
 }
 
+function ledeText(key: string, inputs: LedeTemplateInputs): string {
+  return i18nText(key, { ...inputs });
+}
+
 export const LEDE_TEMPLATES: Record<LedeTemplateId, (inputs: LedeTemplateInputs) => string> = {
   height_steady_above_p50: (i) =>
-    `当前身高 ${i.currentValueDisplay}，${i.currentPercentileLabel}，近一年增长 ${i.yearOverYearDeltaDisplay}，处于同龄中等偏上水平，倾向于稳定增长。`,
+    ledeText('GrowthCurve.lede.heightSteadyAboveP50', i),
   height_steady_below_p50: (i) =>
-    `当前身高 ${i.currentValueDisplay}，${i.currentPercentileLabel}，近一年增长 ${i.yearOverYearDeltaDisplay}，观察到稳定增长节奏，处于同龄中等水平。`,
+    ledeText('GrowthCurve.lede.heightSteadyBelowP50', i),
   height_accelerating: (i) =>
-    `当前身高 ${i.currentValueDisplay}，${i.currentPercentileLabel}，近一年增长 ${i.yearOverYearDeltaDisplay}，观察到增长速度有所加快。`,
+    ledeText('GrowthCurve.lede.heightAccelerating', i),
   height_decelerating: (i) =>
-    `当前身高 ${i.currentValueDisplay}，${i.currentPercentileLabel}，近一年增长 ${i.yearOverYearDeltaDisplay}，观察到增长速度有所放缓，建议持续记录。`,
+    ledeText('GrowthCurve.lede.heightDecelerating', i),
   height_plateau: (i) =>
-    `当前身高 ${i.currentValueDisplay}，${i.currentPercentileLabel}，近一年增长 ${i.yearOverYearDeltaDisplay}，倾向于平台期，建议持续记录并咨询专业人士。`,
+    ledeText('GrowthCurve.lede.heightPlateau', i),
   weight_steady: (i) =>
-    `当前体重 ${i.currentValueDisplay}，${i.currentPercentileLabel}，近一年变化 ${i.yearOverYearDeltaDisplay}，倾向于稳定。`,
+    ledeText('GrowthCurve.lede.weightSteady', i),
   weight_accelerating: (i) =>
-    `当前体重 ${i.currentValueDisplay}，${i.currentPercentileLabel}，近一年变化 ${i.yearOverYearDeltaDisplay}，观察到增重速度有所加快。`,
+    ledeText('GrowthCurve.lede.weightAccelerating', i),
   weight_decelerating: (i) =>
-    `当前体重 ${i.currentValueDisplay}，${i.currentPercentileLabel}，近一年变化 ${i.yearOverYearDeltaDisplay}，观察到增重速度有所放缓。`,
+    ledeText('GrowthCurve.lede.weightDecelerating', i),
   bmi_in_range: (i) =>
-    `当前 BMI ${i.currentValueDisplay}，${i.currentPercentileLabel}，处于同龄常见范围。`,
+    ledeText('GrowthCurve.lede.bmiInRange', i),
   bmi_above_range: (i) =>
-    `当前 BMI ${i.currentValueDisplay}，${i.currentPercentileLabel}，超出同龄常见范围，建议咨询专业人士。`,
+    ledeText('GrowthCurve.lede.bmiAboveRange', i),
   bmi_below_range: (i) =>
-    `当前 BMI ${i.currentValueDisplay}，${i.currentPercentileLabel}，低于同龄常见范围，建议咨询专业人士。`,
+    ledeText('GrowthCurve.lede.bmiBelowRange', i),
   head_steady: (i) =>
-    `当前头围 ${i.currentValueDisplay}，${i.currentPercentileLabel}，近一年变化 ${i.yearOverYearDeltaDisplay}，倾向于稳定增长。`,
-  no_data: () => '尚未记录该指标的数据，添加首次测量后即可生成描述。',
+    ledeText('GrowthCurve.lede.headSteady', i),
+  no_data: () => i18nText('GrowthCurve.lede.noData'),
 };
 
 // ===== Formatters =====
@@ -377,7 +393,7 @@ export function formatPercentileChange6m(
 ): string {
   if (currentPercentile == null || priorPercentile == null) return '—';
   const delta = currentPercentile - priorPercentile;
-  if (delta === 0) return '持平';
+  if (delta === 0) return i18nText('GrowthCurve.trend.flat');
   const sign = delta > 0 ? '↑' : '↓';
   return `${sign}${Math.abs(delta)}`;
 }
@@ -392,8 +408,8 @@ export function formatRecencyLabel(
   if (Number.isNaN(measuredMs) || Number.isNaN(nowMs)) return null;
   const diffMs = nowMs - measuredMs;
   const diffDays = Math.floor(diffMs / 86400000);
-  if (diffDays <= 0) return '今天';
-  if (diffDays < 7) return `${diffDays} 天前`;
+  if (diffDays <= 0) return i18nText('GrowthCurve.recency.today');
+  if (diffDays < 7) return i18nText('GrowthCurve.recency.daysAgo', { days: diffDays });
   const weeks = Math.floor(diffDays / 7);
-  return `${weeks} 周前`;
+  return i18nText('GrowthCurve.recency.weeksAgo', { weeks });
 }

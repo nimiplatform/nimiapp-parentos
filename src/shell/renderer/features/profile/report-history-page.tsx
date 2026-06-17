@@ -7,6 +7,8 @@ import { GROWTH_STANDARDS } from '../../knowledge-base/index.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.js';
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
+import { i18n, i18nText } from '../../i18n/index.js';
+
 
 /* ── types ────────────────────────────────────────────────── */
 
@@ -48,15 +50,15 @@ function getDisplayInfo(typeId: string) {
 
 function fmtDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+  return new Intl.DateTimeFormat(i18n.language, { year: 'numeric', month: 'long', day: 'numeric' }).format(d);
 }
 
 function fmtRelative(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
-  if (diff === 0) return '今天';
-  if (diff === 1) return '昨天';
-  if (diff < 7) return `${diff}天前`;
-  if (diff < 30) return `${Math.floor(diff / 7)}周前`;
+  if (diff === 0) return i18nText('Reports.history.relative.today');
+  if (diff === 1) return i18nText('Reports.history.relative.yesterday');
+  if (diff < 7) return i18nText('Reports.history.relative.daysAgo', { days: diff });
+  if (diff < 30) return i18nText('Reports.history.relative.weeksAgo', { weeks: Math.floor(diff / 7) });
   return fmtDate(dateStr);
 }
 
@@ -78,7 +80,7 @@ function groupByMonth(reports: ReportRow[]): Array<{ monthLabel: string; items: 
     .sort((a, b) => b[0].localeCompare(a[0]))
     .map(([key, items]) => {
       const [y, m] = key.split('-');
-      return { monthLabel: `${y}年${parseInt(m!)}月`, items };
+      return { monthLabel: i18nText('Reports.history.monthLabel', { year: y, month: parseInt(m!) }), items };
     });
 }
 
@@ -102,7 +104,7 @@ export default function ReportHistoryPage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="单据记录">
+      <ProfileDetailShell title={i18nText('Reports.history.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -112,15 +114,15 @@ export default function ReportHistoryPage() {
     <ProfileDetailShell
       title={
         <span className="flex flex-col">
-          <span>单据记录</span>
+          <span>{i18nText('Reports.history.title')}</span>
           <span className="text-[14px] font-normal mt-0.5 text-[var(--nimi-text-muted)]">
-            共 {reports.length} 份已识别的医疗报告
+            {i18nText('Reports.history.summary', { count: reports.length })}
           </span>
         </span>
       }
       actions={
         <Button asChild tone="primary" size="md">
-          <Link to="/profile">+ 上传新报告</Link>
+          <Link to="/profile">{i18nText('Reports.history.uploadNew')}</Link>
         </Button>
       }
     >
@@ -128,10 +130,10 @@ export default function ReportHistoryPage() {
         /* Empty state */
         <Surface tone="card" material="solid" elevation="raised" padding="none" className="p-10 flex flex-col items-center">
           <span className="text-[48px] mb-3">📄</span>
-          <p className="text-[16px] font-medium text-[var(--nimi-text-primary)]">还没有上传过报告</p>
-          <p className="text-[14px] mt-1 mb-4 text-[var(--nimi-text-muted)]">上传体检单、验血单等，AI 自动提取数据</p>
+          <p className="text-[16px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Reports.history.emptyTitle')}</p>
+          <p className="text-[14px] mt-1 mb-4 text-[var(--nimi-text-muted)]">{i18nText('Reports.history.emptyBody')}</p>
           <Button asChild tone="primary" size="md">
-            <Link to="/profile">上传第一份报告</Link>
+            <Link to="/profile">{i18nText('Reports.history.uploadFirst')}</Link>
           </Button>
         </Surface>
       ) : (
@@ -164,10 +166,13 @@ export default function ReportHistoryPage() {
                         <div className="w-[36px] h-[36px] rounded-xl flex items-center justify-center text-[18px] shrink-0 bg-[var(--nimi-surface-active)]">🔍</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">
-                            {data?.imageName ?? '智能识别报告'}
+                            {data?.imageName ?? i18nText('Reports.history.defaultReportName')}
                           </p>
                           <p className="text-[12px] text-[var(--nimi-text-muted)]">
-                            {fmtRelative(report.generatedAt)} · 识别到 {data?.measurements.length ?? 0} 项数据
+                            {i18nText('Reports.history.recognizedLine', {
+                              relative: fmtRelative(report.generatedAt),
+                              count: data?.measurements.length ?? 0,
+                            })}
                           </p>
                         </div>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={'var(--nimi-text-muted)'} strokeWidth="2" strokeLinecap="round"
@@ -180,7 +185,11 @@ export default function ReportHistoryPage() {
                       {isExpanded && data && (
                         <div className="px-4 pb-4 border-t border-[var(--nimi-border-subtle)]">
                           <p className="text-[12px] py-2 text-[var(--nimi-text-muted)]">
-                            数据日期: {report.periodStart} ~ {report.periodEnd} · 上传时间: {fmtDate(report.generatedAt)}
+                            {i18nText('Reports.history.detailLine', {
+                              start: report.periodStart,
+                              end: report.periodEnd,
+                              uploadedAt: fmtDate(report.generatedAt),
+                            })}
                           </p>
                           <div className="space-y-1.5">
                             {data.measurements.map((m, i) => {

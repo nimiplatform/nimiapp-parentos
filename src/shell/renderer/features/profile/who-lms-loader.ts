@@ -4,6 +4,7 @@ import {
   GROWTH_LMS_PERCENTILES,
   type GrowthLmsDatasetAsset,
 } from './growth-lms-datasets.js';
+import { i18nText } from '../../i18n/index.js';
 
 export interface WHOPercentilePoint {
   ageMonths: number;
@@ -20,8 +21,8 @@ export const WHO_PERCENTILES = [3, 10, 25, 50, 75, 90, 97] as const;
 export type GrowthStandard = 'china' | 'who';
 
 export const GROWTH_STANDARD_LABELS: Record<GrowthStandard, string> = {
-  china: '中国标准',
-  who: 'WHO 标准',
+  china: i18nText('Growth.standard.china'),
+  who: i18nText('Growth.standard.who'),
 };
 
 type WHOGender = 'male' | 'female';

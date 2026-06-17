@@ -32,6 +32,8 @@ import {
   computeAppliancePhaseProgress,
   computeCycleProgress,
 } from './orthodontic-derive.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 function StackButton({
   label,
@@ -88,8 +90,8 @@ export function ApplianceCompactCard({
           nowIso,
         }).currentAlignerIndex
       : null;
-  // log-review actions are owned by the case-level review card (PO-ORTHO-015);
-  // surfacing the same 下次复诊 inline would just duplicate it. Drop the
+  // Log-review actions are owned by the case-level review card (PO-ORTHO-015);
+  // surfacing the same review action inline would just duplicate it. Drop the
   // embedded panel + primary button when that's the only action.
   const showInlineNextAction = nextAction.actionKind !== 'log-review';
 
@@ -102,7 +104,7 @@ export function ApplianceCompactCard({
       padding="none"
       className="flex items-stretch overflow-hidden rounded-3xl"
     >
-      {/* left identity bar */}
+      {/* Left identity bar. */}
       <div
         className={`w-1.5 shrink-0 ${applianceIdentityBarClassName(appliance.applianceType)}`}
         style={identityStyle}
@@ -112,12 +114,12 @@ export function ApplianceCompactCard({
       <div
         className="flex flex-1 flex-wrap items-center gap-6 px-6 py-5"
       >
-        {/* small ring */}
+        {/* Small ring. */}
         <div style={{ flexShrink: 0 }}>
           <ApplianceRing view={ringView} size={104} stroke={10} />
         </div>
 
-        {/* middle: identity + phase + embedded next action */}
+        {/* Middle: identity + phase + embedded next action. */}
         <div className="flex min-w-[220px] flex-1 flex-col gap-2.5">
           <div>
             <ApplianceCardHeader
@@ -142,7 +144,7 @@ export function ApplianceCompactCard({
             />
           </div>
 
-          {/* embedded next action */}
+          {/* Embedded next action. */}
           {showInlineNextAction && (
             <div
               className="flex flex-wrap items-center gap-2.5 rounded-xl bg-[color-mix(in_srgb,var(--nimi-text-primary)_3%,transparent)] px-3.5 py-2.5"
@@ -161,7 +163,7 @@ export function ApplianceCompactCard({
           )}
         </div>
 
-        {/* right: vertical action stack */}
+        {/* Right: vertical action stack. */}
         <div
           className="flex min-w-[132px] shrink-0 flex-col gap-2"
         >
@@ -174,13 +176,13 @@ export function ApplianceCompactCard({
           )}
           {supportsWearGap && (
             <StackButton
-              label="补记未戴"
+              label={i18nText('Orthodontic.applianceCard.backfillUnwear')}
               tone="outline"
               onClick={() => handlers.onBackfillUnwear(appliance)}
             />
           )}
           <StackButton
-            label="记录异常"
+            label={i18nText('Orthodontic.applianceCard.logIssueShort')}
             tone="outline"
             onClick={() => handlers.onLogIssue(appliance)}
           />

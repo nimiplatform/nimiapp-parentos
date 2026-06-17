@@ -47,6 +47,8 @@ import {
   dentalEventLabelAndEmoji,
   ORTHO_EVENT_TYPES,
 } from './dental-page-domain.js';
+import { i18nText } from '../../i18n/index.js';
+
 interface Props {
   childId: string;
   childBirthDate: string;
@@ -54,14 +56,14 @@ interface Props {
 }
 
 const APPLIANCE_TYPE_OPTIONS: { value: OrthodonticApplianceType; label: string; minAgeMonths: number }[] = [
-  { value: 'twin-block', label: 'Twin-Block 功能矫治器', minAgeMonths: 48 },
-  { value: 'expander', label: '扩弓器', minAgeMonths: 48 },
-  { value: 'activator', label: '功能性矫治器', minAgeMonths: 48 },
-  { value: 'metal-braces', label: '金属固定矫治器', minAgeMonths: 84 },
-  { value: 'ceramic-braces', label: '陶瓷固定矫治器', minAgeMonths: 84 },
-  { value: 'clear-aligner', label: '隐形牙套', minAgeMonths: 84 },
-  { value: 'retainer-fixed', label: '固定保持器', minAgeMonths: 84 },
-  { value: 'retainer-removable', label: '活动保持器', minAgeMonths: 84 },
+  { value: 'twin-block', label: i18nText('Orthodontic.applianceType.twinBlock'), minAgeMonths: 48 },
+  { value: 'expander', label: i18nText('Orthodontic.applianceType.expander'), minAgeMonths: 48 },
+  { value: 'activator', label: i18nText('Orthodontic.applianceType.activator'), minAgeMonths: 48 },
+  { value: 'metal-braces', label: i18nText('Orthodontic.applianceType.metalBraces'), minAgeMonths: 84 },
+  { value: 'ceramic-braces', label: i18nText('Orthodontic.applianceType.ceramicBraces'), minAgeMonths: 84 },
+  { value: 'clear-aligner', label: i18nText('Orthodontic.applianceType.clearAligner'), minAgeMonths: 84 },
+  { value: 'retainer-fixed', label: i18nText('Orthodontic.applianceType.retainerFixed'), minAgeMonths: 84 },
+  { value: 'retainer-removable', label: i18nText('Orthodontic.applianceType.retainerRemovable'), minAgeMonths: 84 },
 ];
 
 /**
@@ -296,7 +298,7 @@ export function OrthodonticPage({
     if (!activeCase) return { monthsElapsed: 0, monthsTotal: null as number | null };
     const startMs = new Date(`${activeCase.startedAt}T00:00:00.000Z`).getTime();
     const daysElapsed = Math.max(0, (new Date(nowIso).getTime() - startMs) / (1000 * 60 * 60 * 24));
-    // Use ceil so day 1+ already reads as "第 1 月".
+    // Use ceil so day 1+ already reads as treatment month 1.
     const elapsed = daysElapsed > 0 ? Math.max(1, Math.ceil(daysElapsed / 30)) : 0;
     const total = computeCaseMonthsTotal(activeCase, appliances);
     return { monthsElapsed: elapsed, monthsTotal: total };
@@ -310,7 +312,7 @@ export function OrthodonticPage({
   }, []);
 
   const handleLogOrthoIssue = useCallback(() => {
-    // 「记录异常」 — prefill event type only; the parent fills in their own
+    // Log issue: prefill event type only; the parent fills in their own
     // notes. PO-ORTHO-010 wording boundary is enforced inside the modal.
     setClinicalEventPrefill({ eventType: 'ortho-issue', notes: '' });
     setShowClinicalEventModal(true);
@@ -320,9 +322,9 @@ export function OrthodonticPage({
   const handleAskAiAboutRecord = (record: DentalRecordRow) => {
     const meta = dentalEventLabelAndEmoji(record.eventType);
     const eventDate = record.eventDate.split('T')[0] ?? record.eventDate;
-    const descParts: string[] = [`日期：${eventDate}`];
-    if (record.hospital) descParts.push(`机构：${record.hospital}`);
-    if (record.notes) descParts.push(`备注：${record.notes}`);
+    const descParts: string[] = [i18nText('Orthodontic.page.askAiDesc.date', { date: eventDate })];
+    if (record.hospital) descParts.push(i18nText('Orthodontic.page.askAiDesc.clinic', { clinic: record.hospital }));
+    if (record.notes) descParts.push(i18nText('Orthodontic.page.askAiDesc.notes', { notes: record.notes }));
     const params = new URLSearchParams({
       topic: meta.label,
       desc: descParts.join('；'),
@@ -338,7 +340,7 @@ export function OrthodonticPage({
   };
 
   const handleDeleteRecord = async (record: DentalRecordRow) => {
-    if (!window.confirm('确定删除该条临床事件？相关照片会一并删除，操作不可撤销。')) {
+    if (!window.confirm(i18nText('Orthodontic.page.deleteClinicalEventConfirm'))) {
       return;
     }
     try {
@@ -384,7 +386,7 @@ export function OrthodonticPage({
   if (loading) {
     return (
       <div className="p-6 text-[14px] text-[var(--nimi-text-muted)]">
-        加载中…
+        {i18nText('Orthodontic.page.loading')}
       </div>
     );
   }
@@ -430,7 +432,7 @@ export function OrthodonticPage({
             size="md"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-            添加矫治器
+            {i18nText('Orthodontic.page.addAppliance')}
           </Button>
         </div>
       )}
@@ -457,10 +459,10 @@ export function OrthodonticPage({
       )}
 
       <OrthodonticDetailsSection
-        title="正畸记录"
+        title={i18nText('Orthodontic.page.recordsTitle')}
         count={
           journey
-            ? `${journey.past.length + journey.future.length} 条`
+            ? i18nText('Orthodontic.journey.entryCount', { count: journey.past.length + journey.future.length })
             : undefined
         }
       >
@@ -656,7 +658,7 @@ function ErrorBanner({ msg, onDismiss }: { msg: string; onDismiss: () => void })
         onClick={onDismiss}
         className="text-[12px] underline shrink-0"
       >
-        关闭
+        {i18nText('Orthodontic.page.close')}
       </button>
     </div>
   );
@@ -672,12 +674,12 @@ function EmptyState({ onCreate, hasHistory }: { onCreate: () => void; hasHistory
       className="rounded-2xl border border-[color-mix(in_srgb,var(--nimi-border-subtle)_70%,transparent)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--nimi-action-primary-bg)_18%,var(--nimi-surface-card))_0%,color-mix(in_srgb,var(--nimi-status-info)_18%,var(--nimi-surface-card))_60%,color-mix(in_srgb,var(--nimi-status-success)_14%,var(--nimi-surface-card))_100%)] p-8 text-center"
     >
       <h3 className="m-0 text-[18px] font-semibold text-[var(--nimi-text-primary)]">
-        {hasHistory ? '当前没有进行中的疗程' : '还没有正畸疗程'}
+        {hasHistory ? i18nText('Orthodontic.page.empty.noActiveCaseTitle') : i18nText('Orthodontic.page.empty.noCaseTitle')}
       </h3>
       <p className="mt-2 text-[14px] text-[var(--nimi-text-muted)]">
         {hasHistory
-          ? '上一段疗程已结束。可以新建一段新的疗程，过往记录会保留在口腔记录里。'
-          : '新建疗程后，可以记录每副牙套节奏、复诊安排、未戴时段，并自动生成时间轴。'}
+          ? i18nText('Orthodontic.page.empty.noActiveCaseBody')
+          : i18nText('Orthodontic.page.empty.noCaseBody')}
       </p>
       <Button
         tone="primary"
@@ -685,7 +687,7 @@ function EmptyState({ onCreate, hasHistory }: { onCreate: () => void; hasHistory
         onClick={onCreate}
         className="mt-5 rounded-full shadow-[var(--nimi-elevation-base)]"
       >
-        {hasHistory ? '新建一段新的疗程' : '新建正畸疗程'}
+        {hasHistory ? i18nText('Orthodontic.page.empty.createNextCase') : i18nText('Orthodontic.page.empty.createCase')}
       </Button>
     </Surface>
   );

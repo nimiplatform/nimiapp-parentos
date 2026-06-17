@@ -520,7 +520,7 @@ describe('GrowthCurvePage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText('next page')).toBeTruthy();
+      expect(screen.getByLabelText('下一页')).toBeTruthy();
     });
 
     // First page renders exactly 10 rows; the 11th + 12th sit on page 2.
@@ -528,7 +528,7 @@ describe('GrowthCurvePage', () => {
     expect(tbody).toBeTruthy();
     expect(tbody!.querySelectorAll('tr').length).toBe(10);
 
-    fireEvent.click(screen.getByLabelText('next page'));
+    fireEvent.click(screen.getByLabelText('下一页'));
 
     await waitFor(() => {
       const after = document.querySelector('table tbody')!.querySelectorAll('tr').length;
@@ -577,13 +577,13 @@ describe('GrowthCurvePage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText('time-range filter')).toBeTruthy();
+      expect(screen.getByLabelText('时间范围筛选')).toBeTruthy();
     });
 
     // Both rows visible under the "all" default.
     expect(document.querySelector('table tbody')!.querySelectorAll('tr').length).toBe(2);
 
-    fireEvent.change(screen.getByLabelText('time-range filter'), { target: { value: '3m' } });
+    fireEvent.change(screen.getByLabelText('时间范围筛选'), { target: { value: '3m' } });
 
     await waitFor(() => {
       const rows = document.querySelector('table tbody')!.querySelectorAll('tr').length;
@@ -616,10 +616,10 @@ describe('GrowthCurvePage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText('export csv')).toBeTruthy();
+      expect(screen.getByLabelText('导出 CSV')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByLabelText('export csv'));
+    fireEvent.click(screen.getByLabelText('导出 CSV'));
 
     // `<a download>` is inert in the Tauri WebView, so the export round-trips
     // through the native save-dialog pipeline (saveTextFileViaDialog).

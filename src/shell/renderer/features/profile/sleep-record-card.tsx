@@ -8,6 +8,8 @@ import {
   sleepAgeTier,
   unpackNotes,
 } from './sleep-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function SleepRecordCard({
   record,
@@ -36,10 +38,10 @@ export function SleepRecordCard({
         </div>
         <div className="flex items-center gap-1">
           <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/card:opacity-100">
-            <button onClick={() => onEdit(record)} className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[var(--nimi-action-ghost-hover)]" title="编辑">
+            <button onClick={() => onEdit(record)} className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[var(--nimi-action-ghost-hover)]" title={i18nText('Sleep.record.edit')}>
               <Pencil size={13} strokeWidth={1.5} className="text-[var(--nimi-text-muted)]" />
             </button>
-            <button onClick={() => onDelete(record.recordId)} className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,transparent)]" title="删除">
+            <button onClick={() => onDelete(record.recordId)} className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,transparent)]" title={i18nText('Sleep.record.delete')}>
               <Trash2 size={13} strokeWidth={1.5} className="text-[var(--nimi-status-danger)]" />
             </button>
           </div>
@@ -52,15 +54,15 @@ export function SleepRecordCard({
           {totalMin > 0 ? (
             <div>
               <span className="text-[24px] font-bold text-[var(--nimi-text-primary)]">{(totalMin / 60).toFixed(1)}</span>
-              <span className="text-[13px] ml-0.5 text-[var(--nimi-text-muted)]">小时</span>
+              <span className="text-[13px] ml-0.5 text-[var(--nimi-text-muted)]">{i18nText('Sleep.record.hourUnit')}</span>
             </div>
           ) : null}
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] text-[var(--nimi-text-muted)]">
             {record.bedtime && record.wakeTime ? <span>{record.bedtime.slice(0, 5)} - {record.wakeTime.slice(0, 5)}</span> : null}
-            {record.durationMinutes != null ? <span>夜间 {fmtDuration(record.durationMinutes)}</span> : null}
-            {record.napCount != null ? <span>小睡 {record.napCount} 次</span> : null}
-            {record.napMinutes != null && record.napMinutes > 0 ? <span>小睡 {record.napMinutes}分钟</span> : null}
-            {nightWakings != null && nightWakings > 0 ? <span className="text-[var(--nimi-status-warning)]">夜醒 {nightWakings} 次</span> : null}
+            {record.durationMinutes != null ? <span>{i18nText('Sleep.record.nightDuration', { duration: fmtDuration(record.durationMinutes) })}</span> : null}
+            {record.napCount != null ? <span>{i18nText('Sleep.record.napCount', { count: record.napCount })}</span> : null}
+            {record.napMinutes != null && record.napMinutes > 0 ? <span>{i18nText('Sleep.record.napMinutes', { minutes: record.napMinutes })}</span> : null}
+            {nightWakings != null && nightWakings > 0 ? <span className="text-[var(--nimi-status-warning)]">{i18nText('Sleep.record.nightWakings', { count: nightWakings })}</span> : null}
           </div>
         </div>
       ) : tier === 'preschool' ? (
@@ -68,32 +70,32 @@ export function SleepRecordCard({
           {record.durationMinutes != null ? (
             <div>
               <span className="text-[18px] font-bold text-[var(--nimi-text-primary)]">{fmtDuration(record.durationMinutes)}</span>
-              <span className="text-[13px] ml-1 text-[var(--nimi-text-muted)]">夜间</span>
+              <span className="text-[13px] ml-1 text-[var(--nimi-text-muted)]">{i18nText('Sleep.record.night')}</span>
             </div>
           ) : null}
           <div className="flex flex-wrap gap-x-3 text-[13px] text-[var(--nimi-text-muted)]">
             {record.bedtime && record.wakeTime ? <span>{record.bedtime.slice(0, 5)} - {record.wakeTime.slice(0, 5)}</span> : null}
-            {record.napMinutes != null && record.napMinutes > 0 ? <span>午睡 {record.napMinutes}分钟</span> : null}
-            {totalMin > 0 ? <span>总计 {(totalMin / 60).toFixed(1)}h</span> : null}
+            {record.napMinutes != null && record.napMinutes > 0 ? <span>{i18nText('Sleep.record.afternoonNapMinutes', { minutes: record.napMinutes })}</span> : null}
+            {totalMin > 0 ? <span>{i18nText('Sleep.record.totalHours', { hours: (totalMin / 60).toFixed(1) })}</span> : null}
           </div>
         </div>
       ) : (
         <div className="flex items-baseline gap-4">
-          {record.bedtime && record.wakeTime ? (
+            {record.bedtime && record.wakeTime ? (
             <span className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">
               {record.bedtime.slice(0, 5)} - {record.wakeTime.slice(0, 5)}
             </span>
           ) : null}
           <div className="flex gap-x-3 text-[13px] text-[var(--nimi-text-muted)]">
             {record.durationMinutes != null ? <span>{fmtDuration(record.durationMinutes)}</span> : null}
-            {record.napCount != null && record.napCount > 0 ? <span>小睡 {record.napCount} 次</span> : null}
-            {record.napMinutes != null && record.napMinutes > 0 ? <span>小睡 {record.napMinutes}分钟</span> : null}
-            {totalMin > 0 && record.napMinutes != null && record.napMinutes > 0 ? <span>总计 {(totalMin / 60).toFixed(1)}h</span> : null}
+            {record.napCount != null && record.napCount > 0 ? <span>{i18nText('Sleep.record.napCount', { count: record.napCount })}</span> : null}
+            {record.napMinutes != null && record.napMinutes > 0 ? <span>{i18nText('Sleep.record.napMinutes', { minutes: record.napMinutes })}</span> : null}
+            {totalMin > 0 && record.napMinutes != null && record.napMinutes > 0 ? <span>{i18nText('Sleep.record.totalHours', { hours: (totalMin / 60).toFixed(1) })}</span> : null}
           </div>
         </div>
       )}
 
-      {napNotes ? <p className="text-[13px] mt-1.5 text-[var(--nimi-text-muted)]">小睡: {napNotes}</p> : null}
+      {napNotes ? <p className="text-[13px] mt-1.5 text-[var(--nimi-text-muted)]">{i18nText('Sleep.record.napNotes', { notes: napNotes })}</p> : null}
       {freeNotes ? <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">{freeNotes}</p> : null}
     </Surface>
   );

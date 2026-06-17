@@ -35,6 +35,8 @@ import {
   probeParentosAISettingsAvailability,
   type ParentosAISettingsAvailability,
 } from './parentos-ai-settings-availability.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const PARENTOS_ENABLED_CAPABILITIES = PARENTOS_CAPABILITIES.map((capability) => capability.id);
 
@@ -91,9 +93,9 @@ function parentosCapabilityProjection(input: {
     return {
       supported: false,
       tone: 'attention',
-      badgeLabel: 'Runtime 未就绪',
-      title: 'Runtime 不可用',
-      detail: input.runtimeDetail || 'ParentOS bootstrap 尚未完成。',
+      badgeLabel: i18nText('AISettings.capability.runtimeNotReady'),
+      title: i18nText('AISettings.capability.runtimeUnavailable'),
+      detail: input.runtimeDetail || i18nText('AISettings.capability.bootstrapNotReady'),
     };
   }
 
@@ -102,17 +104,19 @@ function parentosCapabilityProjection(input: {
     return {
       supported: false,
       tone: 'attention',
-      badgeLabel: '需要绑定',
-      title: '缺少模型绑定',
-      detail: `${capability?.label || input.capabilityId} 未配置`,
+      badgeLabel: i18nText('AISettings.capability.needsBinding'),
+      title: i18nText('AISettings.capability.missingBinding'),
+      detail: i18nText('AISettings.capability.capabilityNotConfigured', {
+        label: capability?.label || input.capabilityId,
+      }),
     };
   }
 
   return {
     supported: true,
     tone: 'ready',
-    badgeLabel: '已绑定',
-    title: '模型已配置',
+    badgeLabel: i18nText('AISettings.capability.bound'),
+    title: i18nText('AISettings.capability.modelConfigured'),
     detail: targetLabel,
   };
 }
@@ -156,7 +160,7 @@ export default function AiSettingsPage() {
   const runtimeReady = bootstrapReady;
   const runtimeStatusLabel = runtimeReady
     ? parentosAISettingsAvailabilityLabel(availability)
-    : (bootstrapError || 'Runtime 未就绪');
+    : (bootstrapError || i18nText('AISettings.capability.runtimeNotReady'));
   const runtimeStatusReady = runtimeReady && availability?.kind === 'ready';
   const bannerCopy = parentosAISettingsAvailabilityBannerCopy(availability);
   const configuredCount = PARENTOS_ENABLED_CAPABILITIES.filter((capabilityId) => (
@@ -220,14 +224,17 @@ export default function AiSettingsPage() {
           <Link
             to="/settings"
             className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'h-8 min-h-8 w-8 px-0')}
-            aria-label="返回设置"
+            aria-label={i18nText('AISettings.page.backToSettings')}
           >
             <ChevronLeft size={16} aria-hidden="true" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--nimi-text-primary)]">AI 模型设置</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--nimi-text-primary)]">{i18nText('AISettings.page.title')}</h1>
             <p className="mt-1 text-[13px] text-[var(--nimi-text-muted)]">
-              {configuredCount} / {PARENTOS_ENABLED_CAPABILITIES.length} 已绑定
+              {i18nText('AISettings.page.boundCount', {
+                configured: configuredCount,
+                total: PARENTOS_ENABLED_CAPABILITIES.length,
+              })}
             </p>
           </div>
         </div>
@@ -239,9 +246,9 @@ export default function AiSettingsPage() {
                 <Bot size={20} aria-hidden="true" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">ParentOS AI 能力</h2>
+                <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{i18nText('AISettings.page.capabilityTitle')}</h2>
                 <p className="mt-0.5 text-[13px] leading-[1.6] text-[var(--nimi-text-muted)]">
-                  Runtime route catalog 负责模型来源，ParentOS 只保存能力绑定。
+                  {i18nText('AISettings.page.capabilityDescription')}
                 </p>
               </div>
             </div>
@@ -261,7 +268,7 @@ export default function AiSettingsPage() {
                 type="button"
                 onClick={() => setAvailabilityRefreshKey((value) => value + 1)}
                 className={cn(buttonVariants({ tone: 'secondary', size: 'sm' }), 'h-8 min-h-8 w-8 px-0')}
-                aria-label="刷新 Runtime 状态"
+                aria-label={i18nText('AISettings.page.refreshRuntime')}
               >
                 <RefreshCw size={14} aria-hidden="true" />
               </button>

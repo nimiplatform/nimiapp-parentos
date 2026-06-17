@@ -35,6 +35,8 @@ import {
   type HeatmapCell,
   type HeatmapLevel,
 } from './outdoor-helpers.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 // ── Outdoor Page ──────────────────────────────────────────
 
@@ -46,6 +48,7 @@ export function OutdoorPage() {
   const [records, setRecords] = useState<OutdoorRecordRow[]>([]);
   const [goalMinutes, setGoalMinutes] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Week navigation state
   const todayStr = fmtDate(new Date());
@@ -61,16 +64,25 @@ export function OutdoorPage() {
   const [goalDraft, setGoalDraft] = useState(String(DEFAULT_OUTDOOR_GOAL_MINUTES));
 
   const load = useCallback(async () => {
-    if (!childId) { setLoading(false); return; }
+    if (!childId) {
+      setLoadError(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    const [recs, goal] = await Promise.allSettled([
-      getOutdoorRecords(childId),
-      getOutdoorGoal(childId),
-    ]);
-    setRecords(recs.status === 'fulfilled' ? recs.value : []);
-    const g = goal.status === 'fulfilled' ? goal.value : null;
-    setGoalMinutes(g);
-    setLoading(false);
+    setLoadError(null);
+    try {
+      const [recs, goal] = await Promise.all([
+        getOutdoorRecords(childId),
+        getOutdoorGoal(childId),
+      ]);
+      setRecords(recs);
+      setGoalMinutes(goal);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLoading(false);
+    }
   }, [childId]);
 
   useEffect(() => { void load(); }, [load]);
@@ -157,16 +169,31 @@ export function OutdoorPage() {
 
   const backLink = (
     <div className="flex items-center gap-2 mb-5">
-      <Link to="/profile" className="text-[14px] hover:underline text-[var(--nimi-text-muted)]">← 返回档案</Link>
+      <Link to="/profile" className="text-[14px] hover:underline text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.backToProfile')}</Link>
     </div>
   );
 
   if (!child) {
-    return <div className="max-w-3xl mx-auto px-6 pb-6 pt-[72px]">{backLink}<p className="text-[var(--nimi-text-muted)]">请先选择一个孩子</p></div>;
+    return <div className="max-w-3xl mx-auto px-6 pb-6 pt-[72px]">{backLink}<p className="text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.selectChildFirst')}</p></div>;
   }
 
   if (loading) {
-    return <div className="max-w-3xl mx-auto px-6 pb-6 pt-[72px]">{backLink}<p className="text-[var(--nimi-text-muted)]">加载中…</p></div>;
+    return <div className="max-w-3xl mx-auto px-6 pb-6 pt-[72px]">{backLink}<p className="text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.loading')}</p></div>;
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-3xl mx-auto px-6 pb-6 pt-[72px]">
+        {backLink}
+        <Surface tone="card" material="glass-thick" elevation="raised" padding="lg" className="mx-auto max-w-lg">
+          <h2 className="mb-3 text-[18px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Outdoor.page.loadError.title')}</h2>
+          <p className="mb-5 text-[14px] leading-relaxed text-[var(--nimi-text-muted)]">{loadError}</p>
+          <Button onClick={() => { void load(); }} tone="primary" size="md">
+            {i18nText('Outdoor.page.loadError.retry')}
+          </Button>
+        </Surface>
+      </div>
+    );
   }
 
   // ── Goal not set: onboarding ──
@@ -176,19 +203,19 @@ export function OutdoorPage() {
       <div className="max-w-3xl mx-auto px-6 pb-6 pt-[72px]">
         {backLink}
         <Surface tone="card" material="glass-thick" elevation="raised" padding="lg" className="mx-auto max-w-lg">
-          <h2 className="mb-4 text-[18px] font-semibold text-[var(--nimi-text-primary)]">每周户外目标</h2>
+          <h2 className="mb-4 text-[18px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Outdoor.page.goalOnboarding.title')}</h2>
           <p className="mb-3 text-[14px] leading-relaxed text-[var(--nimi-text-muted)]">
-            充足的户外活动时间是保护视力的重要方式。研究表明，每天累计 2 小时以上的户外活动有助于降低近视风险。
+            {i18nText('Outdoor.page.goalOnboarding.visionProtection')}
           </p>
           <p className="mb-6 text-[14px] leading-relaxed text-[var(--nimi-text-muted)]">
-            记录每天的户外时长，帮助你了解孩子每周是否有足够的户外活动。
+            {i18nText('Outdoor.page.goalOnboarding.recordingHelp')}
           </p>
           <Button
             onClick={() => { setGoalDraft(String(DEFAULT_OUTDOOR_GOAL_MINUTES)); setShowGoalSetup(true); }}
             tone="primary"
             size="md"
           >
-            设定每周目标
+            {i18nText('Outdoor.page.goalOnboarding.setGoal')}
           </Button>
         </Surface>
       </div>
@@ -202,8 +229,8 @@ export function OutdoorPage() {
       <div className="max-w-3xl mx-auto px-6 pb-6 pt-[72px]">
         {backLink}
         <Surface tone="card" material="glass-thick" elevation="raised" padding="lg" className="mx-auto max-w-lg">
-          <h2 className="mb-4 text-[18px] font-semibold text-[var(--nimi-text-primary)]">设定每周户外目标</h2>
-          <p className="mb-4 text-[14px] text-[var(--nimi-text-muted)]">建议每周 630 分钟（约每天 90 分钟）</p>
+          <h2 className="mb-4 text-[18px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Outdoor.page.goalSetup.title')}</h2>
+          <p className="mb-4 text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.goalSetup.hint')}</p>
           <div className="mb-4 flex items-center gap-3">
             <input
               type="number"
@@ -212,7 +239,7 @@ export function OutdoorPage() {
               className="w-28 rounded-xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-field-bg)] px-3 py-2 text-center text-[16px] text-[var(--nimi-text-primary)]"
               min={1}
             />
-            <span className="text-[14px] text-[var(--nimi-text-muted)]">分钟 / 周</span>
+            <span className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.goalSetup.minutesPerWeek')}</span>
           </div>
           <div className="flex gap-3">
             <Button
@@ -220,7 +247,7 @@ export function OutdoorPage() {
               tone="primary"
               size="md"
             >
-              确定
+              {i18nText('Outdoor.page.goalSetup.confirm')}
             </Button>
             {goalMinutes !== null && (
               <Button
@@ -228,7 +255,7 @@ export function OutdoorPage() {
                 tone="ghost"
                 size="md"
               >
-                取消
+                {i18nText('Outdoor.page.goalSetup.cancel')}
               </Button>
             )}
           </div>
@@ -249,14 +276,14 @@ export function OutdoorPage() {
           onClick={() => setSelectedWeekStart(shiftWeek(selectedWeekStart, -1))}
           className="rounded-lg px-3 py-1 text-[14px] text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
         >
-          ← 上周
+          {i18nText('Outdoor.page.week.previous')}
         </button>
         <div className="text-center">
           <h2 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">
             {formatWeekRange(selectedWeekStart)}
           </h2>
           {selectedWeekStart === currentWeekStart && (
-            <span className="text-[13px] text-[var(--nimi-action-primary-bg)]">本周</span>
+            <span className="text-[13px] text-[var(--nimi-action-primary-bg)]">{i18nText('Outdoor.page.week.current')}</span>
           )}
         </div>
         <button
@@ -264,7 +291,7 @@ export function OutdoorPage() {
           className="rounded-lg px-3 py-1 text-[14px] text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)] disabled:opacity-50"
           disabled={isFutureWeek}
         >
-          下周 →
+          {i18nText('Outdoor.page.week.next')}
         </button>
       </div>
 
@@ -273,7 +300,7 @@ export function OutdoorPage() {
         <div className="mb-3 flex items-end justify-between">
           <div>
             <p className="text-[24px] font-bold tabular-nums text-[var(--nimi-text-primary)]">
-              {weekSummary.totalMinutes} <span className="text-[16px] font-normal text-[var(--nimi-text-muted)]">/ {effectiveGoal} 分钟</span>
+              {weekSummary.totalMinutes} <span className="text-[16px] font-normal text-[var(--nimi-text-muted)]">/ {effectiveGoal} {i18nText('Outdoor.page.minuteUnit')}</span>
             </p>
           </div>
           <span className={`text-[14px] font-medium tabular-nums ${weekSummary.isComplete ? 'text-[var(--nimi-action-primary-bg)]' : 'text-[var(--nimi-status-info)]'}`}>
@@ -282,7 +309,7 @@ export function OutdoorPage() {
         </div>
 
         {/* Progress bar */}
-        <progress value={progressPercent} max={100} aria-label="本周户外目标完成度" className="mb-4 h-3 w-full overflow-hidden rounded-full accent-[var(--nimi-action-primary-bg)]" />
+        <progress value={progressPercent} max={100} aria-label={i18nText('Outdoor.page.progressAriaLabel')} className="mb-4 h-3 w-full overflow-hidden rounded-full accent-[var(--nimi-action-primary-bg)]" />
 
         {/* Message */}
         <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{message.primary}</p>
@@ -296,7 +323,7 @@ export function OutdoorPage() {
             size="md"
             className="mt-4"
           >
-            ＋ 记录户外活动
+            {i18nText('Outdoor.page.addRecord')}
           </Button>
         )}
       </Surface>
@@ -307,20 +334,20 @@ export function OutdoorPage() {
       {/* Heatmap (daily intensity over recent weeks) */}
       <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="mb-6">
         <div className="mb-4 flex items-baseline justify-between">
-          <h3 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">户外活动热力图</h3>
+          <h3 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Outdoor.page.heatmap.title')}</h3>
           <span className="text-[13px] text-[var(--nimi-text-muted)]">
-            近 {heatmap.weeksBack} 周 · 日均目标 {heatmap.dailyTargetMinutes} 分钟
+            {i18nText('Outdoor.page.heatmap.subtitle', { weeks: heatmap.weeksBack, minutes: heatmap.dailyTargetMinutes })}
           </span>
         </div>
         <HeatmapGrid heatmap={heatmap} />
         <div className="mt-4 flex items-center justify-end gap-1 text-[12px] text-[var(--nimi-text-muted)]">
-          <span>少</span>
+          <span>{i18nText('Outdoor.page.heatmap.less')}</span>
           <LegendSwatch level={0} />
           <LegendSwatch level={1} />
           <LegendSwatch level={2} />
           <LegendSwatch level={3} />
           <LegendSwatch level={4} />
-          <span>多</span>
+          <span>{i18nText('Outdoor.page.heatmap.more')}</span>
         </div>
       </Surface>
 
@@ -328,19 +355,19 @@ export function OutdoorPage() {
       <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="mb-6">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">
-            {selectedWeekStart === currentWeekStart ? '本周记录' : '当周记录'}
+            {selectedWeekStart === currentWeekStart ? i18nText('Outdoor.page.records.thisWeek') : i18nText('Outdoor.page.records.selectedWeek')}
           </h3>
           {isPastWeek && (
             <button
               onClick={() => { setEditingRecord(null); setModalOpen(true); }}
               className="text-[13px] font-medium text-[var(--nimi-status-info)] transition-colors hover:opacity-80"
             >
-              补录
+              {i18nText('Outdoor.page.records.backfill')}
             </button>
           )}
         </div>
         {weekRecords.length === 0 ? (
-          <p className="text-[14px] text-[var(--nimi-text-muted)]">暂无记录</p>
+          <p className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.records.empty')}</p>
         ) : (
           <div className="space-y-2">
             {weekRecords.map((r) => (
@@ -353,7 +380,7 @@ export function OutdoorPage() {
                     {formatShortDate(r.activityDate)} {weekdayLabel(parseDate(r.activityDate))}
                   </span>
                   <span className="ml-3 text-[14px] tabular-nums text-[var(--nimi-status-info)]">
-                    {r.durationMinutes} 分钟
+                    {r.durationMinutes} {i18nText('Outdoor.page.minuteUnit')}
                   </span>
                   {r.note && (
                     <span className="ml-2 text-[13px] text-[var(--nimi-text-muted)]">
@@ -365,7 +392,7 @@ export function OutdoorPage() {
                   onClick={() => openEditRecord(r)}
                   className="text-[13px] text-[var(--nimi-text-muted)] transition-colors hover:opacity-80"
                 >
-                  编辑
+                  {i18nText('Outdoor.page.records.edit')}
                 </button>
               </div>
             ))}
@@ -376,13 +403,13 @@ export function OutdoorPage() {
       {/* Goal setting footer */}
       <div className="mb-8 flex items-center justify-between rounded-2xl bg-[color-mix(in_srgb,var(--nimi-surface-card)_72%,transparent)] px-4 py-3">
         <span className="text-[14px] text-[var(--nimi-text-muted)]">
-          本周目标: {effectiveGoal} 分钟
+          {i18nText('Outdoor.page.goalFooter.currentGoal', { minutes: effectiveGoal })}
         </span>
         <button
           onClick={() => { setGoalDraft(String(effectiveGoal)); setShowGoalSetup(true); }}
           className="text-[14px] font-medium text-[var(--nimi-status-info)] transition-colors hover:opacity-80"
         >
-          修改
+          {i18nText('Outdoor.page.goalFooter.change')}
         </button>
       </div>
 
@@ -414,7 +441,15 @@ const HEATMAP_LEVEL_CLASSES = [
 
 const HEATMAP_CELL_PX = 16;
 const HEATMAP_GAP_PX = 3;
-const WEEKDAY_LABELS_SPARSE = ['一', '', '三', '', '五', '', '日'] as const;
+const WEEKDAY_LABELS_SPARSE = [
+  weekdayLabel(new Date(2026, 0, 5)),
+  '',
+  weekdayLabel(new Date(2026, 0, 7)),
+  '',
+  weekdayLabel(new Date(2026, 0, 9)),
+  '',
+  weekdayLabel(new Date(2026, 0, 11)),
+] as const;
 
 function LegendSwatch({ level }: { level: HeatmapLevel }) {
   return (
@@ -426,10 +461,10 @@ function LegendSwatch({ level }: { level: HeatmapLevel }) {
 
 function HeatmapCellView({ cell }: { cell: HeatmapCell }) {
   const title = cell.isFuture
-    ? `${cell.date} · 未来`
+    ? i18nText('Outdoor.heatmap.future', { date: cell.date })
     : cell.minutes > 0
-      ? `${cell.date} · ${cell.minutes} 分钟`
-      : `${cell.date} · 无记录`;
+      ? i18nText('Outdoor.heatmap.minutes', { date: cell.date, minutes: cell.minutes })
+      : i18nText('Outdoor.heatmap.noRecord', { date: cell.date });
 
   return (
     <div
@@ -522,6 +557,7 @@ function RecordModal({
   const [minutes, setMinutes] = useState(defaultMinutes ? String(defaultMinutes) : '');
   const [note, setNote] = useState(defaultNote);
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const canSave = date && minutes && parseInt(minutes, 10) > 0;
 
@@ -535,13 +571,13 @@ function RecordModal({
   return (
     <HealthRecordModalShell open size="S" onClose={onClose}>
       <ModalHeader
-        title={isEditing ? '编辑记录' : '记录户外活动'}
+        title={isEditing ? i18nText('Outdoor.page.recordModal.editTitle') : i18nText('Outdoor.page.recordModal.createTitle')}
         icon="☀️"
         onClose={onClose}
       />
       <ModalContent>
         {/* Date */}
-        <label className="mb-1 block text-[13px] text-[var(--nimi-text-muted)]">日期</label>
+        <label className="mb-1 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.recordModal.date')}</label>
         <input
           type="date"
           value={date}
@@ -551,7 +587,7 @@ function RecordModal({
         />
 
         {/* Duration */}
-        <label className="mb-1 block text-[13px] text-[var(--nimi-text-muted)]">时长（分钟）</label>
+        <label className="mb-1 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.recordModal.durationMinutes')}</label>
         <div className="mb-2 flex gap-2">
           {DURATION_PRESETS.map((preset) => (
             <Button
@@ -568,31 +604,49 @@ function RecordModal({
           type="number"
           value={minutes}
           onChange={(e) => setMinutes(e.target.value)}
-          placeholder="自定义分钟数"
+          placeholder={i18nText('Outdoor.page.recordModal.customMinutes')}
           className="mb-4 w-full"
           min={1}
         />
 
         {/* Note */}
-        <label className="mb-1 block text-[13px] text-[var(--nimi-text-muted)]">备注（可选）</label>
+        <label className="mb-1 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.recordModal.noteOptional')}</label>
         <TextField
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="例：小区公园散步"
+          placeholder={i18nText('Outdoor.page.recordModal.notePlaceholder')}
           className="mb-1 w-full"
         />
       </ModalContent>
       <ModalFooter
         leading={
           isEditing && onDelete ? (
-            <Button onClick={onDelete} tone="danger" size="md">删除</Button>
+            <Button
+              onClick={() => {
+                if (confirmingDelete) {
+                  onDelete();
+                } else {
+                  setConfirmingDelete(true);
+                }
+              }}
+              tone="danger"
+              size="md"
+            >
+              {confirmingDelete ? i18nText('Outdoor.page.recordModal.confirmDelete') : i18nText('Outdoor.page.recordModal.delete')}
+            </Button>
           ) : null
         }
       >
-        <Button onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button
+          onClick={confirmingDelete ? () => setConfirmingDelete(false) : onClose}
+          tone="ghost"
+          size="md"
+        >
+          {confirmingDelete ? i18nText('Outdoor.page.recordModal.keep') : i18nText('Outdoor.page.recordModal.cancel')}
+        </Button>
         <Button onClick={handleSave} disabled={!canSave || saving} tone="primary" size="md">
-          {saving ? '保存中…' : '保存'}
+          {saving ? i18nText('Outdoor.page.recordModal.saving') : i18nText('Outdoor.page.recordModal.save')}
         </Button>
       </ModalFooter>
     </HealthRecordModalShell>

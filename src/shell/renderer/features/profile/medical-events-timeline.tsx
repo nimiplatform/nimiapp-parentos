@@ -20,6 +20,8 @@ import {
   RESULT_LABELS,
   SEVERITY_LABELS,
 } from './medical-events-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const EVENT_TYPE_TONE_CLASS_DEFAULT = 'bg-[color-mix(in_srgb,var(--nimi-status-neutral)_14%,transparent)] text-[var(--nimi-status-neutral)]';
 const EVENT_TYPE_TONE_CLASS: Record<string, string> = {
@@ -54,14 +56,6 @@ function resultTone(result: string): StatusTone {
   return 'warning';
 }
 
-function labRangeTone(label: string): StatusTone {
-  if (label.includes('严重') || label.includes('耗竭') || label.includes('贫血') || label.includes('偏低')) {
-    return 'danger';
-  }
-  if (label.includes('正常') || label.includes('充足')) return 'success';
-  return 'warning';
-}
-
 export function MedicalEventsTimeline({
   events,
   filteredEvents,
@@ -88,10 +82,10 @@ export function MedicalEventsTimeline({
       <Surface tone="card" elevation="raised" padding="none" className="rounded-lg p-8 text-center">
         <span className="text-[24px]">🏥</span>
         <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">
-          {events.length === 0 ? '还没有就医记录' : '未找到匹配的记录'}
+          {events.length === 0 ? i18nText('MedicalEvents.timeline.emptyTitle') : i18nText('MedicalEvents.timeline.noMatchTitle')}
         </p>
         <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">
-          {events.length === 0 ? '记录门诊、体检、用药等信息' : '尝试调整筛选条件'}
+          {events.length === 0 ? i18nText('MedicalEvents.timeline.emptyDescription') : i18nText('MedicalEvents.timeline.noMatchDescription')}
         </p>
       </Surface>
     );
@@ -101,7 +95,7 @@ export function MedicalEventsTimeline({
     <>
       {searchQuery ? (
         <p className="text-[13px] mb-3 text-[var(--nimi-text-muted)]">
-          找到 {filteredEvents.length} 条匹配记录
+          {i18nText('MedicalEvents.timeline.searchResultCount', { count: filteredEvents.length })}
         </p>
       ) : null}
 
@@ -112,7 +106,7 @@ export function MedicalEventsTimeline({
             variant="past"
             dotVariant="ring"
             date={formatMonthLabel(yearMonth)}
-            secondaryLabel={`${monthEvents.length} 条记录`}
+            secondaryLabel={i18nText('MedicalEvents.timeline.recordCount', { count: monthEvents.length })}
             isLast={gi === timelineGroups.length - 1}
           >
             {monthEvents.map((event) => {
@@ -154,7 +148,7 @@ export function MedicalEventsTimeline({
                         ) : null}
                       </div>
                       <p className="text-[12px] truncate text-[var(--nimi-text-muted)]">
-                        {day}日
+                        {i18nText('MedicalEvents.timeline.dayOfMonth', { day })}
                         {event.endDate ? ` - ${event.endDate.split('T')[0]}` : ''}
                         {event.hospital ? ` · ${event.hospital}` : ''}
                         {` · ${formatAge(event.ageMonths)}`}
@@ -177,7 +171,7 @@ export function MedicalEventsTimeline({
                                   <div key={item.key} className="flex items-center gap-2 text-[12px]">
                                     <span className="w-14 shrink-0 text-[var(--nimi-text-muted)]">{item.label}</span>
                                     <span className="font-medium text-[var(--nimi-text-primary)]">{value} {item.unit}</span>
-                                    <StatusBadge tone={labRangeTone(range.label)} className="rounded px-1 py-0.5 text-[12px]">{range.label}</StatusBadge>
+                                    <StatusBadge tone={range.tone} className="rounded px-1 py-0.5 text-[12px]">{range.label}</StatusBadge>
                                   </div>
                                 );
                               })}
@@ -198,8 +192,8 @@ export function MedicalEventsTimeline({
                           tone="ghost"
                           size="sm"
                           className="h-6 min-h-6 w-6 text-[12px] text-[var(--nimi-text-muted)]"
-                          title="编辑"
-                          aria-label="编辑"
+                          title={i18nText('MedicalEvents.timeline.edit')}
+                          aria-label={i18nText('MedicalEvents.timeline.edit')}
                           icon="✏️"
                         />
                         <IconButton
@@ -208,8 +202,8 @@ export function MedicalEventsTimeline({
                           tone="ghost"
                           size="sm"
                           className="h-6 min-h-6 w-6 text-[12px] text-[var(--nimi-text-muted)]"
-                          title="AI 分析"
-                          aria-label="AI 分析"
+                          title={i18nText('MedicalEvents.timeline.aiAnalysis')}
+                          aria-label={i18nText('MedicalEvents.timeline.aiAnalysis')}
                           icon={eventAiLoading === event.eventId ? '⏳' : '✨'}
                         />
                       </div>
@@ -221,10 +215,10 @@ export function MedicalEventsTimeline({
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1">
                           <span className="text-[12px]">✨</span>
-                          <span className="text-[12px] font-semibold text-[var(--nimi-text-primary)]">AI 分析</span>
+                          <span className="text-[12px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('MedicalEvents.timeline.aiAnalysis')}</span>
                         </div>
                         <button onClick={() => onCloseAI(event.eventId)} className="rounded px-1 text-[12px] text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]">
-                          收起
+                          {i18nText('MedicalEvents.timeline.collapse')}
                         </button>
                       </div>
                       <p className="text-[12px] leading-relaxed text-[var(--nimi-text-primary)]">

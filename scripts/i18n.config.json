@@ -1,0 +1,61 @@
+{
+  "supportedLocales": ["en", "zh"],
+  "bundles": [
+    {
+      "name": "translation",
+      "baseLocale": "en",
+      "files": {
+        "en": "src/shell/renderer/locales/en.json",
+        "zh": "src/shell/renderer/locales/zh.json"
+      }
+    },
+    {
+      "name": "ModelConfig",
+      "baseLocale": "en",
+      "files": {
+        "en": "src/shell/renderer/locales/model-config.en.json",
+        "zh": "src/shell/renderer/locales/model-config.zh.json"
+      }
+    }
+  ],
+  "audit": {
+    "scopeDirs": ["src/shell/renderer", "src/shell/renderer/index.html"],
+    "extensions": [".ts", ".tsx", ".html"],
+    "excludePathPatterns": [
+      "/locales/",
+      "/knowledge-base/",
+      "/engine/",
+      "/bridge/",
+      "/infra/mock-seed.ts",
+      ".test.",
+      ".spec."
+    ],
+    "allowTextPatterns": [
+      "^[A-Z0-9_]+$",
+      "^[A-Za-z0-9_.-]+\\.[A-Za-z0-9_.-]+$",
+      "^[-\\u2013\\u2014]+$",
+      "^\\.\\.\\.$",
+      "^ParentOS$",
+      "^NIMI PLATFORM$",
+      "^Nimi$",
+      "^AI$",
+      "^OCR$",
+      "^PDF$",
+      "^JPG$",
+      "^PNG$",
+      "^WebP$",
+      "^Web3$",
+      "^WHO$",
+      "^CDC$",
+      "^GP$",
+      "^TW3$",
+      "^M-CHAT$",
+      "^(cm|kg|mm|D|m|s|min|h)$",
+      "^P[0-9]+$",
+      "^BMI$",
+      "^OD$",
+      "^OS$"
+    ],
+    "maxReportedViolations": 160
+  }
+}

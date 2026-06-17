@@ -16,10 +16,14 @@ import {
   TIER_LABELS,
 } from './sleep-page-shared.js';
 import { SleepTrendChart } from './sleep-trend-chart.js';
+import { i18nText } from '../../i18n/index.js';
 
-/* 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲
-   Main Page
-   鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲 */
+function sleepAgeLabel(ageMonths: number): string {
+  return i18nText('Sleep.age.yearsMonths', {
+    years: Math.floor(ageMonths / 12),
+    months: ageMonths % 12,
+  });
+}
 
 export default function SleepPage() {
   const { activeChildId, children } = useAppStore();
@@ -39,7 +43,7 @@ export default function SleepPage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="睡眠记录">
+      <ProfileDetailShell title={i18nText('Sleep.page.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -75,21 +79,29 @@ export default function SleepPage() {
 
   return (
     <ProfileDetailShell
-      title="睡眠记录"
+      title={i18nText('Sleep.page.title')}
       actions={!showForm ? (
         <Button tone="primary" size="sm" onClick={() => setShowForm(true)} className="rounded-2xl">
-          添加记录
+          {i18nText('Sleep.page.addRecord')}
         </Button>
       ) : null}
       aiSummary={
         <AISummaryCard domain="sleep" childName={child.displayName} childId={child.childId}
-          ageLabel={`${Math.floor(ageMonths / 12)}岁${ageMonths % 12}个月`} gender={child.gender}
-          dataContext={records.length > 0 ? `近期 ${records.length} 条睡眠记录，最近一次: ${records[0]?.sleepDate ?? ''}` : ''}
+          ageLabel={sleepAgeLabel(ageMonths)} gender={child.gender}
+          dataContext={records.length > 0
+            ? i18nText('Sleep.page.summaryContext', { count: records.length, date: records[0]?.sleepDate ?? '' })
+            : ''}
         />
       }
     >
       <p className="text-sm mb-4 text-[var(--nimi-text-muted)]">
-        参考睡眠时长: {refLo}-{refHi} 小时/天（{formatAge(ageMonths)} · {TIER_LABELS[tier]}）</p>
+        {i18nText('Sleep.page.referenceRange', {
+          low: refLo,
+          high: refHi,
+          age: formatAge(ageMonths),
+          tier: TIER_LABELS[tier],
+        })}
+      </p>
 
       {showForm ? (
         <SleepRecordForm
@@ -100,16 +112,14 @@ export default function SleepPage() {
         />
       ) : null}
 
-      {/* 鈹€鈹€ Trend Chart 鈹€鈹€ */}
       {records.length >= 2 && <SleepTrendChart records={records} ageMonths={ageMonths} />}
 
-      {/* 鈹€鈹€ Records List 鈹€鈹€ */}
       <section>
         {sortedRecords.length === 0 ? (
           <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="rounded-3xl p-8 text-center">
             <span className="text-[24px]">😴</span>
-            <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">还没有睡眠记录</p>
-            <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">点击上方按钮添加第一条记录</p>
+            <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">{i18nText('Sleep.page.emptyTitle')}</p>
+            <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('Sleep.page.emptyHint')}</p>
           </Surface>
         ) : (
           <div className="space-y-2">
@@ -127,15 +137,15 @@ export default function SleepPage() {
           kind="dialog"
           onClose={() => setDeletingRecordId(null)}
           panelClassName="w-[340px] rounded-3xl"
-          title={<p className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">确认删除</p>}
+          title={<p className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Sleep.page.confirmDelete')}</p>}
           footer={
             <div className="flex justify-end gap-2">
-              <Button tone="ghost" size="sm" onClick={() => setDeletingRecordId(null)} className="rounded-2xl">取消</Button>
-              <Button tone="danger" size="sm" onClick={() => void handleDelete(deletingRecordId)} className="rounded-2xl">确认删除</Button>
+              <Button tone="ghost" size="sm" onClick={() => setDeletingRecordId(null)} className="rounded-2xl">{i18nText('Sleep.page.cancel')}</Button>
+              <Button tone="danger" size="sm" onClick={() => void handleDelete(deletingRecordId)} className="rounded-2xl">{i18nText('Sleep.page.confirmDelete')}</Button>
             </div>
           }
         >
-          <p className="text-[14px] text-[var(--nimi-text-muted)]">删除后无法恢复，确定要删除这条睡眠记录吗？</p>
+          <p className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Sleep.page.deleteMessage')}</p>
         </OverlayShell>
       ) : null}
     </ProfileDetailShell>

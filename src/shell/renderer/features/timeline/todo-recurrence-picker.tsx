@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { TodoRecurrenceRule, TodoRecurrencePreset, TodoRecurrenceUnit } from '../../bridge/sqlite-bridge.js';
 import { describeRecurrenceRule } from './todo-recurrence.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type TodoRecurrencePickerProps = {
   value: TodoRecurrenceRule | null;
@@ -17,28 +19,28 @@ const REPEAT_ICON = (
 );
 
 const PRESETS: ReadonlyArray<{ preset: TodoRecurrencePreset; label: string }> = [
-  { preset: 'daily', label: '每天' },
-  { preset: 'weekly', label: '每周' },
-  { preset: 'monthly', label: '每月' },
-  { preset: 'yearly', label: '每年' },
-  { preset: 'custom', label: '自定义' },
+  { preset: 'daily', label: i18nText('TodoRecurrence.preset.daily') },
+  { preset: 'weekly', label: i18nText('TodoRecurrence.preset.weekly') },
+  { preset: 'monthly', label: i18nText('TodoRecurrence.preset.monthly') },
+  { preset: 'yearly', label: i18nText('TodoRecurrence.preset.yearly') },
+  { preset: 'custom', label: i18nText('TodoRecurrence.preset.custom') },
 ];
 
 const UNITS: ReadonlyArray<{ unit: TodoRecurrenceUnit; label: string }> = [
-  { unit: 'day', label: '天' },
-  { unit: 'week', label: '周' },
-  { unit: 'month', label: '月' },
-  { unit: 'year', label: '年' },
+  { unit: 'day', label: i18nText('TodoRecurrence.unit.day', { count: 1 }) },
+  { unit: 'week', label: i18nText('TodoRecurrence.unit.week', { count: 1 }) },
+  { unit: 'month', label: i18nText('TodoRecurrence.unit.month', { count: 1 }) },
+  { unit: 'year', label: i18nText('TodoRecurrence.unit.year', { count: 1 }) },
 ];
 
 const WEEKDAYS = [
-  { value: 1, label: '一' },
-  { value: 2, label: '二' },
-  { value: 3, label: '三' },
-  { value: 4, label: '四' },
-  { value: 5, label: '五' },
-  { value: 6, label: '六' },
-  { value: 0, label: '日' },
+  { value: 1, label: i18nText('TodoRecurrence.weekday.monday') },
+  { value: 2, label: i18nText('TodoRecurrence.weekday.tuesday') },
+  { value: 3, label: i18nText('TodoRecurrence.weekday.wednesday') },
+  { value: 4, label: i18nText('TodoRecurrence.weekday.thursday') },
+  { value: 5, label: i18nText('TodoRecurrence.weekday.friday') },
+  { value: 6, label: i18nText('TodoRecurrence.weekday.saturday') },
+  { value: 0, label: i18nText('TodoRecurrence.weekday.sunday') },
 ];
 
 export function TodoRecurrencePicker({ value, onChange }: TodoRecurrencePickerProps) {
@@ -108,13 +110,13 @@ export function TodoRecurrencePicker({ value, onChange }: TodoRecurrencePickerPr
     });
   };
 
-  const chipLabel = useMemo(() => (active ? describeRecurrenceRule(value) : '重复'), [active, value]);
+  const chipLabel = useMemo(() => (active ? describeRecurrenceRule(value) : i18nText('TodoRecurrence.fallback')), [active, value]);
 
   return (
     <div ref={wrapperRef} className="relative inline-flex">
       <button
         type="button"
-        title={active ? `重复：${chipLabel}` : '设置重复'}
+        title={active ? i18nText('TodoRecurrence.picker.activeTitle', { label: chipLabel }) : i18nText('TodoRecurrence.picker.setRepeat')}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => setOpen((v) => !v)}
         className={`inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-full text-[14px] font-medium transition-colors hover:bg-[#f3f4f6] ${active ? 'px-3' : 'w-8 px-0'}`}
@@ -141,7 +143,7 @@ export function TodoRecurrencePicker({ value, onChange }: TodoRecurrencePickerPr
             className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-[14px] transition-colors hover:bg-[#f3f4f6]"
             style={{ color: !active ? '#3BB88A' : '#64748b' }}
           >
-            <span>不重复</span>
+            <span>{i18nText('TodoRecurrence.picker.noRepeat')}</span>
             {!active && <span style={{ color: '#3BB88A' }}>✓</span>}
           </button>
           <div className="my-1 h-px" style={{ background: '#eef0ee' }} />
@@ -168,9 +170,9 @@ export function TodoRecurrencePicker({ value, onChange }: TodoRecurrencePickerPr
               className="mt-2 rounded-xl p-3"
               style={{ background: '#f9fafb', border: '1px solid #eef0ee' }}
             >
-              <div className="mb-2 text-[14px] font-semibold" style={{ color: '#111827' }}>自定义重复</div>
+              <div className="mb-2 text-[14px] font-semibold" style={{ color: '#111827' }}>{i18nText('TodoRecurrence.picker.customTitle')}</div>
               <div className="flex items-center gap-2">
-                <span className="text-[14px]" style={{ color: '#64748b' }}>每</span>
+                <span className="text-[14px]" style={{ color: '#64748b' }}>{i18nText('TodoRecurrence.picker.everyPrefix')}</span>
                 <input
                   type="number"
                   min={1}
@@ -194,7 +196,7 @@ export function TodoRecurrencePicker({ value, onChange }: TodoRecurrencePickerPr
 
               {customUnit === 'week' && (
                 <div className="mt-2.5">
-                  <div className="mb-1.5 text-[13px]" style={{ color: '#64748b' }}>在这些日子重复</div>
+                  <div className="mb-1.5 text-[13px]" style={{ color: '#64748b' }}>{i18nText('TodoRecurrence.picker.weekdaysLabel')}</div>
                   <div className="flex flex-wrap gap-1">
                     {WEEKDAYS.map((d) => {
                       const on = customWeekdays.includes(d.value);
@@ -225,7 +227,7 @@ export function TodoRecurrencePicker({ value, onChange }: TodoRecurrencePickerPr
                   className="h-7 rounded-full px-3 text-[14px] font-medium"
                   style={{ color: '#64748b', background: 'transparent' }}
                 >
-                  取消
+                  {i18nText('TodoRecurrence.picker.cancel')}
                 </button>
                 <button
                   type="button"
@@ -233,7 +235,7 @@ export function TodoRecurrencePicker({ value, onChange }: TodoRecurrencePickerPr
                   className="h-7 rounded-full px-3 text-[14px] font-medium"
                   style={{ background: '#3BB88A', color: '#ffffff' }}
                 >
-                  确定
+                  {i18nText('TodoRecurrence.picker.confirm')}
                 </button>
               </div>
             </div>

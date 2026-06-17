@@ -11,6 +11,8 @@ import {
   ModalFooter,
   ModalHeader,
 } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const PRESET_DURATIONS = [15, 30, 45, 60, 90, 120] as const;
 
@@ -32,7 +34,7 @@ export function OutdoorCaptureContent({ child, onSaved, onClose, linkedReminder 
     if (!activityDate) return;
     const minutes = parseInt(durationMinutes, 10);
     if (!Number.isFinite(minutes) || minutes <= 0) {
-      setError('请输入有效的活动时长（分钟）');
+      setError(i18nText('Outdoor.capture.invalidDuration'));
       return;
     }
 
@@ -52,7 +54,7 @@ export function OutdoorCaptureContent({ child, onSaved, onClose, linkedReminder 
       await onSaved();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败，请重试');
+      setError(err instanceof Error ? err.message : i18nText('Outdoor.capture.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -60,19 +62,19 @@ export function OutdoorCaptureContent({ child, onSaved, onClose, linkedReminder 
 
   const presetOptions = PRESET_DURATIONS.map((preset) => ({
     value: String(preset),
-    label: `${preset} 分钟`,
+    label: i18nText('Outdoor.capture.durationPreset', { minutes: preset }),
   }));
 
   return (
     <>
-      <ModalHeader title="记录户外活动" icon="☀️" onClose={onClose} />
+      <ModalHeader title={i18nText('Outdoor.capture.title')} icon="☀️" onClose={onClose} />
       <ModalContent>
         <div className="space-y-5">
-          <FormField label="活动日期">
+          <FormField label={i18nText('Outdoor.capture.activityDate')}>
             <DatePicker value={activityDate} onChange={setActivityDate} className="h-12" />
           </FormField>
 
-          <FormField label="时长（分钟）">
+          <FormField label={i18nText('Outdoor.capture.durationMinutes')}>
             <TextField
               type="number"
               min="1"
@@ -91,12 +93,12 @@ export function OutdoorCaptureContent({ child, onSaved, onClose, linkedReminder 
             </div>
           </FormField>
 
-          <FormField label="备注">
+          <FormField label={i18nText('Outdoor.capture.notes')}>
             <TextareaField
               rows={2}
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="例如：公园骑车、放风筝..."
+              placeholder={i18nText('Outdoor.capture.notesPlaceholder')}
               className="w-full"
             />
           </FormField>
@@ -105,9 +107,9 @@ export function OutdoorCaptureContent({ child, onSaved, onClose, linkedReminder 
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('Outdoor.capture.cancel')}</Button>
         <Button type="button" onClick={() => void handleSave()} disabled={saving} tone="primary" size="md">
-          {saving ? '保存中...' : '保存'}
+          {saving ? i18nText('Outdoor.capture.saving') : i18nText('Outdoor.capture.save')}
         </Button>
       </ModalFooter>
     </>

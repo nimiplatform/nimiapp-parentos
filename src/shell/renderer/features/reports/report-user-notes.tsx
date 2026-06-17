@@ -3,6 +3,8 @@ import { Button, TextareaField } from '@nimiplatform/kit/ui';
 import { Pencil, Plus } from 'lucide-react';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import type { NarrativeReportContent, UserNote } from './structured-report.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function getNotesForAnchor(content: NarrativeReportContent, anchor: string): UserNote[] {
   if (!content.userNotes) return [];
@@ -58,10 +60,10 @@ function NoteCard({ note, canEdit, onSave, onDelete }: NoteCardProps) {
         />
         <div className="mt-2 flex gap-2">
           <Button size="sm" tone="primary" onClick={() => { const t = draft.trim(); if (!t) return; onSave(t); setEditing(false); }}>
-            保存
+            {i18nText('Reports.notes.save')}
           </Button>
           <Button size="sm" tone="ghost" onClick={() => setEditing(false)}>
-            取消
+            {i18nText('Reports.notes.cancel')}
           </Button>
         </div>
       </div>
@@ -73,7 +75,7 @@ function NoteCard({ note, canEdit, onSave, onDelete }: NoteCardProps) {
       <div className="report-note-header">
         <Pencil size={11} className="report-icon-warning" strokeWidth={2} />
         <span className="report-note-kicker">
-          家长备注
+          {i18nText('Reports.notes.kicker')}
         </span>
         {date ? (
           <span className="report-note-date">{date}</span>
@@ -85,10 +87,10 @@ function NoteCard({ note, canEdit, onSave, onDelete }: NoteCardProps) {
       {canEdit ? (
         <div className="report-note-actions hide-on-print">
           <Button size="sm" tone="ghost" onClick={start} className="report-note-action-button report-note-action-button--warning">
-            编辑
+            {i18nText('Reports.notes.edit')}
           </Button>
           <Button size="sm" tone="danger" onClick={onDelete} className="report-note-action-button">
-            删除
+            {i18nText('Reports.notes.delete')}
           </Button>
         </div>
       ) : null}
@@ -125,7 +127,7 @@ function NoteComposer({ onAdd }: NoteComposerProps) {
         className="report-note-composer hide-on-print"
       >
         <Plus size={11} />
-        追加我的备注
+        {i18nText('Reports.notes.add')}
       </Button>
     );
   }
@@ -136,16 +138,16 @@ function NoteComposer({ onAdd }: NoteComposerProps) {
         ref={ref}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        placeholder="写一段备注，比如你对这一段观察的补充、疑问、或想让医生看到的细节……"
+        placeholder={i18nText('Reports.notes.placeholder')}
         className="report-radius-sm"
         textareaClassName="report-note-textarea"
       />
       <div className="mt-2 flex gap-2">
         <Button size="sm" tone="primary" onClick={submit}>
-          保存备注
+          {i18nText('Reports.notes.saveNote')}
         </Button>
         <Button size="sm" tone="ghost" onClick={() => setOpen(false)}>
-          取消
+          {i18nText('Reports.notes.cancel')}
         </Button>
       </div>
     </div>

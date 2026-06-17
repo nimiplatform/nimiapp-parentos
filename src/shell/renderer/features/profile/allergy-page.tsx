@@ -6,7 +6,7 @@ import {
   ModalHeader,
 } from './health-record-modal-shell.js';
 import { useState, useEffect } from 'react';
-import { useAppStore, computeAgeMonths, computeAgeMonthsAt } from '../../app-shell/app-store.js';
+import { useAppStore, computeAgeMonths, computeAgeMonthsAt, formatAge } from '../../app-shell/app-store.js';
 import { insertAllergyRecord, updateAllergyRecord, getAllergyRecords, upsertReminderState } from '../../bridge/sqlite-bridge.js';
 import type { AllergyRecordRow } from '../../bridge/sqlite-bridge.js';
 import { generateAllergyFollowups } from '../../engine/smart-alerts.js';
@@ -15,47 +15,78 @@ import { AISummaryCard } from './ai-summary-card.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.js';
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── Constants ───────────────────────────────────────────── */
 
-const CATEGORY_LABELS: Record<string, string> = { food: '食物', drug: '药物', environmental: '环境', contact: '接触', other: '其他' };
-const STATUS_LABELS: Record<string, string> = { active: '活跃', outgrown: '已脱敏', uncertain: '不确定' };
-const SEVERITY_LABELS: Record<string, string> = { mild: '轻度', moderate: '中度', severe: '重度' };
-const CONFIRMED_LABELS: Record<string, string> = { 'clinical-test': '临床检测', 'physician-diagnosis': '医生诊断', 'parent-observation': '家长观察' };
+const CATEGORY_LABELS: Record<string, string> = {
+  food: i18nText('Allergy.category.food'),
+  drug: i18nText('Allergy.category.drug'),
+  environmental: i18nText('Allergy.category.environmental'),
+  contact: i18nText('Allergy.category.contact'),
+  other: i18nText('Allergy.category.other'),
+};
+const STATUS_LABELS: Record<string, string> = {
+  active: i18nText('Allergy.status.active'),
+  outgrown: i18nText('Allergy.status.outgrown'),
+  uncertain: i18nText('Allergy.status.uncertain'),
+};
+const SEVERITY_LABELS: Record<string, string> = {
+  mild: i18nText('Allergy.severity.mild'),
+  moderate: i18nText('Allergy.severity.moderate'),
+  severe: i18nText('Allergy.severity.severe'),
+};
+const CONFIRMED_LABELS: Record<string, string> = {
+  'clinical-test': i18nText('Allergy.confirmedBy.clinicalTest'),
+  'physician-diagnosis': i18nText('Allergy.confirmedBy.physicianDiagnosis'),
+  'parent-observation': i18nText('Allergy.confirmedBy.parentObservation'),
+};
+const ALLERGY_NOTE_MARKERS = {
+  symptoms: 'symptoms:',
+  treatments: 'treatments:',
+  photo: 'photo:',
+} as const;
 
 // Quick-pick allergen tags
 const COMMON_ALLERGENS: Array<{ label: string; category: string }> = [
-  { label: '牛奶', category: 'food' }, { label: '鸡蛋', category: 'food' }, { label: '花生', category: 'food' },
-  { label: '坚果', category: 'food' }, { label: '小麦', category: 'food' }, { label: '大豆', category: 'food' },
-  { label: '海鲜', category: 'food' }, { label: '鱼类', category: 'food' }, { label: '芒果', category: 'food' },
-  { label: '桃子', category: 'food' }, { label: '尘螨', category: 'environmental' }, { label: '花粉', category: 'environmental' },
-  { label: '猫毛', category: 'environmental' }, { label: '狗毛', category: 'environmental' }, { label: '霉菌', category: 'environmental' },
-  { label: '青霉素', category: 'drug' }, { label: '头孢', category: 'drug' }, { label: '阿莫西林', category: 'drug' },
-  { label: '乳胶', category: 'contact' }, { label: '金属(镍)', category: 'contact' },
+  { label: i18nText('Allergy.commonAllergen.milk'), category: 'food' }, { label: i18nText('Allergy.commonAllergen.egg'), category: 'food' }, { label: i18nText('Allergy.commonAllergen.peanut'), category: 'food' },
+  { label: i18nText('Allergy.commonAllergen.treeNut'), category: 'food' }, { label: i18nText('Allergy.commonAllergen.wheat'), category: 'food' }, { label: i18nText('Allergy.commonAllergen.soy'), category: 'food' },
+  { label: i18nText('Allergy.commonAllergen.shellfish'), category: 'food' }, { label: i18nText('Allergy.commonAllergen.fish'), category: 'food' }, { label: i18nText('Allergy.commonAllergen.mango'), category: 'food' },
+  { label: i18nText('Allergy.commonAllergen.peach'), category: 'food' }, { label: i18nText('Allergy.commonAllergen.dustMite'), category: 'environmental' }, { label: i18nText('Allergy.commonAllergen.pollen'), category: 'environmental' },
+  { label: i18nText('Allergy.commonAllergen.catDander'), category: 'environmental' }, { label: i18nText('Allergy.commonAllergen.dogDander'), category: 'environmental' }, { label: i18nText('Allergy.commonAllergen.mold'), category: 'environmental' },
+  { label: i18nText('Allergy.commonAllergen.penicillin'), category: 'drug' }, { label: i18nText('Allergy.commonAllergen.cephalosporin'), category: 'drug' }, { label: i18nText('Allergy.commonAllergen.amoxicillin'), category: 'drug' },
+  { label: i18nText('Allergy.commonAllergen.latex'), category: 'contact' }, { label: i18nText('Allergy.commonAllergen.nickel'), category: 'contact' },
 ];
 
 // Reaction symptom tags (multi-select)
 const SYMPTOM_TAGS = [
-  { key: 'rash', label: '起皮疹', emoji: '🔴' },
-  { key: 'hives', label: '荨麻疹/风团', emoji: '⭕' },
-  { key: 'eczema', label: '湿疹加重', emoji: '🟠' },
-  { key: 'swelling', label: '局部红肿', emoji: '🫧' },
-  { key: 'itching', label: '瘙痒', emoji: '😣' },
-  { key: 'vomiting', label: '呕吐', emoji: '🤮' },
-  { key: 'diarrhea', label: '腹泻', emoji: '💩' },
-  { key: 'abdominal', label: '腹痛', emoji: '😫' },
-  { key: 'runny-nose', label: '流鼻涕/打喷嚏', emoji: '🤧' },
-  { key: 'cough', label: '咳嗽', emoji: '😮‍💨' },
-  { key: 'wheeze', label: '呼吸急促/喘息', emoji: '😰' },
-  { key: 'eye-itch', label: '眼睛痒/红', emoji: '👁️' },
-  { key: 'anaphylaxis', label: '全身严重反应', emoji: '🚨' },
+  { key: 'rash', label: i18nText('Allergy.symptom.rash'), emoji: '🔴' },
+  { key: 'hives', label: i18nText('Allergy.symptom.hives'), emoji: '⭕' },
+  { key: 'eczema', label: i18nText('Allergy.symptom.eczema'), emoji: '🟠' },
+  { key: 'swelling', label: i18nText('Allergy.symptom.swelling'), emoji: '🫧' },
+  { key: 'itching', label: i18nText('Allergy.symptom.itching'), emoji: '😣' },
+  { key: 'vomiting', label: i18nText('Allergy.symptom.vomiting'), emoji: '🤮' },
+  { key: 'diarrhea', label: i18nText('Allergy.symptom.diarrhea'), emoji: '💩' },
+  { key: 'abdominal', label: i18nText('Allergy.symptom.abdominal'), emoji: '😫' },
+  { key: 'runny-nose', label: i18nText('Allergy.symptom.runnyNose'), emoji: '🤧' },
+  { key: 'cough', label: i18nText('Allergy.symptom.cough'), emoji: '😮‍💨' },
+  { key: 'wheeze', label: i18nText('Allergy.symptom.wheeze'), emoji: '😰' },
+  { key: 'eye-itch', label: i18nText('Allergy.symptom.eyeItch'), emoji: '👁️' },
+  { key: 'anaphylaxis', label: i18nText('Allergy.symptom.anaphylaxis'), emoji: '🚨' },
 ] as const;
 
 // Treatment tags
 const TREATMENT_TAGS = [
-  '停止接触过敏原', '口服抗组胺药(如西替利嗪)', '外用激素药膏',
-  '口服激素', '肾上腺素笔', '雾化吸入', '紧急就医/急诊', '冷敷',
-  '观察未用药',
+  i18nText('Allergy.treatment.stopExposure'),
+  i18nText('Allergy.treatment.oralAntihistamine'),
+  i18nText('Allergy.treatment.topicalSteroid'),
+  i18nText('Allergy.treatment.oralSteroid'),
+  i18nText('Allergy.treatment.epinephrinePen'),
+  i18nText('Allergy.treatment.nebulization'),
+  i18nText('Allergy.treatment.emergencyCare'),
+  i18nText('Allergy.treatment.coldCompress'),
+  i18nText('Allergy.treatment.observeNoMedication'),
 ] as const;
 
 const choiceChipClass = (selected: boolean) =>
@@ -118,14 +149,13 @@ export default function AllergyPage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="过敏记录">
+      <ProfileDetailShell title={i18nText('Allergy.page.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
   }
 
   const ageMonths = computeAgeMonths(child.birthDate);
-  const ageY = Math.floor(ageMonths / 12), ageR = ageMonths % 12;
   const activeRecords = records.filter((r) => r.status === 'active');
   const otherRecords = records.filter((r) => r.status !== 'active');
 
@@ -162,11 +192,15 @@ export default function AllergyPage() {
     const parts: string[] = [];
     const allSymptoms = [...formSymptoms].map((k) => SYMPTOM_TAGS.find((t) => t.key === k)?.label ?? k);
     if (formCustomSymptom.trim()) allSymptoms.push(formCustomSymptom.trim());
-    if (allSymptoms.length > 0) parts.push(`症状: ${allSymptoms.join('、')}`);
+    if (allSymptoms.length > 0) {
+      parts.push(`${ALLERGY_NOTE_MARKERS.symptoms} ${allSymptoms.join(i18nText('Common.list.separator'))}`);
+    }
     const allTreatments = [...formTreatments];
     if (formCustomTreatment.trim()) allTreatments.push(formCustomTreatment.trim());
-    if (allTreatments.length > 0) parts.push(`处理: ${allTreatments.join('、')}`);
-    if (formPhotoName) parts.push(`附照片: ${formPhotoName}`);
+    if (allTreatments.length > 0) {
+      parts.push(`${ALLERGY_NOTE_MARKERS.treatments} ${allTreatments.join(i18nText('Common.list.separator'))}`);
+    }
+    if (formPhotoName) parts.push(`${ALLERGY_NOTE_MARKERS.photo} ${formPhotoName}`);
     if (formNotes) parts.push(formNotes);
     const noteStr = parts.length > 0 ? parts.join(' | ') : null;
     const reactionType = formSymptoms.has('anaphylaxis') ? 'anaphylaxis' : formSymptoms.has('wheeze') || formSymptoms.has('cough') ? 'respiratory' : formSymptoms.has('vomiting') || formSymptoms.has('diarrhea') || formSymptoms.has('abdominal') ? 'gastrointestinal' : formSymptoms.size > 0 ? 'skin' : null;
@@ -213,23 +247,27 @@ export default function AllergyPage() {
 
   return (
     <ProfileDetailShell
-      title="过敏记录"
+      title={i18nText('Allergy.page.title')}
       actions={!showForm ? (
         <Button onClick={() => setShowForm(true)} tone="primary" size="md">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          记录过敏
+          {i18nText('Allergy.page.recordAllergy')}
         </Button>
       ) : null}
       aiSummary={
         <AISummaryCard domain="allergy" childName={child.displayName} childId={child.childId}
-          ageLabel={`${ageY}岁${ageR}个月`} gender={child.gender}
-          dataContext={activeRecords.length > 0 ? `活跃过敏原: ${activeRecords.map((r) => `${r.allergen}(${SEVERITY_LABELS[r.severity] ?? r.severity})`).join('、')}` : ''} />
+          ageLabel={formatAge(ageMonths)} gender={child.gender}
+          dataContext={activeRecords.length > 0 ? i18nText('Allergy.context.activeAllergens', {
+            items: activeRecords
+              .map((r) => `${r.allergen}(${SEVERITY_LABELS[r.severity] ?? r.severity})`)
+              .join(i18nText('Common.list.separator')),
+          }) : ''} />
       }
     >
       {/* ── Form ─────────────────────────────────────────── */}
       {showForm && (
         <HealthRecordModalShell open size="M" onClose={resetForm}>
-          <ModalHeader title="添加过敏记录" icon="🤧" onClose={resetForm} />
+          <ModalHeader title={i18nText('Allergy.form.title')} icon="🤧" onClose={resetForm} />
           <ModalContent>
 
             {/* ━━ Section 1: Core ━━ */}
@@ -237,8 +275,8 @@ export default function AllergyPage() {
 
               {/* Allergen */}
               <div>
-                <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">过敏原 <span className="text-[var(--nimi-status-danger)]">*</span></p>
-                <TextField value={formAllergen} onChange={(e) => setFormAllergen(e.target.value)} placeholder="输入过敏原名称" className="w-full" />
+                <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">{i18nText('Allergy.form.allergen')} <span className="text-[var(--nimi-status-danger)]">*</span></p>
+                <TextField value={formAllergen} onChange={(e) => setFormAllergen(e.target.value)} placeholder={i18nText('Allergy.form.allergenPlaceholder')} className="w-full" />
               </div>
 
               {/* Quick-pick: top 6 visible, rest in expandable row */}
@@ -251,7 +289,7 @@ export default function AllergyPage() {
                 ))}
                 <button onClick={() => setShowMore(showMore === 'allergens' ? false : 'allergens')}
                   className={choiceChipClass(showMore === 'allergens')}>
-                  + 更多
+                  {i18nText('Allergy.form.moreAllergens')}
                 </button>
               </div>
               {showMore === 'allergens' && (
@@ -268,14 +306,14 @@ export default function AllergyPage() {
               {/* Date + Severity side-by-side */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">发生日期 <span className="text-[var(--nimi-status-danger)]">*</span></p>
+                  <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">{i18nText('Allergy.form.occurredAt')} <span className="text-[var(--nimi-status-danger)]">*</span></p>
                   <DatePicker
                     value={formDiagnosedAt}
                     onChange={setFormDiagnosedAt}
                   />
                 </div>
                 <div>
-                  <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">严重程度 <span className="text-[var(--nimi-status-danger)]">*</span></p>
+                  <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">{i18nText('Allergy.form.severity')} <span className="text-[var(--nimi-status-danger)]">*</span></p>
                   <div className="flex gap-1.5">
                     {(['mild', 'moderate', 'severe'] as const).map((sv) => (
                       <button key={sv} onClick={() => setFormSeverity(formSeverity === sv ? '' : sv)}
@@ -290,7 +328,7 @@ export default function AllergyPage() {
 
             {/* ━━ Section 2: Symptoms + Photo ━━ */}
             <div className="space-y-3 border-t border-[var(--nimi-border-subtle)] py-4">
-              <p className="text-[13px] font-medium text-[var(--nimi-text-muted)]">症状表现 <span className="font-normal">（可多选）</span></p>
+              <p className="text-[13px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Allergy.form.symptoms')} <span className="font-normal">{i18nText('Allergy.form.multiSelectHint')}</span></p>
 
               {/* Top 6 symptoms visible */}
               <div className="flex flex-wrap gap-1.5">
@@ -302,7 +340,7 @@ export default function AllergyPage() {
                 ))}
                 <button onClick={() => setShowMore(showMore === 'symptoms' ? false : 'symptoms')}
                   className={roundedChoiceClass(showMore === 'symptoms')}>
-                  + 更多症状
+                  {i18nText('Allergy.form.moreSymptoms')}
                 </button>
               </div>
               {showMore === 'symptoms' && (
@@ -314,7 +352,7 @@ export default function AllergyPage() {
                     </button>
                   ))}
                   <TextField value={formCustomSymptom} onChange={(e) => setFormCustomSymptom(e.target.value)}
-                    placeholder="自定义症状..."
+                    placeholder={i18nText('Allergy.form.customSymptomPlaceholder')}
                     className="w-32" />
                 </div>
               )}
@@ -322,7 +360,7 @@ export default function AllergyPage() {
               {/* Photo — tight to symptoms */}
               <div>
                 <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">
-                  现场照片 <span className="font-normal">（皮疹/红斑等，就医时极有帮助）</span>
+                  {i18nText('Allergy.form.photo')} <span className="font-normal">{i18nText('Allergy.form.photoHint')}</span>
                 </p>
                 {formPhotoName ? (
                   <div className="group flex w-full items-center gap-2 rounded-2xl border border-[var(--nimi-action-primary-bg)] bg-[var(--nimi-surface-card)] px-4 py-2 text-[14px] text-[var(--nimi-text-primary)]">
@@ -345,7 +383,7 @@ export default function AllergyPage() {
                       };
                       input.click();
                     }}
-                    label="点击拍照或选择照片"
+                    label={i18nText('Allergy.form.photoUpload')}
                   />
                 )}
               </div>
@@ -357,7 +395,7 @@ export default function AllergyPage() {
                 className="flex items-center gap-1.5 text-[13px] font-medium w-full text-[var(--nimi-text-muted)]">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                   className={`transition-transform duration-200 ${showMore === 'medical' ? 'rotate-180' : ''}`}><path d="M6 9l6 6 6-6" /></svg>
-                {showMore === 'medical' ? '收起医疗与后续信息' : '补充医疗与后续信息'}
+                {showMore === 'medical' ? i18nText('Allergy.form.hideMedicalDetails') : i18nText('Allergy.form.showMedicalDetails')}
               </button>
 
               {showMore === 'medical' && (
@@ -365,7 +403,7 @@ export default function AllergyPage() {
 
                   {/* Treatment tags */}
                   <div>
-                    <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">处理措施 <span className="font-normal">（可多选）</span></p>
+                    <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">{i18nText('Allergy.form.treatments')} <span className="font-normal">{i18nText('Allergy.form.multiSelectHint')}</span></p>
                     <div className="flex flex-wrap gap-1.5">
                       {TREATMENT_TAGS.map((t) => (
                         <button key={t} onClick={() => toggleTreatment(t)}
@@ -374,7 +412,7 @@ export default function AllergyPage() {
                         </button>
                       ))}
                       <TextField value={formCustomTreatment} onChange={(e) => setFormCustomTreatment(e.target.value)}
-                        placeholder="自定义..."
+                        placeholder={i18nText('Allergy.form.customTreatmentPlaceholder')}
                         className="w-28" />
                     </div>
                   </div>
@@ -382,7 +420,7 @@ export default function AllergyPage() {
                   {/* Category + Confirmed by + Status — unified grid */}
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">过敏类别</p>
+                      <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">{i18nText('Allergy.form.category')}</p>
                       <div className="flex flex-col gap-1">
                         {Object.entries(CATEGORY_LABELS).map(([k, l]) => (
                           <button key={k} onClick={() => setFormCategory(k)}
@@ -393,7 +431,7 @@ export default function AllergyPage() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">确认方式</p>
+                      <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">{i18nText('Allergy.form.confirmedBy')}</p>
                       <div className="flex flex-col gap-1">
                         {Object.entries(CONFIRMED_LABELS).map(([k, l]) => (
                           <button key={k} onClick={() => setFormConfirmedBy(formConfirmedBy === k ? '' : k)}
@@ -404,7 +442,7 @@ export default function AllergyPage() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">当前状态</p>
+                      <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">{i18nText('Allergy.form.status')}</p>
                       <div className="flex flex-col gap-1">
                         {Object.entries(STATUS_LABELS).map(([k, l]) => (
                           <button key={k} onClick={() => setFormStatus(k)}
@@ -418,8 +456,8 @@ export default function AllergyPage() {
 
                   {/* Notes */}
                   <div>
-                    <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">补充备注</p>
-                    <TextareaField value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="其他需要记录的信息..."
+                    <p className="text-[13px] mb-1.5 font-medium text-[var(--nimi-text-muted)]">{i18nText('Allergy.form.notes')}</p>
+                    <TextareaField value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder={i18nText('Allergy.form.notesPlaceholder')}
                       className="w-full" rows={2} />
                   </div>
                 </div>
@@ -427,8 +465,8 @@ export default function AllergyPage() {
             </div>
           </ModalContent>
           <ModalFooter>
-            <Button onClick={resetForm} tone="ghost" size="md">取消</Button>
-            <Button onClick={() => void handleSubmit()} disabled={!formAllergen.trim() || !formSeverity} tone="primary" size="md">保存</Button>
+            <Button onClick={resetForm} tone="ghost" size="md">{i18nText('Allergy.form.cancel')}</Button>
+            <Button onClick={() => void handleSubmit()} disabled={!formAllergen.trim() || !formSeverity} tone="primary" size="md">{i18nText('Allergy.form.save')}</Button>
           </ModalFooter>
         </HealthRecordModalShell>
       )}
@@ -437,7 +475,7 @@ export default function AllergyPage() {
       {activeRecords.length > 0 && (
         <div className="mb-5">
           <h2 className="text-[14px] font-semibold mb-3 text-[var(--nimi-text-primary)]">
-            活跃过敏原（{activeRecords.length}）
+            {i18nText('Allergy.page.activeAllergensHeading', { count: activeRecords.length })}
           </h2>
           <div className="space-y-2">
             {activeRecords.map((r) => (
@@ -450,7 +488,7 @@ export default function AllergyPage() {
       {/* ── Resolved / other ─────────────────────────────── */}
       {otherRecords.length > 0 && (
         <div className="mb-5">
-          <h2 className="text-[14px] font-semibold mb-3 text-[var(--nimi-text-muted)]">已脱敏 / 不确定（{otherRecords.length}）</h2>
+          <h2 className="text-[14px] font-semibold mb-3 text-[var(--nimi-text-muted)]">{i18nText('Allergy.page.otherAllergensHeading', { count: otherRecords.length })}</h2>
           <div className="space-y-2">
             {otherRecords.map((r) => <AllergyCard key={r.recordId} record={r} />)}
           </div>
@@ -461,8 +499,8 @@ export default function AllergyPage() {
       {records.length === 0 && !showForm && (
         <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="rounded-3xl p-8 text-center">
           <span className="text-[24px]">🤧</span>
-          <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">还没有过敏记录</p>
-          <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">记录已知的过敏原，方便就医时快速参考</p>
+          <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">{i18nText('Allergy.page.emptyTitle')}</p>
+          <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('Allergy.page.emptyHint')}</p>
         </Surface>
       )}
     </ProfileDetailShell>
@@ -473,9 +511,9 @@ export default function AllergyPage() {
 
 function AllergyCard({ record: r, onMarkOutgrown }: { record: AllergyRecordRow; onMarkOutgrown?: () => void }) {
   // Parse structured notes
-  const symptoms = r.notes?.match(/症状: ([^|]+)/)?.[1];
-  const treatments = r.notes?.match(/处理: ([^|]+)/)?.[1];
-  const hasPhoto = r.notes?.includes('附照片:');
+  const symptoms = r.notes?.match(new RegExp(`${ALLERGY_NOTE_MARKERS.symptoms} ([^|]+)`))?.[1];
+  const treatments = r.notes?.match(new RegExp(`${ALLERGY_NOTE_MARKERS.treatments} ([^|]+)`))?.[1];
+  const hasPhoto = r.notes?.includes(ALLERGY_NOTE_MARKERS.photo);
 
   return (
     <Surface tone="card" material="glass-regular" elevation="raised" padding="md" className={`rounded-2xl border-l-4 ${severityBorderClass(r.severity)}`}>
@@ -486,10 +524,10 @@ function AllergyCard({ record: r, onMarkOutgrown }: { record: AllergyRecordRow; 
             <span className={`rounded-full px-1.5 py-0.5 text-[12px] ${statusClass(r.status)}`}>{STATUS_LABELS[r.status] ?? r.status}</span>
             <span className={`rounded-full border px-1.5 py-0.5 text-[12px] ${severityClass(r.severity)}`}>{SEVERITY_LABELS[r.severity] ?? r.severity}</span>
             <span className="text-[12px] text-[var(--nimi-text-muted)]">{CATEGORY_LABELS[r.category] ?? r.category}</span>
-            {hasPhoto && <span className="text-[12px]" title="有照片记录">📷</span>}
+            {hasPhoto && <span className="text-[12px]" title={i18nText('Allergy.card.hasPhoto')}>📷</span>}
           </div>
-          {symptoms && <p className="text-[13px] mt-1.5 text-[var(--nimi-text-muted)]">症状：{symptoms}</p>}
-          {treatments && <p className="text-[13px] mt-0.5 text-[var(--nimi-text-muted)]">处理：{treatments}</p>}
+          {symptoms && <p className="text-[13px] mt-1.5 text-[var(--nimi-text-muted)]">{i18nText('Allergy.card.symptoms', { symptoms })}</p>}
+          {treatments && <p className="text-[13px] mt-0.5 text-[var(--nimi-text-muted)]">{i18nText('Allergy.card.treatments', { treatments })}</p>}
           <p className="mt-1 text-[12px] text-[var(--nimi-text-muted)]">
             {r.diagnosedAt && `${r.diagnosedAt.split('T')[0]}`}
             {r.confirmedBy && ` · ${CONFIRMED_LABELS[r.confirmedBy] ?? r.confirmedBy}`}
@@ -497,7 +535,7 @@ function AllergyCard({ record: r, onMarkOutgrown }: { record: AllergyRecordRow; 
         </div>
         {r.status === 'active' && onMarkOutgrown && (
           <Button onClick={onMarkOutgrown} tone="secondary" size="sm" className="shrink-0 border-[color-mix(in_srgb,var(--nimi-status-success)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-success)_10%,var(--nimi-surface-card))] text-[var(--nimi-status-success)]">
-            标记脱敏
+            {i18nText('Allergy.card.markOutgrown')}
           </Button>
         )}
       </div>

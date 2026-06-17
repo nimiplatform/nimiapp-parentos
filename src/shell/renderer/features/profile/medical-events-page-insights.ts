@@ -13,6 +13,7 @@ import {
 } from '../settings/parentos-ai-runtime.js';
 import { EVENT_TYPE_LABELS, SEVERITY_LABELS } from './medical-events-page-shared.js';
 import type { MedicalEventsChildContext } from './medical-events-page-types.js';
+import { i18nText } from '../../i18n/index.js';
 
 export function useMedicalEventsInsights(
   child: MedicalEventsChildContext | undefined,
@@ -50,33 +51,51 @@ export function useMedicalEventsInsights(
 
     setAiLoading(true);
     try {
+      const itemSeparator = i18nText('MedicalEvents.aiPrompt.itemSeparator');
       const diagSummary = analysis.diagnoses.slice(0, 10)
-        .map((d) => `${d.diagnosis}(${d.count}次，末次${d.lastDate.split('T')[0]})`)
-        .join('；');
+        .map((d) => i18nText('MedicalEvents.aiPrompt.diagnosisItem', {
+          diagnosis: d.diagnosis,
+          count: d.count,
+          lastDate: d.lastDate.split('T')[0],
+        }))
+        .join(itemSeparator);
       const medSummary = analysis.medications.slice(0, 10)
-        .map((m) => `${m.name}(${m.count}次${m.dosage ? `，${m.dosage}` : ''})`)
-        .join('；');
+        .map((m) => i18nText(m.dosage ? 'MedicalEvents.aiPrompt.medicationItemWithDosage' : 'MedicalEvents.aiPrompt.medicationItem', {
+          name: m.name,
+          count: m.count,
+          dosage: m.dosage,
+        }))
+        .join(itemSeparator);
       const alertSummary = analysis.alerts
         .map((a) => `[${a.level}] ${a.title}`)
-        .join('；');
+        .join(itemSeparator);
 
       const ageMonths = computeAgeMonths(child.birthDate);
+      const ageLabel = i18nText('Profile.age.yearsMonths', {
+        years: Math.floor(ageMonths / 12),
+        months: ageMonths % 12,
+      });
+      const gender = child.gender === 'female'
+        ? i18nText('MedicalEvents.aiPrompt.genderFemale')
+        : i18nText('MedicalEvents.aiPrompt.genderMale');
       const prompt = [
-        '你是一位儿童健康记录整理助手。',
-        '请根据以下就医记录摘要，为家长生成一段描述性总结（3-5句话）。',
-        '要求：',
-        '- 仅描述记录中可见的就医频率、重复出现的主题和照护记录概况',
-        '- 如果存在值得留意的模式，只能说“可以继续留意”或“建议咨询专业人士”',
-        '- 不给出用药合理性判断、治疗建议、复查建议或具体护理方案',
-        '- 使用客观温和的语气，不使用焦虑性词汇',
-        '- 仅输出分析文本',
+        i18nText('MedicalEvents.aiPrompt.aggregateRole'),
+        i18nText('MedicalEvents.aiPrompt.aggregateTask'),
+        i18nText('MedicalEvents.aiPrompt.requirementsTitle'),
+        i18nText('MedicalEvents.aiPrompt.aggregateVisibleOnly'),
+        i18nText('MedicalEvents.aiPrompt.patternBoundary'),
+        i18nText('MedicalEvents.aiPrompt.noTreatmentJudgment'),
+        i18nText('MedicalEvents.aiPrompt.gentleTone'),
+        i18nText('MedicalEvents.aiPrompt.outputOnly'),
         '',
-        `孩子：${child.displayName}，${Math.floor(ageMonths / 12)}岁${ageMonths % 12}个月，${child.gender === 'female' ? '女' : '男'}`,
-        `就医总次数：${analysis.totalEvents}`,
-        `诊断汇总：${diagSummary || '无'}`,
-        `用药汇总：${medSummary || '无'}`,
-        `系统预警：${alertSummary || '无'}`,
-        `常去医院：${analysis.frequentHospitals.join('、') || '未记录'}`,
+        i18nText('MedicalEvents.aiPrompt.childLineWithGender', { name: child.displayName, ageLabel, gender }),
+        i18nText('MedicalEvents.aiPrompt.totalEvents', { count: analysis.totalEvents }),
+        i18nText('MedicalEvents.aiPrompt.diagnosisSummary', { summary: diagSummary || i18nText('MedicalEvents.aiPrompt.none') }),
+        i18nText('MedicalEvents.aiPrompt.medicationSummary', { summary: medSummary || i18nText('MedicalEvents.aiPrompt.none') }),
+        i18nText('MedicalEvents.aiPrompt.alertSummary', { summary: alertSummary || i18nText('MedicalEvents.aiPrompt.none') }),
+        i18nText('MedicalEvents.aiPrompt.frequentHospitals', {
+          hospitals: analysis.frequentHospitals.join(itemSeparator) || i18nText('MedicalEvents.aiPrompt.notRecorded'),
+        }),
       ].join('\n');
 
       const output = await runParentosTextGenerate({
@@ -89,7 +108,7 @@ export function useMedicalEventsInsights(
       }
 
       const filtered = filterAIResponse(output.text);
-      const text = filtered.safe ? filtered.filtered : '数据已记录，建议持续更新就医信息以获取更精准的健康分析。';
+      const text = filtered.safe ? filtered.filtered : i18nText('MedicalEvents.ai.filteredFallback');
       setAiInsight(text);
 
       try {
@@ -110,18 +129,25 @@ export function useMedicalEventsInsights(
     setEventAiLoading(event.eventId);
     try {
       const ageMonths = computeAgeMonths(child.birthDate);
+      const ageLabel = i18nText('Profile.age.yearsMonths', {
+        years: Math.floor(ageMonths / 12),
+        months: ageMonths % 12,
+      });
       const prompt = [
-        '你是一位儿童健康记录整理助手。请根据以下单次就医记录，给出简短的描述性总结（2-3句话）。',
-        '要求：客观温和，仅概括本次记录中的症状、处理经过和已记录照护信息；不要给出复查建议、用药注意事项、治疗建议或护理方案。仅输出分析文本。',
+        i18nText('MedicalEvents.aiPrompt.eventTask'),
+        i18nText('MedicalEvents.aiPrompt.eventRequirement'),
         '',
-        `孩子：${child.displayName}，${Math.floor(ageMonths / 12)}岁${ageMonths % 12}个月`,
-        `就诊类型：${EVENT_TYPE_LABELS[event.eventType] ?? event.eventType}`,
-        `诊断/症状：${event.title}`,
-        `日期：${event.eventDate.split('T')[0]}`,
-        event.severity ? `严重程度：${SEVERITY_LABELS[event.severity] ?? event.severity}` : '',
-        event.hospital ? `医院：${event.hospital}` : '',
-        event.medication ? `用药：${event.medication}${event.dosage ? `，剂量：${event.dosage}` : ''}` : '',
-        event.notes ? `备注：${event.notes}` : '',
+        i18nText('MedicalEvents.aiPrompt.childLine', { name: child.displayName, ageLabel }),
+        i18nText('MedicalEvents.aiPrompt.eventType', { type: EVENT_TYPE_LABELS[event.eventType] ?? event.eventType }),
+        i18nText('MedicalEvents.aiPrompt.diagnosisOrSymptom', { title: event.title }),
+        i18nText('MedicalEvents.aiPrompt.date', { date: event.eventDate.split('T')[0] }),
+        event.severity ? i18nText('MedicalEvents.aiPrompt.severity', { severity: SEVERITY_LABELS[event.severity] ?? event.severity }) : '',
+        event.hospital ? i18nText('MedicalEvents.aiPrompt.hospital', { hospital: event.hospital }) : '',
+        event.medication ? i18nText(event.dosage ? 'MedicalEvents.aiPrompt.medicationWithDosage' : 'MedicalEvents.aiPrompt.medication', {
+          medication: event.medication,
+          dosage: event.dosage,
+        }) : '',
+        event.notes ? i18nText('MedicalEvents.aiPrompt.notes', { notes: event.notes }) : '',
       ].filter(Boolean).join('\n');
 
       const output = await runParentosTextGenerate({
@@ -136,12 +162,12 @@ export function useMedicalEventsInsights(
       const filtered = filterAIResponse(output.text);
       setEventAiResult((prev) => ({
         ...prev,
-        [event.eventId]: filtered.safe ? filtered.filtered : '暂无法生成分析，请确认 AI 运行时已启动。',
+        [event.eventId]: filtered.safe ? filtered.filtered : i18nText('MedicalEvents.ai.unavailable'),
       }));
     } catch {
       setEventAiResult((prev) => ({
         ...prev,
-        [event.eventId]: 'AI 分析暂不可用，请稍后重试。',
+        [event.eventId]: i18nText('MedicalEvents.ai.retryLater'),
       }));
     } finally {
       setEventAiLoading(null);

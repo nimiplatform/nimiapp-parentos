@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 
 import { Button, IconButton, Surface, TextareaField } from '@nimiplatform/kit/ui';
 import type { VoiceDraft } from './journal-page-helpers.js';
 import type { VoiceRecordingSession } from './voice-observation-recorder.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const BAR_COUNT = 36;
 const BAR_RING_SIZE = BAR_COUNT;
@@ -162,7 +164,7 @@ export function VoiceIdleEntry({
           onClick={onStart}
           disabled={!recordingSupported}
           className="parentos-voice-primary-orb relative flex h-[76px] w-[76px] items-center justify-center rounded-full text-[var(--nimi-action-primary-text)] transition-transform hover:scale-105 active:scale-95 disabled:opacity-40"
-          aria-label="开始语音记录"
+          aria-label={i18nText('Journal.voiceCard.startAria')}
         >
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
@@ -171,16 +173,16 @@ export function VoiceIdleEntry({
           </svg>
         </button>
       </div>
-      <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">点击开始语音记录</p>
+      <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Journal.voiceCard.startPrompt')}</p>
       <button
         type="button"
         onClick={onSwitchToText}
         className="text-[13px] text-[var(--nimi-text-muted)] underline-offset-2 transition-colors hover:text-[var(--nimi-text-primary)]"
       >
-        切换文字输入
+        {i18nText('Journal.voiceCard.switchToText')}
       </button>
       {!recordingSupported ? (
-        <p className="mt-1 text-[12px] text-[var(--nimi-status-danger)]">当前环境不支持录音，请在桌面端使用并授权麦克风。</p>
+        <p className="mt-1 text-[12px] text-[var(--nimi-status-danger)]">{i18nText('Journal.voiceCard.unsupported')}</p>
       ) : null}
     </div>
   );
@@ -210,8 +212,8 @@ export function VoiceRecordingPanel({
         tone="ghost"
         size="sm"
         className="absolute right-3 top-3 h-7 min-h-0 w-7 parentos-radius-full text-[var(--nimi-text-muted)]"
-        aria-label="取消录音"
-        title="取消录音"
+        aria-label={i18nText('Journal.voiceCard.cancelRecording')}
+        title={i18nText('Journal.voiceCard.cancelRecording')}
         icon={
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M18 6 6 18" /><path d="m6 6 12 12" />
@@ -226,7 +228,7 @@ export function VoiceRecordingPanel({
           />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--nimi-status-danger)]" />
         </span>
-        <span className="text-[12px] font-medium tracking-wide text-[var(--nimi-text-muted)]">录音中</span>
+        <span className="text-[12px] font-medium tracking-wide text-[var(--nimi-text-muted)]">{i18nText('Journal.voiceCard.recording')}</span>
       </div>
 
       <div className="w-full max-w-[360px]">
@@ -237,7 +239,7 @@ export function VoiceRecordingPanel({
 
       <div className="flex items-center gap-3">
         <Button type="button" onClick={onCancel} tone="ghost" size="sm" className="parentos-radius-full px-5 py-2 text-[13px] font-medium">
-          取消
+          {i18nText('Journal.voiceCard.cancel')}
         </Button>
         <button
           type="button"
@@ -247,7 +249,7 @@ export function VoiceRecordingPanel({
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="6" width="12" height="12" rx="2" />
           </svg>
-          完成
+          {i18nText('Journal.voiceCard.finish')}
         </button>
       </div>
     </Surface>
@@ -309,7 +311,7 @@ export function VoicePreviewPanel({
           type="button"
           onClick={togglePlay}
           className="parentos-voice-play-button flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--nimi-action-primary-text)] transition-transform hover:scale-105 active:scale-95"
-          aria-label={isPlaying ? '暂停' : '播放'}
+          aria-label={isPlaying ? i18nText('Journal.voiceCard.pause') : i18nText('Journal.voiceCard.play')}
         >
           {isPlaying ? (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -337,8 +339,8 @@ export function VoicePreviewPanel({
           tone="ghost"
           size="sm"
           className="h-8 min-h-0 w-8 shrink-0 parentos-radius-full text-[var(--nimi-text-muted)]"
-          aria-label="删除录音"
-          title="删除录音"
+          aria-label={i18nText('Journal.voiceCard.deleteRecording')}
+          title={i18nText('Journal.voiceCard.deleteRecording')}
           icon={
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M3 6h18" /><path d="M8 6V4h8v2" />
@@ -368,14 +370,14 @@ export function VoicePreviewPanel({
                   />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--nimi-action-primary-bg)]" />
                 </span>
-                AI 正在转写...
+                {i18nText('Journal.voiceCard.transcribing')}
               </>
             ) : (
               <>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z" />
                 </svg>
-                转为文字
+                {i18nText('Journal.voiceCard.transcribe')}
               </>
             )}
           </button>
@@ -384,7 +386,7 @@ export function VoicePreviewPanel({
 
       {voiceRuntimeAvailable === false ? (
         <p className="text-center text-[12px] text-[var(--nimi-status-warning)]">
-          语音转写暂不可用，仍可保存语音记录。
+          {i18nText('Journal.voiceCard.transcribeUnavailable')}
         </p>
       ) : null}
       {voiceDraft.error ? (
@@ -397,12 +399,12 @@ export function VoicePreviewPanel({
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--nimi-action-primary-bg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z" />
             </svg>
-            <span className="text-[12px] font-medium text-[var(--nimi-action-primary-bg)]">转写结果（可编辑）</span>
+            <span className="text-[12px] font-medium text-[var(--nimi-action-primary-bg)]">{i18nText('Journal.voiceCard.transcriptLabel')}</span>
           </div>
           <TextareaField
             value={voiceDraft.transcript}
             onChange={(event) => onTranscriptChange(event.target.value)}
-            placeholder="转写结果可以在这里继续修改..."
+            placeholder={i18nText('Journal.voiceCard.transcriptPlaceholder')}
             className="w-full parentos-radius-md text-[14px] leading-relaxed"
             textareaClassName="resize-none"
             rows={4}

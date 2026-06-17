@@ -12,6 +12,8 @@ import {
   sameDay,
   startOfCalendarMonth,
 } from './sleep-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
@@ -275,8 +277,8 @@ const TimePickerPanel = forwardRef<HTMLDivElement, {
       <div className="absolute inset-x-0 pointer-events-none z-[5] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)]" style={{ top: PAD_ROWS * ITEM_H, height: ITEM_H }} />
       <div className="absolute top-0 bottom-0 left-1/2 w-px z-[6] bg-[var(--nimi-border-subtle)]" />
       <div className="flex relative" style={{ height: PANEL_H }}>
-        <DrumColumn items={HOURS} selected={hour} onSelect={onHourChange} label="小时" />
-        <DrumColumn items={MINUTES} selected={minute} onSelect={onMinuteChange} label="分钟" />
+        <DrumColumn items={HOURS} selected={hour} onSelect={onHourChange} label={i18nText('Sleep.picker.hour')} />
+        <DrumColumn items={MINUTES} selected={minute} onSelect={onMinuteChange} label={i18nText('Sleep.picker.minute')} />
       </div>
     </div>
   );
@@ -402,14 +404,14 @@ const DatePickerPanel = forwardRef<HTMLDivElement, {
     >
       <div className="mb-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <button type="button" onClick={() => onDisplayMonthChange(addMonths(displayMonth, -1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)] text-[var(--nimi-action-primary-bg)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]" aria-label="上个月">
+          <button type="button" onClick={() => onDisplayMonthChange(addMonths(displayMonth, -1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)] text-[var(--nimi-action-primary-bg)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]" aria-label={i18nText('Sleep.picker.previousMonth')}>
             <ChevronLeft size={16} strokeWidth={1.75} />
           </button>
           <div className="relative flex-1">
             <button type="button" onClick={() => setShowMonthYearPicker((prev) => !prev)} className="relative flex w-full items-center justify-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)] px-4 py-2 text-[var(--nimi-action-primary-bg)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]">
-              <span className="text-[16px] font-semibold tracking-[0.02em]">{displayMonth.getFullYear()}年</span>
+              <span className="text-[16px] font-semibold tracking-[0.02em]">{i18nText('Sleep.picker.yearValue', { year: displayMonth.getFullYear() })}</span>
               <span className="relative pr-4 text-[16px] font-semibold tracking-[0.02em]">
-                {displayMonth.getMonth() + 1}月
+                {i18nText('Sleep.picker.monthValue', { month: displayMonth.getMonth() + 1 })}
                 <ChevronRight size={13} strokeWidth={2} className="absolute right-[-1px] bottom-[1px] text-[var(--nimi-action-primary-bg)] transition-transform" style={{ transform: `rotate(${showMonthYearPicker ? 270 : 90}deg)` }} />
               </span>
             </button>
@@ -419,20 +421,28 @@ const DatePickerPanel = forwardRef<HTMLDivElement, {
                 <div className="absolute inset-x-0 pointer-events-none z-[5] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)]" style={{ top: 28, height: 28 }} />
                 <div className="absolute top-0 bottom-0 left-1/2 w-px z-[6] bg-[var(--nimi-border-subtle)]" />
                 <div className="flex relative" style={{ height: 84 }}>
-                  <DrumColumn items={yearItems} selected={displayMonth.getFullYear()} onSelect={(nextYear) => onDisplayMonthChange(new Date(nextYear, displayMonth.getMonth(), 1, 12, 0, 0, 0))} label="年份" itemHeight={28} visibleRows={3} renderValue={(year) => String(year)} />
-                  <DrumColumn items={monthItems} selected={displayMonth.getMonth() + 1} onSelect={(nextMonth) => onDisplayMonthChange(new Date(displayMonth.getFullYear(), nextMonth - 1, 1, 12, 0, 0, 0))} label="月份" itemHeight={28} visibleRows={3} renderValue={(month) => `${month}月`} />
+                  <DrumColumn items={yearItems} selected={displayMonth.getFullYear()} onSelect={(nextYear) => onDisplayMonthChange(new Date(nextYear, displayMonth.getMonth(), 1, 12, 0, 0, 0))} label={i18nText('Sleep.picker.year')} itemHeight={28} visibleRows={3} renderValue={(year) => String(year)} />
+                  <DrumColumn items={monthItems} selected={displayMonth.getMonth() + 1} onSelect={(nextMonth) => onDisplayMonthChange(new Date(displayMonth.getFullYear(), nextMonth - 1, 1, 12, 0, 0, 0))} label={i18nText('Sleep.picker.month')} itemHeight={28} visibleRows={3} renderValue={(month) => i18nText('Sleep.picker.monthValue', { month })} />
                 </div>
               </div>
             ) : null}
           </div>
-          <button type="button" onClick={() => onDisplayMonthChange(addMonths(displayMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)] text-[var(--nimi-action-primary-bg)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)] disabled:cursor-not-allowed disabled:opacity-50" aria-label="下个月" disabled={isCurrentMonth}>
+          <button type="button" onClick={() => onDisplayMonthChange(addMonths(displayMonth, 1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)] text-[var(--nimi-action-primary-bg)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)] disabled:cursor-not-allowed disabled:opacity-50" aria-label={i18nText('Sleep.picker.nextMonth')} disabled={isCurrentMonth}>
             <ChevronRight size={16} strokeWidth={1.75} />
           </button>
         </div>
       </div>
 
       <div className="mb-2 grid grid-cols-7 gap-1 px-1">
-        {['一', '二', '三', '四', '五', '六', '日'].map((label) => (
+        {[
+          i18nText('Sleep.picker.weekday.mon'),
+          i18nText('Sleep.picker.weekday.tue'),
+          i18nText('Sleep.picker.weekday.wed'),
+          i18nText('Sleep.picker.weekday.thu'),
+          i18nText('Sleep.picker.weekday.fri'),
+          i18nText('Sleep.picker.weekday.sat'),
+          i18nText('Sleep.picker.weekday.sun'),
+        ].map((label) => (
           <div key={label} className="flex h-8 items-center justify-center text-[13px] font-medium text-[var(--nimi-text-muted)]">
             {label}
           </div>
@@ -475,10 +485,10 @@ const DatePickerPanel = forwardRef<HTMLDivElement, {
           onDisplayMonthChange(new Date(now.getFullYear(), now.getMonth(), 1, 12, 0, 0, 0));
           onChange(formatDateValue(now));
         }} className="rounded-full px-3 py-1 text-[14px] font-medium text-[var(--nimi-action-primary-bg)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]">
-          今天
+          {i18nText('Sleep.picker.today')}
         </button>
         <button type="button" onClick={onClose} className="rounded-full px-3 py-1 text-[14px] font-medium transition-colors hover:bg-[var(--nimi-action-ghost-hover)] text-[var(--nimi-text-muted)]">
-          关闭
+          {i18nText('Sleep.picker.close')}
         </button>
       </div>
     </div>

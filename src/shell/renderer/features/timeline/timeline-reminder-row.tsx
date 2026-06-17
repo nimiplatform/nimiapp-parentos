@@ -14,6 +14,8 @@ import type { ActiveReminder } from '../../engine/reminder-engine.js';
 import type { ReminderActionType } from '../../engine/reminder-actions.js';
 import { currentProgressionState } from '../../engine/reminder-progression.js';
 import { isRecordDataReminder } from '../reminders/record-data-capture.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface ReminderRowProps {
   reminder: ActiveReminder;
@@ -44,23 +46,25 @@ export function TimelineReminderRow({ reminder, onOpen, onAction, onOpenCapture,
 
   const kindGlyph = (() => {
     switch (reminder.kind) {
-      case 'guide':    return { icon: '📖', tooltip: '读指南后应用' };
-      case 'practice': return { icon: '✍️', tooltip: '持续实践' };
-      case 'consult':  return { icon: '💬', tooltip: '可与 AI 顾问对话' };
+      case 'guide':    return { icon: '📖', tooltip: i18nText('Timeline.reminderRow.kind.guide') };
+      case 'practice': return { icon: '✍️', tooltip: i18nText('Timeline.reminderRow.kind.practice') };
+      case 'consult':  return { icon: '💬', tooltip: i18nText('Timeline.reminderRow.kind.consult') };
       default:          return null;
     }
   })();
   const recordData = isRecordDataReminder(reminder);
 
   const progressionNote = (() => {
-    if (reminder.kind === 'guide' && progression === 'acknowledged') return '已了解';
-    if (reminder.kind === 'guide' && progression === 'reflected') return '已反思';
+    if (reminder.kind === 'guide' && progression === 'acknowledged') return i18nText('Timeline.reminderRow.progression.acknowledged');
+    if (reminder.kind === 'guide' && progression === 'reflected') return i18nText('Timeline.reminderRow.progression.reflected');
     if (reminder.kind === 'practice' && progression === 'practicing') {
       const count = reminder.state?.practiceCount ?? 0;
-      return count > 0 ? `实践中 · 已 ${count} 次` : '实践中';
+      return count > 0
+        ? i18nText('Timeline.reminderRow.progression.practicingWithCount', { count })
+        : i18nText('Timeline.reminderRow.progression.practicing');
     }
-    if (reminder.kind === 'practice' && progression === 'habituated') return '已成为习惯';
-    if (reminder.kind === 'consult' && progression === 'consulted') return '已咨询';
+    if (reminder.kind === 'practice' && progression === 'habituated') return i18nText('Timeline.reminderRow.progression.habituated');
+    if (reminder.kind === 'consult' && progression === 'consulted') return i18nText('Timeline.reminderRow.progression.consulted');
     return null;
   })();
 
@@ -80,7 +84,7 @@ export function TimelineReminderRow({ reminder, onOpen, onAction, onOpenCapture,
       {reminder.kind === 'task' ? (
         <button
           type="button"
-          title={recordData ? '记录数据' : '标记完成'}
+          title={recordData ? i18nText('Timeline.reminderAction.recordData') : i18nText('Timeline.reminderAction.markComplete')}
           onClick={(event) => {
             event.stopPropagation();
             if (recordData) {
@@ -122,14 +126,14 @@ export function TimelineReminderRow({ reminder, onOpen, onAction, onOpenCapture,
       {recordData ? (
         <button
           type="button"
-          title="记录数据"
+          title={i18nText('Timeline.reminderAction.recordData')}
           onClick={(event) => {
             event.stopPropagation();
             onOpenCapture(reminder);
           }}
           className="shrink-0 self-center rounded-full px-2.5 py-1 text-[11px] font-medium text-[#9AA1A8] transition-colors hover:bg-[rgba(78,204,163,0.16)] hover:text-[#2E9C73]"
         >
-          记录
+          {i18nText('Timeline.reminderAction.record')}
         </button>
       ) : null}
     </div>

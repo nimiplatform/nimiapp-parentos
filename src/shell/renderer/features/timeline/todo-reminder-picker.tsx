@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { REMINDER_OFFSET_PRESETS, describeReminderOffset } from './todo-recurrence.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type TodoReminderPickerProps = {
   value: number | null;
@@ -39,7 +41,9 @@ export function TodoReminderPicker({ value, onChange }: TodoReminderPickerProps)
     <div ref={wrapperRef} className="relative inline-flex">
       <button
         type="button"
-        title={active ? `提醒：${describeReminderOffset(value)}` : '设置提醒'}
+        title={active
+          ? i18nText('Timeline.todoReminderPicker.activeTitle', { offset: describeReminderOffset(value) })
+          : i18nText('Timeline.todoReminderPicker.inactiveTitle')}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => setOpen((v) => !v)}
         className={`inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-full text-[14px] font-medium transition-colors hover:bg-[#f3f4f6] ${active ? 'px-3' : 'w-8 px-0'}`}
@@ -66,7 +70,7 @@ export function TodoReminderPicker({ value, onChange }: TodoReminderPickerProps)
             className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-[14px] transition-colors hover:bg-[#f3f4f6]"
             style={{ color: !active ? '#3BB88A' : '#64748b' }}
           >
-            <span>不提醒</span>
+            <span>{i18nText('Timeline.todoReminderPicker.none')}</span>
             {!active && <span style={{ color: '#3BB88A' }}>✓</span>}
           </button>
           <div className="my-1 h-px" style={{ background: '#eef0ee' }} />

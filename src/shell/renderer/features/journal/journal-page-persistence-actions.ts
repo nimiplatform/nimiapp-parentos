@@ -32,6 +32,8 @@ import { REMINDER_RULES } from '../../knowledge-base/index.js';
 import { completeReminderByRule } from '../../engine/reminder-actions.js';
 import { getExperimentSuggestion, type ExperimentTemplate } from './journal-experiment-templates.js';
 import { clearJournalLocalDraft, type JournalLocalDraftRecord } from './journal-page-local-draft.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type SetOptionalString = Dispatch<SetStateAction<string | null>>;
 type SetOptionalEntry = Dispatch<SetStateAction<JournalEntryRow | null>>;
@@ -261,7 +263,7 @@ export function createJournalPersistenceActions(input: {
       input.setDeleteTarget(null);
       await input.reloadEntries();
     } catch {
-      input.setSubmitError('删除失败，请稍后重试。');
+      input.setSubmitError(i18nText('Journal.error.deleteFailed'));
     } finally {
       input.setDeleting(false);
     }
@@ -419,7 +421,7 @@ export function createJournalPersistenceActions(input: {
         }
       }
     } catch {
-      input.setSubmitError('保存失败，请检查本地运行时状态后重试。');
+      input.setSubmitError(i18nText('Journal.error.saveFailed'));
     } finally {
       input.setSaving(false);
     }
@@ -444,7 +446,7 @@ export function createJournalPersistenceActions(input: {
       input.setVoiceDraft({
         ...EMPTY_VOICE_DRAFT,
         status: 'transcription-failed',
-        error: '无法启动录音，请确认麦克风权限。',
+        error: i18nText('Journal.error.recordingStartFailed'),
       });
     }
   };
@@ -473,7 +475,7 @@ export function createJournalPersistenceActions(input: {
       input.setVoiceDraft({
         ...EMPTY_VOICE_DRAFT,
         status: 'transcription-failed',
-        error: '录音失败，请重试。',
+        error: i18nText('Journal.error.recordingFailed'),
       });
     }
   };
@@ -500,7 +502,7 @@ export function createJournalPersistenceActions(input: {
         ...current,
         status: 'transcription-failed',
         transcript: '',
-        error: '转写失败，仍可保存语音记录。',
+        error: i18nText('Journal.error.transcriptionFailed'),
       }));
     }
   };

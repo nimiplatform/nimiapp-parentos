@@ -199,7 +199,7 @@ describe('VisionPage OCR intake', () => {
     // Pick the 6-month preset.
     fireEvent.click(await screen.findByRole('button', { name: '6 个月' }));
 
-    fireEvent.click(screen.getByLabelText('vision-followup-save'));
+    fireEvent.click(screen.getByLabelText(/保存随访设置|Save follow-up settings/));
 
     await waitFor(() => {
       expect(setVisionFollowupSettingsMock).toHaveBeenCalledTimes(1);

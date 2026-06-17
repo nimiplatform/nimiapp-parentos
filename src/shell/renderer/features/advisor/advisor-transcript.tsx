@@ -2,6 +2,8 @@ import { Fragment, useEffect, useRef } from 'react';
 import { Square } from 'lucide-react';
 import { cn } from '@nimiplatform/kit/ui';
 import type { AiMessageRow } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type StreamingState = 'idle' | 'streaming';
 
@@ -82,7 +84,7 @@ function AdvisorMessageCard({ message }: { message: AiMessageRow }) {
       >
         <div className="mb-2 flex items-center justify-between gap-3">
           <span className="text-[12px] font-semibold text-[var(--nimi-text-muted)]">
-            {isUser ? '你' : '成长顾问'}
+            {isUser ? i18nText('Advisor.transcript.user') : i18nText('Advisor.transcript.assistant')}
           </span>
         </div>
         <AdvisorMessageContent content={message.content} />
@@ -95,7 +97,7 @@ function AdvisorStreamingCard({ content }: { content: string }) {
   return (
     <div className="flex w-full justify-start">
       <article className="advisor-message-card advisor-message-card--assistant">
-        <div className="mb-2 text-[12px] font-semibold text-[var(--nimi-text-muted)]">成长顾问</div>
+        <div className="mb-2 text-[12px] font-semibold text-[var(--nimi-text-muted)]">{i18nText('Advisor.transcript.assistant')}</div>
         <AdvisorMessageContent content={content} />
         <span className="inline-block animate-pulse text-[var(--nimi-action-primary-bg)]">|</span>
       </article>
@@ -110,7 +112,7 @@ function AdvisorThinkingCard({ onStop }: { onStop: () => void }) {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-[13px] text-[var(--nimi-text-muted)]">
             <span className="advisor-thinking-dot" />
-            <span>AI 正在思考...</span>
+            <span>{i18nText('Advisor.transcript.thinking')}</span>
           </div>
           <button
             type="button"
@@ -118,7 +120,7 @@ function AdvisorThinkingCard({ onStop }: { onStop: () => void }) {
             className="inline-flex h-8 items-center gap-1.5 parentos-radius-lg px-2.5 text-[12px] font-medium text-[var(--nimi-status-danger)] transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,transparent)]"
           >
             <Square size={12} aria-hidden="true" />
-            停止
+            {i18nText('Advisor.transcript.stop')}
           </button>
         </div>
       </article>

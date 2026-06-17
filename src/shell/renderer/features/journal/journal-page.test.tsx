@@ -88,6 +88,16 @@ vi.mock('../../knowledge-base/index.js', () => ({
       source: 'test',
     },
   ],
+  JOURNAL_GUIDED_PROMPTS: [
+    {
+      ruleId: 'PO-REM-GUIDE-001',
+      prompts: ['What did you observe?', 'How did the child respond?'],
+    },
+  ],
+  JOURNAL_GUIDED_PROMPT_FALLBACK: {
+    observedChangeTemplate: 'What changed for {{title}}?',
+    responseEffect: 'What did you adjust?',
+  },
 }));
 
 vi.mock('./voice-observation-recorder.js', () => ({
@@ -442,7 +452,7 @@ describe('JournalPage', () => {
     });
   });
 
-  it('silently restores a recent local draft without showing the banner', async () => {
+  it('does not persist or restore journal draft bodies in localStorage', async () => {
     vi.useFakeTimers();
     const view = renderPage();
 
@@ -454,7 +464,8 @@ describe('JournalPage', () => {
       vi.advanceTimersByTime(2100);
     });
 
-    expect(screen.getByText(/已自动保存/i)).toBeTruthy();
+    expect(screen.queryByText(/已自动保存/i)).toBeNull();
+    expect(window.localStorage.getItem('parentos:journal-draft:child-1')).toBeNull();
 
     vi.useRealTimers();
 
@@ -464,12 +475,11 @@ describe('JournalPage', () => {
 
     renderPage();
 
-    // Recent draft (< 5 min) is auto-restored — no banner shown
     expect(screen.queryByRole('button', { name: /继续编辑/i })).toBeNull();
-    expect((getComposerTextarea() as HTMLTextAreaElement).value).toBe('先记下来');
+    expect((getComposerTextarea() as HTMLTextAreaElement).value).toBe('');
   });
 
-  it('shows the recovery banner for old drafts', async () => {
+  it('clears legacy localStorage journal draft keys instead of restoring them', async () => {
     window.localStorage.setItem('parentos:journal-draft:child-1', JSON.stringify({
       version: 1,
       childId: 'child-1',
@@ -485,12 +495,12 @@ describe('JournalPage', () => {
 
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /继续编辑/i }));
-
-    expect((getComposerTextarea() as HTMLTextAreaElement).value).toBe('很久前的草稿');
+    expect(screen.queryByRole('button', { name: /继续编辑/i })).toBeNull();
+    expect((getComposerTextarea() as HTMLTextAreaElement).value).toBe('');
+    expect(window.localStorage.getItem('parentos:journal-draft:child-1')).toBeNull();
   });
 
-  it('surfaces the draft restore banner again when the page regains focus', async () => {
+  it('clears legacy localStorage journal draft keys when the page regains focus', async () => {
     renderPage();
 
     window.localStorage.setItem('parentos:journal-draft:child-1', JSON.stringify({
@@ -510,9 +520,9 @@ describe('JournalPage', () => {
       window.dispatchEvent(new Event('focus'));
     });
 
-    fireEvent.click(await screen.findByRole('button', { name: /继续编辑/i }));
-
-    expect((getComposerTextarea() as HTMLTextAreaElement).value).toBe('被打断前的随手记');
+    expect(screen.queryByRole('button', { name: /继续编辑/i })).toBeNull();
+    expect((getComposerTextarea() as HTMLTextAreaElement).value).toBe('');
+    expect(window.localStorage.getItem('parentos:journal-draft:child-1')).toBeNull();
   });
 
   it('clears the local draft after a successful save', async () => {
@@ -527,7 +537,7 @@ describe('JournalPage', () => {
       vi.advanceTimersByTime(2100);
     });
 
-    expect(window.localStorage.getItem('parentos:journal-draft:child-1')).toContain('先记下来');
+    expect(window.localStorage.getItem('parentos:journal-draft:child-1')).toBeNull();
     vi.useRealTimers();
 
     await act(async () => {

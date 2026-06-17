@@ -6,11 +6,11 @@ import { isoNow, ulid } from '../../bridge/ulid.js';
 import type { LinkedHealthRecordReminder } from './health-capture-orchestrator.js';
 import { TannerStageSelector } from './tanner-stage-selector.js';
 import {
-  ASSESSED_BY_LABELS,
   ASSESSED_BY_OPTIONS,
   BREAST_STAGES,
   GENITAL_STAGES,
   PUBIC_HAIR_STAGES,
+  formatAssessedBy,
   type StageDesc,
 } from './tanner-page-shared.js';
 import {
@@ -23,6 +23,8 @@ import {
   ModalFooter,
   ModalHeader,
 } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const NUMBER_INPUT_CLASS = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
@@ -49,7 +51,7 @@ type TannerAssessmentFormProps = {
 
 const ASSESSED_BY_CHIPS: ChipOption<string>[] = ASSESSED_BY_OPTIONS.map((value) => ({
   value,
-  label: ASSESSED_BY_LABELS[value] ?? value,
+  label: formatAssessedBy(value),
 }));
 
 export function TannerAssessmentForm({
@@ -74,7 +76,7 @@ export function TannerAssessmentForm({
 }: TannerAssessmentFormProps) {
   return (
     <HealthRecordModalShell open size="XL" onClose={onClose}>
-      <ModalHeader title="新增评估" icon="🌱" onClose={onClose} />
+      <ModalHeader title={i18nText('Tanner.form.title')} icon="🌱" onClose={onClose} />
       <ModalContent>
         <TannerFormFields
           bgLabel={bgLabel}
@@ -96,8 +98,8 @@ export function TannerAssessmentForm({
         />
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">取消</Button>
-        <Button type="button" onClick={onSave} tone="primary" size="md">保存评估</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('Tanner.form.cancel')}</Button>
+        <Button type="button" onClick={onSave} tone="primary" size="md">{i18nText('Tanner.form.save')}</Button>
       </ModalFooter>
     </HealthRecordModalShell>
   );
@@ -126,10 +128,10 @@ function TannerFormFields({
   return (
     <div className="space-y-5">
       <FormGrid cols={2}>
-        <FormField label="评估日期">
+        <FormField label={i18nText('Tanner.form.assessedAt')}>
           <DatePicker value={formAssessedAt} onChange={setFormAssessedAt} className="h-12" />
         </FormField>
-        <FormField label="评估人">
+        <FormField label={i18nText('Tanner.form.assessedBy')}>
           <ChipGroup
             options={ASSESSED_BY_CHIPS}
             value={formAssessedBy}
@@ -142,39 +144,39 @@ function TannerFormFields({
 
       <FormGrid cols={2} gap={4}>
         <TannerStageSelector stages={bgStages} value={formBG} onChange={setFormBG} label={bgLabel} />
-        <TannerStageSelector stages={PUBIC_HAIR_STAGES} value={formPH} onChange={setFormPH} label="阴毛发育 (PH期)" />
+        <TannerStageSelector stages={PUBIC_HAIR_STAGES} value={formPH} onChange={setFormPH} label={i18nText('Tanner.form.pubicHairStage')} />
       </FormGrid>
 
       <FormGrid cols={2}>
-        <FormField label="🦴 骨龄（岁，可选）">
+        <FormField label={i18nText('Tanner.form.boneAge')}>
           <TextField
             type="number"
             step="0.1"
             value={formBoneAge}
             onChange={(event) => setFormBoneAge(event.target.value)}
-            placeholder="如 12.5"
+            placeholder={i18nText('Tanner.form.boneAgePlaceholder')}
             className="w-full min-h-12"
             inputClassName={NUMBER_INPUT_CLASS}
           />
         </FormField>
-        <FormField label="📊 体脂率（%，可选）">
+        <FormField label={i18nText('Tanner.form.bodyFat')}>
           <TextField
             type="number"
             step="0.1"
             value={formBodyFat}
             onChange={(event) => setFormBodyFat(event.target.value)}
-            placeholder="如 18.5"
+            placeholder={i18nText('Tanner.form.bodyFatPlaceholder')}
             className="w-full min-h-12"
             inputClassName={NUMBER_INPUT_CLASS}
           />
         </FormField>
       </FormGrid>
 
-      <FormField label="备注">
+      <FormField label={i18nText('Tanner.form.notes')}>
         <TextField
           value={formNotes}
           onChange={(event) => setFormNotes(event.target.value)}
-          placeholder="如：与上次对比有进展..."
+          placeholder={i18nText('Tanner.form.notesPlaceholder')}
           className="w-full min-h-12"
         />
       </FormField>
@@ -193,7 +195,7 @@ type TannerCaptureContentProps = {
 
 export function TannerCaptureContent({ child, onSaved, onClose, headerTrailing, linkedReminder }: TannerCaptureContentProps) {
   const isFemale = child.gender === 'female';
-  const bgLabel = isFemale ? '乳房发育 (B期)' : '外生殖器发育 (G期)';
+  const bgLabel = isFemale ? i18nText('Tanner.page.breastStageLabel') : i18nText('Tanner.page.genitalStageLabel');
   const bgStages: StageDesc[] = isFemale ? BREAST_STAGES : GENITAL_STAGES;
 
   const [assessedAt, setAssessedAt] = useState(() => new Date().toISOString().slice(0, 10));
@@ -269,7 +271,7 @@ export function TannerCaptureContent({ child, onSaved, onClose, headerTrailing, 
 
   return (
     <>
-      <ModalHeader title="记录青春期评估" icon="🌱" onClose={onClose} trailing={headerTrailing} />
+      <ModalHeader title={i18nText('Tanner.form.captureTitle')} icon="🌱" onClose={onClose} trailing={headerTrailing} />
       <ModalContent>
         <TannerFormFields
           bgLabel={bgLabel}
@@ -291,9 +293,9 @@ export function TannerCaptureContent({ child, onSaved, onClose, headerTrailing, 
         />
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('Tanner.form.cancel')}</Button>
         <Button type="button" onClick={() => void handleSubmit()} disabled={saving} tone="primary" size="md">
-          {saving ? '保存中…' : '保存评估'}
+          {saving ? i18nText('Tanner.form.saving') : i18nText('Tanner.form.save')}
         </Button>
       </ModalFooter>
     </>

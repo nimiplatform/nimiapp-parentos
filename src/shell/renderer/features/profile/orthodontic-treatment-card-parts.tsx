@@ -1,7 +1,7 @@
 import { cn } from '@nimiplatform/kit/ui';
 /**
  * Case-level chrome pieces shared by `orthodontic-case-shell`: the bottom
- * 疗程总进度 strip + stage stepper, the overall-progress projection, and the
+ * total-progress strip + stage stepper, the overall-progress projection, and the
  * small icons / helpers the shell and the appliance cards reuse.
  *
  * The per-appliance ring + sub-cards that used to live here were superseded by
@@ -11,6 +11,8 @@ import { cn } from '@nimiplatform/kit/ui';
 import type { ReactNode } from 'react';
 import type { OrthodonticCaseRow, OrthodonticStage } from '../../bridge/sqlite-bridge.js';
 import { computeStageOptions, STAGE_ORDER, stageLabel } from './orthodontic-derive.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 // ── Bottom progress strip ──────────────────────────────────
 
@@ -31,7 +33,7 @@ export function ProgressStrip({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <CapsLabel>疗程总进度</CapsLabel>
+        <CapsLabel>{i18nText('Orthodontic.treatment.totalProgress')}</CapsLabel>
         <div className="inline-flex items-center gap-2.5">
           <span className="font-mono text-[13px] font-semibold text-[var(--nimi-text-primary)]">
             {progressPct}%
@@ -50,7 +52,7 @@ export function ProgressStrip({
       </div>
       <div
         role="list"
-        aria-label="正畸阶段"
+        aria-label={i18nText('Orthodontic.treatment.stageStepper')}
         className="flex items-center justify-between gap-3 text-[12px]"
       >
         {STAGE_ORDER.map((s) => {
@@ -58,7 +60,9 @@ export function ProgressStrip({
           const isPast = STAGE_ORDER.indexOf(s) < STAGE_ORDER.indexOf(stage);
           const detail =
             isCurrent && s === 'active'
-              ? ` (第 ${monthsElapsed}${monthsTotal !== null ? ` / ${monthsTotal}` : ''} 个月)`
+              ? (monthsTotal !== null
+                ? i18nText('Orthodontic.treatment.activeStageDetailWithTotal', { monthsElapsed, monthsTotal })
+                : i18nText('Orthodontic.treatment.activeStageDetail', { monthsElapsed }))
               : '';
           return (
             <span
@@ -117,7 +121,7 @@ export function blockedAdvanceReason(
   options: ReturnType<typeof computeStageOptions>,
 ): string | undefined {
   const nextFuture = options.find((o) => o.state === 'future');
-  return nextFuture?.blockedReason ?? '已是最终阶段';
+  return nextFuture?.blockedReason ?? i18nText('Orthodontic.treatment.finalStage');
 }
 
 /**

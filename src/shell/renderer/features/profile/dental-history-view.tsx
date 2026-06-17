@@ -56,6 +56,8 @@ import {
   getDentalScanDisplayMessage,
   type DentalEruptionCandidate,
 } from './dental-eruption-scan.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── Main view ───────────────────────────────────────────── */
 
@@ -146,7 +148,7 @@ export function DentalHistoryView() {
 
   const pickPhotoFiles = async () => {
     try {
-      const paths = await invoke<string[]>('pick_image_files', { title: '选择口腔照片' });
+      const paths = await invoke<string[]>('pick_image_files', { title: i18nText('Dental.history.pickPhotoTitle') });
       if (paths && paths.length > 0) await appendPhotoPaths(paths);
     } catch (error) {
       catchLog('dental', 'action:pick-photo-files-failed')(error);
@@ -193,7 +195,7 @@ export function DentalHistoryView() {
 
   const pickScanPhoto = async () => {
     try {
-      const paths = await invoke<string[]>('pick_image_files', { title: '选择口腔照片用于 AI 识别' });
+      const paths = await invoke<string[]>('pick_image_files', { title: i18nText('Dental.scan.pickPhotoTitle') });
       if (!paths || paths.length === 0) return;
       const [firstPath] = paths;
       if (!firstPath) return;
@@ -293,7 +295,7 @@ export function DentalHistoryView() {
           ageMonths: age,
           severity: null,
           hospital: null,
-          notes: '[AI 识别] 由口腔照片/全景片 AI 识别导入',
+          notes: i18nText('Dental.scan.importedNote'),
           photoPath: null,
           now,
         });
@@ -310,7 +312,7 @@ export function DentalHistoryView() {
             fileName: scanPhoto.fileName,
             mimeType: scanPhoto.mimeType,
             imageBase64: scanPhoto.base64,
-            caption: 'AI 识别源照片',
+            caption: i18nText('Dental.scan.attachmentCaption'),
             now,
           });
         } catch (error) {
@@ -348,7 +350,7 @@ export function DentalHistoryView() {
     setAttachmentMap(buildDentalAttachmentMap(nextAttachments));
 
     // Clear-aligner appliances + their aligner-change checkins back the
-    // PO-ORTHO-006a "第 X 副牙套·第 Y/Z 天" decoration on ortho timeline rows.
+    // PO-ORTHO-006a aligner-context decoration on ortho timeline rows.
     // limitDays is a day window (Rust defaults null to 30); the timeline spans
     // the whole treatment, so request a wide all-time window.
     const applianceLists = await Promise.all(cases.map((c) => getOrthodonticAppliances(c.caseId)));
@@ -408,7 +410,7 @@ export function DentalHistoryView() {
     return m;
   }, [records]);
 
-  // PO-ORTHO-006a: derive the "第 X 副牙套·第 Y/Z 天" decoration for every
+  // PO-ORTHO-006a: derive the aligner-context decoration for every
   // ortho-* timeline row. deriveAlignerContextForDate returns null unless a
   // clear-aligner appliance window covers the row's date, so non-aligner
   // cases and pre-treatment events carry no entry.
@@ -439,7 +441,7 @@ export function DentalHistoryView() {
   if (!child) return <NoActiveChildPlaceholder />;
 
   const sortedRecords = [...records].sort((a, b) => b.eventDate.localeCompare(a.eventDate));
-  // Build filter chips. All `ortho-*` events collapse into a single "正畸"
+  // Build filter chips. All `ortho-*` events collapse into a single orthodontic
   // chip with key `ORTHO_GROUP_FILTER_KEY`; non-ortho types each get their
   // own chip in first-seen order. Individual cards still surface their own
   // specific label/emoji, so the merge is filter-only.
@@ -453,7 +455,7 @@ export function DentalHistoryView() {
     return ordered;
   })();
   const filterTabs: Array<{ key: string | null; label: string }> = [
-    { key: null, label: '全部' },
+    { key: null, label: i18nText('Dental.history.filterAll') },
     ...usedFilterKeys.slice(0, 4).map((key) => ({
       key,
       label: key === ORTHO_GROUP_FILTER_KEY
@@ -537,11 +539,11 @@ export function DentalHistoryView() {
       event: evtInfo?.label ?? record.eventType,
       tooth: toothLabel ? ` · ${toothLabel}` : '',
     });
-    const descParts: string[] = [`日期：${eventDate}`];
-    if (toothLabel) descParts.push(`牙位：${toothLabel}`);
+    const descParts: string[] = [i18nText('Dental.history.askAiDesc.date', { date: eventDate })];
+    if (toothLabel) descParts.push(i18nText('Dental.history.askAiDesc.tooth', { tooth: toothLabel }));
     if (record.severity) descParts.push(t('Profile.rich.dental.severity', { severity: SEVERITY_LABELS[record.severity] ?? record.severity }));
-    if (record.hospital) descParts.push(`机构：${record.hospital}`);
-    if (record.notes) descParts.push(`备注：${record.notes}`);
+    if (record.hospital) descParts.push(i18nText('Dental.history.askAiDesc.clinic', { clinic: record.hospital }));
+    if (record.notes) descParts.push(i18nText('Dental.history.askAiDesc.notes', { notes: record.notes }));
     const params = new URLSearchParams({ topic, desc: descParts.join('；'), record: 'dental' });
     navigate(`/advisor?${params.toString()}`);
   };
@@ -640,7 +642,14 @@ export function DentalHistoryView() {
     }
   };
 
-  const fmtAge = (am: number) => am < 24 ? `${am}月` : `${Math.floor(am / 12)}岁${am % 12 > 0 ? `${am % 12}月` : ''}`;
+  const fmtAge = (am: number) => {
+    if (am < 24) return i18nText('Dental.age.monthsShort', { months: am });
+    const years = Math.floor(am / 12);
+    const months = am % 12;
+    return months > 0
+      ? i18nText('Dental.age.yearsMonthsShort', { years, months })
+      : i18nText('Dental.age.yearsShort', { years });
+  };
 
   return (
     <div style={{ minHeight: '100%' }}>
@@ -679,9 +688,8 @@ export function DentalHistoryView() {
         </div>
       )}
 
-      {/* Tooth status overview — top of dental record. The standalone
-          "状态总览" eyebrow label was dropped: the card itself carries a
-          "牙齿状态总览" heading right inside, so the eyebrow was a
+      {/* Tooth status overview. The standalone eyebrow label was dropped:
+          the card itself carries a heading right inside, so the eyebrow was a
           duplicate that just added vertical noise above the surface. */}
       <ToothStatusOverview records={records} />
 
@@ -699,7 +707,7 @@ export function DentalHistoryView() {
       {records.length > 0 && (
         <DentalInsightCard
           childName={child.displayName}
-          ageLabel={`${Math.floor(ageMonths / 12)}岁${ageMonths % 12}月`}
+          ageLabel={fmtAge(ageMonths)}
           records={records}
         />
       )}

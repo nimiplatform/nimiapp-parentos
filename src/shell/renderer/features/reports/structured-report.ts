@@ -9,33 +9,32 @@ import type {
 import { GROWTH_STANDARDS, MILESTONE_CATALOG, REMINDER_RULES } from '../../knowledge-base/index.js';
 import { mapReminderStateRow, summarizeReminderProgression } from '../../engine/reminder-engine.js';
 import { buildStructuredTrendSignals, type StructuredTrendSignal } from './trend-analysis.js';
+import { i18nText, i18nTextForLanguage } from '../../i18n/index.js';
+
 
 export type GrowthReportType = 'monthly' | 'quarterly' | 'quarterly-letter' | 'custom';
 
 /**
- * Keywords that must never become the hero "本月关键词". Two families:
- *   1. Generic domain/state/time nouns ("成长"、"健康"、"本月"…)
+ * Keywords that must never become the hero monthly keyword. Two families:
+ *   1. Generic domain, state, and time nouns.
  *   2. Single discrete events that don't describe the child's monthly theme
- *      ("疫苗接种"、"体检"…). Events are facts about the calendar, not arcs
- *      of growth — they slip into the legacy fallback path because the
- *      AI narrative often opens with the most recent event.
+ *      such as vaccinations or checkups. Events are facts about the calendar,
+ *      not arcs of growth; they slip into the fallback path because the AI
+ *      narrative often opens with the most recent event.
  *
  * Used by both the AI keyword validator (narrative-prompt.ts) and the
  * legacy-format hero derivation (reports-monthly-letter.tsx) so the two
  * code paths apply identical rules.
  */
-export const PLACEHOLDER_KEYWORDS: ReadonlySet<string> = new Set([
-  '本月', '这个月', '一月', '二月', '三月', '四月', '五月', '六月',
-  '七月', '八月', '九月', '十月', '十一月', '十二月',
-  '本季度', '季度', '月度',
-  '成长', '发育', '进步', '继续', '健康', '正常', '稳定', '平稳',
-  '学习', '作息', '睡眠', '饮食', '运动', '情感', '情绪',
-  '数学', '语文', '英语', '编程', '阅读',
-  '里程碑', '成就', '记录',
-  '疫苗', '接种', '疫苗接种', '接种疫苗', '打针',
-  '体检', '检查', '复诊', '就医', '看病', '问诊',
-  '化验', '抽血', '验血', '拍片', '拍照',
-]);
+function getPlaceholderKeywords(): ReadonlySet<string> {
+  return new Set(
+    [i18nTextForLanguage('en', 'Reports.placeholderKeywords'), i18nTextForLanguage('zh', 'Reports.placeholderKeywords')]
+      .join('|')
+      .split('|')
+      .map((keyword) => keyword.trim())
+      .filter(Boolean),
+  );
+}
 
 /**
  * Returns true when `keyword` should be rejected as low-signal. Callers
@@ -45,7 +44,7 @@ export function isPlaceholderKeyword(keyword: string | null | undefined): boolea
   if (!keyword) return true;
   const t = keyword.trim();
   if (!t || t.length > 8) return true;
-  return PLACEHOLDER_KEYWORDS.has(t);
+  return getPlaceholderKeywords().has(t);
 }
 
 const GROWTH_REPORT_TYPES = ['monthly', 'quarterly', 'quarterly-letter', 'custom'] as const satisfies readonly GrowthReportType[];
@@ -142,9 +141,9 @@ export interface NarrativeReportContent {
   title: string;
   subtitle: string;
   teaser: string;
-  /** 2–6 字的本月主题词，从数据中提炼（例："先行动"、"找到节奏"）。老报告可能没有此字段。 */
+  /** Monthly theme keyword distilled from data. Older reports may not include this field. */
   keyword?: string;
-  /** 关键词下方的一行副标（6–16 字），对关键词做展开。老报告可能没有此字段。 */
+  /** One-line sublabel below the keyword. Older reports may not include this field. */
   keywordSub?: string;
   generatedAt: string;
   opening?: string;
@@ -410,38 +409,38 @@ export function buildStructuredGrowthReport(snapshot: StructuredGrowthReportSnap
     metrics: [
       {
         id: 'age-range',
-        label: 'Age window',
+        label: i18nText('Reports.structured.metrics.ageWindow'),
         value: `${ageMonthsStart}-${ageMonthsEnd} months`,
         detail: `${formatDate(period.start)} to ${formatDate(period.end)}`,
       },
       {
         id: 'measurement-count',
-        label: 'Measurements',
+        label: i18nText('Reports.structured.metrics.measurements'),
         value: String(measurements.filter((item) => inPeriod(item.measuredAt, period.start, period.end)).length),
       },
       {
         id: 'journal-count',
-        label: 'Journal entries',
+        label: i18nText('Reports.structured.metrics.journalEntries'),
         value: String(journalEntries.filter((item) => inPeriod(item.recordedAt, period.start, period.end)).length),
       },
       {
         id: 'milestone-count',
-        label: 'Milestones recorded',
+        label: i18nText('Reports.structured.metrics.milestonesRecorded'),
         value: String(milestones.filter((item) => inPeriod(item.achievedAt, period.start, period.end)).length),
       },
       {
         id: 'reminder-count',
-        label: 'Open reminders',
+        label: i18nText('Reports.structured.metrics.openReminders'),
         value: String(reminderStates.filter((item) => ['pending', 'active', 'overdue'].includes(item.status)).length),
       },
     ],
     trendSignals,
     sections: [
-      { id: 'growth', title: 'Growth records', items: summarizeMeasurements(measurements, period.start, period.end) },
-      { id: 'milestones', title: 'Milestones', items: summarizeMilestones(milestones, period.start, period.end) },
-      { id: 'vaccines', title: 'Vaccines', items: summarizeVaccines(vaccines, period.start, period.end) },
-      { id: 'journal', title: 'Journal coverage', items: summarizeJournalEntries(journalEntries, child, period.start, period.end) },
-      { id: 'timeline', title: 'Current follow-ups', items: summarizeReminders(reminderStates) },
+      { id: 'growth', title: i18nText('Reports.structured.sections.growth'), items: summarizeMeasurements(measurements, period.start, period.end) },
+      { id: 'milestones', title: i18nText('Reports.structured.sections.milestones'), items: summarizeMilestones(milestones, period.start, period.end) },
+      { id: 'vaccines', title: i18nText('Reports.structured.sections.vaccines'), items: summarizeVaccines(vaccines, period.start, period.end) },
+      { id: 'journal', title: i18nText('Reports.structured.sections.journal'), items: summarizeJournalEntries(journalEntries, child, period.start, period.end) },
+      { id: 'timeline', title: i18nText('Reports.structured.sections.timeline'), items: summarizeReminders(reminderStates) },
     ],
     sources: [
       'Local child profile',
@@ -482,7 +481,7 @@ export function buildNarrativeActionItems(reminderStates: ReminderStateRow[]): A
     .slice(0, 3)
     .map((item) => {
       const rule = item.rule!;
-      const statusLabel = item.state.status === 'overdue' ? '（逾期）' : '';
+      const statusLabel = item.state.status === 'overdue' ? i18nText('Reports.structured.action.overdueSuffix') : '';
       const route = DOMAIN_ROUTES[rule.domain] ?? '/profile';
       return {
         id: `action-${item.state.ruleId}`,
@@ -582,7 +581,7 @@ function parseProfessionalSummary(raw: unknown): ProfessionalSummary | undefined
     format: data.format === 'fallback' ? 'fallback' : 'ai',
     childSummary: typeof data.childSummary === 'string' ? data.childSummary : '',
     sections,
-    disclaimer: typeof data.disclaimer === 'string' ? data.disclaimer : '本概要由家长基于本地记录整理，仅供老师/医生参考，不含诊断意见。',
+    disclaimer: typeof data.disclaimer === 'string' ? data.disclaimer : i18nText('Reports.professionalSummary.disclaimer'),
   };
 }
 

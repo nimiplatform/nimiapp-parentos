@@ -7,6 +7,8 @@ import {
   fromDatetimeLocalValue,
   toDatetimeLocalValue,
 } from './journal-recorded-at.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function RecordedAtPicker(props: {
   value: string | null;
@@ -37,8 +39,8 @@ export function RecordedAtPicker(props: {
             <path d="M12 7v5l3 2" />
           </svg>
         }
-        title="调整记录时间"
-        aria-label="调整记录时间"
+        title={i18nText('Journal.recordedAtPicker.adjust')}
+        aria-label={i18nText('Journal.recordedAtPicker.adjust')}
       >
         <span>{label}</span>
       </Button>
@@ -108,7 +110,7 @@ function RecordedAtPopover(props: {
     <div
       ref={panelRef}
       role="dialog"
-      aria-label="选择记录时间"
+      aria-label={i18nText('Journal.recordedAtPicker.dialogLabel')}
       className="parentos-portal-frame fixed z-50"
       style={{
         '--parentos-portal-bottom': `${bottom}px`,
@@ -117,7 +119,7 @@ function RecordedAtPopover(props: {
       } as CSSProperties}
     >
       <Surface tone="overlay" elevation="floating" padding="sm" className="parentos-radius-sm p-3">
-        <p className="mb-2 text-[13px] text-[var(--nimi-text-muted)]">记录时间</p>
+        <p className="mb-2 text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Journal.recordedAtPicker.title')}</p>
         <div className="flex flex-wrap gap-1.5 mb-3">
           {RECORDED_AT_PRESETS.map((preset) => {
             const resolved = preset.resolve(now);
@@ -139,7 +141,7 @@ function RecordedAtPopover(props: {
             );
           })}
         </div>
-        <label className="mb-1.5 block text-[12px] text-[var(--nimi-text-muted)]">自定义时间</label>
+        <label className="mb-1.5 block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Journal.recordedAtPicker.customTime')}</label>
         <TextField
           type="datetime-local"
           value={customValue}
@@ -155,7 +157,7 @@ function RecordedAtPopover(props: {
             size="sm"
             className="min-h-0 parentos-radius-sm px-3 py-1 text-[12px]"
           >
-            取消
+            {i18nText('Journal.recordedAtPicker.cancel')}
           </Button>
           <Button
             type="button"
@@ -167,7 +169,7 @@ function RecordedAtPopover(props: {
             size="sm"
             className="min-h-0 parentos-radius-sm px-3 py-1 text-[12px] font-medium"
           >
-            应用
+            {i18nText('Journal.recordedAtPicker.apply')}
           </Button>
         </div>
       </Surface>

@@ -37,6 +37,8 @@ import {
   ModalErrorBanner,
   ModalFooter,
 } from './orthodontic-modal-primitives.js';
+import { i18nText } from '../../i18n/index.js';
+
 function ModalSuccessNote({ children }: { children: ReactNode }) {
   return (
     <Surface
@@ -111,16 +113,16 @@ export function CaseFormModal({
   };
 
   return (
-    <Modal title="新建正畸疗程" onClose={onClose}>
+    <Modal title={i18nText('Orthodontic.modal.case.createTitle')} onClose={onClose}>
       {localError && <ModalErrorBanner message={localError} onDismiss={() => setLocalError(null)} />}
-      <FieldSelect label="类型" value={caseType} onChange={(v) => setCaseType(v as WritableOrthodonticCaseType)}
+      <FieldSelect label={i18nText('Orthodontic.modal.common.type')} value={caseType} onChange={(v) => setCaseType(v as WritableOrthodonticCaseType)}
         options={CASE_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
-      <FieldSelect label="阶段" value={stage} onChange={(v) => setStage(v as OrthodonticStage)}
+      <FieldSelect label={i18nText('Orthodontic.modal.common.stage')} value={stage} onChange={(v) => setStage(v as OrthodonticStage)}
         options={CASE_CREATE_STAGE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
-      <FieldInput label="开始日期" type="date" value={startedAt} onChange={setStartedAt} />
-      <FieldInput label="机构" value={providerInstitution} onChange={setProviderInstitution} placeholder="可选" />
-      <FieldTextarea label="备注" value={notes} onChange={setNotes} placeholder="可选" />
-      <ModalFooter onCancel={onClose} onSubmit={() => void handleSubmit()} submitLabel="保存" />
+      <FieldInput label={i18nText('Orthodontic.modal.common.startDate')} type="date" value={startedAt} onChange={setStartedAt} />
+      <FieldInput label={i18nText('Orthodontic.modal.common.institution')} value={providerInstitution} onChange={setProviderInstitution} placeholder={i18nText('Orthodontic.modal.common.optional')} />
+      <FieldTextarea label={i18nText('Orthodontic.modal.common.notes')} value={notes} onChange={setNotes} placeholder={i18nText('Orthodontic.modal.common.optional')} />
+      <ModalFooter onCancel={onClose} onSubmit={() => void handleSubmit()} submitLabel={i18nText('Orthodontic.modal.common.save')} />
     </Modal>
   );
 }
@@ -226,19 +228,19 @@ export function EditCaseFormModal({
 
   const handleSubmit = async () => {
     if (!startedAt) {
-      const msg = '请填写开始日期';
+      const msg = i18nText('Orthodontic.modal.case.errorMissingStartDate');
       setLocalError(msg);
       onError(msg);
       return;
     }
     if (showAlignerPlanFields && (!totalAlignersValid || !daysPerAlignerValid)) {
-      const msg = '隐形牙套需要正整数的总副数和每副佩戴天数';
+      const msg = i18nText('Orthodontic.modal.case.errorAlignerPlanRequired');
       setLocalError(msg);
       onError(msg);
       return;
     }
     if (showHoursField && !prescribedHoursValid) {
-      const msg = '医嘱每日佩戴小时数必须在 1..24 之间';
+      const msg = i18nText('Orthodontic.modal.case.errorPrescribedHoursRange');
       setLocalError(msg);
       onError(msg);
       return;
@@ -290,33 +292,33 @@ export function EditCaseFormModal({
   };
 
   return (
-    <Modal title="编辑当前疗程" onClose={onClose}>
+    <Modal title={i18nText('Orthodontic.modal.case.editTitle')} onClose={onClose}>
       {localError && <ModalErrorBanner message={localError} onDismiss={() => setLocalError(null)} />}
       <FieldSelect
-        label="类型"
+        label={i18nText('Orthodontic.modal.common.type')}
         value={caseType}
         onChange={(v) => setCaseType(v as WritableOrthodonticCaseType)}
         options={CASE_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
       />
-      <FieldInput label="开始日期" type="date" value={startedAt} onChange={setStartedAt} />
+      <FieldInput label={i18nText('Orthodontic.modal.common.startDate')} type="date" value={startedAt} onChange={setStartedAt} />
 
       {primaryAppliance && (showHoursField || showAlignerPlanFields) && (
         <>
           <div className="mt-2 border-t border-[var(--nimi-border-subtle)] pt-3 text-[12px] uppercase tracking-[0.06em] text-[var(--nimi-text-muted)]">
-            装置：{applianceTypeLabel(primaryAppliance.applianceType)}
+            {i18nText('Orthodontic.modal.case.applianceSection', { applianceType: applianceTypeLabel(primaryAppliance.applianceType) })}
           </div>
           {showHoursField && (
             <>
               <FieldInput
-                label="医嘱每日佩戴小时"
+                label={i18nText('Orthodontic.modal.case.prescribedHoursLabel')}
                 type="number"
                 value={prescribedHours}
                 onChange={setPrescribedHours}
-                placeholder="例如 22"
+                placeholder={i18nText('Orthodontic.modal.case.prescribedHoursPlaceholder')}
               />
               {!prescribedHoursValid && (
                 <div className="text-[13px] text-[var(--nimi-status-danger)]">
-                  医嘱每日佩戴小时数必须在 1..24 之间。
+                  {i18nText('Orthodontic.modal.case.prescribedHoursInvalid')}
                 </div>
               )}
             </>
@@ -324,32 +326,32 @@ export function EditCaseFormModal({
           {showAlignerPlanFields && (
             <>
               <FieldInput
-                label="牙套总副数"
+                label={i18nText('Orthodontic.modal.case.totalAlignersLabel')}
                 type="number"
                 value={totalAligners}
                 onChange={setTotalAligners}
-                placeholder="例如 30"
+                placeholder={i18nText('Orthodontic.modal.case.totalAlignersPlaceholder')}
               />
               {!totalAlignersValid && (
                 <div className="text-[13px] text-[var(--nimi-status-danger)]">
-                  总副数必须是大于 0 的整数。
+                  {i18nText('Orthodontic.modal.case.totalAlignersInvalid')}
                 </div>
               )}
               <FieldInput
-                label="每副佩戴天数"
+                label={i18nText('Orthodontic.modal.case.daysPerAlignerLabel')}
                 type="number"
                 value={daysPerAligner}
                 onChange={setDaysPerAligner}
-                placeholder="例如 7"
+                placeholder={i18nText('Orthodontic.modal.case.daysPerAlignerPlaceholder')}
               />
               {!daysPerAlignerValid && (
                 <div className="text-[13px] text-[var(--nimi-status-danger)]">
-                  每副佩戴天数必须是大于 0 的整数。
+                  {i18nText('Orthodontic.modal.case.daysPerAlignerInvalid')}
                 </div>
               )}
               {derivedPlannedEndAt && (
                 <ModalSuccessNote>
-                  预计结束日期 <strong>{derivedPlannedEndAt}</strong>
+                  {i18nText('Orthodontic.modal.case.plannedEndAt', { date: derivedPlannedEndAt })}
                 </ModalSuccessNote>
               )}
             </>
@@ -358,16 +360,16 @@ export function EditCaseFormModal({
       )}
 
       <FieldInput
-        label="机构"
+        label={i18nText('Orthodontic.modal.common.institution')}
         value={providerInstitution}
         onChange={setProviderInstitution}
-        placeholder="可选"
+        placeholder={i18nText('Orthodontic.modal.common.optional')}
       />
-      <FieldTextarea label="备注" value={notes} onChange={setNotes} placeholder="可选" />
+      <FieldTextarea label={i18nText('Orthodontic.modal.common.notes')} value={notes} onChange={setNotes} placeholder={i18nText('Orthodontic.modal.common.optional')} />
       <ModalFooter
         onCancel={onClose}
         onSubmit={() => void handleSubmit()}
-        submitLabel="保存"
+        submitLabel={i18nText('Orthodontic.modal.common.save')}
         disabled={!formValid}
       />
     </Modal>
@@ -393,7 +395,8 @@ export function OrthoClinicalEventModal({
   activeAppliances: OrthodonticApplianceRow[];
   /**
    * Wave D quick-tag / next-visit-grid wiring. When the parent opens this
-   * modal from a deterministic affordance (e.g. the 脱落 chip in the
+   * modal from a deterministic affordance (for example a detached-appliance
+   * chip in the
    * wearing hero), the relevant event type and a note prefix are seeded so
    * the user only confirms + saves. The fields stay editable.
    */
@@ -449,13 +452,13 @@ export function OrthoClinicalEventModal({
 
   const handleSubmit = async () => {
     if (!eventDate) {
-      const msg = '请填写事件日期';
+      const msg = i18nText('Orthodontic.modal.clinical.errorMissingEventDate');
       setLocalError(msg);
       onError(msg);
       return;
     }
     if (advancesReview && activeAppliances.length > 0 && !appliedToApplianceId) {
-      const msg = '请选择本次复诊对应的装置';
+      const msg = i18nText('Orthodontic.modal.clinical.errorMissingAppliance');
       setLocalError(msg);
       onError(msg);
       return;
@@ -512,35 +515,35 @@ export function OrthoClinicalEventModal({
   };
 
   return (
-    <Modal title={isEditing ? '编辑正畸临床事件' : '记录正畸临床事件'} onClose={onClose}>
+    <Modal title={isEditing ? i18nText('Orthodontic.modal.clinical.editTitle') : i18nText('Orthodontic.modal.clinical.createTitle')} onClose={onClose}>
       {localError && <ModalErrorBanner message={localError} onDismiss={() => setLocalError(null)} />}
-      <FieldSelect label="事件类型" value={eventType}
+      <FieldSelect label={i18nText('Orthodontic.modal.clinical.eventType')} value={eventType}
         onChange={(v) => setEventType(v as OrthoClinicalEventType)}
-        options={ORTHO_CLINICAL_EVENT_OPTIONS.map((o) => ({ value: o.value, label: `${o.label}（${o.desc}）` }))} />
-      <FieldInput label="日期" type="date" value={eventDate} onChange={setEventDate} />
+        options={ORTHO_CLINICAL_EVENT_OPTIONS.map((o) => ({ value: o.value, label: i18nText('Orthodontic.modal.clinical.eventOption', { label: o.label, description: o.desc }) }))} />
+      <FieldInput label={i18nText('Orthodontic.modal.clinical.date')} type="date" value={eventDate} onChange={setEventDate} />
       {!isEditing && advancesReview && activeAppliances.length > 0 && (
         <>
-          <FieldSelect label="对应装置" value={appliedToApplianceId}
+          <FieldSelect label={i18nText('Orthodontic.modal.clinical.appliedAppliance')} value={appliedToApplianceId}
             onChange={(v) => setAppliedToApplianceId(v)}
             options={activeAppliances.map((a) => ({
               value: a.applianceId,
-              label: `${a.applianceType} · 开始 ${a.startedAt}`,
+              label: i18nText('Orthodontic.modal.clinical.applianceOption', { applianceType: applianceTypeLabel(a.applianceType), startedAt: a.startedAt }),
             }))} />
           {computedNextReviewDate && (
             <ModalSuccessNote>
-              本次完成后，下次复诊自动设为 <strong>{computedNextReviewDate}</strong>；对应协议提醒会推进到该日。
+              {i18nText('Orthodontic.modal.clinical.nextReviewNote', { date: computedNextReviewDate })}
             </ModalSuccessNote>
           )}
         </>
       )}
       {!isEditing && advancesReview && activeAppliances.length === 0 && (
         <ModalWarningNote>
-          当前疗程没有进行中的装置。事件会写入时间线，但不会推进复诊周期。
+          {i18nText('Orthodontic.modal.clinical.noActiveAppliance')}
         </ModalWarningNote>
       )}
-      <FieldInput label="机构" value={hospital} onChange={setHospital} placeholder="可选" />
-      <FieldTextarea label="备注" value={notes} onChange={setNotes} placeholder="可选" />
-      <ModalFooter onCancel={onClose} onSubmit={() => void handleSubmit()} submitLabel="保存" />
+      <FieldInput label={i18nText('Orthodontic.modal.common.institution')} value={hospital} onChange={setHospital} placeholder={i18nText('Orthodontic.modal.common.optional')} />
+      <FieldTextarea label={i18nText('Orthodontic.modal.common.notes')} value={notes} onChange={setNotes} placeholder={i18nText('Orthodontic.modal.common.optional')} />
+      <ModalFooter onCancel={onClose} onSubmit={() => void handleSubmit()} submitLabel={i18nText('Orthodontic.modal.common.save')} />
     </Modal>
   );
 }

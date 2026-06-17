@@ -35,6 +35,8 @@ import {
   ModalHeader,
   SectionCard,
 } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const NUMBER_INPUT_CLASS = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
@@ -257,7 +259,7 @@ function MedicalEventsFormBody({
   return (
     <>
       <ModalHeader
-        title={editingEventId ? '编辑就医记录' : '新增就医记录'}
+        title={editingEventId ? i18nText('MedicalEvents.form.editTitle') : i18nText('MedicalEvents.form.addTitle')}
         icon={EVENT_TYPE_ICONS[formEventType] ?? '🏥'}
         onClose={onClose}
       />
@@ -286,11 +288,11 @@ function MedicalEventsFormBody({
                 <span className="text-[24px]">{ocrLoading ? '⏳' : '🤖'}</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[14px] font-semibold" style={{ color: 'var(--nimi-text-primary)' }}>
-                    智能录入
+                    {i18nText('MedicalEvents.form.smartInputTitle')}
                   </p>
                   {ocrLoading ? (
                     <p className="text-[12px]" style={{ color: 'var(--nimi-action-primary-bg)' }}>
-                      正在识别 {ocrImageName}...
+                      {i18nText('MedicalEvents.form.ocrRecognizingFile', { fileName: ocrImageName ?? '' })}
                     </p>
                   ) : ocrError ? (
                     <p className="text-[12px] text-[var(--nimi-status-danger)]">
@@ -298,11 +300,11 @@ function MedicalEventsFormBody({
                     </p>
                   ) : ocrImageName ? (
                     <p className="text-[12px]" style={{ color: 'var(--nimi-action-primary-bg)' }}>
-                      ✓ 已从 {ocrImageName} 提取信息，请确认并补充
+                      {i18nText('MedicalEvents.form.ocrExtractedFile', { fileName: ocrImageName })}
                     </p>
                   ) : (
                     <p className="text-[12px]" style={{ color: 'var(--nimi-text-muted)' }}>
-                      上传病历/处方单图片，AI 自动提取关键信息填入表单
+                      {i18nText('MedicalEvents.form.ocrHint')}
                     </p>
                   )}
                 </div>
@@ -312,15 +314,15 @@ function MedicalEventsFormBody({
                   className="shrink-0 rounded-[12px] px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:brightness-110 disabled:opacity-50"
                   style={{ background: 'var(--nimi-action-primary-bg)' }}
                 >
-                  {ocrLoading ? '识别中...' : '上传识别'}
+                  {ocrLoading ? i18nText('MedicalEvents.form.recognizing') : i18nText('MedicalEvents.form.uploadRecognize')}
                 </button>
               </div>
             </>
           ) : null}
 
-          <SectionCard title="就诊基础">
+          <SectionCard title={i18nText('MedicalEvents.form.sectionBasic')}>
             <div className="space-y-4">
-              <FormField label="就诊类型">
+              <FormField label={i18nText('MedicalEvents.form.visitType')}>
                 <ChipGroup
                   options={visitChips}
                   value={formEventType}
@@ -330,10 +332,10 @@ function MedicalEventsFormBody({
               </FormField>
 
               <FormGrid cols={2}>
-                <FormField label="就诊日期">
+                <FormField label={i18nText('MedicalEvents.form.visitDate')}>
                   <DatePicker value={formEventDate} onChange={setFormEventDate} className="h-12" />
                 </FormField>
-                <FormField label={formShowEndDate ? '结束日期' : '持续治疗/住院'}>
+                <FormField label={formShowEndDate ? i18nText('MedicalEvents.form.endDate') : i18nText('MedicalEvents.form.addEndDate')}>
                   {formShowEndDate ? (
                     <div className="flex items-center gap-2">
                       <div className="flex-1">
@@ -347,20 +349,20 @@ function MedicalEventsFormBody({
                         className="text-[12px]"
                         style={{ color: 'var(--nimi-text-muted)' }}
                       >
-                        取消
+                        {i18nText('MedicalEvents.form.cancel')}
                       </button>
                     </div>
                   ) : (
-                    <DashedAddButton shape="row" onClick={() => setFormShowEndDate(true)} label="持续治疗/住院" />
+                    <DashedAddButton shape="row" onClick={() => setFormShowEndDate(true)} label={i18nText('MedicalEvents.form.addEndDate')} />
                   )}
                 </FormField>
               </FormGrid>
 
-              <FormField label="就诊机构">
+              <FormField label={i18nText('MedicalEvents.form.hospital')}>
                 <TextField
                   value={formHospital}
                   onChange={(event) => setFormHospital(event.target.value)}
-                  placeholder="医院/诊所名称"
+                  placeholder={i18nText('MedicalEvents.form.hospitalPlaceholder')}
                   className="w-full min-h-12"
                 />
               </FormField>
@@ -368,18 +370,18 @@ function MedicalEventsFormBody({
           </SectionCard>
 
           {formEventType !== 'lab-report' ? (
-            <SectionCard title="病情与诊断">
+            <SectionCard title={i18nText('MedicalEvents.form.sectionDiagnosis')}>
               <div className="space-y-4">
-                <FormField label="确诊疾病/主要症状">
+                <FormField label={i18nText('MedicalEvents.form.diagnosis')}>
                   <TextField
                     value={formTitle}
                     onChange={(event) => setFormTitle(event.target.value)}
-                    placeholder="如：手足口病、急性上呼吸道感染"
+                    placeholder={i18nText('MedicalEvents.form.diagnosisPlaceholder')}
                     className="w-full min-h-12"
                   />
                 </FormField>
 
-                <FormField label="伴随症状（可多选）">
+                <FormField label={i18nText('MedicalEvents.form.symptoms')}>
                   <div className="flex flex-wrap gap-1.5">
                     {symptomChips.map((chip) => {
                       const active = formSymptomTags.has(chip.value);
@@ -410,7 +412,7 @@ function MedicalEventsFormBody({
                   </div>
                 </FormField>
 
-                <FormField label="严重程度">
+                <FormField label={i18nText('MedicalEvents.form.severity')}>
                   <ChipGroup
                     options={severityChips}
                     value={formSeverity}
@@ -422,14 +424,14 @@ function MedicalEventsFormBody({
                 </FormField>
 
                 {showResultField ? (
-                  <FormField label="筛查结果">
+                  <FormField label={i18nText('MedicalEvents.form.result')}>
                     <ChipGroup options={resultChips} value={formResult} onChange={setFormResult} layout="fill" clearable />
                   </FormField>
                 ) : null}
               </div>
             </SectionCard>
           ) : (
-            <SectionCard title="化验项目" description="填写有数值的项目即可">
+            <SectionCard title={i18nText('MedicalEvents.form.sectionLab')} description={i18nText('MedicalEvents.form.labDescription')}>
               <FormGrid cols={2} gap={2}>
                 {LAB_ITEMS.map((item) => (
                   <div key={item.key} className="flex items-center gap-2">
@@ -466,11 +468,11 @@ function MedicalEventsFormBody({
 
           {formEventType !== 'lab-report' ? (
             <SectionCard
-              title="用药与处置"
+              title={i18nText('MedicalEvents.form.sectionMedication')}
               trailing={
                 formMeds.length > 0 ? (
                   <span className="text-[12px]" style={{ color: 'var(--nimi-text-muted)' }}>
-                    {formMeds.length} 种药品
+                    {i18nText('MedicalEvents.form.medicationCount', { count: formMeds.length })}
                   </span>
                 ) : null
               }
@@ -504,7 +506,7 @@ function MedicalEventsFormBody({
                           )
                         }
                         historyDrugs={historyDrugs}
-                        placeholder="搜索药品名称或拼音首字母"
+                        placeholder={i18nText('MedicalEvents.form.drugPlaceholder')}
                       />
                       <button
                         onClick={() => setFormMeds((prev) => prev.filter((_, i) => i !== index))}
@@ -520,7 +522,7 @@ function MedicalEventsFormBody({
                         onChange={(event) =>
                           setFormMeds((prev) => prev.map((item, i) => (i === index ? { ...item, dose: event.target.value } : item)))
                         }
-                        placeholder="剂量"
+                        placeholder={i18nText('MedicalEvents.form.dosePlaceholder')}
                         className="w-16 rounded-[10px] px-2 py-1.5 text-[14px] outline-none transition-shadow focus:ring-2 focus:ring-[#4ECCA3]/35"
                         style={{ border: `1px solid ${'var(--nimi-field-border)'}`, background: '#fff', color: 'var(--nimi-text-primary)' }}
                       />
@@ -528,7 +530,7 @@ function MedicalEventsFormBody({
                         className="rounded-[10px] px-2 py-1 text-[13px]"
                         style={{ background: '#f1f5f9', color: 'var(--nimi-action-primary-bg)' }}
                       >
-                        {med.unit || '次'}
+                        {med.unit || i18nText('MedicalEvents.form.medicationDefaultUnit')}
                       </span>
                       <input
                         value={med.frequency}
@@ -537,7 +539,7 @@ function MedicalEventsFormBody({
                             prev.map((item, i) => (i === index ? { ...item, frequency: event.target.value } : item)),
                           )
                         }
-                        placeholder="频次（如每日3次）"
+                        placeholder={i18nText('MedicalEvents.form.frequencyPlaceholder')}
                         className="min-w-0 flex-1 rounded-[10px] px-2 py-1.5 text-[14px] outline-none transition-shadow focus:ring-2 focus:ring-[#4ECCA3]/35"
                         style={{ border: `1px solid ${'var(--nimi-field-border)'}`, background: '#fff', color: 'var(--nimi-text-primary)' }}
                       />
@@ -546,18 +548,18 @@ function MedicalEventsFormBody({
                         onChange={(event) =>
                           setFormMeds((prev) => prev.map((item, i) => (i === index ? { ...item, days: event.target.value } : item)))
                         }
-                        placeholder="天"
+                        placeholder={i18nText('MedicalEvents.form.daysPlaceholder')}
                         className="w-12 rounded-[10px] px-2 py-1.5 text-center text-[14px] outline-none transition-shadow focus:ring-2 focus:ring-[#4ECCA3]/35"
                         style={{ border: `1px solid ${'var(--nimi-field-border)'}`, background: '#fff', color: 'var(--nimi-text-primary)' }}
                       />
                       <span className="shrink-0 text-[13px]" style={{ color: 'var(--nimi-text-muted)' }}>
-                        天
+                        {i18nText('MedicalEvents.form.daysUnit')}
                       </span>
                     </div>
                     {med.tags.length > 0 ? (
                       <div className="flex flex-wrap gap-1 pt-0.5">
                         <span className="text-[12px]" style={{ color: 'var(--nimi-text-muted)' }}>
-                          常见用法参考：
+                          {i18nText('MedicalEvents.form.usageReference')}
                         </span>
                         {med.tags.map((tag) => (
                           <span
@@ -576,20 +578,20 @@ function MedicalEventsFormBody({
                 <DashedAddButton
                   shape="row"
                   onClick={() =>
-                    setFormMeds((prev) => [...prev, { name: '', dose: '', unit: '次', frequency: '', days: '', tags: [] }])
+                    setFormMeds((prev) => [...prev, { name: '', dose: '', unit: i18nText('MedicalEvents.form.medicationDefaultUnit'), frequency: '', days: '', tags: [] }])
                   }
-                  label="添加药品"
+                  label={i18nText('MedicalEvents.form.addMedication')}
                 />
               </div>
             </SectionCard>
           ) : null}
 
-          <SectionCard title="附件与备注">
-            <FormField label="补充说明">
+          <SectionCard title={i18nText('MedicalEvents.form.sectionNotes')}>
+            <FormField label={i18nText('MedicalEvents.form.notes')}>
               <TextareaField
                 value={formNotes}
                 onChange={(event) => setFormNotes(event.target.value)}
-                placeholder="医嘱、复诊安排、其他需要记录的信息..."
+                placeholder={i18nText('MedicalEvents.form.notesPlaceholder')}
                 rows={2}
                 className="w-full"
               />
@@ -600,9 +602,9 @@ function MedicalEventsFormBody({
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('MedicalEvents.form.cancel')}</Button>
         <Button type="button" onClick={onSubmit} disabled={saving} tone="primary" size="md">
-          {saving ? '保存中...' : editingEventId ? '更新记录' : '保存记录'}
+          {saving ? i18nText('MedicalEvents.form.saving') : editingEventId ? i18nText('MedicalEvents.form.updateRecord') : i18nText('MedicalEvents.form.saveRecord')}
         </Button>
       </ModalFooter>
     </>

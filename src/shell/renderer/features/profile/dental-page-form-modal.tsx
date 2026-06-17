@@ -23,6 +23,8 @@ import {
   type PendingDentalPhoto,
 } from './dental-page-domain.js';
 import { ToothChart } from './dental-page-tooth-chart.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type DentalRecordFormModalProps = {
   show: boolean;
@@ -89,21 +91,21 @@ export function DentalRecordFormBody(props: DentalRecordFormModalProps) {
   return (
     <>
       <ModalHeader
-        title={props.isEditing ? '编辑口腔记录' : '添加口腔记录'}
+        title={props.isEditing ? i18nText('Dental.form.title.edit') : i18nText('Dental.form.title.add')}
         icon={props.isEditing ? '✏️' : '🦷'}
         onClose={props.resetForm}
       />
       <ModalContent>
         <div className="space-y-5">
           <FormGrid cols={2}>
-            <FormField label="就诊日期">
+            <FormField label={i18nText('Dental.form.eventDate')}>
               <DatePicker value={props.formEventDate} onChange={props.setFormEventDate} className="h-12" />
             </FormField>
-            <FormField label="医院/诊所">
+            <FormField label={i18nText('Dental.form.clinic')}>
               <TextField
                 value={props.formHospital}
                 onChange={(event) => props.setFormHospital(event.target.value)}
-                placeholder="选填"
+                placeholder={i18nText('Dental.form.optional')}
                 className="w-full min-h-12"
               />
             </FormField>
@@ -118,7 +120,7 @@ export function DentalRecordFormBody(props: DentalRecordFormModalProps) {
               ['primary', ...(props.ageMonths >= 60 ? (['permanent'] as const) : [])] as const
             ).map((value) => ({
               value: value as 'primary' | 'permanent',
-              label: value === 'primary' ? '乳牙' : '恒牙',
+              label: value === 'primary' ? i18nText('Dental.form.toothSet.primary') : i18nText('Dental.form.toothSet.permanent'),
             }));
             return (
               <div
@@ -138,11 +140,11 @@ export function DentalRecordFormBody(props: DentalRecordFormModalProps) {
                       isActive ? 'text-[var(--nimi-action-primary-bg)]' : 'text-[var(--nimi-text-primary)]',
                     )}
                   >
-                    事件 {idx + 1} {eventMeta ? `· ${eventMeta.emoji} ${eventMeta.label}` : ''}
+                    {i18nText('Dental.form.eventTitle', { index: idx + 1 })} {eventMeta ? `· ${eventMeta.emoji} ${eventMeta.label}` : ''}
                     {entry.toothIds.length > 0 ? (
                       <span className="font-normal text-[var(--nimi-text-muted)]">
                         {' '}
-                        · {entry.toothIds.length} 颗牙
+                        · {i18nText('Dental.form.teethCount', { count: entry.toothIds.length })}
                       </span>
                     ) : null}
                   </p>
@@ -155,14 +157,14 @@ export function DentalRecordFormBody(props: DentalRecordFormModalProps) {
                       }}
                       className="rounded-full px-2 py-0.5 text-[12px] text-[var(--nimi-status-danger)] transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,transparent)]"
                     >
-                      删除
+                      {i18nText('Dental.form.delete')}
                     </button>
                   ) : null}
                 </div>
 
                 {isActive ? (
                   <div className="mt-2 space-y-3" onClick={(event) => event.stopPropagation()}>
-                    <FormField label="类型">
+                    <FormField label={i18nText('Dental.form.type')}>
                       <ChipGroup
                         size="sm"
                         options={eventTypeChips}
@@ -177,7 +179,7 @@ export function DentalRecordFormBody(props: DentalRecordFormModalProps) {
                       <div>
                         <div className="mb-2 flex items-center gap-3">
                           <p className="text-[12px] text-[var(--nimi-text-muted)]">
-                            牙位
+                            {i18nText('Dental.form.toothPosition')}
                           </p>
                           <ChipGroup
                             size="sm"
@@ -207,7 +209,7 @@ export function DentalRecordFormBody(props: DentalRecordFormModalProps) {
                     ) : null}
 
                     {entryNeedsSeverity ? (
-                      <FormField label="严重程度">
+                      <FormField label={i18nText('Dental.form.severity')}>
                         <ChipGroup
                           size="sm"
                           layout="fill"
@@ -231,21 +233,21 @@ export function DentalRecordFormBody(props: DentalRecordFormModalProps) {
           })}
 
           {!props.isEditing ? (
-            <DashedAddButton shape="row" onClick={props.addEntry} label="添加另一个事件" />
+            <DashedAddButton shape="row" onClick={props.addEntry} label={i18nText('Dental.form.addAnotherEvent')} />
           ) : null}
 
-          <FormField label="备注">
+          <FormField label={i18nText('Dental.form.notes')}>
             <TextareaField
               value={props.formNotes}
               onChange={(event) => props.setFormNotes(event.target.value)}
-              placeholder="选填"
+              placeholder={i18nText('Dental.form.optional')}
               rows={2}
               className="w-full"
             />
           </FormField>
 
           <SectionCard
-            title={`照片${props.formPhotoFiles.length > 0 ? ` (${props.formPhotoFiles.length}/${PHOTO_MAX})` : ''}`}
+            title={i18nText('Dental.form.photosTitle', { countSuffix: props.formPhotoFiles.length > 0 ? ` (${props.formPhotoFiles.length}/${PHOTO_MAX})` : '' })}
             variant="plain"
           >
             <div className="space-y-2">
@@ -304,8 +306,8 @@ export function DentalRecordFormBody(props: DentalRecordFormModalProps) {
                     className={totalPhotoCount === 0 ? 'col-span-4' : undefined}
                     label={
                       props.formPhotoFiles.length === 0
-                        ? `点击或拖拽上传口腔照片（最多 ${PHOTO_MAX} 张）`
-                        : '添加更多'
+                        ? i18nText('Dental.form.photoUploadHint', { max: PHOTO_MAX })
+                        : i18nText('Dental.form.addMore')
                     }
                   />
                 ) : null}
@@ -317,9 +319,9 @@ export function DentalRecordFormBody(props: DentalRecordFormModalProps) {
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={props.resetForm} tone="ghost" size="md">取消</Button>
+        <Button type="button" onClick={props.resetForm} tone="ghost" size="md">{i18nText('Dental.form.cancel')}</Button>
         <Button type="button" onClick={() => void props.handleSubmit()} tone="primary" size="md">
-          {props.isEditing ? '保存修改' : '保存'}
+          {props.isEditing ? i18nText('Dental.form.saveEdit') : i18nText('Dental.form.save')}
         </Button>
       </ModalFooter>
     </>

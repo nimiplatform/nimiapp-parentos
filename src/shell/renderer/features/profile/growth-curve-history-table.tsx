@@ -11,6 +11,8 @@ import {
   getMeasurementSourceLabel,
   type GrowthMetricDefinition,
 } from './growth-curve-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type GrowthCurveHistoryTableProps = {
   typeMeasurements: MeasurementRow[];
@@ -38,10 +40,10 @@ const ROWS_PER_PAGE = 10;
 type DateRangeKey = 'all' | '1y' | '6m' | '3m';
 
 const DATE_RANGE_OPTIONS: ReadonlyArray<{ value: DateRangeKey; label: string }> = [
-  { value: 'all', label: '全部时间' },
-  { value: '1y', label: '近 1 年' },
-  { value: '6m', label: '近 6 月' },
-  { value: '3m', label: '近 3 月' },
+  { value: 'all', label: i18nText('GrowthCurve.history.rangeAll') },
+  { value: '1y', label: i18nText('GrowthCurve.history.rangeOneYear') },
+  { value: '6m', label: i18nText('GrowthCurve.history.rangeSixMonths') },
+  { value: '3m', label: i18nText('GrowthCurve.history.rangeThreeMonths') },
 ];
 
 const FILTER_SELECT_CLASS =
@@ -55,10 +57,12 @@ function withinDateRange(measuredAtIso: string, range: DateRangeKey): boolean {
 }
 
 function ageLabel(ageMonths: number): string {
-  if (ageMonths < 24) return `${ageMonths}月`;
+  if (ageMonths < 24) return i18nText('GrowthCurve.age.monthsShort', { months: ageMonths });
   const years = Math.floor(ageMonths / 12);
   const months = ageMonths % 12;
-  return months > 0 ? `${years}岁${months}月` : `${years}岁`;
+  return months > 0
+    ? i18nText('GrowthCurve.age.yearsMonthsShort', { years, months })
+    : i18nText('GrowthCurve.age.yearsShort', { years });
 }
 
 // Percentile pill tone — clinical band: P10–P90 reads as the common range in
@@ -99,8 +103,8 @@ function escapeCsvCell(cell: string | number | null | undefined): string {
 
 function buildCsvText(rows: ReadonlyArray<ReadonlyArray<string | number | null>>): string {
   const body = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\n');
-  // Prepend a UTF-8 BOM so spreadsheet apps render the Chinese source labels
-  // ("手动" / "导入" etc.) correctly instead of mojibake.
+  // Prepend a UTF-8 BOM so spreadsheet apps render localized source labels
+  // correctly instead of mojibake.
   return `${String.fromCharCode(0xfeff)}${body}`;
 }
 
@@ -213,7 +217,7 @@ export function GrowthCurveHistoryTable({
       text: buildCsvText([header, ...body]),
       defaultFilename: `growth_history_${metricSlug}_${dateSlug}.csv`,
       kind: 'csv',
-      title: '导出历史记录',
+      title: i18nText('GrowthCurve.history.exportTitle'),
     });
   };
 
@@ -229,11 +233,11 @@ export function GrowthCurveHistoryTable({
             {t('Profile.rich.common.history')}
           </h3>
           <span className="text-[13px] text-[var(--nimi-text-muted)]">
-            {filteredRows.length} 条
+            {i18nText('GrowthCurve.history.rowCount', { count: filteredRows.length })}
           </span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <select
-              aria-label="time-range filter"
+              aria-label={i18nText('GrowthCurve.history.timeRangeFilter')}
               value={dateRangeKey}
               onChange={(event) => {
                 setDateRangeKey(event.target.value as DateRangeKey);
@@ -252,18 +256,18 @@ export function GrowthCurveHistoryTable({
               onClick={() => void handleExportCsv().catch(catchLog('growth-history', 'action:export-csv-failed'))}
               disabled={filteredRows.length === 0}
               className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-3 text-[12px] font-medium text-[var(--nimi-text-secondary)] hover:text-[var(--nimi-text-primary)] disabled:opacity-50"
-              aria-label="export csv"
+              aria-label={i18nText('GrowthCurve.history.exportCsv')}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" {...ICON_STROKE}>
                 <path d="M12 3v12M7 11l5 5 5-5M5 21h14" />
               </svg>
-              导出
+              {i18nText('GrowthCurve.history.exportButton')}
             </button>
           </div>
         </div>
         {pageRows.length === 0 ? (
           <div className="py-10 text-center text-[13px] text-[var(--nimi-text-muted)]">
-            没有匹配的记录
+            {i18nText('GrowthCurve.history.noMatchingRecords')}
           </div>
         ) : (
           <table className="w-full border-collapse text-[14px] text-[var(--nimi-text-primary)]">
@@ -273,7 +277,7 @@ export function GrowthCurveHistoryTable({
                 <th className="pb-3 font-medium">{t('Profile.rich.common.age')}</th>
                 <th className="pb-3 font-medium">{valueColumnLabel}</th>
                 <th className="pb-3 font-medium">{t('Profile.rich.growth.percentile')}</th>
-                <th className="pb-3 font-medium">生长重要节点</th>
+                <th className="pb-3 font-medium">{i18nText('GrowthCurve.history.importantNode')}</th>
                 <th className="pb-3 w-24 text-right font-medium">{t('Profile.rich.common.actions')}</th>
               </tr>
             </thead>
@@ -412,7 +416,7 @@ export function GrowthCurveHistoryTable({
         )}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[12px]">
           <span className="text-[var(--nimi-text-muted)]">
-            显示 {rangeStart}–{rangeEnd} 条，共 {filteredRows.length} 条
+            {i18nText('GrowthCurve.history.showingRows', { start: rangeStart, end: rangeEnd, total: filteredRows.length })}
           </span>
           {totalPages > 1 ? (
             <div className="flex items-center gap-2">
@@ -421,19 +425,19 @@ export function GrowthCurveHistoryTable({
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
                 disabled={safePage <= 1}
                 className="grid h-8 w-8 place-items-center rounded-full border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)] text-[var(--nimi-text-secondary)] transition-colors hover:text-[var(--nimi-text-primary)] disabled:opacity-40"
-                aria-label="previous page"
+                aria-label={i18nText('GrowthCurve.history.previousPage')}
               >
                 ←
               </button>
               <span className="min-w-[68px] text-center font-medium text-[var(--nimi-text-secondary)]">
-                第 {safePage} / {totalPages} 页
+                {i18nText('GrowthCurve.history.pageStatus', { page: safePage, totalPages })}
               </span>
               <button
                 type="button"
                 onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                 disabled={safePage >= totalPages}
                 className="grid h-8 w-8 place-items-center rounded-full border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)] text-[var(--nimi-text-secondary)] transition-colors hover:text-[var(--nimi-text-primary)] disabled:opacity-40"
-                aria-label="next page"
+                aria-label={i18nText('GrowthCurve.history.nextPage')}
               >
                 →
               </button>

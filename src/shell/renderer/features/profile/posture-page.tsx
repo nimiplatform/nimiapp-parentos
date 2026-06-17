@@ -9,19 +9,18 @@ import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { PostureGuide } from './posture-guide.js';
 import { PostureCaptureModal } from './posture-capture-form.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 type BadgeTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 
-const SHOULDER_LABELS: Record<string, string> = { '0': '对称', '1': '左肩偏高', '2': '右肩偏高' };
-
-const FOOT_ARCH_LABELS: Record<string, string> = { normal: '正常', flat: '扁平足', 'high-arch': '高弓足', monitoring: '观察中' };
 const FOOT_ARCH_TONES: Record<string, BadgeTone> = { normal: 'success', flat: 'warning', 'high-arch': 'warning', monitoring: 'info' };
 
 const COBB_LEVELS = [
-  { max: 10, label: '正常', tone: 'success' },
-  { max: 25, label: '需定期监测', tone: 'warning' },
-  { max: 40, label: '建议支具治疗', tone: 'danger' },
-  { max: Infinity, label: '建议手术评估', tone: 'danger' },
+  { max: 10, labelKey: 'Posture.cobbLevel.normal', tone: 'success' },
+  { max: 25, labelKey: 'Posture.cobbLevel.monitor', tone: 'warning' },
+  { max: 40, labelKey: 'Posture.cobbLevel.brace', tone: 'danger' },
+  { max: Infinity, labelKey: 'Posture.cobbLevel.surgicalAssessment', tone: 'danger' },
 ] as const;
 
 function cobbLevel(angle: number) {
@@ -30,7 +29,27 @@ function cobbLevel(angle: number) {
 
 function fmtAge(months: number) {
   const y = Math.floor(months / 12); const m = months % 12;
-  return y > 0 ? (m > 0 ? `${y}岁${m}个月` : `${y}岁`) : `${m}个月`;
+  if (y > 0) {
+    return m > 0
+      ? i18nText('Posture.age.yearsMonths', { years: y, months: m })
+      : i18nText('Posture.age.years', { years: y });
+  }
+  return i18nText('Posture.age.months', { months: m });
+}
+
+function shoulderLabel(value: string): string {
+  if (value === '0') return i18nText('Posture.shoulder.symmetric');
+  if (value === '1') return i18nText('Posture.shoulder.leftHigh');
+  if (value === '2') return i18nText('Posture.shoulder.rightHigh');
+  return i18nText('Posture.unknown');
+}
+
+function footArchLabel(value: string): string {
+  if (value === 'normal') return i18nText('Posture.footArch.normal');
+  if (value === 'flat') return i18nText('Posture.footArch.flat');
+  if (value === 'high-arch') return i18nText('Posture.footArch.highArch');
+  if (value === 'monitoring') return i18nText('Posture.footArch.monitoring');
+  return value;
 }
 
 function badgeToneClass(tone: BadgeTone) {
@@ -60,7 +79,7 @@ export default function PosturePage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="体态档案">
+      <ProfileDetailShell title={i18nText('Posture.page.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -77,7 +96,7 @@ export default function PosturePage() {
 
   return (
     <ProfileDetailShell
-      title="体态档案"
+      title={i18nText('Posture.page.title')}
       actions={
         <>
           <Button
@@ -90,11 +109,11 @@ export default function PosturePage() {
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-            录入指引
+            {i18nText('Posture.page.entryGuide')}
           </Button>
           {!showForm && (
             <Button onClick={() => setShowForm(true)} tone="primary" size="sm">
-              + 添加记录
+              {i18nText('Posture.page.addRecord')}
             </Button>
           )}
         </>
@@ -104,8 +123,17 @@ export default function PosturePage() {
           ageLabel={fmtAge(ageMonths)} gender={child.gender}
           dataContext={(() => {
             const lines: string[] = [];
-            if (latestCobb?.cobbAngle != null) lines.push(`Cobb角: ${latestCobb.cobbAngle}° (${latestCobb.assessedAt.split('T')[0]})`);
-            if (latestFootArch?.footArchStatus) lines.push(`足弓: ${FOOT_ARCH_LABELS[latestFootArch.footArchStatus] ?? latestFootArch.footArchStatus}`);
+            if (latestCobb?.cobbAngle != null) {
+              lines.push(i18nText('Posture.summary.cobbAngle', {
+                angle: latestCobb.cobbAngle,
+                date: latestCobb.assessedAt.split('T')[0],
+              }));
+            }
+            if (latestFootArch?.footArchStatus) {
+              lines.push(i18nText('Posture.summary.footArch', {
+                label: footArchLabel(latestFootArch.footArchStatus),
+              }));
+            }
             return lines.join('\n');
           })()} />
       }
@@ -115,35 +143,35 @@ export default function PosturePage() {
       {/* Quick overview */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         <Surface tone="card" elevation="raised" padding="md" className="rounded-2xl">
-          <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">🦴 Cobb 角</p>
+          <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Posture.page.cobbAngle')}</p>
           {latestCobb?.cobbAngle != null ? (() => {
             const level = cobbLevel(latestCobb.cobbAngle);
             return (<>
               <p className="text-[20px] font-bold mt-1 text-[var(--nimi-text-primary)]">{latestCobb.cobbAngle}°</p>
-              <span className={`text-[12px] px-1.5 py-0.5 rounded-full mt-1 inline-block ${badgeToneClass(level.tone)}`}>{level.label}</span>
+              <span className={`text-[12px] px-1.5 py-0.5 rounded-full mt-1 inline-block ${badgeToneClass(level.tone)}`}>{i18nText(level.labelKey)}</span>
             </>);
-          })() : <p className="text-[14px] mt-1 text-[var(--nimi-text-muted)]">未记录</p>}
+          })() : <p className="text-[14px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('Posture.notRecorded')}</p>}
         </Surface>
 
         <Surface tone="card" elevation="raised" padding="md" className="rounded-2xl">
-          <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">🧍 肩部</p>
+          <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Posture.page.shoulder')}</p>
           {latestShoulder?.shoulder ? (
-            <p className="text-[16px] font-bold mt-1 text-[var(--nimi-text-primary)]">{SHOULDER_LABELS[latestShoulder.shoulder] ?? '未知'}</p>
-          ) : <p className="text-[14px] mt-1 text-[var(--nimi-text-muted)]">未记录</p>}
+            <p className="text-[16px] font-bold mt-1 text-[var(--nimi-text-primary)]">{shoulderLabel(latestShoulder.shoulder)}</p>
+          ) : <p className="text-[14px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('Posture.notRecorded')}</p>}
         </Surface>
 
         <Surface tone="card" elevation="raised" padding="md" className="rounded-2xl">
-          <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">🦶 足弓</p>
+          <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Posture.page.footArch')}</p>
           {latestFootArch?.footArchStatus ? (
             <p className={`text-[16px] font-bold mt-1 ${badgeToneClass(FOOT_ARCH_TONES[latestFootArch.footArchStatus] ?? 'neutral')}`}>
-              {FOOT_ARCH_LABELS[latestFootArch.footArchStatus] ?? latestFootArch.footArchStatus}
+              {footArchLabel(latestFootArch.footArchStatus)}
             </p>
-          ) : <p className="text-[14px] mt-1 text-[var(--nimi-text-muted)]">未记录</p>}
-          <p className="text-[12px] mt-0.5 text-[var(--nimi-text-muted)]">来自体能测评</p>
+          ) : <p className="text-[14px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('Posture.notRecorded')}</p>}
+          <p className="text-[12px] mt-0.5 text-[var(--nimi-text-muted)]">{i18nText('Posture.page.fromFitnessAssessment')}</p>
         </Surface>
       </div>
 
-      {/* Add-record form — the 添加健康数据 posture form pane, no sidebar */}
+      {/* Add-record form: posture form pane, no sidebar. */}
       {showForm && (
         <PostureCaptureModal
           child={{ childId: child.childId, birthDate: child.birthDate }}
@@ -154,13 +182,13 @@ export default function PosturePage() {
 
       {/* Timeline */}
       <h2 className="text-[14px] font-semibold mb-3 mt-2 text-[var(--nimi-text-primary)]">
-        {timeline.length > 0 ? `评估记录（${timeline.length} 次）` : ''}
+        {timeline.length > 0 ? i18nText('Posture.page.assessmentCount', { count: timeline.length }) : ''}
       </h2>
       {timeline.length === 0 && !showForm && (
         <Surface tone="card" elevation="raised" padding="lg" className="rounded-3xl text-center">
           <span className="text-[24px]">🧍</span>
-          <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">还没有体态评估记录</p>
-          <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">记录脊柱侧弯角度和肩部对称性</p>
+          <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">{i18nText('Posture.page.emptyTitle')}</p>
+          <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('Posture.page.emptyHint')}</p>
         </Surface>
       )}
       <div className="space-y-3">
@@ -172,16 +200,16 @@ export default function PosturePage() {
                 const level = cobbLevel(rec.cobbAngle);
                 return (
                   <div className="flex items-center gap-2">
-                    <span className="text-[12px] text-[var(--nimi-text-muted)]">Cobb 角</span>
+                    <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Posture.page.timelineCobbAngle')}</span>
                     <span className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{rec.cobbAngle}°</span>
-                    <span className={`text-[12px] px-1.5 py-0.5 rounded-full ${badgeToneClass(level.tone)}`}>{level.label}</span>
+                    <span className={`text-[12px] px-1.5 py-0.5 rounded-full ${badgeToneClass(level.tone)}`}>{i18nText(level.labelKey)}</span>
                   </div>
                 );
               })()}
               {rec.shoulder && (
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] text-[var(--nimi-text-muted)]">肩部</span>
-                  <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{SHOULDER_LABELS[rec.shoulder] ?? '未知'}</span>
+                  <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Posture.page.timelineShoulder')}</span>
+                  <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{shoulderLabel(rec.shoulder)}</span>
                 </div>
               )}
             </div>

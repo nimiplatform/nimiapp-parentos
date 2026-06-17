@@ -17,6 +17,8 @@ import {
   ModalFooter as ShellModalFooter,
   ModalHeader,
 } from './health-record-modal-shell.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const NUMBER_INPUT_CLASS = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 const DANGER_DATE_FIELD_CLASS = 'border-[var(--nimi-status-danger)] ring-[length:var(--nimi-focus-ring-width)] ring-[var(--nimi-status-danger)]';
@@ -74,19 +76,19 @@ export function ApplianceFormModal({
   const handleSubmit = async () => {
     if (!startedAt) return;
     if (needsPrescribedHours && !prescribedHours.trim()) {
-      const msg = '请填写矫治器的医嘱每日佩戴小时数';
+      const msg = i18nText('Orthodontic.modal.appliance.prescribedHoursRequired');
       setLocalError(msg);
       onError(msg);
       return;
     }
     if (isClearAligner && (!totalAlignersValid || !daysPerAlignerValid)) {
-      const msg = '隐形牙套需要正整数的总副数和每副佩戴天数';
+      const msg = i18nText('Orthodontic.modal.appliance.alignerPlanRequired');
       setLocalError(msg);
       onError(msg);
       return;
     }
     if (!activationIntervalValid) {
-      const msg = '扩弓转动周期必须是大于 0 的整数（天）';
+      const msg = i18nText('Orthodontic.modal.appliance.activationIntervalInvalid');
       setLocalError(msg);
       onError(msg);
       return;
@@ -132,15 +134,15 @@ export function ApplianceFormModal({
     : 0;
 
   return (
-    <HealthRecordModalShell open size="S" onClose={onClose} ariaLabel="添加矫治器">
-      <ModalHeader title="添加矫治器" icon="🦷" onClose={onClose} />
+    <HealthRecordModalShell open size="S" onClose={onClose} ariaLabel={i18nText('Orthodontic.modal.appliance.createTitle')}>
+      <ModalHeader title={i18nText('Orthodontic.modal.appliance.createTitle')} icon="🦷" onClose={onClose} />
       <ModalContent>
         <div className="space-y-4">
           {localError && <InlineError>{localError}</InlineError>}
           {eligibleTypes.length === 0 && (
-            <InlineError>孩子当前年龄不满足任何矫治器的最小年龄门槛。</InlineError>
+            <InlineError>{i18nText('Orthodontic.modal.appliance.noEligibleTypes')}</InlineError>
           )}
-          <FormField label="矫治器类型">
+          <FormField label={i18nText('Orthodontic.modal.appliance.typeLabel')}>
             <SelectField
               value={applianceType}
               onValueChange={(v) => handleTypeChange(v as OrthodonticApplianceType)}
@@ -149,8 +151,8 @@ export function ApplianceFormModal({
             />
           </FormField>
           <FormField
-            label="开始日期"
-            error={dateIsBeforeBirth ? '开始日期不能早于孩子出生日。' : undefined}
+            label={i18nText('Orthodontic.modal.appliance.startDate')}
+            error={dateIsBeforeBirth ? i18nText('Orthodontic.modal.appliance.startDateBeforeBirth') : undefined}
           >
             <DatePicker
               value={startedAt}
@@ -158,24 +160,24 @@ export function ApplianceFormModal({
               className={cn('h-12', dateIsBeforeBirth && DANGER_DATE_FIELD_CLASS)}
             />
           </FormField>
-          <FormField label="医嘱佩戴小时/天" required={needsPrescribedHours}>
+          <FormField label={i18nText('Orthodontic.modal.appliance.prescribedHoursPerDayLabel')} required={needsPrescribedHours}>
             <TextField type="number" value={prescribedHours} onChange={(event) => setPrescribedHours(event.target.value)} className="w-full min-h-12" inputClassName={NUMBER_INPUT_CLASS} />
           </FormField>
           {isExpander && (
             <>
-              <FormField label="扩弓总激活次数">
+              <FormField label={i18nText('Orthodontic.modal.appliance.prescribedActivationsLabel')}>
                 <TextField type="number" value={prescribedActivations} onChange={(event) => setPrescribedActivations(event.target.value)} className="w-full min-h-12" inputClassName={NUMBER_INPUT_CLASS} />
               </FormField>
               <FormField
-                label="扩弓转动周期（天，可选）"
-                error={!activationIntervalValid ? '转动周期必须是大于 0 的整数。' : undefined}
+                label={i18nText('Orthodontic.modal.appliance.activationIntervalLabel')}
+                error={!activationIntervalValid ? i18nText('Orthodontic.modal.appliance.activationIntervalInvalid') : undefined}
               >
                 <TextField
                   type="number"
                   tone={activationIntervalValid ? 'default' : 'danger'}
                   value={activationInterval}
                   onChange={(event) => setActivationInterval(event.target.value)}
-                  placeholder="例如 3"
+                  placeholder={i18nText('Orthodontic.modal.appliance.activationIntervalPlaceholder')}
                   className="w-full min-h-12"
                   inputClassName={NUMBER_INPUT_CLASS}
                 />
@@ -185,65 +187,68 @@ export function ApplianceFormModal({
           {isClearAligner && (
             <>
               <FormField
-                label="牙套总副数"
-                error={!totalAlignersValid ? '总副数必须是大于 0 的整数。' : undefined}
+                label={i18nText('Orthodontic.modal.appliance.totalAlignersLabel')}
+                error={!totalAlignersValid ? i18nText('Orthodontic.modal.appliance.totalAlignersInvalid') : undefined}
               >
                 <TextField
                   type="number"
                   tone={totalAlignersValid ? 'default' : 'danger'}
                   value={totalAligners}
                   onChange={(event) => setTotalAligners(event.target.value)}
-                  placeholder="例如 30"
+                  placeholder={i18nText('Orthodontic.modal.appliance.totalAlignersPlaceholder')}
                   className="w-full min-h-12"
                   inputClassName={NUMBER_INPUT_CLASS}
                 />
               </FormField>
               <FormField
-                label="每副佩戴天数"
-                error={!daysPerAlignerValid ? '每副佩戴天数必须是大于 0 的整数。' : undefined}
+                label={i18nText('Orthodontic.modal.appliance.daysPerAlignerLabel')}
+                error={!daysPerAlignerValid ? i18nText('Orthodontic.modal.appliance.daysPerAlignerInvalid') : undefined}
               >
                 <TextField
                   type="number"
                   tone={daysPerAlignerValid ? 'default' : 'danger'}
                   value={daysPerAligner}
                   onChange={(event) => setDaysPerAligner(event.target.value)}
-                  placeholder="例如 7"
+                  placeholder={i18nText('Orthodontic.modal.appliance.daysPerAlignerPlaceholder')}
                   className="w-full min-h-12"
                   inputClassName={NUMBER_INPUT_CLASS}
                 />
               </FormField>
             </>
           )}
-          <FormField label="复诊间隔（天）">
+          <FormField label={i18nText('Orthodontic.modal.appliance.reviewIntervalDays')}>
             <TextField type="number" value={reviewIntervalDays} onChange={(event) => setReviewIntervalDays(event.target.value)} className="w-full min-h-12" inputClassName={NUMBER_INPUT_CLASS} />
           </FormField>
-          <FormField label="初始治疗阶段（可选）">
+          <FormField label={i18nText('Orthodontic.modal.appliance.initialPhase')}>
             <SelectField
               value={currentPhase}
               onValueChange={setCurrentPhase}
-              placeholder="暂不设置"
+              placeholder={i18nText('Orthodontic.modal.appliance.initialPhasePlaceholder')}
               options={APPLIANCE_PHASES[applianceType].map((p) => ({ value: p.phaseId, label: p.label }))}
               className="min-h-12"
             />
           </FormField>
-          <FormField label="下次复诊议程（可选）">
+          <FormField label={i18nText('Orthodontic.modal.appliance.nextReviewAgenda')}>
             <TextareaField
               value={nextReviewAgenda}
               onChange={(event) => setNextReviewAgenda(event.target.value)}
-              placeholder="例如 评估扩弓量 / 换主弓丝"
+              placeholder={i18nText('Orthodontic.modal.appliance.nextReviewAgendaPlaceholder')}
               rows={3}
               className="w-full"
             />
           </FormField>
           {startedAt && childBirthDate && !dateIsBeforeBirth && (
             <p className="text-[12.5px] text-[var(--nimi-text-muted)]">
-              开始时孩子 {Math.floor(startedAgeMonths / 12)} 岁 {startedAgeMonths % 12} 月
+              {i18nText('Orthodontic.modal.appliance.startedAge', {
+                years: Math.floor(startedAgeMonths / 12),
+                months: startedAgeMonths % 12,
+              })}
             </p>
           )}
         </div>
       </ModalContent>
       <ShellModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('Orthodontic.modal.appliance.cancel')}</Button>
         <Button
           type="button"
           onClick={() => void handleSubmit()}
@@ -257,7 +262,7 @@ export function ApplianceFormModal({
           tone="primary"
           size="md"
         >
-          保存
+          {i18nText('Orthodontic.modal.appliance.save')}
         </Button>
       </ShellModalFooter>
     </HealthRecordModalShell>

@@ -39,9 +39,9 @@ import { catchLog, catchLogThen } from '../../infra/telemetry/catch-log.js';
 import { JournalPageCapture } from './journal-page-capture.js';
 import {
   clearJournalLocalDraft,
+  getKeepsakeKeywords,
   hasMeaningfulJournalLocalDraft,
   isRecentJournalDraft,
-  KEEPSAKE_KEYWORDS,
   readJournalLocalDraft,
   serializeJournalLocalDraft,
   toJournalLocalDraftPayload,
@@ -51,6 +51,8 @@ import {
 } from './journal-page-local-draft.js';
 import { DeleteJournalEntryModal, KeepsakePromptModal } from './journal-page-overlays.js';
 import { createJournalPersistenceActions } from './journal-page-persistence-actions.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export default function JournalPage() {
   const navigate = useNavigate();
@@ -187,7 +189,7 @@ export default function JournalPage() {
     ? textContent.trim()
     : voiceDraft.transcript.trim();
   const suggestsKeepsake = useMemo(() => {
-    if (KEEPSAKE_KEYWORDS.some((item) => draftTextForTagging.includes(item))) return true;
+    if (getKeepsakeKeywords().some((item) => draftTextForTagging.includes(item))) return true;
     if (photoDrafts.length > 0 && draftTextForTagging.length >= 24) return true;
     if (draftTextForTagging.length >= 60) return true;
     return false;
@@ -321,10 +323,10 @@ export default function JournalPage() {
 
     draftAutosaveTimer.current = setTimeout(() => {
       const updatedAt = isoNow();
-      writeJournalLocalDraft({ ...currentLocalDraftPayload, updatedAt });
+      const persisted = writeJournalLocalDraft({ ...currentLocalDraftPayload, updatedAt });
       setRestorableDraft(null);
-      setLastAutosavedAt(updatedAt);
-      setLastSavedDraftSignature(currentLocalDraftSignature);
+      setLastAutosavedAt(persisted ? updatedAt : null);
+      setLastSavedDraftSignature(persisted ? currentLocalDraftSignature : null);
     }, 2000);
 
     return () => {
@@ -408,7 +410,7 @@ export default function JournalPage() {
     };
   }, [entries]);
 
-  if (!child) return <NimiText role="helper" className="p-8">请先添加孩子</NimiText>;
+  if (!child) return <NimiText role="helper" className="p-8">{i18nText('Journal.page.noActiveChild')}</NimiText>;
 
   /* ── Helpers ── */
 
@@ -604,9 +606,14 @@ export default function JournalPage() {
   const editingEntryLabel = editingEntry
     ? `${getLocalDateKey(editingEntry.recordedAt)} ${getLocalTimeLabel(editingEntry.recordedAt)}`.trim()
     : null;
-  const draftStatusLabel = !editingEntryId && currentLocalDraftPayload && hasMeaningfulJournalLocalDraft(currentLocalDraftPayload)
-    ? (currentLocalDraftSignature === lastSavedDraftSignature && lastAutosavedAt ? '已自动保存' : '未保存')
+  const draftStatusState: 'saved' | 'unsaved' | null = !editingEntryId && currentLocalDraftPayload && hasMeaningfulJournalLocalDraft(currentLocalDraftPayload)
+    ? (currentLocalDraftSignature === lastSavedDraftSignature && lastAutosavedAt ? 'saved' : 'unsaved')
     : null;
+  const draftStatusLabel = draftStatusState === 'saved'
+    ? i18nText('Journal.capture.draft.status.saved')
+    : draftStatusState === 'unsaved'
+      ? i18nText('Journal.capture.draft.status.unsaved')
+      : null;
 
   /* ════════════════════════════════════════════════════════
      RENDER
@@ -615,7 +622,7 @@ export default function JournalPage() {
   return (
     <div className="hide-scrollbar mx-auto min-h-full max-w-3xl px-6 pb-6 pt-4">
       <JournalPageCapture
-        childPronoun={child.gender === 'female' ? '她' : '他'}
+        childPronoun={i18nText(child.gender === 'female' ? 'Common.pronoun.female' : 'Common.pronoun.male')}
         guidedContext={guidedContext}
         observationFocus={observationFocus}
         observationFocusOptions={observationFocusOptions}
@@ -654,6 +661,7 @@ export default function JournalPage() {
         onEmojiCategoryChange={setEmojiCat}
         textareaRef={textareaRef}
         draftStatusLabel={draftStatusLabel}
+        draftStatusState={draftStatusState}
         saving={saving}
         canSaveText={canSaveText}
         canSaveVoice={canSaveVoice}

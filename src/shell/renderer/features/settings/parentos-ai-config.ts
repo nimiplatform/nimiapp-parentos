@@ -8,6 +8,8 @@ import { createEmptyNimiAIConfig } from '@nimiplatform/sdk/ai';
 import type { NimiJsonValue } from '@nimiplatform/sdk/contracts';
 import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
 import { isoNow } from '../../bridge/ulid.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export const PARENTOS_AI_SCOPE_REF: NimiAIScopeRef = {
   kind: 'app',
@@ -28,20 +30,20 @@ export const PARENTOS_CAPABILITIES: Array<{
   {
     id: 'text.generate',
     routeCapability: 'text.generate',
-    label: 'AI 对话',
-    detail: '用于成长提问、日志标签与分析报告生成',
+    label: i18nText('AISettings.capability.textGenerateLabel'),
+    detail: i18nText('AISettings.capability.textGenerateDetail'),
   },
   {
     id: 'text.generate.vision',
     routeCapability: 'text.generate.vision',
-    label: '智能识别',
-    detail: '用于验光单、眼轴单、体检单等图片识别',
+    label: i18nText('AISettings.capability.textGenerateVisionLabel'),
+    detail: i18nText('AISettings.capability.textGenerateVisionDetail'),
   },
   {
     id: 'audio.transcribe',
     routeCapability: 'audio.transcribe',
-    label: '语音转写',
-    detail: '用于语音观察记录',
+    label: i18nText('AISettings.capability.audioTranscribeLabel'),
+    detail: i18nText('AISettings.capability.audioTranscribeDetail'),
   },
 ];
 

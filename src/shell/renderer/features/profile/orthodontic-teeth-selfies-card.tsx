@@ -11,6 +11,8 @@ import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { CompareView } from './orthodontic-teeth-selfies-compare.js';
 import { Header, type CompareMode } from './orthodontic-teeth-selfies-header.js';
 import { EmptyState, Loading, SessionStrip } from './orthodontic-teeth-selfies-session-strip.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface Props {
   childId: string;
@@ -91,7 +93,7 @@ export function OrthodonticTeethSelfiesCard({
   const bAttachment = pickAttachment(bBundle);
 
   const handleDeleteSession = async (sessionId: string) => {
-    if (!window.confirm('确定删除这组照片？文件会从本地相册同步移除，操作不可撤销。')) {
+    if (!window.confirm(i18nText('Orthodontic.selfies.deleteConfirm'))) {
       return;
     }
     onError(null);
@@ -133,7 +135,7 @@ export function OrthodonticTeethSelfiesCard({
           lineHeight: 1.55,
         }}
       >
-        每次换套或复诊时拍一组，看见这些天悄悄发生的变化。
+        {i18nText('Orthodontic.selfies.description')}
       </p>
 
       {bundles === null && <Loading />}

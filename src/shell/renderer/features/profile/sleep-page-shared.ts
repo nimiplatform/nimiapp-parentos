@@ -1,8 +1,13 @@
 import '@nimiplatform/kit/ui';
 import type { SleepRecordRow } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
 
 export const QUALITY_OPTIONS = ['good', 'fair', 'poor'] as const;
-export const QUALITY_LABELS: Record<string, string> = { good: '好', fair: '一般', poor: '差' };
+export const QUALITY_LABELS: Record<string, string> = {
+  good: i18nText('Sleep.quality.good'),
+  fair: i18nText('Sleep.quality.fair'),
+  poor: i18nText('Sleep.quality.poor'),
+};
 export const QUALITY_COLOR: Record<string, { bg: string; text: string }> = {
   good: { bg: 'color-mix(in_srgb,var(--nimi-status-success)_14%,transparent)', text: 'var(--nimi-status-success)' },
   fair: { bg: 'color-mix(in_srgb,var(--nimi-status-warning)_14%,transparent)', text: 'var(--nimi-status-warning)' },
@@ -12,10 +17,10 @@ export const QUALITY_COLOR: Record<string, { bg: string; text: string }> = {
 export type SleepAgeTier = 'infant' | 'toddler' | 'preschool' | 'school';
 
 export const TIER_LABELS: Record<SleepAgeTier, string> = {
-  infant: '婴儿期',
-  toddler: '幼儿期',
-  preschool: '学龄前',
-  school: '学龄期',
+  infant: i18nText('Sleep.tier.infant'),
+  toddler: i18nText('Sleep.tier.toddler'),
+  preschool: i18nText('Sleep.tier.preschool'),
+  school: i18nText('Sleep.tier.school'),
 };
 
 export const TIER_DEFAULTS: Record<SleepAgeTier, { bed: string; wake: string }> = {

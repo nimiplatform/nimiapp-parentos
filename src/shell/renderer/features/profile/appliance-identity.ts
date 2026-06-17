@@ -4,7 +4,7 @@
  * Each `applianceType` carries a stable identity colour used consistently
  * across the orthodontic surface: the hero card's top bar, the name dot, the
  * progress ring stroke, the compact card's left bar, and the case-review
- * agenda dots. Keeping the mapping in one place is what makes "扩弓器 = 蓝色"
+ * agenda dots. Keeping the mapping in one place is what makes each appliance hue
  * read the same everywhere a parent looks.
  */
 import type { OrthodonticApplianceType } from '../../bridge/sqlite-bridge.js';
@@ -26,7 +26,7 @@ const IDENTITY: Record<OrthodonticApplianceType, ApplianceIdentity> = {
   'ceramic-braces': { solid: '#a98467', tint: 'rgba(169,132,103,0.16)', tintText: '#8a6a52' },
   // Clear-aligner identity = the dashboard sleep-bar indigo (#818CF8). It's
   // the only orthodontic appliance type a parent also sees aggregated on the
-  // home dashboard's right-rail "牙套周期" widget, so matching that hue keeps
+  // home dashboard's right-rail aligner-cycle widget, so matching that hue keeps
   // "this is the aligner thing" visually consistent across surfaces.
   'clear-aligner': { solid: '#818CF8', tint: 'rgba(129,140,248,0.14)', tintText: '#4f46e5' },
   'retainer-fixed': { solid: '#06b6d4', tint: 'rgba(6,182,212,0.12)', tintText: '#0e7490' },

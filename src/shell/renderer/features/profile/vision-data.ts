@@ -1,6 +1,8 @@
 import type { GrowthTypeId } from '../../knowledge-base/gen/growth-standards.gen.js';
 import { REFERENCE_RANGES } from '../../knowledge-base/index.js';
 import type { MeasurementRow, MedicalEventRow } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── Eye type IDs ────────────────────────────────────────── */
 
@@ -19,15 +21,15 @@ export const EYE_SET = new Set<string>(EYE_TYPE_IDS);
 /* ── Chart options ───────────────────────────────────────── */
 
 export const CHART_OPTIONS: Array<{ typeId: GrowthTypeId; label: string }> = [
-  { typeId: 'axial-length-right', label: '右眼眼轴' },
-  { typeId: 'axial-length-left', label: '左眼眼轴' },
-  { typeId: 'vision-right', label: '右眼裸眼' },
-  { typeId: 'vision-left', label: '左眼裸眼' },
-  { typeId: 'refraction-sph-right', label: '右眼球镜' },
-  { typeId: 'refraction-sph-left', label: '左眼球镜' },
-  { typeId: 'iop-right', label: '右眼眼压' },
-  { typeId: 'iop-left', label: '左眼眼压' },
-  { typeId: 'hyperopia-reserve', label: '远视储备' },
+  { typeId: 'axial-length-right', label: i18nText('Vision.chart.rightAxialLength') },
+  { typeId: 'axial-length-left', label: i18nText('Vision.chart.leftAxialLength') },
+  { typeId: 'vision-right', label: i18nText('Vision.chart.rightNakedVision') },
+  { typeId: 'vision-left', label: i18nText('Vision.chart.leftNakedVision') },
+  { typeId: 'refraction-sph-right', label: i18nText('Vision.chart.rightSphere') },
+  { typeId: 'refraction-sph-left', label: i18nText('Vision.chart.leftSphere') },
+  { typeId: 'iop-right', label: i18nText('Vision.chart.rightIop') },
+  { typeId: 'iop-left', label: i18nText('Vision.chart.leftIop') },
+  { typeId: 'hyperopia-reserve', label: i18nText('Vision.chart.hyperopiaReserve') },
 ];
 
 /* ── Types for grouped records ───────────────────────────── */
@@ -57,20 +59,22 @@ export function groupByDate(ms: MeasurementRow[]): VisionRecord[] {
 }
 
 export function fmtAge(am: number): string {
-  if (am < 24) return `${am}月`;
+  if (am < 24) return i18nText('Vision.age.monthsShort', { months: am });
   const y = Math.floor(am / 12), r = am % 12;
-  return r > 0 ? `${y}岁${r}月` : `${y}岁`;
+  return r > 0
+    ? i18nText('Vision.age.yearsMonthsShort', { years: y, months: r })
+    : i18nText('Vision.age.yearsShort', { years: y });
 }
 
 /* ── Exam meta extraction (shared with vision-batch-form's writer) ── */
 
-const EXAM_NOTE_PREFIXES = {
-  hospital: '医院: ',
-  doctor: '医生: ',
-  pupil: '瞳孔: ',
-  screenTime: '日近距离用眼: ',
-  outdoorTime: '日户外: ',
-  controls: '防控: ',
+export const EXAM_NOTE_PREFIXES = {
+  hospital: 'hospital=',
+  doctor: 'doctor=',
+  pupil: 'pupil=',
+  screenTime: 'screenTime=',
+  outdoorTime: 'outdoorTime=',
+  controls: 'controls=',
 } as const;
 
 export interface ExamMeta {
@@ -265,65 +269,65 @@ function readSE(data: Map<string, number>, eye: 'OD' | 'OS'): number | null {
 
 export const EXAM_METRIC_GROUPS: MetricGroupDef[] = [
   {
-    key: 'vision', label: '视力',
+    key: 'vision', label: i18nText('Vision.group.vision'),
     metrics: [
       {
-        key: 'vision_naked', label: '裸眼视力', unit: '',
+        key: 'vision_naked', label: i18nText('Vision.metric.nakedVision'), unit: '',
         odKey: 'vision-right', osKey: 'vision-left',
         format: fmt1, important: true, deltaEpsilon: 0.05,
       },
       {
-        key: 'vision_corrected', label: '矫正视力', unit: '',
+        key: 'vision_corrected', label: i18nText('Vision.metric.correctedVision'), unit: '',
         odKey: 'corrected-vision-right', osKey: 'corrected-vision-left',
         format: fmt1, deltaEpsilon: 0.05,
       },
     ],
   },
   {
-    key: 'refraction', label: '屈光（验光）',
+    key: 'refraction', label: i18nText('Vision.group.refraction'),
     metrics: [
       {
-        key: 'sphere', label: '球镜 S', unit: 'D',
+        key: 'sphere', label: i18nText('Vision.metric.sphereShort'), unit: 'D',
         odKey: 'refraction-sph-right', osKey: 'refraction-sph-left',
         format: fmtSigned2,
       },
       {
-        key: 'cylinder', label: '柱镜 C', unit: 'D',
+        key: 'cylinder', label: i18nText('Vision.metric.cylinderShort'), unit: 'D',
         odKey: 'refraction-cyl-right', osKey: 'refraction-cyl-left',
         format: fmt2,
       },
       {
-        key: 'axis', label: '轴向 A', unit: '°',
+        key: 'axis', label: i18nText('Vision.metric.axisShort'), unit: '°',
         odKey: 'refraction-axis-right', osKey: 'refraction-axis-left',
         format: fmtAxis,
       },
       {
-        key: 'se', label: '等效球镜 SE', unit: 'D',
+        key: 'se', label: i18nText('Vision.metric.sphericalEquivalent'), unit: 'D',
         odKey: null, osKey: null, compute: readSE,
         format: fmtSigned2, important: true,
       },
     ],
   },
   {
-    key: 'biometric', label: '眼轴',
+    key: 'biometric', label: i18nText('Vision.group.biometric'),
     metrics: [
       {
-        key: 'al', label: 'AL 眼轴长', unit: 'mm',
+        key: 'al', label: i18nText('Vision.metric.axialLengthShort'), unit: 'mm',
         odKey: 'axial-length-right', osKey: 'axial-length-left',
         format: fmt2, important: true, deltaEpsilon: 0.005,
       },
       {
-        key: 'ad', label: 'AD 前房深度', unit: 'mm',
+        key: 'ad', label: i18nText('Vision.metric.anteriorDepth'), unit: 'mm',
         odKey: 'acd-right', osKey: 'acd-left',
         format: fmt2,
       },
       {
-        key: 'k1', label: 'K1 角膜曲率（平）', unit: 'D',
+        key: 'k1', label: i18nText('Vision.metric.cornealK1Flat'), unit: 'D',
         odKey: 'corneal-k1-right', osKey: 'corneal-k1-left',
         format: fmt2,
       },
       {
-        key: 'k2', label: 'K2 角膜曲率（陡）', unit: 'D',
+        key: 'k2', label: i18nText('Vision.metric.cornealK2Steep'), unit: 'D',
         odKey: 'corneal-k2-right', osKey: 'corneal-k2-left',
         format: fmt2,
       },
@@ -360,32 +364,32 @@ export interface GlanceMetric {
 export function computeGlanceMetrics(latestFull: VisionRecord | null): GlanceMetric[] {
   if (!latestFull) {
     return [
-      { label: '远视储备 SE', unit: 'D', od: null, os: null, format: fmtSigned2, status: 'ok', tag: '—' },
-      { label: '眼轴', unit: 'mm', od: null, os: null, format: fmt2, status: 'ok', tag: '—' },
-      { label: '裸眼视力', unit: '', od: null, os: null, format: fmt1, status: 'ok', tag: '—' },
+      { label: i18nText('Vision.metric.hyperopiaReserveSe'), unit: 'D', od: null, os: null, format: fmtSigned2, status: 'ok', tag: '—' },
+      { label: i18nText('Vision.group.biometric'), unit: 'mm', od: null, os: null, format: fmt2, status: 'ok', tag: '—' },
+      { label: i18nText('Vision.metric.nakedVision'), unit: '', od: null, os: null, format: fmt1, status: 'ok', tag: '—' },
     ];
   }
   const seOD = readSE(latestFull.data, 'OD');
   const seOS = readSE(latestFull.data, 'OS');
   const minSE = (seOD != null && seOS != null) ? Math.min(seOD, seOS) : null;
   const seStatus: GlanceStatus = minSE == null ? 'ok' : minSE >= 0.75 ? 'ok' : minSE >= 0 ? 'warn' : 'danger';
-  const seTag = minSE == null ? '—' : minSE >= 0.75 ? '充足' : minSE >= 0 ? '偏低' : '近视';
+  const seTag = minSE == null ? '—' : minSE >= 0.75 ? i18nText('Vision.glance.sufficient') : minSE >= 0 ? i18nText('Vision.glance.low') : i18nText('Vision.glance.myopia');
 
   const alOD = latestFull.data.get('axial-length-right') ?? null;
   const alOS = latestFull.data.get('axial-length-left') ?? null;
   const alStatus: GlanceStatus = 'ok';
-  const alTag = (alOD != null || alOS != null) ? '已记录' : '—';
+  const alTag = (alOD != null || alOS != null) ? i18nText('Vision.glance.recorded') : '—';
 
   const vnOD = latestFull.data.get('vision-right') ?? null;
   const vnOS = latestFull.data.get('vision-left') ?? null;
   const minVision = (vnOD != null && vnOS != null) ? Math.min(vnOD, vnOS) : null;
   const visionStatus: GlanceStatus = minVision == null ? 'ok' : minVision >= 1.0 ? 'ok' : minVision >= 0.8 ? 'warn' : 'danger';
-  const visionTag = minVision == null ? '—' : minVision >= 1.0 ? '达标' : minVision >= 0.8 ? '观察' : '偏低';
+  const visionTag = minVision == null ? '—' : minVision >= 1.0 ? i18nText('Vision.glance.standard') : minVision >= 0.8 ? i18nText('Vision.glance.observe') : i18nText('Vision.glance.low');
 
   return [
-    { label: '远视储备 SE', unit: 'D', od: seOD, os: seOS, format: fmtSigned2, status: seStatus, tag: seTag },
-    { label: '眼轴', unit: 'mm', od: alOD, os: alOS, format: fmt2, status: alStatus, tag: alTag },
-    { label: '裸眼视力', unit: '', od: vnOD, os: vnOS, format: fmt1, status: visionStatus, tag: visionTag },
+    { label: i18nText('Vision.metric.hyperopiaReserveSe'), unit: 'D', od: seOD, os: seOS, format: fmtSigned2, status: seStatus, tag: seTag },
+    { label: i18nText('Vision.group.biometric'), unit: 'mm', od: alOD, os: alOS, format: fmt2, status: alStatus, tag: alTag },
+    { label: i18nText('Vision.metric.nakedVision'), unit: '', od: vnOD, os: vnOS, format: fmt1, status: visionStatus, tag: visionTag },
   ];
 }
 
@@ -405,50 +409,54 @@ export const FORM_SECTIONS: Array<{
   fields: Array<{ label: string; od: GrowthTypeId; os: GrowthTypeId; unit: string; step: string }>;
 }> = [
   {
-    title: '验光单',
+    title: i18nText('Vision.group.refractionSheet'),
     fields: [
-      { label: '球镜 SPH', od: 'refraction-sph-right', os: 'refraction-sph-left', unit: 'D', step: '0.25' },
-      { label: '柱镜 CYL', od: 'refraction-cyl-right', os: 'refraction-cyl-left', unit: 'D', step: '0.25' },
-      { label: '轴位 AXIS', od: 'refraction-axis-right', os: 'refraction-axis-left', unit: '°', step: '1' },
-      { label: '裸眼视力', od: 'vision-right', os: 'vision-left', unit: '', step: '0.1' },
-      { label: '矫正视力', od: 'corrected-vision-right', os: 'corrected-vision-left', unit: '', step: '0.1' },
-      { label: '眼压 IOP', od: 'iop-right', os: 'iop-left', unit: 'mmHg', step: '1' },
+      { label: i18nText('Vision.metric.sphereSph'), od: 'refraction-sph-right', os: 'refraction-sph-left', unit: 'D', step: '0.25' },
+      { label: i18nText('Vision.metric.cylinderCyl'), od: 'refraction-cyl-right', os: 'refraction-cyl-left', unit: 'D', step: '0.25' },
+      { label: i18nText('Vision.metric.axisAxis'), od: 'refraction-axis-right', os: 'refraction-axis-left', unit: '°', step: '1' },
+      { label: i18nText('Vision.metric.nakedVision'), od: 'vision-right', os: 'vision-left', unit: '', step: '0.1' },
+      { label: i18nText('Vision.metric.correctedVision'), od: 'corrected-vision-right', os: 'corrected-vision-left', unit: '', step: '0.1' },
+      { label: i18nText('Vision.metric.iop'), od: 'iop-right', os: 'iop-left', unit: 'mmHg', step: '1' },
     ],
   },
   {
-    title: '眼轴单',
+    title: i18nText('Vision.group.biometrySheet'),
     fields: [
-      { label: 'AL 眼轴长', od: 'axial-length-right', os: 'axial-length-left', unit: 'mm', step: '0.01' },
-      { label: 'K1 角膜曲率', od: 'corneal-k1-right', os: 'corneal-k1-left', unit: 'D', step: '0.25' },
-      { label: 'K2 角膜曲率', od: 'corneal-k2-right', os: 'corneal-k2-left', unit: 'D', step: '0.25' },
-      { label: 'K 平均曲率', od: 'corneal-curvature-right', os: 'corneal-curvature-left', unit: 'D', step: '0.25' },
-      { label: 'AD 前房深度', od: 'acd-right', os: 'acd-left', unit: 'mm', step: '0.01' },
-      { label: 'LT 晶体厚度', od: 'lt-right', os: 'lt-left', unit: 'mm', step: '0.01' },
+      { label: i18nText('Vision.metric.axialLengthShort'), od: 'axial-length-right', os: 'axial-length-left', unit: 'mm', step: '0.01' },
+      { label: i18nText('Vision.metric.cornealK1'), od: 'corneal-k1-right', os: 'corneal-k1-left', unit: 'D', step: '0.25' },
+      { label: i18nText('Vision.metric.cornealK2'), od: 'corneal-k2-right', os: 'corneal-k2-left', unit: 'D', step: '0.25' },
+      { label: i18nText('Vision.metric.cornealAverage'), od: 'corneal-curvature-right', os: 'corneal-curvature-left', unit: 'D', step: '0.25' },
+      { label: i18nText('Vision.metric.anteriorDepth'), od: 'acd-right', os: 'acd-left', unit: 'mm', step: '0.01' },
+      { label: i18nText('Vision.metric.lensThickness'), od: 'lt-right', os: 'lt-left', unit: 'mm', step: '0.01' },
     ],
   },
 ];
 
 /* ── Pupil state options ─────────────────────────────────── */
-export const PUPIL_OPTIONS = ['小瞳', '散瞳'] as const;
+export const PUPIL_OPTIONS = ['undilated', 'dilated'] as const;
+export const PUPIL_LABELS: Record<(typeof PUPIL_OPTIONS)[number], string> = {
+  undilated: i18nText('Vision.pupil.undilated'),
+  dilated: i18nText('Vision.pupil.dilated'),
+};
 
 /* ── Record card row definitions ─────────────────────────── */
 
 export const CARD_REFRACTION_ROWS = [
-  { label: '球镜 SPH', od: 'refraction-sph-right', os: 'refraction-sph-left' },
-  { label: '柱镜 CYL', od: 'refraction-cyl-right', os: 'refraction-cyl-left' },
-  { label: '轴位 AXIS', od: 'refraction-axis-right', os: 'refraction-axis-left' },
-  { label: '裸眼视力', od: 'vision-right', os: 'vision-left' },
-  { label: '矫正视力', od: 'corrected-vision-right', os: 'corrected-vision-left' },
-  { label: '眼压 IOP', od: 'iop-right', os: 'iop-left' },
+  { label: i18nText('Vision.metric.sphereSph'), od: 'refraction-sph-right', os: 'refraction-sph-left' },
+  { label: i18nText('Vision.metric.cylinderCyl'), od: 'refraction-cyl-right', os: 'refraction-cyl-left' },
+  { label: i18nText('Vision.metric.axisAxis'), od: 'refraction-axis-right', os: 'refraction-axis-left' },
+  { label: i18nText('Vision.metric.nakedVision'), od: 'vision-right', os: 'vision-left' },
+  { label: i18nText('Vision.metric.correctedVision'), od: 'corrected-vision-right', os: 'corrected-vision-left' },
+  { label: i18nText('Vision.metric.iop'), od: 'iop-right', os: 'iop-left' },
 ];
 
 export const CARD_AXIAL_ROWS = [
-  { label: 'AL 眼轴长', od: 'axial-length-right', os: 'axial-length-left' },
-  { label: 'K1 角膜曲率', od: 'corneal-k1-right', os: 'corneal-k1-left' },
-  { label: 'K2 角膜曲率', od: 'corneal-k2-right', os: 'corneal-k2-left' },
-  { label: 'K 平均曲率', od: 'corneal-curvature-right', os: 'corneal-curvature-left' },
-  { label: 'AD 前房深度', od: 'acd-right', os: 'acd-left' },
-  { label: 'LT 晶体厚度', od: 'lt-right', os: 'lt-left' },
+  { label: i18nText('Vision.metric.axialLengthShort'), od: 'axial-length-right', os: 'axial-length-left' },
+  { label: i18nText('Vision.metric.cornealK1'), od: 'corneal-k1-right', os: 'corneal-k1-left' },
+  { label: i18nText('Vision.metric.cornealK2'), od: 'corneal-k2-right', os: 'corneal-k2-left' },
+  { label: i18nText('Vision.metric.cornealAverage'), od: 'corneal-curvature-right', os: 'corneal-curvature-left' },
+  { label: i18nText('Vision.metric.anteriorDepth'), od: 'acd-right', os: 'acd-left' },
+  { label: i18nText('Vision.metric.lensThickness'), od: 'lt-right', os: 'lt-left' },
 ];
 
 /* ── Picker configurations ───────────────────────────────── */
@@ -502,14 +510,13 @@ export function getPickerConfig(typeId: string): { intRange: [number, number]; d
      Same paper, mean +/- SD corneal curvature by age and gender
 
    Hyperopia reserve (not gender-split, Table 1):
-     《中国学龄儿童眼球远视储备、眼轴长度、角膜曲率参考区间
-      及相关遗传因素专家共识（2022年）》
-     中华预防医学会公共卫生眼科分会
-     中华眼科杂志 2022;58(2):96-102
+     Chinese expert consensus on reference intervals for hyperopia reserve,
+     axial length, corneal curvature, and related genetic factors in
+     school-age children (2022), Chinese Journal of Ophthalmology 58(2).
 
-   AL P50 = 同龄同性别中位数（均值）
-   AL P75 = 第75百分位（临界值）
-   轴余 = P75 - 当前眼轴
+   AL P50 = same-age/same-gender median.
+   AL P75 = 75th percentile threshold.
+   Axial reserve = P75 - current axial length.
 */
 
 export interface GenderAxialRef { p50: number; p75: number; crMean: number }
@@ -655,7 +662,7 @@ export function buildReferenceBand(
     return {
       kind: 'band',
       points,
-      caption: newest ? `${fmtAge(newestAge)}同龄参考范围 ${newest.low}~${newest.high}` : '',
+      caption: newest ? i18nText('Vision.reference.bandCaption', { age: fmtAge(newestAge), low: newest.low, high: newest.high }) : '',
     };
   }
 
@@ -670,7 +677,7 @@ export function buildReferenceBand(
     return {
       kind: 'percentile',
       points,
-      caption: newest ? `${fmtAge(newestAge)}同龄中位 ${newest.mean} · 临界 ${newest.critical}` : '',
+      caption: newest ? i18nText('Vision.reference.percentileCaption', { age: fmtAge(newestAge), median: newest.mean, critical: newest.critical }) : '',
     };
   }
 
@@ -686,14 +693,14 @@ export function describeReferenceStatus(
   const newest = reference.points[reference.points.length - 1];
   if (!newest) return null;
   if (reference.kind === 'band' && newest.bandLow != null && newest.bandHigh != null) {
-    if (latestValue < newest.bandLow) return '当前低于同龄参考范围';
-    if (latestValue > newest.bandHigh) return '当前高于同龄参考范围';
-    return '当前处于同龄参考范围内';
+    if (latestValue < newest.bandLow) return i18nText('Vision.reference.belowRange');
+    if (latestValue > newest.bandHigh) return i18nText('Vision.reference.aboveRange');
+    return i18nText('Vision.reference.inRange');
   }
   if (reference.kind === 'percentile' && newest.median != null && newest.critical != null) {
-    if (latestValue > newest.critical) return '当前高于同龄临界值';
-    if (latestValue > newest.median) return '当前处于同龄中位与临界值之间';
-    return '当前低于同龄中位';
+    if (latestValue > newest.critical) return i18nText('Vision.reference.aboveCritical');
+    if (latestValue > newest.median) return i18nText('Vision.reference.betweenMedianCritical');
+    return i18nText('Vision.reference.belowMedian');
   }
   return null;
 }

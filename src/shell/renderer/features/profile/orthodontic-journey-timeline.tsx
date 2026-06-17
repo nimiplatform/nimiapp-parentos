@@ -25,6 +25,8 @@ import {
 } from './dental-photo-lightbox.js';
 import { DentalRecordActionMenu } from './dental-record-action-menu.js';
 import { dentalEventLabelAndEmoji } from './dental-page-domain.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface Props {
   journey: OrthodonticJourney | null;
@@ -41,7 +43,7 @@ interface Props {
   attachmentMap: Map<string, AttachmentRow[]>;
   /**
    * Case appliances + their aligner-change checkins, used to derive the
-   * PO-ORTHO-006a "第 X 副牙套·第 Y/Z 天" decoration on `clinical-event` cards.
+   * PO-ORTHO-006a aligner-context decoration on `clinical-event` cards.
    */
   appliances: OrthodonticApplianceRow[];
   checkins: OrthodonticCheckinRow[];
@@ -61,7 +63,7 @@ interface Props {
 /**
  * Journey timeline shaped like the dental history list: per-date groups
  * with a green dot marker on a vertical line, rich card per entry, future
- * events grouped above the "今天" divider with dashed dot markers.
+ * events grouped above the today divider with dashed dot markers.
  *
  * All orthodontic journey entry kinds (case-started, aligner-change,
  * unwear-interval, clinical-event, futures, ...) project to one uniform
@@ -113,7 +115,7 @@ export function OrthodonticJourneyTimeline({
       // Past: descending (most recent past just below the divider, oldest
       // at the bottom). Future: ALSO descending — farthest future at the
       // top, nearest future just above the divider. The two halves fan out
-      // from "今天": reading top→bottom is always going backward in time.
+      // from today: reading top-to-bottom is always going backward in time.
       pastDates: sortedDates(pastCards, 'desc'),
       futureDates: sortedDates(futureCards, 'desc'),
     };
@@ -126,7 +128,7 @@ export function OrthodonticJourneyTimeline({
   if (loading) {
     return (
       <p className="text-[14px] text-[var(--nimi-text-muted)]">
-        时间轴加载中…
+        {i18nText('Orthodontic.journey.loading')}
       </p>
     );
   }
@@ -135,7 +137,7 @@ export function OrthodonticJourneyTimeline({
   if (isEmpty) {
     return (
       <p className="text-[14px] text-[var(--nimi-text-muted)]">
-        还没有事件。开始记录后会按时间顺序呈现在此。
+        {i18nText('Orthodontic.journey.empty')}
       </p>
     );
   }
@@ -151,7 +153,7 @@ export function OrthodonticJourneyTimeline({
             key={`future-${date}`}
             variant="future"
             date={formatDateLabel(date)}
-            secondaryLabel={`${cards.length} 条`}
+            secondaryLabel={i18nText('Orthodontic.journey.entryCount', { count: cards.length })}
           >
             {cards.map((card) => (
               <JourneyCard
@@ -167,9 +169,9 @@ export function OrthodonticJourneyTimeline({
         );
       })}
 
-      {/* "今天" divider only when there's at least one past entry; otherwise
+      {/* Today divider only when there's at least one past entry; otherwise
           the future groups stand alone. */}
-      {pastDates.length > 0 && futureDates.length > 0 && <TimelineDivider label="今天" />}
+      {pastDates.length > 0 && futureDates.length > 0 && <TimelineDivider label={i18nText('Orthodontic.journey.today')} />}
 
       {/* Past groups (descending: most recent first) */}
       {pastDates.map((date, gi) => {
@@ -180,7 +182,7 @@ export function OrthodonticJourneyTimeline({
             key={`past-${date}`}
             variant="past"
             date={formatDateLabel(date)}
-            secondaryLabel={`${cards.length} 条`}
+            secondaryLabel={i18nText('Orthodontic.journey.entryCount', { count: cards.length })}
             isLast={gi === pastDates.length - 1}
           >
             {cards.map((card) => (
@@ -344,8 +346,8 @@ function CardActionButtons({
           e.stopPropagation();
           onAskAiAboutRecord(record);
         }}
-        aria-label="和 AI 聊这条记录"
-        title="和 AI 聊这条记录"
+        aria-label={i18nText('Orthodontic.journey.askAi')}
+        title={i18nText('Orthodontic.journey.askAi')}
         icon={
           <svg
             width="14"
@@ -375,7 +377,7 @@ function CardActionButtons({
 function FutureBadge() {
   return (
     <StatusBadge tone="info" className="px-2 py-0.5 text-[10px] font-medium">
-      预计
+      {i18nText('Orthodontic.journey.futureBadge')}
     </StatusBadge>
   );
 }
@@ -435,7 +437,7 @@ interface JourneyCardData {
   photos: DentalPhotoLightboxItem[] | null;
   /** Backing record for clinical-event cards — enables AI/edit/delete actions. */
   record: DentalRecordRow | null;
-  /** PO-ORTHO-006a "第 X 副牙套·第 Y/Z 天" decoration; null when not applicable. */
+  /** PO-ORTHO-006a aligner-context decoration; null when not applicable. */
   alignerBadge: string | null;
 }
 
@@ -466,7 +468,7 @@ function projectEntry(
         id: `case-started-${entry.occurredAt}`,
         ...TONE.brand,
         emoji: '🦷',
-        title: '疗程开始',
+        title: i18nText('Orthodontic.journey.entry.caseStarted'),
         subtitle: `${entry.caseType} · ${entry.stage}`,
       };
     case 'appliance-started':
@@ -475,7 +477,7 @@ function projectEntry(
         id: `appliance-started-${entry.applianceId}-${entry.occurredAt}`,
         ...TONE.brand,
         emoji: '🔧',
-        title: '装置启用',
+        title: i18nText('Orthodontic.journey.entry.applianceStarted'),
         subtitle: entry.applianceType,
       };
     case 'appliance-paused':
@@ -484,7 +486,7 @@ function projectEntry(
         id: `appliance-paused-${entry.applianceId}-${entry.occurredAt}`,
         ...TONE.warning,
         emoji: '⏸️',
-        title: '装置暂停',
+        title: i18nText('Orthodontic.journey.entry.appliancePaused'),
         content: entry.reason ?? null,
       };
     case 'appliance-completed':
@@ -493,7 +495,7 @@ function projectEntry(
         id: `appliance-completed-${entry.applianceId}-${entry.occurredAt}`,
         ...TONE.success,
         emoji: '✅',
-        title: '装置结束',
+        title: i18nText('Orthodontic.journey.entry.applianceCompleted'),
       };
     case 'aligner-change':
       return {
@@ -501,7 +503,7 @@ function projectEntry(
         id: `aligner-change-${entry.applianceId}-${entry.alignerIndex}-${entry.occurredAt}`,
         ...TONE.brand,
         emoji: '🔄',
-        title: `换牙套 · 第 ${entry.alignerIndex} 副`,
+        title: i18nText('Orthodontic.journey.entry.alignerChange', { alignerIndex: entry.alignerIndex }),
       };
     case 'expander-activation':
       return {
@@ -509,7 +511,7 @@ function projectEntry(
         id: `expander-activation-${entry.applianceId}-${entry.activationIndex}-${entry.occurredAt}`,
         ...TONE.brand,
         emoji: '🔧',
-        title: `扩弓加力 · 第 ${entry.activationIndex} 次`,
+        title: i18nText('Orthodontic.journey.entry.expanderActivation', { activationIndex: entry.activationIndex }),
       };
     case 'clinical-event': {
       const meta = dentalEventLabelAndEmoji(entry.eventType);
@@ -548,11 +550,11 @@ function projectEntry(
         id: `unwear-interval-${entry.startAt}`,
         ...TONE.warning,
         emoji: '⏱️',
-        title: entry.endAt ? '一段未戴时段' : '正在未戴中',
+        title: entry.endAt ? i18nText('Orthodontic.journey.entry.unwearClosed') : i18nText('Orthodontic.journey.entry.unwearOpen'),
         subtitle:
           entry.durationHours !== null
             ? formatHours(entry.durationHours)
-            : '未关闭',
+            : i18nText('Orthodontic.journey.openInterval'),
       };
     case 'next-clinical-review':
       return {
@@ -560,7 +562,7 @@ function projectEntry(
         id: `next-clinical-review-${entry.applianceId}-${entry.predictedAt}`,
         ...TONE.brand,
         emoji: '📋',
-        title: '下次复诊',
+        title: i18nText('Orthodontic.journey.entry.nextClinicalReview'),
       };
     case 'next-aligner-change':
       return {
@@ -568,7 +570,7 @@ function projectEntry(
         id: `next-aligner-change-${entry.applianceId}-${entry.alignerIndex}-${entry.predictedAt}`,
         ...TONE.brand,
         emoji: '🔄',
-        title: `预计换套 · 第 ${entry.alignerIndex} 副`,
+        title: i18nText('Orthodontic.journey.entry.nextAlignerChange', { alignerIndex: entry.alignerIndex }),
       };
     case 'cycle-planned-switch':
       return {
@@ -576,7 +578,7 @@ function projectEntry(
         id: `cycle-planned-switch-${entry.applianceId}-${entry.predictedAt}`,
         ...TONE.brand,
         emoji: '📅',
-        title: '本副计划换套',
+        title: i18nText('Orthodontic.journey.entry.cyclePlannedSwitch'),
       };
     case 'case-planned-end':
       return {
@@ -584,7 +586,7 @@ function projectEntry(
         id: `case-planned-end-${entry.predictedAt}`,
         ...TONE.success,
         emoji: '🏁',
-        title: '疗程预计结束',
+        title: i18nText('Orthodontic.journey.entry.casePlannedEnd'),
       };
   }
 }

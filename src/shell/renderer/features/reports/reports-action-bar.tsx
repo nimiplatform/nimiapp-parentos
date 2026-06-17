@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Button, Surface } from '@nimiplatform/kit/ui';
 import { Check, FileImage, GraduationCap, LoaderCircle, Pencil, Printer } from 'lucide-react';
 import { describeError, logRendererEvent } from '../../infra/telemetry/renderer-log.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const SERIF = "var(--font-serif, 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', Georgia, serif)";
 const MONO = "var(--nimi-font-mono, 'JetBrains Mono', 'SF Mono', ui-monospace, monospace)";
@@ -11,12 +13,12 @@ const FAMILY_PRESETS_STORAGE_KEY = 'parentos.reports.familyShareSelection.v1';
 interface FamilyPreset { id: string; name: string; initial: string; toneClass: string }
 
 const FAMILY_PRESETS: FamilyPreset[] = [
-  { id: 'dad', name: '爸爸', initial: '爸', toneClass: 'report-family-avatar--dad' },
-  { id: 'mom', name: '妈妈', initial: '妈', toneClass: 'report-family-avatar--mom' },
-  { id: 'grandma-m', name: '外婆', initial: '婆', toneClass: 'report-family-avatar--grandma-m' },
-  { id: 'grandpa-m', name: '外公', initial: '公', toneClass: 'report-family-avatar--grandpa-m' },
-  { id: 'grandma-p', name: '奶奶', initial: '奶', toneClass: 'report-family-avatar--grandma-p' },
-  { id: 'grandpa-p', name: '爷爷', initial: '爷', toneClass: 'report-family-avatar--grandpa-p' },
+  { id: 'dad', name: i18nText('Reports.actionBar.family.presets.dad.name'), initial: i18nText('Reports.actionBar.family.presets.dad.initial'), toneClass: 'report-family-avatar--dad' },
+  { id: 'mom', name: i18nText('Reports.actionBar.family.presets.mom.name'), initial: i18nText('Reports.actionBar.family.presets.mom.initial'), toneClass: 'report-family-avatar--mom' },
+  { id: 'grandma-m', name: i18nText('Reports.actionBar.family.presets.grandmaMaternal.name'), initial: i18nText('Reports.actionBar.family.presets.grandmaMaternal.initial'), toneClass: 'report-family-avatar--grandma-m' },
+  { id: 'grandpa-m', name: i18nText('Reports.actionBar.family.presets.grandpaMaternal.name'), initial: i18nText('Reports.actionBar.family.presets.grandpaMaternal.initial'), toneClass: 'report-family-avatar--grandpa-m' },
+  { id: 'grandma-p', name: i18nText('Reports.actionBar.family.presets.grandmaPaternal.name'), initial: i18nText('Reports.actionBar.family.presets.grandmaPaternal.initial'), toneClass: 'report-family-avatar--grandma-p' },
+  { id: 'grandpa-p', name: i18nText('Reports.actionBar.family.presets.grandpaPaternal.name'), initial: i18nText('Reports.actionBar.family.presets.grandpaPaternal.initial'), toneClass: 'report-family-avatar--grandpa-p' },
 ];
 
 function loadFamilySelection(): Set<string> {
@@ -84,8 +86,8 @@ export function FamilyShareRow({ onShareSelected, selfRoleName }: FamilyShareRow
       padding="none"
     >
       <div className="report-family-copy">
-        <div className="report-family-heading">把这份报告分享给</div>
-        <div className="report-family-subtitle">自动隐去私密观察,仅保留孩子成长数据</div>
+        <div className="report-family-heading">{i18nText('Reports.actionBar.family.heading')}</div>
+        <div className="report-family-subtitle">{i18nText('Reports.actionBar.family.subtitle')}</div>
       </div>
       <div className="report-family-presets">
         {visiblePresets.map((p) => {
@@ -107,7 +109,7 @@ export function FamilyShareRow({ onShareSelected, selfRoleName }: FamilyShareRow
         })}
         {visiblePresets.length === 0 ? (
           <span className="report-empty-inline">
-            暂无可分享的家人
+            {i18nText('Reports.actionBar.family.empty')}
           </span>
         ) : null}
       </div>
@@ -118,7 +120,7 @@ export function FamilyShareRow({ onShareSelected, selfRoleName }: FamilyShareRow
         size="sm"
         className="rounded-full"
       >
-        分享所选
+        {i18nText('Reports.actionBar.family.shareSelected')}
       </Button>
     </Surface>
   );
@@ -193,7 +195,7 @@ function SavePanelButton({ icon, label, help, onClick, busy, disabled }: SavePan
         {busy ? <LoaderCircle size={16} className="animate-spin" /> : icon}
       </div>
       <div className="report-save-panel-copy">
-        <div className="report-save-panel-label">{busy ? '正在生成…' : label}</div>
+        <div className="report-save-panel-label">{busy ? i18nText('Reports.actionBar.save.busy') : label}</div>
         <div className="report-save-panel-help">{help}</div>
       </div>
     </Surface>
@@ -209,20 +211,20 @@ interface SavePanelProps {
 function SavePanel({ onSavePdf, onSaveImage, busy }: SavePanelProps) {
   return (
     <div className="report-save-panel">
-      <div className="report-save-panel-heading">保存到本地</div>
+      <div className="report-save-panel-heading">{i18nText('Reports.actionBar.save.heading')}</div>
       <div className="report-save-panel-grid">
         <SavePanelButton
           icon={<Printer size={16} strokeWidth={1.8} />}
-          label="另存为 PDF"
-          help="系统对话框选择保存位置 · 适合存档/打印"
+          label={i18nText('Reports.actionBar.save.pdf')}
+          help={i18nText('Reports.actionBar.save.pdfHelp')}
           onClick={onSavePdf}
           busy={busy === 'pdf'}
           disabled={busy !== null && busy !== 'pdf'}
         />
         <SavePanelButton
           icon={<FileImage size={16} strokeWidth={1.8} />}
-          label="另存为图片"
-          help="竖版 PNG · 适合发朋友圈/家人群"
+          label={i18nText('Reports.actionBar.save.image')}
+          help={i18nText('Reports.actionBar.save.imageHelp')}
           onClick={onSaveImage}
           busy={busy === 'png'}
           disabled={busy !== null && busy !== 'png'}
@@ -258,10 +260,12 @@ export function ReportActionBar({
 
   const handleFamilySelection = (names: string[]) => {
     if (names.length === 0) {
-      showToast('先勾选一位家人');
+      showToast(i18nText('Reports.actionBar.family.selectOne'));
       return;
     }
-    showToast(`已为「${names.join('、')}」准备精简版(分享通道即将接入)`);
+    showToast(i18nText('Reports.actionBar.family.prepared', {
+      names: names.join(i18nText('Common.list.separator')),
+    }));
   };
 
   const runSave = async (kind: SaveKind, action: () => Promise<void> | void) => {
@@ -272,13 +276,17 @@ export function ReportActionBar({
     } catch (error) {
       // Tauri rejects can be string / Error / plain object — surface
       // whatever we can so the user sees the actual failure instead of
-      // a generic "失败" placeholder.
+      // a generic failure placeholder.
       let detail = '';
       if (error instanceof Error) detail = error.message;
       else if (typeof error === 'string') detail = error;
       else if (error && typeof error === 'object') detail = JSON.stringify(error);
-      const prefix = kind === 'pdf' ? 'PDF 生成失败' : '图片生成失败';
-      showToast(detail ? `${prefix}:${detail}` : `${prefix},请稍后重试`);
+      const prefix = kind === 'pdf'
+        ? i18nText('Reports.actionBar.save.pdfFailed')
+        : i18nText('Reports.actionBar.save.imageFailed');
+      showToast(detail
+        ? i18nText('Reports.actionBar.save.failedWithDetail', { prefix, detail })
+        : i18nText('Reports.actionBar.save.retryLater', { prefix }));
       logRendererEvent({
         level: 'error',
         area: 'reports',
@@ -292,7 +300,7 @@ export function ReportActionBar({
 
   const handleNote = () => {
     if (onRequestFocusNoteComposer) onRequestFocusNoteComposer();
-    else showToast('在任意一段观察下方都能点「追加我的备注」');
+    else showToast(i18nText('Reports.actionBar.note.hint'));
   };
 
   return (
@@ -310,16 +318,16 @@ export function ReportActionBar({
         <div className="report-min-w-0">
           <ActionCard
             icon={<GraduationCap size={16} strokeWidth={1.8} />}
-            title="给老师/医生看的精简版"
-            subtitle="AI 客观版本,可逐条编辑/隐去"
+            title={i18nText('Reports.actionBar.professional.title')}
+            subtitle={i18nText('Reports.actionBar.professional.subtitle')}
             onClick={onOpenProfessional}
           />
         </div>
         <div className="report-min-w-0">
           <ActionCard
             icon={<Pencil size={16} strokeWidth={1.8} />}
-            title="追加我的备注"
-            subtitle={`写在 ${childName} 本月任意一段观察旁`}
+            title={i18nText('Reports.actionBar.note.title')}
+            subtitle={i18nText('Reports.actionBar.note.subtitle', { childName })}
             onClick={handleNote}
           />
         </div>

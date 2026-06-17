@@ -1,9 +1,8 @@
 import { Surface } from '@nimiplatform/kit/ui';
 /**
  * Records a clear-aligner switch to the next tray (PO-ORTHO-005
- * `aligner-change` checkin). Opened from a clear-aligner card's "换下一副"
- * action. Extracted from the legacy single-appliance treatment card so the
- * multi-appliance grid can target the switch at a specific appliance.
+ * `aligner-change` checkin). Opened from a clear-aligner card's next-tray
+ * action so the multi-appliance grid can target a specific appliance.
  */
 import { useState } from 'react';
 import {
@@ -22,6 +21,8 @@ import {
   ModalErrorBanner,
   ModalFooter,
 } from './orthodontic-modal-primitives.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function OrthodonticAlignerSwitchModal({
   appliance,
@@ -64,14 +65,14 @@ export function OrthodonticAlignerSwitchModal({
     if (!indexValid) {
       const msg =
         total !== null
-          ? `牙套序号必须是 1..${total} 的整数`
-          : '牙套序号必须为大于等于 1 的整数';
+          ? i18nText('Orthodontic.alignerSwitch.error.invalidIndexWithTotal', { total })
+          : i18nText('Orthodontic.alignerSwitch.error.invalidIndex');
       setLocalError(msg);
       onError(msg);
       return;
     }
     if (!atValid) {
-      const msg = '换套时间无效';
+      const msg = i18nText('Orthodontic.alignerSwitch.error.invalidTime');
       setLocalError(msg);
       onError(msg);
       return;
@@ -103,33 +104,44 @@ export function OrthodonticAlignerSwitchModal({
   };
 
   return (
-    <Modal title="更换下一副牙套" onClose={onClose}>
+    <Modal title={i18nText('Orthodontic.alignerSwitch.title')} onClose={onClose}>
       {localError && <ModalErrorBanner message={localError} onDismiss={() => setLocalError(null)} />}
 
       <Surface tone="card" material="solid" elevation="base" padding="none" className="rounded-md border border-[color-mix(in_srgb,var(--nimi-border-subtle)_70%,transparent)] bg-[color-mix(in_srgb,var(--nimi-text-primary)_4%,transparent)] px-3 py-2 text-[13px] text-[var(--nimi-text-muted)]">
-        当前第 <strong className="text-[var(--nimi-text-primary)]">{cycle.currentAlignerIndex}</strong>
-        {total !== null ? ` / ${total}` : ''} 副
+        {total !== null
+          ? i18nText('Orthodontic.alignerSwitch.currentWithTotal', {
+              current: cycle.currentAlignerIndex,
+              total,
+            })
+          : i18nText('Orthodontic.alignerSwitch.current', {
+              current: cycle.currentAlignerIndex,
+            })}
       </Surface>
 
       <FieldInput
-        label="本次更换后的牙套序号"
+        label={i18nText('Orthodontic.alignerSwitch.indexLabel')}
         type="number"
         value={value}
         onChange={setValue}
-        placeholder={`默认 ${nextIndex}`}
+        placeholder={i18nText('Orthodontic.common.defaultValue', { value: nextIndex })}
       />
       {overCap && (
         <div className="text-[13px] text-[var(--nimi-status-danger)]">
-          已达到处方总副数 {total}，无法继续更换。
+          {i18nText('Orthodontic.alignerSwitch.overCap', { total })}
         </div>
       )}
 
-      <FieldInput label="换牙套的时间" type="datetime-local" value={at} onChange={setAt} />
+      <FieldInput
+        label={i18nText('Orthodontic.alignerSwitch.timeLabel')}
+        type="datetime-local"
+        value={at}
+        onChange={setAt}
+      />
 
       <ModalFooter
         onCancel={onClose}
         onSubmit={() => void handleSubmit()}
-        submitLabel="确认更换"
+        submitLabel={i18nText('Orthodontic.alignerSwitch.submit')}
         disabled={!formValid}
       />
     </Modal>

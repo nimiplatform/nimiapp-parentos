@@ -12,6 +12,8 @@ import type { ObservationNudge } from './timeline-observation-nudges.js';
 import { isRecordDataReminder } from '../reminders/record-data-capture.js';
 import { OrthoCycleProgressWidget } from './timeline-ortho-cycle-widget.js';
 import type { OrthoCycleSummary } from './timeline-data-types.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export { CustomTodoComposer, CustomTodoInlineList } from './timeline-custom-todos.js';
 
@@ -27,42 +29,42 @@ function reminderPrimaryLink(reminder: ActiveReminder): ReminderPrimaryLink {
   // For W4a we only normalize the kind dispatch to the 4-kind taxonomy.
   if (reminder.kind === 'consult') {
     return {
-      label: '问问 AI 顾问',
+      label: i18nText('Timeline.reminderAction.askAdvisor'),
       to: `/advisor?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}`,
     };
   }
 
   if (reminder.kind === 'practice') {
     return {
-      label: '打开笔记',
+      label: i18nText('Timeline.reminderAction.openNote'),
       to: `/journal?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}`,
     };
   }
 
   if (reminder.kind === 'guide') {
     return {
-      label: '查看指南',
+      label: i18nText('Timeline.reminderAction.viewGuide'),
       to: `/journal?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}`,
     };
   }
 
   if (reminder.rule.domain === 'vaccine') {
     return {
-      label: '记录疫苗',
+      label: i18nText('Timeline.reminderAction.recordVaccine'),
       to: '/profile',
     };
   }
 
   if (isRecordDataReminder(reminder)) {
-    return { label: '记录数据', kind: 'capture' };
+    return { label: i18nText('Timeline.reminderAction.recordData'), kind: 'capture' };
   }
 
   if (reminder.rule.domain === 'growth') {
-    return { label: '记录数据', to: '/profile' };
+    return { label: i18nText('Timeline.reminderAction.recordData'), to: '/profile' };
   }
 
   return {
-    label: '查看详情',
+    label: i18nText('Timeline.action.viewDetails'),
     to: DOMAIN_ROUTES[reminder.rule.domain] ?? '/profile',
   };
 }
@@ -70,17 +72,25 @@ function reminderPrimaryLink(reminder: ActiveReminder): ReminderPrimaryLink {
 function reminderStatus(reminder: ActiveReminder) {
   switch (reminder.lifecycle) {
     case 'completed':
-      return '已完成';
+      return i18nText('Timeline.reminderStatus.completed');
     case 'scheduled':
-      return reminder.state?.scheduledDate ? `已安排 ${reminder.state.scheduledDate}` : '已安排';
+      return reminder.state?.scheduledDate
+        ? i18nText('Timeline.reminderStatus.scheduledWithDate', { date: reminder.state.scheduledDate })
+        : i18nText('Timeline.reminderStatus.scheduled');
     case 'snoozed':
-      return reminder.state?.snoozedUntil ? `已推迟至 ${reminder.state.snoozedUntil}` : '已推迟';
+      return reminder.state?.snoozedUntil
+        ? i18nText('Timeline.reminderStatus.snoozedUntil', { date: reminder.state.snoozedUntil })
+        : i18nText('Timeline.reminderStatus.snoozed');
     case 'overdue':
-      return reminder.overdueDays > 0 ? `逾期${reminder.overdueDays}天` : '已逾期';
+      return reminder.overdueDays > 0
+        ? i18nText('Timeline.reminderStatus.overdueDays', { days: reminder.overdueDays })
+        : i18nText('Timeline.reminderStatus.overdue');
     case 'due':
-      return '今天到期';
+      return i18nText('Timeline.reminderStatus.dueToday');
     default:
-      return reminder.daysUntilStart > 0 ? `${reminder.daysUntilStart}天后开始` : '本周';
+      return reminder.daysUntilStart > 0
+        ? i18nText('Timeline.reminderStatus.startsInDays', { days: reminder.daysUntilStart })
+        : i18nText('Timeline.reminderStatus.thisWeek');
   }
 }
 
@@ -145,7 +155,7 @@ function OverdueGroup({
         >
           <path d="M9 18l6-6-6-6" />
         </svg>
-        <span className="text-[12px] font-semibold" style={{ color: '#d97706' }}>逾期汇总</span>
+        <span className="text-[12px] font-semibold" style={{ color: '#d97706' }}>{i18nText('Timeline.reminderPanel.overdueSummary')}</span>
         <span className="rounded-full px-1.5 py-[1px] text-[12px] font-medium" style={{ background: '#fef3c7', color: '#b45309' }}>
           {totalCount}
         </span>
@@ -159,7 +169,7 @@ function OverdueGroup({
           >
             <button
               type="button"
-              title={isRecordDataReminder(reminder) ? '记录数据' : '标记完成'}
+              title={isRecordDataReminder(reminder) ? i18nText('Timeline.reminderAction.recordData') : i18nText('Timeline.reminderAction.markComplete')}
               onClick={() => {
                 if (isRecordDataReminder(reminder)) {
                   onOpenCapture(reminder);
@@ -185,7 +195,7 @@ function OverdueGroup({
                   className={ACTION_PILL_CLASS}
                   style={{ background: '#f1f5f9', color: '#475569' }}
                 >
-                  <span className={ACTION_LABEL_CLASS}>推迟</span>
+                  <span className={ACTION_LABEL_CLASS}>{i18nText('Timeline.reminderAction.snooze')}</span>
                 </button>
               </div>
             </div>
@@ -194,7 +204,7 @@ function OverdueGroup({
       })}
       {open && totalCount > items.length && (
         <Link to="/reminders" className="block py-1 text-center text-[12px]" style={{ color: '#475569' }}>
-          查看全部 {totalCount}
+          {i18nText('Timeline.reminderPanel.viewAllWithCount', { count: totalCount })}
         </Link>
       )}
     </div>
@@ -251,7 +261,7 @@ function AgendaOverflowGroup({
           >
             <button
               type="button"
-              title={isRecordDataReminder(reminder) ? '记录数据' : '标记完成'}
+              title={isRecordDataReminder(reminder) ? i18nText('Timeline.reminderAction.recordData') : i18nText('Timeline.reminderAction.markComplete')}
               onClick={() => {
                 if (isRecordDataReminder(reminder)) {
                   onOpenCapture(reminder);
@@ -277,7 +287,7 @@ function AgendaOverflowGroup({
                   className={ACTION_PILL_CLASS}
                   style={{ background: '#f1f5f9', color: '#475569' }}
                 >
-                  <span className={ACTION_LABEL_CLASS}>推迟</span>
+                  <span className={ACTION_LABEL_CLASS}>{i18nText('Timeline.reminderAction.snooze')}</span>
                 </button>
                 {canMarkNotApplicable(reminder) && (
                   <button
@@ -286,7 +296,7 @@ function AgendaOverflowGroup({
                     className="rounded-full px-2.5 py-1 text-[12px]"
                     style={{ background: '#fff', color: '#a16b5d' }}
                   >
-                    不适用
+                    {i18nText('Timeline.reminderAction.notApplicable')}
                   </button>
                 )}
               </div>
@@ -303,7 +313,7 @@ function ObservationNudgeSection({ nudges }: { nudges: ObservationNudge[] }) {
 
   return (
     <div className="mt-8 pt-2">
-      <p className="mb-5 px-3 text-[18px] font-semibold tracking-tight" style={{ color: '#1e293b', letterSpacing: '-0.3px' }}>观察建议</p>
+      <p className="mb-5 px-3 text-[18px] font-semibold tracking-tight" style={{ color: '#1e293b', letterSpacing: '-0.3px' }}>{i18nText('Timeline.reminderPanel.observationNudges')}</p>
       {nudges.map((nudge) => (
         <div
           key={nudge.dimensionId}
@@ -318,7 +328,7 @@ function ObservationNudgeSection({ nudges }: { nudges: ObservationNudge[] }) {
             className="shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium text-white opacity-0 transition-all group-hover:opacity-100 hover:-translate-y-0.5"
             style={{ background: '#1e293b', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
-            去观察
+            {i18nText('Timeline.reminderAction.observe')}
           </Link>
         </div>
       ))}
@@ -329,7 +339,7 @@ function ObservationNudgeSection({ nudges }: { nudges: ObservationNudge[] }) {
 // `ReminderRow` extracted to `timeline-reminder-row.tsx` for AI-context file-
 // size hygiene. It handles kind-scoped row rendering including the task-only
 // check circle quick-complete, kind glyphs for non-task kinds, and progression
-// notes (已了解 / 实践中 · 已 N 次 / 已咨询).
+// notes such as acknowledged, practicing count, or consulted.
 
 export interface ReminderPanelProps {
   todayFocus: EnhancedReminder[];
@@ -354,12 +364,12 @@ export interface ReminderPanelProps {
   onCustomTodoChanged: () => void;
   observationNudges: ObservationNudge[];
   /** Dashboard task surface (PO-TIME-010) catalog cards rendered inside the
-   *  今天 tab. Caller passes `<DashboardTaskList headerless showOnly="catalog" />`. */
+   *  Today tab. Caller passes `<DashboardTaskList headerless showOnly="catalog" />`. */
   dashboardTodayContent?: ReactNode;
-  /** Visible catalog-task count; included in the 今天 tab badge and default-tab
-   *  selection so the user lands on 今天 when only catalog tasks are present. */
+  /** Visible catalog-task count; included in the Today tab badge and default-tab
+   *  selection so the user lands on Today when only catalog tasks are present. */
   dashboardTodayCount?: number;
-  /** When true, render for an embedding surface (the profile 待办事项 drawer):
+  /** When true, render for an embedding surface (the profile todo drawer):
    *  drop the fixed-width right-rail chrome and the panel's own header so the
    *  host surface owns the outer frame. Default `false` = dashboard right rail. */
   embedded?: boolean;
@@ -425,16 +435,16 @@ export function ReminderPanel({
     >
       {!embedded && (
         <div className="mb-5 flex items-center justify-between px-3">
-          <h3 className="text-[18px] font-semibold tracking-tight" style={{ color: '#1e293b', letterSpacing: '-0.3px' }}>待办事项</h3>
-          <Link to="/reminders" className="text-[13px] font-medium" style={{ color: '#475569' }}>查看全部</Link>
+          <h3 className="text-[18px] font-semibold tracking-tight" style={{ color: '#1e293b', letterSpacing: '-0.3px' }}>{i18nText('Timeline.reminderPanel.title')}</h3>
+          <Link to="/reminders" className="text-[13px] font-medium" style={{ color: '#475569' }}>{i18nText('Timeline.action.viewAll')}</Link>
         </div>
       )}
 
       {showTabs && (
         <div className="mx-3 mb-5 flex gap-0.5 rounded-full p-[3px]" style={{ background: 'rgba(0,0,0,0.04)' }}>
           {([
-            ['today', '今天', todayTotal],
-            ['upcoming', '近期 7 天', upcoming.length],
+            ['today', i18nText('Timeline.reminderPanel.todayTab'), todayTotal],
+            ['upcoming', i18nText('Timeline.reminderPanel.upcomingTab'), upcoming.length],
           ] as const).map(([key, label, count]) => {
             const active = tab === key;
             return (
@@ -478,7 +488,7 @@ export function ReminderPanel({
         {tab === 'today' && dashboardTodayContent ? dashboardTodayContent : null}
 
         {items.length === 0 && !(tab === 'today' && dashboardTodayCount > 0) ? (
-          <p className="py-10 text-center text-[14px]" style={{ color: '#64748b' }}>暂无事项</p>
+          <p className="py-10 text-center text-[14px]" style={{ color: '#64748b' }}>{i18nText('Timeline.reminderPanel.empty')}</p>
         ) : (
           <>
             {items.map((reminder) => (
@@ -498,7 +508,7 @@ export function ReminderPanel({
 
         {p0OverflowCount > 0 && (
           <AgendaOverflowGroup
-            label="更多重要事项"
+            label={i18nText('Timeline.reminderPanel.moreImportant')}
             totalCount={p0OverflowCount}
             items={p0OverflowItems}
             tone={{ bg: '#fff6df', fg: '#c9891a', text: '#b7791f' }}
@@ -509,7 +519,7 @@ export function ReminderPanel({
 
         {onboardingCatchupCount > 0 && (
           <AgendaOverflowGroup
-            label="历史补录"
+            label={i18nText('Timeline.reminderPanel.onboardingCatchup')}
             totalCount={onboardingCatchupCount}
             items={onboardingCatchupItems}
             tone={{ bg: '#f3eefc', fg: '#8a63b8', text: '#7b61a8' }}
@@ -524,7 +534,7 @@ export function ReminderPanel({
 
         {seasonalTasks.length > 0 && (
           <div className="mt-3 pt-3">
-            <p className="mb-2 px-1 text-[12px] font-bold uppercase tracking-[0.08em]" style={{ color: '#d97706' }}>季节关注</p>
+            <p className="mb-2 px-1 text-[12px] font-bold uppercase tracking-[0.08em]" style={{ color: '#d97706' }}>{i18nText('Timeline.reminderPanel.seasonalFocus')}</p>
             {seasonalTasks.map((task) => (
               <div key={task.id} className="px-1 py-2">
                 <p className="text-[13px] font-semibold" style={{ color: '#1e293b' }}>{task.title}</p>

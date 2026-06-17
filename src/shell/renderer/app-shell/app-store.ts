@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { NimiAIConfig } from '@nimiplatform/sdk/ai';
 import type { ParentOSRuntimeDefaults as RuntimeDefaults } from '../bridge/index.js';
+import { i18nText } from '../i18n/index.js';
 
 export type NurtureMode = 'relaxed' | 'balanced' | 'advanced';
 
@@ -129,12 +130,14 @@ export function computeAgeMonthsAt(birthDate: string, atDate: string): number {
 
 /**
  * Format age in months for display:
- *   < 12 months → "X 个月"
- *   >= 12 months → "X岁Y个月" (omit Y if 0)
+ *   < 12 months: month-only label
+ *   >= 12 months: year label, optionally with remaining months
  */
 export function formatAge(months: number): string {
-  if (months < 12) return `${months}个月`;
+  if (months < 12) return i18nText('Common.age.months', { months });
   const y = Math.floor(months / 12);
   const m = months % 12;
-  return m > 0 ? `${y}岁${m}个月` : `${y}岁`;
+  return m > 0
+    ? i18nText('Common.age.yearsMonths', { years: y, months: m })
+    : i18nText('Common.age.years', { years: y });
 }

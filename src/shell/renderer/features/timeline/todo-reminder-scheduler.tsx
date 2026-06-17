@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { CustomTodoRow } from '../../bridge/sqlite-bridge.js';
 import { combineDateAndReminderOffset, describeReminderOffset } from './todo-recurrence.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const CHECK_INTERVAL_MS = 30_000;
 const LOOKBACK_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -124,7 +126,7 @@ export function CustomTodoReminderBanner({
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-[14px] font-semibold" style={{ color: '#92400E' }}>
-            {describeReminderOffset(primary.offsetMinutes)}提醒
+            {i18nText('Timeline.todoReminderBanner.title', { offset: describeReminderOffset(primary.offsetMinutes) })}
           </div>
           <div className="mt-0.5 truncate text-[14px]" style={{ color: '#78350F' }}>
             {primary.title}
@@ -136,7 +138,7 @@ export function CustomTodoReminderBanner({
               className="mt-1 text-[13px] underline"
               style={{ color: '#92400E' }}
             >
-              另有 {extra} 条，全部标记已读
+              {i18nText('Timeline.todoReminderBanner.extraDismissAll', { count: extra })}
             </button>
           )}
         </div>
@@ -145,7 +147,7 @@ export function CustomTodoReminderBanner({
           onClick={() => onDismiss(primary.key)}
           className="-mr-1 h-6 w-6 shrink-0 rounded-full text-[16px]"
           style={{ color: '#92400E' }}
-          aria-label="关闭"
+          aria-label={i18nText('Timeline.todoReminderBanner.close')}
         >
           ×
         </button>

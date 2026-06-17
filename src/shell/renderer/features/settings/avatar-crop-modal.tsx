@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { i18nText } from '../../i18n/index.js';
+
 
 const CROP_SIZE = 256; // output pixel size
 const VIEW_SIZE = 280; // display size in the modal
@@ -143,7 +145,7 @@ export function AvatarCropModal({ imageUrl, onConfirm, onCancel }: AvatarCropMod
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'var(--nimi-scrim-modal)' }}>
       <div className="rounded-[18px] p-6 w-[360px]" style={{ background: '#fff', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
-        <h3 className="text-[16px] font-semibold mb-4" style={{ color: '#1e293b' }}>调整头像</h3>
+        <h3 className="text-[16px] font-semibold mb-4" style={{ color: '#1e293b' }}>{i18nText('AvatarCrop.title')}</h3>
 
         {/* Crop area */}
         <div className="flex justify-center mb-4">
@@ -176,19 +178,19 @@ export function AvatarCropModal({ imageUrl, onConfirm, onCancel }: AvatarCropMod
           </svg>
         </div>
 
-        <p className="text-[13px] text-center mb-4" style={{ color: '#475569' }}>拖动图片调整位置，滑块缩放大小</p>
+        <p className="text-[13px] text-center mb-4" style={{ color: '#475569' }}>{i18nText('AvatarCrop.instruction')}</p>
 
         {/* Actions */}
         <div className="flex gap-3">
           <button onClick={handleConfirm}
             className="flex-1 py-2.5 rounded-full text-[14px] font-medium text-white transition-all hover:opacity-90"
             style={{ background: '#BDE0F5' }}>
-            确认
+            {i18nText('AvatarCrop.confirm')}
           </button>
           <button onClick={onCancel}
             className="flex-1 py-2.5 rounded-full text-[14px] font-medium transition-colors"
             style={{ background: '#f5f3ef', color: '#1e293b' }}>
-            取消
+            {i18nText('AvatarCrop.cancel')}
           </button>
         </div>
       </div>

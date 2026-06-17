@@ -1,6 +1,8 @@
 import { OBSERVATION_DIMENSIONS } from '../../knowledge-base/index.js';
 import type { AdvisorSnapshot } from './advisor-boundary.js';
 import type { JournalEntryRow } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const DIMENSION_NAME_BY_ID = new Map<string, string>(
   OBSERVATION_DIMENSIONS.map((d) => [d.dimensionId, d.displayName]),
@@ -22,10 +24,10 @@ function humanizeDate(iso: string) {
   if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
   const today = new Date();
   const diffDays = Math.floor((today.getTime() - d.getTime()) / 86400000);
-  if (diffDays <= 0) return '今天';
-  if (diffDays === 1) return '昨天';
-  if (diffDays < 7) return `${diffDays} 天前`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} 周前`;
+  if (diffDays <= 0) return i18nText('Common.relative.today');
+  if (diffDays === 1) return i18nText('Common.relative.yesterday');
+  if (diffDays < 7) return i18nText('Common.relative.daysAgo', { days: diffDays });
+  if (diffDays < 30) return i18nText('Common.relative.weeksAgo', { weeks: Math.floor(diffDays / 7) });
   return `${d.getFullYear()}-${padDate(d.getMonth() + 1)}-${padDate(d.getDate())}`;
 }
 
@@ -42,18 +44,18 @@ function pickJournalFact(
   for (const entry of sorted) {
     const dimName = entry.dimensionId ? DIMENSION_NAME_BY_ID.get(entry.dimensionId) : null;
     if (dimName) {
-      return { icon: '📝', label: '随记', detail: dimName, dateIso: entry.recordedAt };
+      return { icon: '📝', label: i18nText('Advisor.fact.journal'), detail: dimName, dateIso: entry.recordedAt };
     }
     const text = entry.textContent?.trim() ?? '';
     if (text && !containsSibling(text)) {
       const short = text.length > 10 ? `${text.slice(0, 10)}…` : text;
-      return { icon: '📝', label: '随记', detail: short, dateIso: entry.recordedAt };
+      return { icon: '📝', label: i18nText('Advisor.fact.journal'), detail: short, dateIso: entry.recordedAt };
     }
   }
 
   const fallback = sorted[0];
   if (!fallback) return null;
-  return { icon: '📝', label: '随记', detail: '随记', dateIso: fallback.recordedAt };
+  return { icon: '📝', label: i18nText('Advisor.fact.journal'), detail: i18nText('Advisor.fact.journal'), dateIso: fallback.recordedAt };
 }
 
 function pickLatestFacts(snapshot: AdvisorSnapshot, siblingNames: string[]): LatestFact[] {
@@ -64,7 +66,7 @@ function pickLatestFacts(snapshot: AdvisorSnapshot, siblingNames: string[]): Lat
   if (latestMeasurement) {
     facts.push({
       icon: '📏',
-      label: '最近测量',
+      label: i18nText('Advisor.fact.latestMeasurement'),
       detail: `${latestMeasurement.typeId} ${latestMeasurement.value}`,
       dateIso: latestMeasurement.measuredAt,
     });
@@ -75,8 +77,8 @@ function pickLatestFacts(snapshot: AdvisorSnapshot, siblingNames: string[]): Lat
   if (latestVaccine) {
     facts.push({
       icon: '💉',
-      label: '最近接种',
-      detail: latestVaccine.vaccineName ?? '疫苗记录',
+      label: i18nText('Advisor.fact.latestVaccine'),
+      detail: latestVaccine.vaccineName ?? i18nText('Advisor.fact.vaccineRecord'),
       dateIso: latestVaccine.vaccinatedAt,
     });
   }
@@ -87,8 +89,8 @@ function pickLatestFacts(snapshot: AdvisorSnapshot, siblingNames: string[]): Lat
   if (latestMilestone?.achievedAt) {
     facts.push({
       icon: '🌱',
-      label: '里程碑',
-      detail: latestMilestone.milestoneId ?? '已达成一项',
+      label: i18nText('Advisor.fact.milestone'),
+      detail: latestMilestone.milestoneId ?? i18nText('Advisor.fact.achievedOne'),
       dateIso: latestMilestone.achievedAt,
     });
   }
@@ -98,8 +100,8 @@ function pickLatestFacts(snapshot: AdvisorSnapshot, siblingNames: string[]): Lat
   if (latestOutdoor) {
     facts.push({
       icon: '☀️',
-      label: '户外',
-      detail: `${latestOutdoor.durationMinutes} 分钟`,
+      label: i18nText('Advisor.fact.outdoor'),
+      detail: i18nText('Common.duration.minutes', { minutes: latestOutdoor.durationMinutes }),
       dateIso: latestOutdoor.activityDate,
     });
   }

@@ -1,9 +1,12 @@
 import type { OrthodonticPhotoSessionBundle } from '../../bridge/sqlite-bridge.js';
+import { i18nText } from '../../i18n/index.js';
 
 export function formatThumbLabel(session: OrthodonticPhotoSessionBundle['session']): string {
   if (session.note) return session.note;
-  if (session.trayIndex !== null) return `第 ${session.trayIndex} 副`;
-  return '一组照片';
+  if (session.trayIndex !== null) {
+    return i18nText('Orthodontic.selfies.thumb.trayIndex', { trayIndex: session.trayIndex });
+  }
+  return i18nText('Orthodontic.selfies.thumb.photoSet');
 }
 
 export function CapsLabel({ children }: { children: React.ReactNode }) {

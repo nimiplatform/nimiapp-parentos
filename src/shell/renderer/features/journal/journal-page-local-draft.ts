@@ -1,4 +1,5 @@
 import type { KeepsakeReason } from './journal-page-helpers.js';
+import { i18nText } from '../../i18n/index.js';
 
 export type JournalLocalDraftPayload = {
   version: 1;
@@ -22,7 +23,12 @@ export type JournalLocalDraftRecord = JournalLocalDraftPayload & {
 const JOURNAL_LOCAL_DRAFT_PREFIX = 'parentos:journal-draft:';
 const DRAFT_AUTO_RESTORE_AGE_MS = 5 * 60 * 1000;
 
-export const KEEPSAKE_KEYWORDS = ['第一次', '获奖', '完成', '通过', '读完', '坚持'];
+export function getKeepsakeKeywords() {
+  return i18nText('Journal.keepsake.keywords')
+    .split('|')
+    .map((keyword) => keyword.trim())
+    .filter(Boolean);
+}
 
 function buildJournalLocalDraftKey(childId: string) {
   return `${JOURNAL_LOCAL_DRAFT_PREFIX}${childId}`;
@@ -63,36 +69,20 @@ export function hasMeaningfulJournalLocalDraft(payload: JournalLocalDraftPayload
 export function readJournalLocalDraft(childId: string): JournalLocalDraftRecord | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(buildJournalLocalDraftKey(childId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<JournalLocalDraftRecord>;
-    if (parsed.version !== 1 || parsed.childId !== childId) return null;
-    return {
-      version: 1,
-      childId,
-      textContent: typeof parsed.textContent === 'string' ? parsed.textContent : '',
-      selectedDimension: typeof parsed.selectedDimension === 'string' ? parsed.selectedDimension : null,
-      selectedTags: Array.isArray(parsed.selectedTags) ? parsed.selectedTags.map((tag) => String(tag)) : [],
-      selectedRecorderId: typeof parsed.selectedRecorderId === 'string' ? parsed.selectedRecorderId : null,
-      keepsake: parsed.keepsake === true,
-      keepsakeTitle: typeof parsed.keepsakeTitle === 'string' ? parsed.keepsakeTitle : '',
-      keepsakeReason: typeof parsed.keepsakeReason === 'string' ? parsed.keepsakeReason as KeepsakeReason : null,
-      moodTag: typeof parsed.moodTag === 'string' ? parsed.moodTag : null,
-      subjectiveNotes: typeof parsed.subjectiveNotes === 'string' ? parsed.subjectiveNotes : '',
-      recordedAt: typeof parsed.recordedAt === 'string' ? parsed.recordedAt : null,
-      updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : '',
-    };
+    window.localStorage.removeItem(buildJournalLocalDraftKey(childId));
+    return null;
   } catch {
     return null;
   }
 }
 
-export function writeJournalLocalDraft(record: JournalLocalDraftRecord) {
-  if (typeof window === 'undefined') return;
+export function writeJournalLocalDraft(record: JournalLocalDraftRecord): boolean {
+  if (typeof window === 'undefined') return false;
   try {
-    window.localStorage.setItem(buildJournalLocalDraftKey(record.childId), JSON.stringify(record));
+    window.localStorage.removeItem(buildJournalLocalDraftKey(record.childId));
+    return false;
   } catch {
-    /* local storage unavailable */
+    return false;
   }
 }
 
@@ -109,7 +99,7 @@ export function formatJournalDraftTime(iso: string) {
   if (!iso) return '';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString(i18nText('Common.date.locale'), { hour: '2-digit', minute: '2-digit' });
 }
 
 export function isRecentJournalDraft(updatedAt: string): boolean {

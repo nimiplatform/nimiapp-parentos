@@ -7,6 +7,8 @@ import type { ObservationDimension } from '../../knowledge-base/index.js';
 import { suggestJournalTags } from './ai-journal-tagging.js';
 import type { JournalTagSuggestion } from './ai-journal-tagging.js';
 import type { PhotoDraft, TagSuggestionStatus } from './journal-page-helpers.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── AutoTagBar ── */
 
@@ -27,7 +29,7 @@ export function AutoTagBar({ status, suggestion, selectedTags, selectedDimension
     return (
       <div className="flex items-center gap-2 py-1.5">
         <div className="h-3 w-3 animate-pulse rounded-full bg-[var(--nimi-action-primary-bg)]" />
-        <span className="text-[13px] text-[var(--nimi-text-muted)]">AI 正在分析...</span>
+        <span className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Journal.tagging.analyzing')}</span>
       </div>
     );
   }
@@ -35,8 +37,8 @@ export function AutoTagBar({ status, suggestion, selectedTags, selectedDimension
   if (status === 'failed') {
     return (
       <div className="flex items-center gap-2 py-1.5">
-        <span className="text-[12px] text-[var(--nimi-text-muted)]">AI 成长关键词暂不可用</span>
-        <button onClick={onRetry} className="text-[12px] text-[var(--nimi-action-primary-bg)] underline">重试</button>
+        <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Journal.tagging.unavailable')}</span>
+        <button onClick={onRetry} className="text-[12px] text-[var(--nimi-action-primary-bg)] underline">{i18nText('Journal.tagging.retry')}</button>
       </div>
     );
   }
@@ -54,7 +56,7 @@ export function AutoTagBar({ status, suggestion, selectedTags, selectedDimension
       <span className="shrink-0 text-[12px] text-[var(--nimi-action-primary-bg)]">✨</span>
       {selectedDimension !== suggestion.dimensionId && (
         <span className="parentos-radius-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_14%,transparent)] px-1.5 py-0.5 text-[12px] font-medium text-[var(--nimi-action-primary-bg)]">
-          成长方向 · {dim.displayName}
+          {i18nText('Journal.tagging.dimension', { dimension: dim.displayName })}
         </span>
       )}
       {suggestedTags.map((tag) => (
@@ -96,7 +98,7 @@ export function PhotoBar({ drafts, onRemove, inputRef }: PhotoBarProps) {
       ))}
 
       {drafts.length < 9 && (
-        <DashedAddButton shape="thumb" onClick={() => inputRef.current?.click()} label="添加" />
+        <DashedAddButton shape="thumb" onClick={() => inputRef.current?.click()} label={i18nText('Journal.photoBar.add')} />
       )}
     </div>
   );
@@ -223,20 +225,20 @@ export function SaveConfirmationModal({
       panelClassName="w-full max-w-[480px] parentos-radius-xl"
       contentClassName="!p-5"
     >
-      <DialogTitle className="sr-only">保存随手记</DialogTitle>
-      <h3 aria-hidden="true" className="mb-4 text-[16px] font-semibold text-[var(--nimi-text-primary)]">保存随手记</h3>
+      <DialogTitle className="sr-only">{i18nText('Journal.saveConfirm.title')}</DialogTitle>
+      <h3 aria-hidden="true" className="mb-4 text-[16px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Journal.saveConfirm.title')}</h3>
 
       {/* Text preview */}
       <Surface tone="card" elevation="base" padding="sm" className="mb-4 max-h-[160px] overflow-y-auto parentos-radius-sm p-3">
         <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[var(--nimi-text-muted)]">
-          {textPreview || '（无文字内容）'}
+          {textPreview || i18nText('Journal.saveConfirm.emptyPreview')}
         </p>
       </Surface>
 
       {/* Manual dimension + tags (display-only) */}
       {(manualDim || selectedTags.length > 0) && (
         <div className="mb-4">
-          <p className="mb-1.5 text-[13px] font-medium text-[var(--nimi-text-muted)]">已选分类</p>
+          <p className="mb-1.5 text-[13px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Journal.saveConfirm.selectedCategory')}</p>
           <div className="flex flex-wrap items-center gap-1.5">
             {manualDim && (
               <span className="parentos-radius-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_14%,transparent)] px-2 py-0.5 text-[12px] font-medium text-[var(--nimi-action-primary-bg)]">
@@ -254,20 +256,20 @@ export function SaveConfirmationModal({
 
       {/* AI tag analysis section */}
       <div className="mb-5">
-        <p className="mb-1.5 text-[13px] font-medium text-[var(--nimi-text-muted)]">AI 成长关键词</p>
+        <p className="mb-1.5 text-[13px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Journal.tagging.title')}</p>
 
         {aiStatus === 'suggesting' && (
           <div className="flex items-center gap-2 py-2">
             <div className="h-3 w-3 animate-pulse rounded-full bg-[var(--nimi-action-primary-bg)]" />
-            <span className="text-[13px] text-[var(--nimi-text-muted)]">AI 正在分析成长关键词...</span>
+            <span className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Journal.tagging.analyzingKeywords')}</span>
           </div>
         )}
 
         {aiStatus === 'failed' && (
           <div className="py-2">
             <div className="flex items-center gap-2">
-              <span className="text-[12px] text-[var(--nimi-text-muted)]">AI 分析暂不可用</span>
-              <button onClick={handleRetry} className="text-[12px] text-[var(--nimi-action-primary-bg)] underline">重试</button>
+              <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Journal.tagging.analysisUnavailable')}</span>
+              <button onClick={handleRetry} className="text-[12px] text-[var(--nimi-action-primary-bg)] underline">{i18nText('Journal.tagging.retry')}</button>
             </div>
             {aiError && (
               <p className="mt-1 break-all text-[12px] text-[var(--nimi-status-warning)]">{aiError}</p>
@@ -276,7 +278,7 @@ export function SaveConfirmationModal({
         )}
 
         {aiStatus === 'ready' && !aiReady && (
-          <p className="py-2 text-[12px] text-[var(--nimi-text-muted)]">AI 未识别到成长关键词</p>
+          <p className="py-2 text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Journal.tagging.noKeywords')}</p>
         )}
 
         {aiReady && (
@@ -284,7 +286,7 @@ export function SaveConfirmationModal({
             <span className="shrink-0 text-[12px] text-[var(--nimi-action-primary-bg)]">✨</span>
             {aiDim && selectedDimension !== aiSuggestion!.dimensionId && (
               <span className="parentos-radius-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_14%,transparent)] px-1.5 py-0.5 text-[12px] font-medium text-[var(--nimi-action-primary-bg)]">
-                成长方向 · {aiDim.displayName}
+                {i18nText('Journal.tagging.dimension', { dimension: aiDim.displayName })}
               </span>
             )}
             {aiSuggestion!.tags.map((tag) => (
@@ -302,17 +304,17 @@ export function SaveConfirmationModal({
         )}
 
         {aiStatus === 'idle' && draftTextForTagging.trim().length < 10 && (
-          <p className="py-2 text-[12px] text-[var(--nimi-text-muted)]">文字内容较短，跳过 AI 分析</p>
+          <p className="py-2 text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Journal.tagging.textTooShort')}</p>
         )}
       </div>
 
       {/* Footer */}
       <div className="flex items-center justify-end gap-2">
         <Button type="button" onClick={onCancel} tone="ghost" size="sm" className="parentos-radius-sm px-4 py-2 text-[14px]">
-          取消
+          {i18nText('Journal.saveConfirm.cancel')}
         </Button>
         <Button type="button" onClick={handleConfirm} tone="primary" size="sm" className="parentos-radius-sm px-4 py-2 text-[14px] font-medium">
-          {aiStatus === 'suggesting' ? '保存（跳过 AI 分析）' : '保存'}
+          {aiStatus === 'suggesting' ? i18nText('Journal.saveConfirm.saveSkipAi') : i18nText('Journal.saveConfirm.save')}
         </Button>
       </div>
     </OverlayShell>

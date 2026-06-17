@@ -1,6 +1,8 @@
 import { DashedAddButton } from '@nimiplatform/kit/ui';
 import { useState } from 'react';
 import { readImageFileAsDataUrl } from './checkup-ocr.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export type PendingPhoto = {
   base64: string;
@@ -84,7 +86,7 @@ export function PhotoGrid({ photos, maxPhotos, hint, onChange }: PhotoGridProps)
           active={dragOver}
           onClick={pickFiles}
           className={isEmpty ? 'col-span-3' : undefined}
-          label={isEmpty ? hint ?? `点击或拖拽上传照片（最多 ${maxPhotos} 张）` : '添加更多'}
+          label={isEmpty ? hint ?? i18nText('Profile.photoGrid.uploadHint', { max: maxPhotos }) : i18nText('Profile.photoGrid.addMore')}
         />
       ) : null}
     </div>

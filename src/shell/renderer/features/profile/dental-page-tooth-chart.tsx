@@ -10,6 +10,8 @@ import {
   PRIMARY_UPPER_R,
   TOOTH_NAMES,
 } from './dental-page-domain.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export function ToothChart({
   selectedTeeth,
@@ -62,14 +64,14 @@ export function ToothChart({
     <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="rounded-3xl p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">
-          {isPrimary ? '乳牙 (20颗)' : '恒牙 (32颗)'} · 点击选择牙位（可多选）
+          {isPrimary ? i18nText('Dental.toothChart.primaryTitle') : i18nText('Dental.toothChart.permanentTitle')}
         </p>
         <div className="flex gap-1">
           {[
-            { className: 'bg-[color-mix(in_srgb,var(--nimi-status-success)_18%,var(--nimi-surface-card))]', label: '萌出' },
-            { className: 'bg-[var(--nimi-surface-panel)]', label: '脱落' },
-            { className: 'bg-[color-mix(in_srgb,var(--nimi-status-danger)_20%,var(--nimi-surface-card))]', label: '龋齿' },
-            { className: 'bg-[color-mix(in_srgb,var(--nimi-status-info)_16%,var(--nimi-surface-card))]', label: '治疗' },
+            { className: 'bg-[color-mix(in_srgb,var(--nimi-status-success)_18%,var(--nimi-surface-card))]', label: i18nText('Dental.eventType.eruption.label') },
+            { className: 'bg-[var(--nimi-surface-panel)]', label: i18nText('Dental.eventType.loss.label') },
+            { className: 'bg-[color-mix(in_srgb,var(--nimi-status-danger)_20%,var(--nimi-surface-card))]', label: i18nText('Dental.eventType.caries.label') },
+            { className: 'bg-[color-mix(in_srgb,var(--nimi-status-info)_16%,var(--nimi-surface-card))]', label: i18nText('Dental.toothStatus.treated') },
           ].map((item) => (
             <span key={item.label} className="flex items-center gap-0.5 text-[12px] text-[var(--nimi-text-muted)]">
               <span className={`h-2 w-2 rounded-sm ${item.className}`} />
@@ -79,25 +81,28 @@ export function ToothChart({
         </div>
       </div>
       <div className="flex flex-col items-center gap-1">
-        <p className="text-[12px] text-[var(--nimi-text-muted)]">上颌</p>
+        <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Dental.toothQuadrant.upperShort')}</p>
         <div className="flex gap-1">
-          {renderRow(upperRight, '右')}
+          {renderRow(upperRight, i18nText('Dental.toothQuadrant.right'))}
           <span className="w-3" />
           {renderRow(upperLeft, '')}
-          <span className="ml-1 w-8 text-[12px] text-[var(--nimi-text-muted)]">左</span>
+          <span className="ml-1 w-8 text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Dental.toothQuadrant.left')}</span>
         </div>
         <div className="my-1 h-px w-full bg-[var(--nimi-border-subtle)]" />
         <div className="flex gap-1">
-          {renderRow(lowerRight, '右')}
+          {renderRow(lowerRight, i18nText('Dental.toothQuadrant.right'))}
           <span className="w-3" />
           {renderRow(lowerLeft, '')}
-          <span className="ml-1 w-8 text-[12px] text-[var(--nimi-text-muted)]">左</span>
+          <span className="ml-1 w-8 text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Dental.toothQuadrant.left')}</span>
         </div>
-        <p className="text-[12px] text-[var(--nimi-text-muted)]">下颌</p>
+        <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Dental.toothQuadrant.lowerShort')}</p>
       </div>
       {selectedTeeth.length > 0 ? (
         <p className="mt-2 text-center text-[13px] font-medium text-[var(--nimi-action-primary-bg)]">
-          已选 {selectedTeeth.length} 颗: {selectedTeeth.map((id) => `${id}(${TOOTH_NAMES[id] ?? ''})`).join('、')}
+          {i18nText('Dental.toothChart.selectedSummary', {
+            count: selectedTeeth.length,
+            teeth: selectedTeeth.map((id) => `${id}(${TOOTH_NAMES[id] ?? ''})`).join(i18nText('Dental.toothLabel.separator')),
+          })}
         </p>
       ) : null}
     </Surface>
