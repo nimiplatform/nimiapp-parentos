@@ -1,3 +1,10 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.reminder_rules
+row_schema: rules[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 # ──────────────────────────────────────────────────────────────
 # reminder-rules.yaml — ParentOS 提醒规则知识库
 # 这是提醒引擎的唯一权威数据源。
@@ -11,7 +18,7 @@ field_contract:
     category:        { type: enum, required: true, values: [rigid, stage, personalized] }
     #   rigid         — 刚性提醒：有国家/国际标准的确定性事项（疫苗、体检）
     #   stage         — 阶段提醒：基于发育科学的阶段性关注事项（敏感期、窗口期）
-    #   personalized  — 个性化提醒：基于孩子档案数据由 AI 分析触发
+    #   personalized  — 个性化提醒：基于孩子档案数据、专业协议状态或已持久化状态触发
     kind:            { type: enum, required: true, values: [task, guide, practice, consult] }
     #   task     — 一次性打钩型：医疗就诊、数据记录、结构化训练启动
     #   guide    — 读懂并开始应用型：结构化指南，确认已读即 acknowledged；可选 reflected
@@ -61,7 +68,8 @@ field_contract:
       type: object
       required: false
       fields:
-        intervalMonths: { type: integer, description: "重复间隔月数" }
+        cadenceUnit:   { type: enum, values: [day, week, month], description: "重复间隔单位" }
+        interval:      { type: integer, description: "重复间隔，必须为正整数" }
         maxRepeats:     { type: integer, description: "最大重复次数，-1 表示持续" }
     explain:
       type: object
@@ -97,10 +105,11 @@ constraints:
   - "kind must match the required mapping for actionType (PO-REMI-002): go_hospital|record_data|start_training → task; read_guide → guide; observe → practice; ai_consult → consult"
   - "kind ∈ {guide, practice, consult} rules must carry a fully-populated explain object with whyNow, howTo (3-6 items), doneWhen, and non-empty sources (PO-REMI-006)"
   - "top-level source: string field is retired; every rule's citation metadata must live in explain.sources[].citation"
+  - "repeatRule must use cadenceUnit ∈ {day, week, month} with interval > 0; intervalMonths is retired and forbidden."
 # ── Rules ───────────────────────────────────────────────────
 # ── Vaccine (疫苗) ──────────────────────────────────────────
 # Source: 中国国家免疫规划 (NIP-2024)
-rules:
+rules: &parentos_reminder_rule_entries
   # -- 一类疫苗（免费，必须接种）--
   - ruleId: PO-REM-VAC-001
     domain: vaccine
@@ -495,7 +504,7 @@ rules:
     priority: P1
     nurtureMode: { relaxed: silent, balanced: push, advanced: push }
     actionType: go_hospital
-    repeatRule: { intervalMonths: 12, maxRepeats: -1 }
+    repeatRule: { cadenceUnit: month, interval: 12, maxRepeats: -1 }
     explain:
       whyNow: "流感病毒株每年变化，每年秋冬来临前接种能显著降低重症和住院风险。"
       howTo:
@@ -731,7 +740,7 @@ rules:
     priority: P0
     nurtureMode: { relaxed: push, balanced: push, advanced: push }
     actionType: go_hospital
-    repeatRule: { intervalMonths: 12, maxRepeats: 3 }
+    repeatRule: { cadenceUnit: month, interval: 12, maxRepeats: 3 }
     explain:
       whyNow: "学龄前每年体检是追踪生长曲线、筛查视力异常和龋齿的基础节奏。"
       howTo:
@@ -858,7 +867,7 @@ rules:
     priority: P1
     nurtureMode: { relaxed: push, balanced: push, advanced: push }
     actionType: go_hospital
-    repeatRule: { intervalMonths: 6, maxRepeats: 4 }
+    repeatRule: { cadenceUnit: month, interval: 6, maxRepeats: 4 }
     explain:
       whyNow: "学龄前半年一次的视力复查可以及早发现远视储备消耗过快并调整用眼习惯。"
       howTo:
@@ -880,7 +889,7 @@ rules:
     priority: P1
     nurtureMode: { relaxed: push, balanced: push, advanced: push }
     actionType: go_hospital
-    repeatRule: { intervalMonths: 6, maxRepeats: -1 }
+    repeatRule: { cadenceUnit: month, interval: 6, maxRepeats: -1 }
     explain:
       whyNow: "学龄期是近视高发阶段，半年一次检查可以及早干预度数增长。"
       howTo:
@@ -925,7 +934,7 @@ rules:
     priority: P2
     nurtureMode: { relaxed: hidden, balanced: silent, advanced: push }
     actionType: record_data
-    repeatRule: { intervalMonths: 0, maxRepeats: -1 }
+    repeatRule: { cadenceUnit: week, interval: 1, maxRepeats: -1 }
     explain:
       whyNow: "每周及时记录户外时长才能准确评估目标完成率，否则记忆会高估实际时间。"
       howTo:
@@ -1095,7 +1104,7 @@ rules:
     priority: P2
     nurtureMode: { relaxed: hidden, balanced: silent, advanced: push }
     actionType: go_hospital
-    repeatRule: { intervalMonths: 12, maxRepeats: 6 }
+    repeatRule: { cadenceUnit: month, interval: 12, maxRepeats: 6 }
     explain:
       whyNow: "青春期每年一次骨龄可跟踪生长板闭合进度、评估剩余生长空间。"
       howTo:
@@ -1118,7 +1127,7 @@ rules:
     priority: P1
     nurtureMode: { relaxed: push, balanced: push, advanced: push }
     actionType: record_data
-    repeatRule: { intervalMonths: 1, maxRepeats: 12 }
+    repeatRule: { cadenceUnit: month, interval: 1, maxRepeats: 12 }
     explain:
       whyNow: "0-12 月生长速率最快，每月测量才能在曲线上及时发现异常。"
       howTo:
@@ -1139,7 +1148,7 @@ rules:
     priority: P1
     nurtureMode: { relaxed: silent, balanced: push, advanced: push }
     actionType: record_data
-    repeatRule: { intervalMonths: 3, maxRepeats: 8 }
+    repeatRule: { cadenceUnit: month, interval: 3, maxRepeats: 8 }
     explain:
       whyNow: "1-3 岁每季度记录，捕捉幼儿期生长趋势变化。"
       howTo:
@@ -1160,7 +1169,7 @@ rules:
     priority: P2
     nurtureMode: { relaxed: silent, balanced: push, advanced: push }
     actionType: record_data
-    repeatRule: { intervalMonths: 6, maxRepeats: -1 }
+    repeatRule: { cadenceUnit: month, interval: 6, maxRepeats: -1 }
     explain:
       whyNow: "3 岁后每半年一次的身高体重能支撑长期生长曲线和青春期评估。"
       howTo:
@@ -1266,3 +1275,5 @@ rules:
       sources:
         - { citation: "Montessori-sensitive-periods" }
     tags: [order, environment]
+
+entries: *parentos_reminder_rule_entries

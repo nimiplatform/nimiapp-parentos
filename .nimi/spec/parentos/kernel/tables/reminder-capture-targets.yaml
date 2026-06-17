@@ -1,3 +1,10 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.reminder_capture_targets
+row_schema: targets[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 schema_version: 1
 
 field_contract:
@@ -12,7 +19,7 @@ field_contract:
       values: [today, scheduledDate, dueDate]
     completionPolicy: { type: string, required: true }
 
-targets:
+targets: &parentos_reminder_capture_target_entries
   - ruleId: PO-REM-OUTD-001
     actionType: record_data
     captureProtocolId: outdoor-goal
@@ -75,3 +82,5 @@ constraints:
   - "Every captureProtocolId must resolve in health-capture-protocols.yaml."
   - "Every targetMetricId must resolve in health-metric-registry.yaml."
   - "Opening the capture modal must not complete the reminder; completion requires the persisted record event to satisfy completionPolicy."
+
+entries: *parentos_reminder_capture_target_entries

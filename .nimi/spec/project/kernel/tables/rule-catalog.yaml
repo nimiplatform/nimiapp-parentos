@@ -1,0 +1,35 @@
+table_family: product_catalog
+owner: project
+authority_class: product_authority_table
+catalog_id: project.rule_catalog
+row_schema: rules[]
+allowed_references: [.nimi/spec/project/kernel/*.md, .nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, .nimi/contracts/*.yaml, .nimi/methodology/*.yaml]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
+version: 1
+rules: &project_rule_catalog_entries
+  - id: PROJECT-SPEC-001
+    name: Product authority routing
+    authority_refs:
+      - .nimi/spec/project/kernel/core-rules.md#project-spec-001-product-authority-routing
+    semantics: ParentOS product behavior stays in the ParentOS kernel; the project kernel owns only repo-level spec placement and canonical-tree completion.
+  - id: PROJECT-SPEC-002
+    name: Domain admission
+    authority_refs:
+      - .nimi/spec/project/kernel/core-rules.md#project-spec-002-domain-admission
+    semantics: Top-level spec domains require explicit admission before files under them are authority.
+  - id: PROJECT-SPEC-003
+    name: Table family gate
+    authority_refs:
+      - .nimi/spec/project/kernel/core-rules.md#project-spec-003-table-family-gate
+    semantics: Kernel table YAML files require an admitted table family before they are authority tables or support registries.
+  - id: PROJECT-SPEC-004
+    name: Projection boundary
+    authority_refs:
+      - .nimi/spec/project/kernel/core-rules.md#project-spec-004-projection-boundary
+    semantics: Nimicoding-managed projection surfaces provide validation and workflow mechanics without overriding domain product authority.
+  - id: PROJECT-SPEC-005
+    name: Local state boundary
+    authority_refs:
+      - .nimi/spec/project/kernel/core-rules.md#project-spec-005-local-state-boundary
+    semantics: Local audit, execution, and topic records can support evidence but cannot become semantic authority without admitted spec changes.
+entries: *project_rule_catalog_entries

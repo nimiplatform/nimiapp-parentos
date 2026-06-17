@@ -1,6 +1,13 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.renderer_design_overlays
+row_schema: overlays[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 version: 1
 app: parentos
-overlays:
+overlays: &parentos_renderer_design_overlay_entries
   - id: profile.orthodontic_modal_shell
     module: src/shell/renderer/features/profile/orthodontic-modal-primitives.tsx
     kind: dialog
@@ -211,19 +218,6 @@ overlays:
     source_rule: PO-KITUI-005
   - id: profile.vision_batch_form
     module: src/shell/renderer/features/profile/vision-batch-form.tsx
-    kind: dialog
-    surface_tone: overlay
-    elevation: modal
-    z_token: --nimi-z-dialog
-    testid_required: false
-    reduced_motion: true
-    current_provider: HealthRecordModalShell
-    target_provider: OverlayShell
-    migration_wave: wave-2
-    exception_policy: controlled_exception
-    source_rule: PO-KITUI-005
-  - id: profile.growth_curve_add_record
-    module: src/shell/renderer/features/profile/growth-curve-add-record-modal.tsx
     kind: dialog
     surface_tone: overlay
     elevation: modal
@@ -495,3 +489,5 @@ overlays:
     migration_wave: wave-2
     exception_policy: controlled_exception
     source_rule: PO-KITUI-005
+
+entries: *parentos_renderer_design_overlay_entries

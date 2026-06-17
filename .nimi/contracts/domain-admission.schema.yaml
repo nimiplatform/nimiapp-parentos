@@ -29,6 +29,21 @@ domain_admissions:
     forbidden_surface_classes: [derived_view, spec_generation_state, audit_evidence_state, lifecycle_progress_state, candidate_roadmap, methodology_authority]
     validation_commands: [pnpm exec nimicoding validate-spec-tree -- .nimi/spec]
     migration_disposition_when_unadmitted: block
+  - domain_id: parentos
+    domain_root: .nimi/spec/parentos
+    authority_class: active_product
+    owner: parentos
+    admitted_by: parentos_authority_realignment_2026_06_17
+    allowed_surface_classes: [product_authority, product_authority_table, thin_guidance, support_registry]
+    forbidden_surface_classes: [derived_view, spec_generation_state, audit_evidence_state, lifecycle_progress_state, candidate_roadmap, methodology_authority]
+    validation_commands:
+      - pnpm nimicoding validate-placement --profile parentos --root .nimi/spec
+      - pnpm check:spec-consistency
+      - pnpm check:knowledge-base
+      - pnpm check:nurture-mode-safety
+      - pnpm check:ai-boundary
+      - pnpm check:knowledge-asset-governance
+    migration_disposition_when_unadmitted: block
 domain_authority_class_enum:
   - active_product
   - package_projection_anchor_only
@@ -42,6 +57,9 @@ migration_disposition_when_unadmitted_enum:
   - block
 domain_rules:
   - domain_id: project
+    required_authority_class: active_product
+    admission_required: true
+  - domain_id: parentos
     required_authority_class: active_product
     admission_required: true
 semantic_constraints:

@@ -1,6 +1,13 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.nimi_kit_compositions
+row_schema: components[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 version: 1
 app: parentos
-components:
+components: &parentos_nimi_kit_composition_entries
   - id: parentos.profile.group_card
     app: parentos
     module: src/shell/renderer/features/profile/profile-page-group-card.tsx
@@ -113,3 +120,5 @@ components:
     shared_families: []
     shared_targets: []
     source_rule: P-DESIGN-019
+
+entries: *parentos_nimi_kit_composition_entries

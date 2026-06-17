@@ -384,15 +384,16 @@ The override record holds:
 
 ```yaml
 FreqOverride:
-  intervalMonths: integer    # parent-chosen cadence replacing repeatRule.intervalMonths
-  disabled:       boolean    # when true, the rule is suppressed for this child
-  modifiedAt:     ISO8601DateTime
+  cadenceUnit: month         # parent override is admitted only for month-cadence rules
+  interval:    integer       # parent-chosen cadence replacing repeatRule.interval
+  disabled:    boolean       # when true, the rule is suppressed for this child
+  modifiedAt:  ISO8601DateTime
 ```
 
 Constraints:
 
 - The override is per-child operational state. It must be stored outside `reminder_states` and outside every rule table, and must never be written back into `tables/reminder-rules.yaml`.
-- The timeline engine's eligibility computation (`timeline-contract.md`) consumes the override in place of `repeatRule.intervalMonths` when one is present, so a customized cadence is honored consistently across every agenda surface.
+- The timeline engine's eligibility computation (`timeline-contract.md`) consumes the override in place of `repeatRule.cadenceUnit=month` + `repeatRule.interval` when one is present, so a customized cadence is honored consistently across every agenda surface.
 - `disabled: true` is **inadmissible for P0 rules** — it would breach the P0 delivery floor (`PO-TIME-003`). A surface offering the disable affordance must withhold it for P0 rules.
 - Clearing the override restores the rule's authored `repeatRule` cadence.
 - The override changes cadence only. It must not write any `reminder_states` progression timestamp and must not fake completion.

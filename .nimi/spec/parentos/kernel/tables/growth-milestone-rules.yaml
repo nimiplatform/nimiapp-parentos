@@ -1,3 +1,10 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.growth_milestone_rules
+row_schema: rules[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 version: 1
 # Admitted by `.nimi/spec/parentos/kernel/growth-curve-detail-contract.md#PO-GROWTH-DETAIL-002`.
 # Wave-0 of topic `2026-05-18-parentos-growth-curve-page-redesign`.
@@ -18,7 +25,7 @@ constraints:
   evidenceWindowMonths:
     min: 1
     max: 24
-rules:
+rules: &parentos_growth_milestone_rule_entries
   - ruleId: growth-milestone-height-threshold-100cm
     kind: threshold_crossed
     appliesToMetricIds: [growth.height]
@@ -145,3 +152,5 @@ rules:
     titleTemplate: "体重下降 {changeMagnitude}%"
     deltaMagnitudeTemplate: "-{deltaValueRounded}"
     deltaUnitLabel: "KG · 较上次"
+
+entries: *parentos_growth_milestone_rule_entries

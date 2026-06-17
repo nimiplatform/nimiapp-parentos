@@ -1,3 +1,10 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.health_evaluation_rules
+row_schema: policies[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 schema_version: 1
 
 status_taxonomy:
@@ -31,7 +38,7 @@ evaluation_object:
     - inputs
     - safetyBoundary
 
-policies:
+policies: &parentos_health_evaluation_policy_entries
   - policyId: growth.percentile-band
     appliesTo: [growth.height, growth.weight, growth.head_circumference]
     sourceRefs: [reference-data-assets.yaml#growth-standards]
@@ -69,13 +76,23 @@ policies:
   - policyId: vision.axial-reference-band
     appliesTo: [vision.left_axial_length, vision.right_axial_length]
     sourceRefs: [reference-data-assets.yaml#growth-standards.referenceRanges.axialLength]
+    trendThresholds:
+      - thresholdId: axial-length-six-month-delta-watch
+        metricIds: [vision.left_axial_length, vision.right_axial_length]
+        windowMonths: 6
+        operator: ">="
+        value: 0.30
+        unit: mm
+        status: watch
+        reasonCode: axial_length_delta_ge_0_30mm_6m
+        boundary: descriptive_parent_attention
     outputRules:
       - status: missing
         when: "no latest record"
       - status: professional_review_prompt
         when: "value crosses admitted professional-review reference threshold"
       - status: watch
-        when: "rule-defined trend delta crosses watch threshold"
+        when: "trend delta crosses trendThresholds.thresholdId=axial-length-six-month-delta-watch"
       - status: on_track
         when: "value and trend are within admitted reference thresholds"
   - policyId: vision.iop-reference-band
@@ -103,13 +120,23 @@ policies:
   - policyId: development.tanner-stage-reference
     appliesTo: [development.tanner_breast_stage, development.tanner_genital_stage, development.tanner_pubic_hair_stage]
     sourceRefs: [profile-contract.md#PO-PROF-012]
+    trendThresholds:
+      - thresholdId: tanner-stage-two-stage-twelve-month-watch
+        metricIds: [development.tanner_breast_stage, development.tanner_genital_stage, development.tanner_pubic_hair_stage]
+        windowMonths: 12
+        operator: ">="
+        value: 2
+        unit: tanner_stage
+        status: watch
+        reasonCode: tanner_stage_delta_ge_2_12m
+        boundary: descriptive_parent_attention
     outputRules:
       - status: missing
         when: "no latest self-assessment exists"
       - status: professional_review_prompt
         when: "age, sex, and stage cross an admitted professional-review prompt threshold"
       - status: watch
-        when: "rule-defined trend delta crosses puberty-progress watch threshold"
+        when: "stage delta crosses trendThresholds.thresholdId=tanner-stage-two-stage-twelve-month-watch"
       - status: on_track
         when: "stage and trend are within admitted descriptive reference expectations"
       - status: unrated
@@ -194,3 +221,5 @@ constraints:
   - "professional_review_prompt must never be worded as diagnosis, danger, disease, or treatment advice."
   - "Trend delta rules must name an admitted numeric threshold; free-form changing quickly wording is forbidden."
   - "Missing data and evaluation failure must remain distinct statuses."
+
+entries: *parentos_health_evaluation_policy_entries

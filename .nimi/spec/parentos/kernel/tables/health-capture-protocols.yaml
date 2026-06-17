@@ -1,3 +1,10 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.health_capture_protocols
+row_schema: protocols[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 schema_version: 1
 
 field_contract:
@@ -19,7 +26,7 @@ field_contract:
       values: [health_record_event, retained_table]
     completionPolicy: { type: string, required: true }
 
-protocols:
+protocols: &parentos_health_capture_protocol_entries
   - protocolId: growth-infant-monthly
     groupId: growth
     displayName: Infant growth record
@@ -190,3 +197,5 @@ constraints:
   - "A protocol with derivedMetricIds must name the source metrics required for derivation through requiredMetricIds or explicit protocol rules."
   - "Reminder mode may be used only when reminder-capture-targets.yaml maps the rule to the protocol."
   - "Protocol completion is required before a linked record_data reminder may write completedAt."
+
+entries: *parentos_health_capture_protocol_entries

@@ -21,6 +21,9 @@ Covered features from `feature-matrix.yaml`:
 Governing fact sources:
 
 - `tables/reminder-rules.yaml`
+- `tables/reminder-rules-extended.yaml`
+- `tables/orthodontic-protocols.yaml#rules`
+- `tables/orthodontic-protocols.yaml#dentalFollowUpRules`
 - `tables/nurture-modes.yaml`
 - `tables/reference-data-assets.yaml#sensitive-periods`
 - `tables/local-storage.yaml#health_record_events`
@@ -44,10 +47,12 @@ Reminder computation must consume only structured inputs:
 | `ageMonths` | `integer` | derived from `birthDate` and the evaluation date |
 | `profileCreatedAt` | `ISO 8601 datetime string` | `children.createdAt` |
 | `nurtureMode` | `relaxed \| balanced \| advanced` | child record |
-| `ruleCatalog` | `ReminderRule[]` | compiled from `reminder-rules.yaml` |
+| `ruleCatalog` | `ReminderRule[]` | compiled from `reminder-rules.yaml`, `reminder-rules-extended.yaml`, and the admitted orthodontic/dental follow-up rows in `orthodontic-protocols.yaml` |
 | `reminderStates` | `ReminderStateRow[]` | SQLite |
 
 The engine must not invent reminder rules outside the compiled catalog.
+`PO-ORTHO-*` and `PO-DEN-FOLLOWUP-*` rows are first-class catalog rows after
+generation, not runtime-synthesized exceptions.
 
 ## PO-TIME-002 Reminder State Projection
 

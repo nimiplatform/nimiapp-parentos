@@ -29,10 +29,11 @@ Governing fact sources:
 - `tables/local-storage.yaml#reminder_states`
 - `tables/routes.yaml#/profile` and `/profile/dental` redirect shell
 
-## PO-ORTHO-001 Five-Layer Data Model
+## PO-ORTHO-001 Six-Table Data Model
 
-Orthodontic state is modeled in exactly five tables, each with a distinct
-semantic purpose. Implementation must never collapse them or cross-write.
+Orthodontic state is modeled in exactly six persisted state tables, plus shared
+attachments for photo bytes, each with a distinct semantic purpose.
+Implementation must never collapse them or cross-write.
 
 | Table | Mandate |
 |---|---|
@@ -414,7 +415,9 @@ current child's local orthodontic records. Admitted outputs:
 
 - fact restatement: case count, active appliances, last review date, checkin counts
 - descriptive trend wording using `observation-framework`-compatible verbs (`观察到`, `本周相比上周`)
-- compliance-bucket wording that matches `orthodontic-protocols.yaml#schema.complianceThresholds` verbatim
+- cycle projection wording derived from recorded un-wear intervals, estimated
+  net wear time, predicted switch/review dates, and neutral "观察到 / 本周相比上周"
+  trend phrasing. Bucket/verdict labels are not admitted.
 
 Forbidden outputs:
 

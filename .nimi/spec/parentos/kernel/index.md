@@ -27,6 +27,7 @@ Normative surfaces:
 - `tables/growth-milestone-rules.yaml` for admitted growth milestone-event derivation rules (threshold-crossed) consumed by `growth-curve-detail-contract.md`
 - `tables/reference-data-assets.yaml` for the admitted knowledge asset registry
 - `tables/dashboard-task-catalog.yaml` for the dashboard task orchestration catalog consumed by `timeline-contract.md#PO-TIME-010`
+- `tables/reference-data-assets.yaml` entries `ai-boundary-rules`, `advisor-classifier`, `pediatric-drug-catalog`, `journal-guidance-catalog`, and `smart-alert-rules` for admitted runtime policy/content assets under `data/knowledge/assets/**`
 - `tables/nimi-kit-adoption.yaml` for concrete ParentOS governed renderer modules consuming `@nimiplatform/kit/ui`
 - `tables/nimi-kit-compositions.yaml` for retained ParentOS app-owned compositions that must not become parallel primitive authority
 - `tables/renderer-design-overlays.yaml` for governed ParentOS dialog/drawer overlay registration, target provider, migration wave, and controlled exception posture

@@ -1,10 +1,17 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.nimi_kit_adoption
+row_schema: modules[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 version: 1
 app: parentos
 app_entry:
   style: src/shell/renderer/styles.css
   bootstrap: src/shell/renderer/main.tsx
   theme_provider: src/shell/renderer/main.tsx
-modules:
+modules: &parentos_nimi_kit_adoption_entries
   - id: parentos.app_shell.app_select
     app: parentos
     module: src/shell/renderer/app-shell/app-select.tsx
@@ -1112,7 +1119,7 @@ forbidden_patterns:
       kit primitives, not app-shell/page-style visual constants.
     source_rule: P-DESIGN-020
   - id: parentos.no_page_style_s_export
-    scope: src/shell/renderer/app-shell/page-style.ts
+    scope: src/shell/renderer/app-shell
     pattern: \bexport\s+const\s+S\b
     reason: The S visual facade is a retired app-local shared design truth.
     source_rule: P-DESIGN-020
@@ -1160,3 +1167,5 @@ forbidden_patterns:
       - { path: src/shell/renderer/features/profile/report-upload-page.tsx, count: 1 }
       - { path: src/shell/renderer/features/reminders/reminder-explain-drawer.tsx, count: 1 }
       - { path: src/shell/renderer/features/settings/avatar-crop-modal.tsx, count: 1 }
+
+entries: *parentos_nimi_kit_adoption_entries

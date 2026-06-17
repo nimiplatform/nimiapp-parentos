@@ -1,4 +1,11 @@
-features:
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.feature_matrix
+row_schema: features[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
+features: &parentos_feature_matrix_entries
   - featureId: PO-FEAT-001
     name: "Child profile CRUD"
     phase: 1
@@ -389,3 +396,5 @@ constraints:
   - "The ability-model design asset is not a runtime source in the current baseline."
   - "The /profile first screen is the PO-HREC health record console, not the retired archive-section grid."
   - "record_data reminders must open PO-CAPT capture intents and complete only after a satisfying persisted record exists."
+
+entries: *parentos_feature_matrix_entries

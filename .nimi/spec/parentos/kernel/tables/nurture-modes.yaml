@@ -1,3 +1,10 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.nurture_modes
+row_schema: modes[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 # ──────────────────────────────────────────────────────────────
 # nurture-modes.yaml — ParentOS 养育模式参数表
 # 三种模式只影响"强度"，不影响"标准"。
@@ -57,8 +64,7 @@ constraints:
   - "模式可随时切换，不影响已记录的数据"
   - "可按领域(domain)混合模式设置"
 
-modes:
-
+modes: &parentos_nurture_mode_entries
   - modeId: relaxed
     displayName: "轻松养"
     subtitle: "快乐成长，顺其自然"
@@ -134,3 +140,5 @@ domainOverrideSchema:
   constraints:
     - "domain override 中 P0 规则仍然强制 push，无论 domain 设为什么模式"
     - "未设置 override 的 domain 跟随 globalMode"
+
+entries: *parentos_nurture_mode_entries

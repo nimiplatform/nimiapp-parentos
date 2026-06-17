@@ -1,4 +1,11 @@
-routes:
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.routes
+row_schema: routes[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
+routes: &parentos_route_entries
   - path: /timeline
     displayName: "成长时间线"
     feature: timeline
@@ -225,3 +232,5 @@ constraints:
   - "/profile/health/:metricId is a generic fallback PO-HREC metric detail/history route. Console metric registry detailRoute values must prefer the richer domain detail surface when one exists."
   - "/profile is governed by health-record-console-contract.md as the current health record console, not by the retired archive-section grid."
   - "/profile and /profile/* routes must not own independent add-data write paths after PO-CAPT admission; structured writes enter through capture-orchestrator-contract.md."
+
+entries: *parentos_route_entries

@@ -1,3 +1,10 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.health_metric_registry
+row_schema: metrics[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 schema_version: 1
 
 field_contract:
@@ -71,7 +78,7 @@ groups:
     displayName: Development
     rank: 90
 
-metrics:
+metrics: &parentos_health_metric_entries
   - metricId: growth.height
     groupId: growth
     displayName: Height
@@ -669,3 +676,5 @@ constraints:
   - "Every metric referenced by a capture protocol, reminder capture target, or console row must appear in this file."
   - "Derived metrics must list no manual capture protocol unless a future authority explicitly admits parent-entered derived values."
   - "A UI component must not define metric metadata locally."
+
+entries: *parentos_health_metric_entries

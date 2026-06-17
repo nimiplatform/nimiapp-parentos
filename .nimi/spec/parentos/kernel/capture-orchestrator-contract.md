@@ -40,19 +40,24 @@ CaptureIntent {
     dashboard_task
   childId
   groupId
-  captureProtocolId
+  captureProtocolId: null | string
   metricIds
   recordedAtDefault
   source: manual | ocr | imported | reminder
-  linkedReminder: null | { childId, ruleId, repeatIndex }
+  linkedReminder: null | { childId, stateId, ruleId, repeatIndex }
   dashboardTaskId: null | string
   prefillValues
   postSaveBehavior
 }
 ```
 
-The orchestrator must reject an intent whose protocol or metric ids do not
-resolve in canonical tables.
+Entry points MUST NOT invent a canonical protocol id. `captureProtocolId` is
+populated only when the entry point is backed by an admitted catalog binding
+(`reminder-capture-targets.yaml` or `dashboard-task-catalog.yaml`) or after the
+orchestrator selects the protocol from `groupId`, `metricIds`, `mode`, `source`,
+and child age. The orchestrator must reject an intent whose explicit protocol,
+group, or metric ids do not resolve in canonical tables, or whose explicit
+protocol does not admit the requested metric set.
 
 See also `growth-curve-detail-contract.md#PO-GROWTH-DETAIL-004` for how
 the `/profile/growth` Add CTA threads `initialGroupId` and
@@ -129,7 +134,10 @@ forbidden (`PO-CAPT-003`, `PO-CAPT-008` extended).
 
 Additional invariants for the `dashboard_task` origin:
 
-- `childId`, `captureProtocolId`, and `metricIds` are required.
+- `childId`, `dashboardTaskId`, and `metricIds` are required.
+- `captureProtocolId` is required only after the dashboard catalog row has
+  resolved; before that, the orchestrator must resolve it from
+  `dashboard-task-catalog.yaml#captureProtocolIdRef`, not from local UI copy.
 - `prefillValues` may carry values previously persisted for the same metric.
 - `linkedReminder` is optional. When the dashboard task is reminder-backed
   (typically `family=maintain` rows whose catalog binding mirrors a

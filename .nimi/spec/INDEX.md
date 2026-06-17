@@ -6,12 +6,17 @@ ParentOS product authority is organized by active domain. Kernel markdown files 
 
 - `parentos`
 
+## Repo Governance Domain
+
+- `project` is the minimal canonical-tree and spec-placement shell for this repository. It does not carry ParentOS product behavior; ParentOS behavior remains under `parentos/kernel/**`.
+
 ## Reading Order
 
-1. Start with the domain kernel index: [parentos/kernel/index.md](parentos/kernel/index.md).
-2. Read the referenced kernel contracts under `parentos/kernel/*.md`.
-3. Use typed tables under `parentos/kernel/tables/*.yaml` for enumerations, registries, protocol surfaces, catalogs, and support registries.
-4. Use top-level domain guides only as navigation aids.
+1. Start with the repo governance kernel index: [project/kernel/index.md](project/kernel/index.md).
+2. Continue with the ParentOS domain kernel index: [parentos/kernel/index.md](parentos/kernel/index.md).
+3. Read the referenced kernel contracts under `parentos/kernel/*.md`.
+4. Use typed tables under `parentos/kernel/tables/*.yaml` for enumerations, registries, protocol surfaces, catalogs, and support registries.
+5. Use top-level domain guides only as navigation aids.
 
 ## Non Product Surfaces
 

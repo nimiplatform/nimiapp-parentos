@@ -33,7 +33,7 @@ At a product level:
 
 - profile sub-pages may use bounded runtime summaries from current local records, and admitted OCR surfaces may extract structured candidates from one selected local image
 - advisor chat always uses the local runtime when available, but switches between generic-chat, reviewed-advice, needs-review-descriptive, and unknown-clarifier strategies
-- reports may generate narrative content from local child records, but must stay descriptive and pass safety filtering
+- reports may generate narrative content from local child records; descriptive wording and safety filtering are governed by the advisor/report contracts
 - journal AI tagging is a closed-set extraction surface only
 - diagnosis, treatment, ranking, and alarmist wording remain outside scope
 

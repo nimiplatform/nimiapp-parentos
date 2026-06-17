@@ -1,6 +1,13 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.nimi_kit_allowlists
+row_schema: items[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 version: 1
 app: parentos
-items:
+items: &parentos_nimi_kit_allowlist_entries
   - id: parentos.profile_domain_geometry_inline_style
     scope: src/shell/renderer/features/profile
     pattern: "^(width|height|minWidth|maxWidth|minHeight|maxHeight|left|top|right|bottom|inset|position|display|flex|flexDirection|flexWrap|flexShrink|alignItems|justifyContent|placeItems|gap|gridTemplateColumns|gridTemplateRows|padding|paddingTop|paddingRight|paddingBottom|paddingLeft|margin|marginTop|marginRight|marginBottom|marginLeft|fontSize|fontWeight|fontFamily|lineHeight|letterSpacing|whiteSpace|transform|transformOrigin|translate|rotate|scale|opacity|overflow|overflowX|objectFit|pointerEvents|zIndex|cursor|transition|animation|userSelect|aspectRatio|scrollSnapType|scrollbarWidth|msOverflowStyle|textAlign|textTransform|textOverflow|wordBreak|fontStyle|fontVariantNumeric|outlineOffset)$"
@@ -9,3 +16,5 @@ items:
     scope: src/shell/renderer/features/outdoor
     pattern: "^(width|height|minWidth|maxWidth|minHeight|maxHeight|left|top|right|bottom|inset|position|display|flex|flexDirection|flexWrap|flexShrink|alignItems|justifyContent|placeItems|gap|gridTemplateColumns|gridTemplateRows|padding|paddingTop|paddingRight|paddingBottom|paddingLeft|margin|marginTop|marginRight|marginBottom|marginLeft|fontSize|fontWeight|fontFamily|lineHeight|letterSpacing|whiteSpace|transform|transformOrigin|translate|rotate|scale|opacity|overflow|overflowX|objectFit|pointerEvents|zIndex|cursor|transition|animation|userSelect|aspectRatio|scrollSnapType|scrollbarWidth|msOverflowStyle|textAlign|textTransform|textOverflow|wordBreak|fontStyle|fontVariantNumeric|outlineOffset)$"
     reason: ParentOS outdoor domain compositions may own heatmap and activity-chart geometry without owning shared visual tokens.
+
+entries: *parentos_nimi_kit_allowlist_entries

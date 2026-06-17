@@ -1,3 +1,10 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.dashboard_task_catalog
+row_schema: rows[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 version: 1
 
 # Dashboard Task Catalog
@@ -102,7 +109,7 @@ constraints:
   - "Rows must not recompute PO-HREC freshness locally; freshness must be consumed from the PO-HREC-006 snapshot."
   - "Wave-1 admitted the schema. Wave-2 admits the first batch of rows below. Subsequent waves may extend the catalog as additional capture protocols, observation dimensions, or reviewed micro-action content sources land."
 
-rows:
+rows: &parentos_dashboard_task_catalog_entries
   - taskId: dashboard-maintain-growth-infant
     family: maintain
     ownerContract: .nimi/spec/parentos/kernel/timeline-contract.md
@@ -189,3 +196,5 @@ rows:
     snoozeDefaultDays: 2
     decayStrategy: resurface-next-cycle
     featureId: PO-FEAT-056
+
+entries: *parentos_dashboard_task_catalog_entries

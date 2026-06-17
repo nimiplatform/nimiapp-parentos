@@ -1,5 +1,17 @@
 schema_version: 1
-
+table_family: product_record_schema
+owner: parentos
+authority_class: product_authority_table
+record_id: parentos.local_storage
+path: .nimi/spec/parentos/kernel/tables/local-storage.yaml
+row_schema: tables[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
+required_top_level_fields: [schema_version, storage_layout, health_record_unification, tables]
+invariants:
+  - Runtime.GetAppStorage(nimi.parentos) owns every durable app data root.
+  - SQLite schema rows in this table stay bidirectionally aligned with src-tauri migrations.
+  - health_record_events and health_record_values are the canonical measurement-shaped health fact storage.
 storage_layout:
   app_id: nimi.parentos
   authority: Runtime.GetAppStorage(nimi.parentos)
@@ -17,6 +29,7 @@ storage_layout:
   constraints:
     - "ParentOS MUST resolve durable data, cache, and temp roots through Runtime.GetAppStorage(nimi.parentos); app code MUST NOT concatenate <nimi_data>/apps/nimi.parentos or write directly under the selected nimi_data root."
     - "All SQLite database files and user-generated media files MUST live under parentosAppDataRoot and must be rejected when path canonicalization escapes the Runtime-projected root."
+    - "Deleting a child profile MUST purge every child-scoped on-disk media root: attachments/{childId}, orthodontic/photos/{childId}, journal/photos/{childId}, journal/audio/{childId}, and children/avatars/{childId}.*."
     - "Because ParentOS is pre-launch, this storage layout is hard-cut; direct writes under the selected nimi_data root are not admitted storage roots."
 
 health_record_unification:
@@ -24,7 +37,6 @@ health_record_unification:
     - health_record_events
     - health_record_values
   folded_measurement_domains:
-    - growth_measurements
     - sleep_records
     - tanner_assessments
     - fitness_assessments
@@ -58,432 +70,34 @@ health_record_unification:
     - app_settings
   rules:
     - "Measurement-shaped facts and assessment-shaped health facts are written to health_record_events + health_record_values after PO-HREC hard cut."
-    - "Precutover rows in folded measurement tables are migration inputs only; supported facts must be backfilled into health_record_events + health_record_values by an idempotent migration/repair replay before the PO-HREC console projects current state."
+    - "Retired measurement-table rows are not admitted runtime inputs after the 2026-06-17 hard cut; current migrations create the canonical schema only and fail validation on reintroduced retired tables."
     - "Retained stateful tables keep their own canonical lifecycle when their domain semantics are not value-at-time records."
     - "Retained stateful rows may project current health metrics into PO-HREC only through registered metric ids and must not create parallel metric truth."
     - "vision_followup_settings is cadence configuration only; it is not a health record event."
 
 growth_measurement_canonical_migration:
-  # Admitted 2026-05-19 by topic 2026-05-19-parentos-growth-canonical-write-migration
-  # wave-0a (packet_kind: spec; authority-convergence audit PASS recorded
-  # at result-wave-0a-authority-and-schema-mapping-authority-convergence-audit.md).
-  #
-  # This section formally admits the mapping authority for migrating growth
-  # measurement writes from the legacy growth_measurements table to the
-  # canonical health_record_events + health_record_values tables per
-  # PO-HREC-004. The de-facto mapping exists today as the
-  # PRECUTOVER_GROWTH_MEASUREMENT_BACKFILL_SQL constant in
-  # src-tauri/src/sqlite/migrations_v13.rs (lines 116-216)
-  # which already runs on the v13 snapshot; wave-0a lifts the mapping
-  # into spec authority, identifies 5 PO-HREC-004 gaps in the v13 SQL,
-  # and admits explicit resolutions for each gap. Wave-0b implements the
-  # refined mapping as a new SQLite migration (next version after v13);
-  # wave-0c atomically swaps the renderer write path + executes the
-  # incremental backfill + lands the legacy write-guard in one commit;
-  # wave-0d retires the legacy table.
-  #
-  # The line-657 constraint ("Existing growth_measurements rows ... are
-  # backfilled exactly once into health_record_events + health_record_values
-  # using deterministic precutover ids ...") is the one-line summary of
-  # this section. The detail in this section supersedes that summary for
-  # mapping authority purposes; the line-657 constraint remains as the
-  # post-cutover read invariant.
-  status: spec_admitted_pending_implementation_waves_0b_0c_0d
-  spec_admitted_at: 2026-05-19
-  spec_admitted_in_topic: 2026-05-19-parentos-growth-canonical-write-migration
-  spec_admitted_in_wave: wave-0a-authority-and-schema-mapping
-  source_of_truth_for_mapping_until_wave_0b_lands: src-tauri/src/sqlite/migrations_v13.rs#PRECUTOVER_GROWTH_MEASUREMENT_BACKFILL_SQL
-  source_of_truth_for_mapping_from_wave_0b_onward: this_section_plus_the_new_vN_migration_that_wave_0b_lands
-
-  mapping:
-    legacy_table: growth_measurements
-    canonical_event_table: health_record_events
-    canonical_value_table: health_record_values
-    row_relationship: one_legacy_row_to_one_event_with_one_value
-    coalescing: none  # do NOT batch multiple legacy rows into a single event
-
-    deterministic_id_formats:
-      event_id_format: "precutover-growth-measurement:${measurementId}"
-      value_id_format: "precutover-growth-value:${measurementId}"
-      idempotency: INSERT_OR_IGNORE  # re-running backfill produces zero new rows
-
-    legacy_typeId_scope:
-      # The v13 SQL backfills both growth-* AND vision-* typeIds via the
-      # same INSERT statements. This topic's authority is GROWTH ONLY.
-      # The vision-* typeIds (vision-left, vision-right, axial-length-*,
-      # iop-*) are handled by a separate future canonical-write migration
-      # topic for vision; wave-0a does not amend their handling.
-      growth_typeIds_in_scope:
-        - height
-        - weight
-        - head-circumference
-      growth_typeIds_handled_via_derived_mechanism:
-        - bmi  # see bmi_handling below
-      vision_typeIds_out_of_scope_for_this_topic:
-        - vision-left
-        - vision-right
-        - axial-length-left
-        - axial-length-right
-        - iop-left
-        - iop-right
-
-    columns:
-      - legacy_column: measurementId
-        canonical_event_field: eventId
-        canonical_value_field: valueId
-        transformation: deterministic_id_format
-        rationale: idempotent_backfill_via_INSERT_OR_IGNORE_on_deterministic_id
-
-      - legacy_column: childId
-        canonical_event_field: childId
-        canonical_value_field: childId
-        transformation: copy
-        rationale: foreign_key_preserved_through_both_tables
-
-      - legacy_column: typeId
-        canonical_value_field: metricId
-        canonical_event_field_derived: protocolId  # CASE typeId
-        canonical_event_field_also_derived: groupId
-        canonical_value_field_derived: unit
-        canonical_value_field_also_derived: qualifier
-        transformation: typeId_to_multiple_canonical_fields_via_mapping
-        typeId_to_metricId:
-          height: growth.height
-          weight: growth.weight
-          head-circumference: growth.head_circumference
-          bmi: handled_via_recomputeDerivedHealthRecordValues_NOT_directly_mapped
-        typeId_to_protocolId:
-          height: growth-child-quarterly
-          weight: growth-child-quarterly
-          head-circumference: growth-infant-monthly
-        typeId_to_groupId:
-          # All growth typeIds map to groupId='growth'
-          height: growth
-          weight: growth
-          head-circumference: growth
-        typeId_to_unit:
-          height: cm
-          weight: kg
-          head-circumference: cm
-        typeId_to_qualifier:
-          # Growth typeIds have no left/right laterality. qualifier is NULL
-          # for all growth rows. The v13 SQL CASE statement on `LIKE %-left`
-          # / `LIKE %-right` is only relevant for vision typeIds.
-          height: null
-          weight: null
-          head-circumference: null
-
-      - legacy_column: value
-        canonical_value_field: valueNumber
-        transformation: copy
-        rationale: numeric_value_preserved_via_direct_copy
-
-      - legacy_column: measuredAt
-        canonical_event_field: recordedAt
-        canonical_event_field_derived: effectiveDate
-        transformation: dual_target_recordedAt_full_iso_effectiveDate_date_only
-        derivation:
-          recordedAt: copy_full_iso_string_from_legacy_measuredAt
-          effectiveDate: substr_first_10_chars_yyyy_mm_dd_only
-        rationale: aligned_with_v13_SQL_lines_145_146
-
-      - legacy_column: ageMonths
-        canonical_event_field: ageMonths
-        transformation: copy
-        rationale: integer_age_in_months_preserved
-
-      - legacy_column: percentile
-        canonical_event_field: dropped_no_canonical_destination
-        canonical_value_field: dropped_no_canonical_destination
-        transformation: drop
-        rationale: |
-          Canonical schema has no percentile column. In production today,
-          GrowthAddRecordContent.handleSave (lines 70, 75, 80, 85), OCR
-          import (growth-curve-page.tsx:237), and update path
-          (growth-curve-page.tsx:145) all pass or carry forward
-          percentile=null. Parent topic wave-A growth-detail-projection.ts
-          computes percentile at projection time via
-          computeApproxPercentile. The legacy column is therefore always
-          null in practice and intentionally dropped post-migration. See
-          loss_criteria.no_non_null_percentile for the runner-enforced
-          HALT condition.
-        gap_audit: GAP_4_resolution_per_result_wave_0a_entry_probe_md_section_3
-
-      - legacy_column: source
-        canonical_event_field: recordKind
-        canonical_event_field_derived: sourceSurface
-        transformation: source_to_recordKind_and_sourceSurface_with_reminder_refinement
-        # REFINEMENT vs v13 SQL: v13 mapped 'reminder' → 'manual' (fell into
-        # ELSE branch). Wave-0a admits explicit reminder_linked handling.
-        # The wave-0b migration implements this refinement.
-        source_to_recordKind:
-          manual: manual
-          ocr: ocr_confirmed
-          imported: imported
-          reminder: reminder_linked_IF_linkedReminderStateId_param_was_non_null_at_renderer_time_ELSE_wave_0c_HALT
-          computed: derived_BUT_BMI_rows_are_typeId_filtered_out_so_computed_never_reaches_recordKind_mapping
-        source_to_sourceSurface:
-          manual: profile_detail
-          ocr: ocr_tool
-          imported: import
-          reminder: reminder
-          computed: not_applicable_filtered_out_by_typeId
-        gap_audit:
-          - GAP_2_resolution_for_reminder_source_per_result_wave_0a_entry_probe_md_section_3
-          - GAP_5_resolution_for_computed_source_per_result_wave_0a_entry_probe_md_section_3
-
-      - legacy_column: notes
-        canonical_event_field: notes
-        transformation: copy
-        rationale: free_text_notes_preserved_at_event_level_not_value_level
-
-      - legacy_column: createdAt
-        canonical_event_field: createdAt
-        canonical_event_field_also: updatedAt
-        canonical_value_field: createdAt
-        transformation: copy_to_three_targets
-        rationale: |
-          Legacy createdAt is the single timestamp. Canonical events have
-          both createdAt and updatedAt (no separate update history in
-          legacy data; both populated identically). Canonical values have
-          createdAt only. Aligned with v13 SQL lines 150-151 and 202.
-
-      - legacy_renderer_param: linkedReminderStateId
-        canonical_event_field: linkedReminderStateId
-        transformation: forward_looking_carry_through_only
-        rationale: |
-          GAP_3 per result-wave-0a-entry-probe-md section 3. The legacy
-          growth_measurements table has NO linkedReminderStateId column
-          (migrations_schema.rs:33-44 confirms 10-column legacy schema).
-          The renderer-side insertMeasurement bridge accepts the param
-          (sqlite-bridge-growth.ts:27) but the legacy persistence path
-          has nowhere to store it — silently dropped today. For PRE-cutover
-          legacy rows, no data exists to backfill; canonical event lands
-          with linkedReminderStateId IS NULL. This is an acknowledged
-          IRRECOVERABLE LOSS for legacy data, NOT a HALT condition (no
-          data to recover from). For POST-cutover canonical writes
-          (wave-0c onward), saveHealthRecordCapture carries the field
-          correctly. See loss_criteria.linked_reminder_consistency for
-          the post-cutover assertion.
-        gap_audit: GAP_3_resolution_per_result_wave_0a_entry_probe_md_section_3
-
-      - legacy_renderer_param: linkedReminderRuleId
-        canonical_event_field: linkedReminderRuleId
-        transformation: forward_looking_carry_through_only
-        rationale: same_as_linkedReminderStateId_above
-
-    metadata_json_shape:
-      # Aligned with v13 SQL line 149.
-      precutover_event_metadata:
-        precutoverTable: growth_measurements
-        precutoverMeasurementId: ${legacy.measurementId}
-        precutoverTypeId: ${legacy.typeId}
-      rationale: preserves_traceability_from_canonical_event_back_to_originating_legacy_row
-
-    canonical_value_recordKind: measured
-    # Hardcoded; aligned with v13 SQL line 202.
-
-  backfill_semantics:
-    row_mapping: one_to_one
-    coalescing: none
-    idempotency: INSERT_OR_IGNORE
-    execution_wave: wave-0c-atomic-cutover
-    # Wave-0b prepares the migration FILE; wave-0c flips the gate to
-    # execute it as part of the atomic cutover.
-    incremental_scope: |
-      The v13 backfill ran once on the v13 snapshot. Post-v13 legacy
-      writes (every growth measurement Add/OCR/edit since v13 landed)
-      are STALE relative to canonical tables. The wave-0c incremental
-      backfill re-runs the (refined) mapping over the entire legacy
-      table; INSERT OR IGNORE preserves the v13-era canonical rows and
-      adds only the missing post-v13 rows.
-
-    bmi_handling:
-      mechanism: recomputeDerivedHealthRecordValues
-      rationale: |
-        BMI is a derived value computed from concurrent height + weight
-        per existing parent topic wave-A convention
-        (growth-detail-projection.ts:580 invokes
-        recomputeDerivedHealthRecordValues over events + values to
-        produce derived BMI). Backfilling BMI directly from legacy rows
-        would duplicate the derived-value path and risk divergence when
-        the height/weight inputs change. The backfill SKIPS BMI legacy
-        rows (typeId='bmi' not in WHERE clause); canonical BMI values
-        appear via recomputeDerivedHealthRecordValues invocation at
-        backfill time (the wave-0c worker invokes this from within the
-        migration's host runner).
-      gap_audit: GAP_1_resolution_per_result_wave_0a_entry_probe_md_section_3
-
-    reminder_linked_source_handling:
-      # Refinement of v13 SQL CASE statement (which mapped 'reminder' to 'manual').
-      condition_branch_a:
-        condition: legacy growth_measurements row has source='reminder' AND renderer-time linkedReminderStateId param was non-null
-        # Note: the legacy table has no linkedReminderStateId COLUMN,
-        # but the renderer-time PARAM presence is recoverable via the
-        # `source='reminder'` value itself (the renderer only sets
-        # source='reminder' when wired to a reminder; this is a
-        # contractual invariant verified at wave-0c entry probe).
-        canonical_recordKind: reminder_linked
-        canonical_sourceSurface: reminder
-        canonical_linkedReminderStateId: NULL_legacy_table_has_no_column_irrecoverable_loss
-        canonical_linkedReminderRuleId: NULL_legacy_table_has_no_column_irrecoverable_loss
-      condition_branch_b:
-        condition: legacy growth_measurements row has source='reminder' but contractual invariant is violated (this MUST NOT happen if the renderer is honest about source)
-        action: wave-0c HALT
-        rationale: |
-          The renderer contract says source='reminder' is only set when a
-          reminder is genuinely linked. If a legacy row has source='reminder'
-          but the contractual invariant cannot be verified (the legacy
-          table doesn't store the linkage), the data is in an unverifiable
-          state. Wave-0c MUST surface this for manager review rather than
-          silently classify the row as 'manual' (which would be a
-          retroactive contract weakening).
-      gap_audit: GAP_2_resolution_per_result_wave_0a_entry_probe_md_section_3
-
-    attachment_re_linking:
-      from_owner_table: measurements
-      from_owner_id: legacy.measurementId
-      to_owner_table: health_record_events
-      to_owner_id: derived_from_event_id_format_precutover_growth_measurement_colon_measurementId
-      rule: every_attachment_with_owner_table_equals_measurements_must_re_link_to_its_canonical_event_counterpart_or_wave_0c_HALT
-      orphan_handling: |
-        If an attachment exists with ownerTable='measurements' but its
-        ownerId is not present in growth_measurements.measurementId at
-        backfill time, the attachment is an ORPHAN. Wave-0c HALT for
-        manager review; orphan resolution (deletion vs separate
-        attachment-table cleanup topic) is out of wave-0c scope.
-
-  loss_criteria:
-    # Wave-0c MUST runner-enforce each of these at backfill time. Any
-    # violation HALTS the cutover.
-
-    - id: no_non_null_percentile
-      assertion: every legacy growth_measurements row has percentile IS NULL
-      rationale: |
-        GrowthAddRecordContent.handleSave + OCR path + update path all
-        pass or carry forward percentile=null in production today.
-        Canonical schema has no percentile column. A non-null legacy
-        percentile would imply a code path (likely older / removed)
-        that wrote a non-null value, which would be lost in migration
-        if silently dropped.
-      halt_action: wave-0c HALT and surface the offending row for manager review
-
-    - id: no_unmapped_source_value
-      assertion: every legacy growth_measurements.source value is in (manual, ocr, imported, reminder, computed)
-      rationale: |
-        These 5 values are the only ones used by the renderer code path.
-        An unknown source value would imply a code path (likely older /
-        removed) that wrote a different value; mapping it to 'manual'
-        would be a silent classification weakening.
-      halt_action: wave-0c HALT and surface the offending row for manager review
-
-    - id: no_orphan_attachment
-      assertion: every attachment with ownerTable='measurements' has its ownerId present in growth_measurements.measurementId
-      rationale: |
-        An orphan attachment cannot be re-linked to a canonical event.
-        Silent loss would forfeit attachment data.
-      halt_action: wave-0c HALT; surface orphans for manager review; orphan resolution is out of wave-0c scope (separate cleanup topic if needed)
-
-    - id: bmi_value_agreement_with_recomputed
-      assertion: |
-        For every legacy growth_measurements row with typeId='bmi',
-        its value EQUALS computeBMI(corresponding_height_row.value,
-        corresponding_weight_row.value) within tolerance ±0.1 kg/m²
-        (rounding).
-      rationale: |
-        BMI is derived from height+weight per canonical convention. If
-        a legacy BMI row's value does not agree with the recomputed
-        derived value, the legacy data is inconsistent and silently
-        skipping it (via the BMI typeId-filter) would forfeit a
-        verification opportunity.
-      halt_action: wave-0c HALT and surface disagreements for manager review
-
-    - id: linked_reminder_consistency
-      assertion: |
-        Post-cutover canonical writes (wave-0c onward): every
-        health_record_events row with recordKind='reminder_linked' has
-        linkedReminderStateId IS NOT NULL.
-      pre_cutover_scope: |
-        Pre-cutover legacy rows have no linkedReminderStateId column
-        and are IRRECOVERABLY LOST relative to this assertion. The
-        backfill produces canonical events with linkedReminderStateId
-        IS NULL even when source='reminder' (gap 3 acknowledged loss).
-        Pre-cutover rows are EXEMPT from this assertion.
-      halt_action: wave-0c HALT for post-cutover violations; pre-cutover rows do not trigger HALT
-
-  retirement_plan:
-    # REVISED 2026-05-19 per the topic's wave decomposition revision
-    # (.nimi/topics/ongoing/2026-05-19-parentos-growth-canonical-write-migration/wave-decomposition-revision-2026-05-19.md).
-    # The original 5-wave plan assumed the storage layer was still on
-    # the legacy table; an entry probe during wave-0b proved that
-    # insert_measurement / update_measurement / delete_measurement /
-    # get_measurements already operate on canonical health_record_events
-    # + health_record_values (per
-    # src-tauri/src/sqlite/queries/health_measurements.rs).
-    # The wave plan was reduced from 5 to 4 waves; wave-0c was
-    # retargeted from "atomic-cutover" to "legacy-table-retirement";
-    # wave-0d "read-path-and-legacy-retirement" was COLLAPSED into 0c;
-    # the original wave-0e "verification-and-parent-unblock" was
-    # renumbered to wave-0d.
-
-    status: COMPLETE  # retirement lands at wave-0c
-    completion_wave: wave-0c-legacy-table-retirement
-    completion_migration: v21  # src-tauri/src/sqlite/migrations_v21.rs
-    growth_measurements_status_after_topic_closure: dropped_via_sqlite_migration_v21
-
-    canonical_tables_already_sole_admitted_growth_write_target: true
-    canonical_tables_already_sole_admitted_growth_read_target: true
-    # Storage layer was already canonical-only since v13 hard cut; the
-    # legacy table has been dormant (no reads, no writes) since then.
-    # The Rust commands insert_measurement / update_measurement /
-    # delete_measurement / get_measurements are legacy-API-SHAPE FACADES
-    # over canonical storage — they accept legacy-shape inputs and
-    # translate to canonical-shape rows in health_record_events +
-    # health_record_values. No code reads or writes growth_measurements
-    # after the v13 cutover.
-
-    legacy_table_drop_implementation_wave: wave-0c-legacy-table-retirement
-    final_local_storage_yaml_amendment_wave: wave-0c-legacy-table-retirement
-    # Wave-0c removes the growth_measurements table block from the
-    # tables: section of this file AND adds the v21 SQLite migration
-    # that DROPs the table + 2 indexes (idempotent via DROP IF EXISTS).
-    # The mapping / backfill_semantics / loss_criteria blocks above
-    # are preserved as documentary spec authority for the v13 backfill
-    # history; that history is permanent spec evidence even after the
-    # physical table is dropped.
-
-    irrecoverable_pre_cutover_losses:
-      - linkedReminderStateId
-      - linkedReminderRuleId
-    # These two fields are renderer-time params with no legacy table
-    # columns; pre-cutover legacy rows have no data to backfill. This is
-    # explicitly admitted as a one-time loss for legacy data, not an
-    # ongoing dual-truth situation. Post-cutover writes carry these
-    # fields correctly via saveHealthRecordCapture.
-
-    rust_legacy_api_facade_retirement:
-      status: deferred_out_of_scope_for_this_topic
-      rationale: |
-        The Rust commands insert_measurement / update_measurement /
-        delete_measurement / get_measurements remain registered after
-        wave-0c because they write/read canonical storage and pose no
-        parallel-truth risk after the legacy table is dropped. Their
-        only remaining renderer consumers are the OCR import path in
-        growth-curve-page.tsx and the legacy bridge module
-        sqlite-bridge-growth.ts, both of which are parent topic
-        2026-05-18-parentos-growth-curve-page-redesign wave-D
-        territory (or a future cleanup topic).
-      cleanup_pointer: parent topic 2026-05-18-parentos-growth-curve-page-redesign wave-D or a successor cleanup topic
-
-  references:
-    pohrec_004: .nimi/spec/parentos/kernel/health-record-console-contract.md#PO-HREC-004
-    pohrec_007: .nimi/spec/parentos/kernel/health-record-console-contract.md#PO-HREC-007
-    pocapt_001: .nimi/spec/parentos/kernel/capture-orchestrator-contract.md#PO-CAPT-001
-    pogrowth_005: .nimi/spec/parentos/kernel/growth-curve-detail-contract.md#PO-GROWTH-DETAIL-005
-    v13_de_facto_mapping_source: src-tauri/src/sqlite/migrations_v13.rs#PRECUTOVER_GROWTH_MEASUREMENT_BACKFILL_SQL
-    line_657_summary_constraint: this_file_constraints_section
-    parent_topic_blocked_wave: ../../ongoing/2026-05-18-parentos-growth-curve-page-redesign/topic.yaml#waves[wave-d-history-and-capture-migration].blocked_admission
-    phased_retirement_guardrail: ../../ongoing/2026-05-19-parentos-growth-canonical-write-migration/topic.yaml#phased_retirement_guardrail
+  status: retired_non_authoritative_hard_cut
+  posture: current_schema_baseline_only
+  retired_table: growth_measurements
+  canonical_tables:
+    - health_record_events
+    - health_record_values
+  retired_at: 2026-06-17
+  retired_by_sweep_fix_topic: 2026-06-17-parentos-audit-remediation-v2
+  rules:
+    - "ParentOS is pre-alpha and has no deployed user data to preserve; historical growth_measurements migration/backfill semantics are not product authority."
+    - "Fresh and repaired databases must create only the canonical health_record_events + health_record_values storage for measurement-shaped health facts."
+    - "SQLite migrations must not backfill from, dual-read, dual-write, or destructively drop growth_measurements as part of current runtime repair."
+    - "Any reintroduced growth_measurements table is an unsupported local artifact and must fail validation rather than be silently migrated or dropped."
+    - "Reminder-linked canonical health records must persist recordKind=reminder_linked with linkedReminderStateId/linkedReminderRuleId at write time; source='reminder' must never be coerced into manual."
+  current_facade_boundary:
+    status: retained_api_shape_only
+    rust_commands:
+      - insert_measurement
+      - update_measurement
+      - delete_measurement
+      - get_measurements
+    rule: "These commands are compatibility-free command names over canonical storage only; they must not encode or consult growth_measurements schema truth."
 
 tables:
   - name: families
@@ -520,13 +134,11 @@ tables:
       - { columns: [familyId] }
       - { columns: [birthDate] }
 
-  # growth_measurements: RETIRED at SQLite migration v21 per
-  # growth_measurement_canonical_migration.retirement_plan above
-  # (topic 2026-05-19-parentos-growth-canonical-write-migration wave-0c).
+  # growth_measurements: retired and not part of the current baseline.
   # Canonical storage is health_record_events + health_record_values
-  # (PO-HREC-004). Historical backfill mapping is preserved in the
-  # growth_measurement_canonical_migration section above as
-  # documentary spec authority.
+  # (PO-HREC-004). Reintroduced growth_measurements tables are unsupported
+  # local artifacts and must not be silently migrated, read, written, or
+  # destructively dropped by current runtime repair.
 
   - name: milestone_records
     description: "Achievement records for spec-backed milestones."
@@ -1102,7 +714,8 @@ constraints:
   - "JSON payloads are stored as TEXT and must remain valid JSON on read/write."
   - "childId is the primary filter field for child-scoped tables."
   - "growth_reports.reportType is limited to monthly | quarterly | quarterly-letter | custom."
-  - "Child deletion cascades through all child-scoped tables: growth_measurements, milestone_records, reminder_states, vaccine_records, posture_assessments, journal_entries, ai_conversations, growth_reports, dental_records, allergy_records, sleep_records, medical_events, tanner_assessments, fitness_assessments, outdoor_records, vision_followup_settings, health_record_events, health_record_values, attachments, custom_todos, orthodontic_cases, orthodontic_appliances, orthodontic_checkins, orthodontic_unwear_intervals, orthodontic_photo_sessions."
+  - "Child deletion cascades through all child-scoped current-baseline tables: milestone_records, reminder_states, vaccine_records, posture_assessments, journal_entries, ai_conversations, growth_reports, dental_records, allergy_records, sleep_records, medical_events, tanner_assessments, fitness_assessments, outdoor_records, vision_followup_settings, health_record_events, health_record_values, attachments, custom_todos, orthodontic_cases, orthodontic_appliances, orthodontic_checkins, orthodontic_unwear_intervals, orthodontic_photo_sessions."
+  - "Child deletion also purges every child-scoped user-generated file path under storage_layout.files and clears any legacy renderer journal draft key parentos:journal-draft:{childId}; durable journal draft bodies are not admitted in browser localStorage."
   - "vision_followup_settings.cadenceMonths is constrained to the integer range 1..36 at the bridge boundary; values outside this range must fail-close. customNextDate must be ISO 8601 YYYY-MM-DD when present."
   - "orthodontic_cases deletion cascades to orthodontic_appliances, orthodontic_checkins, orthodontic_unwear_intervals, and orthodontic_photo_sessions. orthodontic_appliances deletion cascades to orthodontic_checkins, orthodontic_unwear_intervals, and orthodontic_photo_sessions (when pinned via applianceId)."
   - "orthodontic_photo_sessions deletion cascades to its attachments rows AND the on-disk session directory under ${parentosAppDataRoot}/orthodontic/photos/{childId}/{sessionId}/, where parentosAppDataRoot = Runtime.GetAppStorage(nimi.parentos).durableDataRoot (PO-ORTHO-012). The attachments-row purge and file purge run inside the same Tauri command transaction; the FK chain does not cascade attachments because attachments is the unified owner-polymorphic table with no per-owner FK back."
@@ -1110,7 +723,7 @@ constraints:
   - "orthodontic_checkins.checkinType is restricted to aligner-change | expander-activation; legacy wear-daily / retention-wear were permanently retired by migration v15 (PO-ORTHO-005b)."
   - "children.allergies JSON array remains as a quick-access summary; allergy_records is the structured source of truth."
   - "health_record_events + health_record_values are the canonical storage for measurement-shaped and assessment-shaped health facts after the PO-HREC hard cut."
-  - "Existing growth_measurements rows with supported typeId values are backfilled exactly once into health_record_events + health_record_values using deterministic precutover ids; after backfill the console reads only the canonical tables and must not dual-read growth_measurements."
+  - "growth_measurements is not a current-baseline table; the console reads only health_record_events + health_record_values and must not dual-read, backfill, or drop growth_measurements."
   - "health_record_values.metricId must resolve to tables/health-metric-registry.yaml; values whose metric id cannot be resolved must fail closed before save."
   - "Derived health_record_values are engine-owned recomputations performed inside the PO-CAPT save transaction or a full snapshot rebuild; UI forms must not write derived metrics directly."
   - "attachments.ownerTable=health_record_events is used for unified health record attachments; retained stateful tables may remain attachment owners only when listed in health_record_unification.retained_stateful_tables."

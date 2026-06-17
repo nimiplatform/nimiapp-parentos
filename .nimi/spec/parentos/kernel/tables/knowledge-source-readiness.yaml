@@ -1,3 +1,10 @@
+table_family: product_catalog
+owner: parentos
+authority_class: product_authority_table
+catalog_id: parentos.knowledge_source_readiness
+row_schema: sources[]
+allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel/tables/*.yaml, data/knowledge/assets/*/asset.json]
+forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 version: 1
 
 field_contract:
@@ -38,7 +45,7 @@ constraints:
   - "status=needs-review domains must not enter advisor reviewed-advice prompt generation in ParentOS"
   - "new domains must update the narrative projection in parentos.md section 8.2"
 
-sources:
+sources: &parentos_knowledge_source_entries
   - domain: vaccine
     source: "China National Immunization Program (NIP-2024)"
     sourceLevel: national
@@ -142,3 +149,5 @@ sources:
     owner: product
     lastReviewedAt: "2026-04-16"
     notes: "Outdoor time and myopia prevention evidence is well-established. Advisor may provide reviewed-advice on outdoor activity habits."
+
+entries: *parentos_knowledge_source_entries
