@@ -2,7 +2,8 @@ import { getAppSetting, setAppSetting } from '../bridge/sqlite-bridge.js';
 import { isoNow } from '../bridge/ulid.js';
 
 export interface FreqOverride {
-  intervalMonths: number;
+  cadenceUnit: 'month';
+  interval: number;
   disabled: boolean;
   modifiedAt: string;
 }
@@ -20,9 +21,15 @@ export async function loadFreqOverrides(childId: string, ruleIds: string[]): Pro
       const raw = await getAppSetting(settingKey(childId, ruleId));
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<FreqOverride>;
-        if (typeof parsed.intervalMonths === 'number' || parsed.disabled === true) {
+        if (
+          parsed.cadenceUnit === 'month' &&
+          typeof parsed.interval === 'number' &&
+          Number.isFinite(parsed.interval) &&
+          parsed.interval > 0
+        ) {
           map.set(ruleId, {
-            intervalMonths: parsed.intervalMonths ?? 0,
+            cadenceUnit: 'month',
+            interval: parsed.interval,
             disabled: parsed.disabled ?? false,
             modifiedAt: typeof parsed.modifiedAt === 'string' ? parsed.modifiedAt : '',
           });

@@ -19,9 +19,11 @@ import {
 } from '../../engine/reminder-engine.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { resolveGrowthRecheckRuleId } from './growth-curve-page-shared.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 // growth-next-check-modal.tsx — PO-GROWTH-DETAIL-006 next-check reschedule
-// modal. The 更改 CTA on the milestone timeline opens this modal against the
+// modal. The milestone timeline's change CTA opens this modal against the
 // child's age-active growth record_data reminder. It adjusts two things, both
 // through mechanisms owned by reminder-interaction-contract.md:
 //   - the next occurrence date — PO-REMI-005 `schedule` action (scheduledDate)
@@ -44,10 +46,10 @@ interface GrowthNextCheckModalProps {
 }
 
 const PRESET_OPTIONS = [
-  { months: 1, label: '每月' },
-  { months: 3, label: '每 3 个月' },
-  { months: 6, label: '每半年' },
-  { months: 12, label: '每年' },
+  { months: 1, label: i18nText('GrowthCurve.nextCheckModal.preset.monthly') },
+  { months: 3, label: i18nText('GrowthCurve.nextCheckModal.preset.everyThreeMonths') },
+  { months: 6, label: i18nText('GrowthCurve.nextCheckModal.preset.halfYear') },
+  { months: 12, label: i18nText('GrowthCurve.nextCheckModal.preset.yearly') },
 ] as const;
 
 function presetMonths(): readonly number[] {
@@ -60,9 +62,10 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
   const rule = recheckRuleId
     ? REMINDER_RULES.find((candidate) => candidate.ruleId === recheckRuleId) ?? null
     : null;
-  const defaultInterval = rule?.repeatRule?.intervalMonths ?? 1;
+  const defaultInterval = rule?.repeatRule?.cadenceUnit === 'month' ? rule.repeatRule.interval : 1;
 
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [target, setTarget] = useState<ActiveReminder | null>(null);
   const [override, setOverride] = useState<FreqOverride | null>(null);
   const [dateValue, setDateValue] = useState('');
@@ -76,6 +79,8 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
       return;
     }
     let cancelled = false;
+    setLoaded(false);
+    setLoadError(null);
     void (async () => {
       try {
         const rows = await getReminderStates(child.childId);
@@ -98,7 +103,7 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
           ?? null;
         if (cancelled) return;
         const loadedOverride = overrides.get(rule.ruleId) ?? null;
-        const effectiveInterval = loadedOverride?.intervalMonths || defaultInterval;
+        const effectiveInterval = loadedOverride?.interval || defaultInterval;
         setTarget(active);
         setOverride(loadedOverride);
         setIntervalSel(presetMonths().includes(effectiveInterval) ? effectiveInterval : 'custom');
@@ -109,7 +114,10 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
         setLoaded(true);
       } catch (error) {
         catchLog('growth-next-check', 'action:load-next-check-failed')(error);
-        if (!cancelled) setLoaded(true);
+        if (!cancelled) {
+          setLoadError(error instanceof Error ? error.message : String(error));
+          setLoaded(true);
+        }
       }
     })();
     return () => {
@@ -132,7 +140,8 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
       const chosenInterval = resolveInterval();
       if (chosenInterval !== defaultInterval) {
         await saveFreqOverride(child.childId, rule.ruleId, {
-          intervalMonths: chosenInterval,
+          cadenceUnit: 'month',
+          interval: chosenInterval,
           disabled: false,
         });
       } else if (override) {
@@ -179,14 +188,14 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
         <span className="text-[18px]">📅</span>
-        <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">调整下次复测</h2>
+        <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{i18nText('GrowthCurve.nextCheckModal.title')}</h2>
       </div>
-      <IconButton onClick={onClose} icon="✕" aria-label="关闭" tone="ghost" size="sm" className="h-7 min-h-7 w-7" />
+      <IconButton onClick={onClose} icon="✕" aria-label={i18nText('GrowthCurve.nextCheckModal.close')} tone="ghost" size="sm" className="h-7 min-h-7 w-7" />
     </div>
   );
 
   // Fail-close: no growth record_data rule covers the child's age
-  // (PO-GROWTH-DETAIL-009). The 更改 CTA is already disabled in this case;
+  // (PO-GROWTH-DETAIL-009). The change CTA is already disabled in this case;
   // render an explanatory state rather than targeting an arbitrary rule.
   if (!rule) {
     return (
@@ -198,7 +207,7 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
         title={header}
       >
         <p data-testid="growth-next-check-modal" className="text-[14px] text-[var(--nimi-text-muted)]">
-          当前年龄暂无适用的生长复测提醒。
+          {i18nText('GrowthCurve.nextCheckModal.noApplicableRule')}
         </p>
       </OverlayShell>
     );
@@ -214,8 +223,30 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
         contentClassName="flex items-center justify-center"
       >
         <span data-testid="growth-next-check-modal" className="text-[14px] text-[var(--nimi-text-muted)]">
-          加载中...
+          {i18nText('GrowthCurve.nextCheckModal.loading')}
         </span>
+      </OverlayShell>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <OverlayShell
+        open
+        kind="dialog"
+        onClose={onClose}
+        panelClassName="w-[380px] parentos-radius-xl"
+        title={header}
+        footer={
+          <Button onClick={onClose} tone="secondary" size="md">
+            {i18nText('GrowthCurve.nextCheckModal.close')}
+          </Button>
+        }
+      >
+        <div data-testid="growth-next-check-modal" className="space-y-3">
+          <p className="text-[14px] text-[var(--nimi-text-primary)]">{i18nText('GrowthCurve.nextCheckModal.loadError')}</p>
+          <p className="text-[13px] text-[var(--nimi-text-muted)]">{loadError}</p>
+        </div>
       </OverlayShell>
     );
   }
@@ -232,11 +263,11 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
       footer={
         <div className="flex gap-2">
           <Button onClick={() => void handleConfirm()} disabled={saving} tone="primary" size="md" fullWidth>
-            {saving ? '保存中...' : '确认'}
+            {saving ? i18nText('GrowthCurve.nextCheckModal.saving') : i18nText('GrowthCurve.nextCheckModal.confirm')}
           </Button>
           {isCustomized && (
             <Button onClick={() => void handleResetDefault()} disabled={saving} tone="secondary" size="md">
-              恢复默认
+              {i18nText('GrowthCurve.nextCheckModal.restoreDefault')}
             </Button>
           )}
         </div>
@@ -247,7 +278,7 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
 
       {/* Next re-check date — PO-REMI-005 schedule action */}
       <label className="mb-1.5 block text-[13px] font-medium text-[var(--nimi-text-primary)]">
-        下次复测日期
+        {i18nText('GrowthCurve.nextCheckModal.nextDate')}
       </label>
       <div data-testid="growth-next-check-date">
         <TextField
@@ -261,7 +292,7 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
 
       {/* Cadence — PO-REMI-015 frequency override */}
       <label className="mb-1.5 block text-[13px] font-medium text-[var(--nimi-text-primary)]">
-        复测频率
+        {i18nText('GrowthCurve.nextCheckModal.frequency')}
       </label>
       <div className="mb-3 flex flex-wrap gap-2">
         {PRESET_OPTIONS.map((option) => (
@@ -278,7 +309,7 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
             )}
           >
             {option.label}
-            {option.months === defaultInterval ? '(默认)' : ''}
+            {option.months === defaultInterval ? i18nText('GrowthCurve.nextCheckModal.defaultSuffix') : ''}
           </button>
         ))}
         <button
@@ -294,7 +325,7 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
               : 'border-[var(--nimi-action-secondary-border)] bg-[var(--nimi-action-secondary-bg)] text-[var(--nimi-text-primary)] hover:border-[var(--nimi-border-strong)]',
           )}
         >
-          自定义
+          {i18nText('GrowthCurve.nextCheckModal.custom')}
         </button>
       </div>
 
@@ -306,16 +337,16 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
             max="120"
             value={customMonths}
             onChange={(event) => setCustomMonths(event.target.value)}
-            placeholder="月数"
+            placeholder={i18nText('GrowthCurve.nextCheckModal.monthCountPlaceholder')}
             className="w-20"
             inputClassName="text-[14px]"
           />
-          <span className="text-[14px] text-[var(--nimi-text-muted)]">个月</span>
+          <span className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('GrowthCurve.nextCheckModal.monthUnit')}</span>
         </div>
       )}
 
       <p className="text-[12px] text-[var(--nimi-text-muted)]">
-        复测频率会按 WHO 标准随年龄段调整；这里的设置仅覆盖当前孩子的提醒节奏，可随时恢复默认。
+        {i18nText('GrowthCurve.nextCheckModal.hint')}
       </p>
       </div>
     </OverlayShell>

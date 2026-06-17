@@ -23,13 +23,15 @@ import { FrequencyModal } from '../reminders/frequency-modal.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { ReminderPanel } from './timeline-page-panels.js';
 import { useReminderPanelController } from './reminder-panel-controller.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 export default function TimelinePage() {
   const { activeChildId, children: childList } = useAppStore();
   const child = childList.find((item) => item.childId === activeChildId);
 
-  // Shared 待办事项 controller — owns the reminder agenda, capture handlers, and
-  // the right-rail panel props. The profile 待办事项 drawer consumes the same
+  // Shared task controller — owns the reminder agenda, capture handlers, and
+  // the right-rail panel props. The profile task drawer consumes the same
   // hook so both surfaces render identical content.
   const { d, loading, reload, ageMonths, agendaResult, agenda, panelProps, modalsNode } =
     useReminderPanelController(child);
@@ -64,12 +66,12 @@ export default function TimelinePage() {
   if (agendaResult.kind === 'unknown-rule') {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center" style={{ color: '#b91c1c' }}>
-        <p className="text-base font-medium">提醒目录不完整</p>
+        <p className="text-base font-medium">{i18nText('Timeline.error.unknownRuleTitle')}</p>
         <p className="text-[14px]" style={{ color: C.sub }}>
-          发现未登记的 ruleId：{agendaResult.ruleIds.join('、')}
+          {i18nText('Timeline.error.unknownRuleIds', { ruleIds: agendaResult.ruleIds.join(', ') })}
         </p>
         <p className="text-[14px]" style={{ color: C.sub }}>
-          提醒流按 PO-TIME-007 fail-close。重启 ParentOS 即可触发 schema v17 自动清理这些游离记录；如果重启后仍有未登记的 ruleId，请修复 reminder-rules.yaml 或 orthodontic-protocols.yaml。
+          {i18nText('Timeline.error.unknownRuleBody')}
         </p>
       </div>
     );
@@ -78,7 +80,7 @@ export default function TimelinePage() {
   if (loading || !agenda || !homeVm) {
     return (
       <div className="flex h-full items-center justify-center" style={{ background: 'transparent' }}>
-        <p className="text-sm" style={{ color: C.sub }}>加载中...</p>
+        <p className="text-sm" style={{ color: C.sub }}>{i18nText('Timeline.loading')}</p>
       </div>
     );
   }
@@ -135,12 +137,12 @@ export default function TimelinePage() {
 
       {modalsNode}
 
-      {freqModalReminder && freqModalReminder.rule.repeatRule && (
+      {freqModalReminder && freqModalReminder.rule.repeatRule?.cadenceUnit === 'month' && (
         <FrequencyModal
           childId={child.childId}
           ruleId={freqModalReminder.rule.ruleId}
           ruleTitle={freqModalReminder.rule.title}
-          currentIntervalMonths={freqModalReminder.rule.repeatRule.intervalMonths}
+          currentIntervalMonths={freqModalReminder.rule.repeatRule.interval}
           existingOverride={null}
           canDisable={freqModalReminder.rule.priority !== 'P0'}
           onSaved={() => {

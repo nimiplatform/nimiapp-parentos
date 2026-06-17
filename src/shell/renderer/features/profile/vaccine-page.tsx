@@ -19,12 +19,14 @@ import { completeReminderByRule } from '../../engine/reminder-actions.js';
 import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.js';
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
 import { VaccineCaptureModal } from './vaccine-capture-form.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 /* ── helpers ──────────────────────────────────────────────── */
 
 function fmtDate(d: string) { return d.split('T')[0]; }
 
-/* 二类疫苗（非免疫规划 / 自费）以 `optional` 标签标记；其余为一类疫苗（国家免疫规划 / 免费）。 */
+/* Optional-tagged vaccines are self-paid non-program vaccines; all others are program vaccines. */
 function isOptionalVaccine(rule: ReminderRule) {
   return rule.tags?.includes('optional') ?? false;
 }
@@ -33,7 +35,7 @@ function VaccineClassBadge({ rule }: { rule: ReminderRule }) {
   const optional = isOptionalVaccine(rule);
   return (
     <StatusBadge tone={optional ? 'warning' : 'info'} className="shrink-0 px-2 py-0.5 text-[11px]">
-      {optional ? '二类 · 自费' : '一类 · 免费'}
+      {optional ? i18nText('Vaccine.badge.classTwo') : i18nText('Vaccine.badge.classOne')}
     </StatusBadge>
   );
 }
@@ -75,31 +77,31 @@ function VaccineRecordModal({ rule, childId, birthDate, onSave, onClose }: {
         <div className="space-y-4">
           <p className="text-[14px] text-[var(--nimi-text-muted)]">{rule.description}</p>
           <div>
-            <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">接种日期</label>
+            <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">{i18nText('Vaccine.field.vaccinatedAt')}</label>
             <DatePicker value={date} onChange={setDate} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">疫苗批号</label>
-              <TextField value={batch} onChange={(e) => setBatch(e.target.value)} placeholder="选填" className="w-full" />
+              <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">{i18nText('Vaccine.field.batchNumber')}</label>
+              <TextField value={batch} onChange={(e) => setBatch(e.target.value)} placeholder={i18nText('Vaccine.field.optional')} className="w-full" />
             </div>
             <div>
-              <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">接种机构</label>
-              <TextField value={hospital} onChange={(e) => setHospital(e.target.value)} placeholder="选填" className="w-full" />
+              <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">{i18nText('Vaccine.field.hospital')}</label>
+              <TextField value={hospital} onChange={(e) => setHospital(e.target.value)} placeholder={i18nText('Vaccine.field.optional')} className="w-full" />
             </div>
           </div>
           <div>
-            <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">不良反应记录</label>
+            <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">{i18nText('Vaccine.recordModal.adverseReaction')}</label>
             <TextareaField value={reaction} onChange={(e) => setReaction(e.target.value)}
-              placeholder="如有不良反应请记录..."
+              placeholder={i18nText('Vaccine.recordModal.adverseReactionPlaceholder')}
               className="w-full" rows={2} />
           </div>
         </div>
       </ModalContent>
       <ModalFooter>
-        <Button onClick={onClose} tone="ghost" size="md">取消</Button>
+        <Button onClick={onClose} tone="ghost" size="md">{i18nText('Vaccine.recordModal.cancel')}</Button>
         <Button onClick={() => void handleSave()} disabled={saving} tone="primary" size="md">
-          {saving ? '保存中...' : '记录接种'}
+          {saving ? i18nText('Vaccine.recordModal.saving') : i18nText('Vaccine.recordModal.save')}
         </Button>
       </ModalFooter>
     </HealthRecordModalShell>
@@ -132,8 +134,8 @@ function HistoricalSection({ rules, onRecord, onMarkAll, onQuickMark }: {
         <div className="flex items-center gap-2">
           <span className="text-[16px]">📋</span>
           <span className="text-[14px] font-medium text-[var(--nimi-text-muted)]">
-            有 {remaining.length} 项历史疫苗待补录
-            {marked.length > 0 && <span className="ml-1 text-[12px] text-[var(--nimi-action-primary-bg)]">（已标记 {marked.length} 项）</span>}
+            {i18nText('Vaccine.history.pendingTitle', { count: remaining.length })}
+            {marked.length > 0 && <span className="ml-1 text-[12px] text-[var(--nimi-action-primary-bg)]">{i18nText('Vaccine.history.markedCount', { count: marked.length })}</span>}
           </span>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={'var(--nimi-text-muted)'} strokeWidth="2" strokeLinecap="round"
@@ -145,7 +147,7 @@ function HistoricalSection({ rules, onRecord, onMarkAll, onQuickMark }: {
       {expanded && (
         <div className="px-5 pb-4">
           <p className="text-[12px] mb-3 text-[var(--nimi-text-muted)]">
-            点击左侧圆圈快速标记已接种，点击"补录"可填写详细接种信息（批号、机构等）。
+            {i18nText('Vaccine.history.hint')}
           </p>
           {/* Mark all button */}
           {remaining.length > 0 && (
@@ -156,7 +158,7 @@ function HistoricalSection({ rules, onRecord, onMarkAll, onQuickMark }: {
               fullWidth
               className="mb-3"
             >
-              全部标记为已接种（{remaining.length} 项）
+              {i18nText('Vaccine.history.markAll', { count: remaining.length })}
             </Button>
           )}
           {/* Remaining items */}
@@ -166,11 +168,11 @@ function HistoricalSection({ rules, onRecord, onMarkAll, onQuickMark }: {
                 {/* Quick-mark circle */}
                 <button onClick={() => handleQuickMark(r.ruleId)}
                   className="w-[20px] h-[20px] rounded-full border-[1.5px] border-[var(--nimi-border-strong)] flex items-center justify-center shrink-0 transition-all hover:border-[var(--nimi-text-primary)] hover:bg-[var(--nimi-action-ghost-hover)]"
-                  title="点击标记为已接种" />
+                  title={i18nText('Vaccine.history.quickMark')} />
                 <span className="flex-1 text-[13px] text-[var(--nimi-text-primary)]">{r.title}</span>
                 <VaccineClassBadge rule={r} />
                 <Button onClick={() => onRecord(r.ruleId)} tone="ghost" size="sm">
-                  补录
+                  {i18nText('Vaccine.history.backfill')}
                 </Button>
               </div>
             ))}
@@ -178,7 +180,7 @@ function HistoricalSection({ rules, onRecord, onMarkAll, onQuickMark }: {
           {/* Already marked items */}
           {marked.length > 0 && (
             <>
-              <p className="text-[12px] mt-4 mb-2 font-medium text-[var(--nimi-action-primary-bg)]">已标记为接种 ✓</p>
+              <p className="text-[12px] mt-4 mb-2 font-medium text-[var(--nimi-action-primary-bg)]">{i18nText('Vaccine.history.markedHeader')}</p>
               <div className="space-y-1">
                 {marked.map((r) => (
                   <div key={r.ruleId} className="flex items-center gap-2.5 rounded-2xl border border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_34%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,var(--nimi-surface-card))] p-2">
@@ -188,7 +190,7 @@ function HistoricalSection({ rules, onRecord, onMarkAll, onQuickMark }: {
                     <span className="flex-1 text-[13px] line-through text-[var(--nimi-text-muted)]">{r.title}</span>
                     <VaccineClassBadge rule={r} />
                     <Button onClick={() => onRecord(r.ruleId)} tone="ghost" size="sm">
-                      补录详情
+                      {i18nText('Vaccine.history.backfillDetails')}
                     </Button>
                   </div>
                 ))}
@@ -220,7 +222,7 @@ export default function VaccinePage() {
 
   if (!child) {
     return (
-      <ProfileDetailShell title="疫苗接种">
+      <ProfileDetailShell title={i18nText('Vaccine.page.title')}>
         <NoActiveChildPlaceholder />
       </ProfileDetailShell>
     );
@@ -246,7 +248,7 @@ export default function VaccinePage() {
     setSearchParams(next, { replace: true });
   };
 
-  /* ── Upcoming vaccines: only current window or recently overdue (≤12月) ── */
+  /* Upcoming vaccines: only current window or recently overdue. */
   const upcoming = useMemo(() =>
     vaccineRules.filter((r) => {
       if (recordedRuleIds.has(r.ruleId)) return false;
@@ -256,7 +258,7 @@ export default function VaccinePage() {
     }).slice(0, 5),
   [ageMonths, recordedRuleIds, vaccineRules]);
 
-  /* ── Historical unrecorded: overdue by >12 months, likely just not entered ── */
+  /* Historical unrecorded: overdue by more than 12 months, likely not entered. */
   const historicalUnrecorded = useMemo(() =>
     vaccineRules.filter((r) => {
       if (recordedRuleIds.has(r.ruleId)) return false;
@@ -269,10 +271,18 @@ export default function VaccinePage() {
   const ageBuckets = useMemo(() => {
     const buckets: Array<{ startMonth: number; endMonth: number; label: string; rules: ReminderRule[] }> = [];
     const ranges: Array<[number, number, string]> = [
-      [0, 1, '出生时'], [2, 3, '2-3 个月'], [4, 6, '4-6 个月'],
-      [7, 9, '7-9 个月'], [10, 12, '10-12 个月'], [13, 18, '13-18 个月'],
-      [19, 24, '19-24 个月'], [25, 36, '2-3 岁'], [37, 48, '3-4 岁'],
-      [49, 72, '4-6 岁'], [73, 144, '6-12 岁'], [145, 216, '12-18 岁'],
+      [0, 1, i18nText('Vaccine.ageBucket.birth')],
+      [2, 3, i18nText('Vaccine.ageBucket.m2_3')],
+      [4, 6, i18nText('Vaccine.ageBucket.m4_6')],
+      [7, 9, i18nText('Vaccine.ageBucket.m7_9')],
+      [10, 12, i18nText('Vaccine.ageBucket.m10_12')],
+      [13, 18, i18nText('Vaccine.ageBucket.m13_18')],
+      [19, 24, i18nText('Vaccine.ageBucket.m19_24')],
+      [25, 36, i18nText('Vaccine.ageBucket.y2_3')],
+      [37, 48, i18nText('Vaccine.ageBucket.y3_4')],
+      [49, 72, i18nText('Vaccine.ageBucket.y4_6')],
+      [73, 144, i18nText('Vaccine.ageBucket.y6_12')],
+      [145, 216, i18nText('Vaccine.ageBucket.y12_18')],
     ];
     for (const [s, e, lbl] of ranges) {
       const rs = vaccineRules.filter((r) => r.triggerAge.startMonths >= s && r.triggerAge.startMonths <= e);
@@ -287,7 +297,7 @@ export default function VaccinePage() {
     <ProfileDetailShell
       title={
         <span className="flex items-center gap-2">
-          <span>疫苗接种</span>
+          <span>{i18nText('Vaccine.page.title')}</span>
           <span className="group relative inline-flex">
             <span className="w-[18px] h-[18px] rounded-full inline-flex items-center justify-center cursor-help transition-colors hover:bg-[var(--nimi-action-ghost-hover)] text-[var(--nimi-text-muted)]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -295,25 +305,25 @@ export default function VaccinePage() {
               </svg>
             </span>
             <span className="pointer-events-none absolute left-0 top-7 z-50 w-[360px] rounded-xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-overlay)] p-4 text-[13px] leading-relaxed text-[var(--nimi-text-secondary)] opacity-0 shadow-[var(--nimi-elevation-floating)] transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
-              <span className="block text-[14px] font-semibold text-[var(--nimi-text-primary)] mb-2.5">数据参考文献</span>
+              <span className="block text-[14px] font-semibold text-[var(--nimi-text-primary)] mb-2.5">{i18nText('Vaccine.sources.title')}</span>
               <ul className="space-y-2.5">
                 <li>
-                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">国家免疫规划疫苗（免费）</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">国家卫生健康委员会. 国家免疫规划疫苗儿童免疫程序及说明（2021年版）.</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-muted)]">国卫办疾控函〔2021〕196号</span>
+                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">{i18nText('Vaccine.sources.program')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">{i18nText('Vaccine.sources.programDetail')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Vaccine.sources.programDocument')}</span>
                 </li>
                 <li>
-                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">非免疫规划疫苗（自费推荐）</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">中华预防医学会. 非免疫规划疫苗使用指南（2023版）.</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-muted)]">中华流行病学杂志 2023;44(10):1521-1570 · 含流感、HPV、水痘、轮状病毒等推荐接种方案</span>
+                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">{i18nText('Vaccine.sources.nonProgram')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">{i18nText('Vaccine.sources.nonProgramDetail')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Vaccine.sources.nonProgramJournal')}</span>
                 </li>
                 <li>
-                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">WHO 全球免疫立场文件</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">WHO Position Papers on Vaccines. Weekly Epidemiological Record (WER).</span>
-                  <span className="block text-[12px] text-[var(--nimi-text-muted)]">覆盖: BCG · 乙肝 · 百白破 · 脊灰 · 麻腮风 · 流脑 · 乙脑 · 甲肝等</span>
+                  <span className="text-[var(--nimi-action-primary-bg)] font-medium">{i18nText('Vaccine.sources.who')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-muted)] mt-0.5">{i18nText('Vaccine.sources.whoDetail')}</span>
+                  <span className="block text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Vaccine.sources.whoCoverage')}</span>
                 </li>
               </ul>
-              <span className="block text-[12px] mt-2.5 pt-2 border-t border-[var(--nimi-border-subtle)] text-[var(--nimi-text-muted)]">接种窗口和时间表以国家免疫规划为准 · 自费疫苗仅供参考 · 具体请遵医嘱</span>
+              <span className="block text-[12px] mt-2.5 pt-2 border-t border-[var(--nimi-border-subtle)] text-[var(--nimi-text-muted)]">{i18nText('Vaccine.sources.note')}</span>
             </span>
           </span>
         </span>
@@ -322,7 +332,7 @@ export default function VaccinePage() {
         <>
           <Button onClick={() => setShowCustomModal(true)} tone="primary" size="sm">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-            自定义疫苗
+            {i18nText('Vaccine.page.addRecord')}
           </Button>
           <span className="text-[14px] px-3 py-1 rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,var(--nimi-surface-card))] text-[var(--nimi-action-primary-bg)]">
             {completedCount}/{vaccineRules.length} · {pct}%
@@ -331,14 +341,24 @@ export default function VaccinePage() {
       }
       aiSummary={
         <AISummaryCard domain="vaccine" childName={child.displayName} childId={child.childId}
-          ageLabel={`${Math.floor(ageMonths / 12)}岁${ageMonths % 12}个月`} gender={child.gender}
-          dataContext={completedCount > 0 ? `已接种 ${completedCount}/${vaccineRules.length} 项疫苗 (${pct}%)。${upcoming.length > 0 ? `待接种: ${upcoming.map((r) => r.title).join('、')}` : '所有疫苗已完成'}` : ''} />
+          ageLabel={i18nText('Vaccine.summary.ageYearsMonths', {
+            years: Math.floor(ageMonths / 12),
+            months: ageMonths % 12,
+          })} gender={child.gender}
+          dataContext={completedCount > 0 ? i18nText('Vaccine.summary.context', {
+            completed: completedCount,
+            total: vaccineRules.length,
+            pct,
+            pending: upcoming.length > 0
+              ? i18nText('Vaccine.summary.pending', { items: upcoming.map((r) => r.title).join(i18nText('Common.list.separator')) })
+              : i18nText('Vaccine.summary.allComplete'),
+          }) : ''} />
       }
     >
       {/* Progress bar */}
       <Surface tone="card" material="glass-regular" elevation="raised" padding="md" className="mb-5 rounded-3xl">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">接种进度</span>
+          <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Vaccine.page.progressTitle')}</span>
           <span className="text-[14px] font-bold text-[var(--nimi-action-primary-bg)]">{pct}%</span>
         </div>
         <div className="w-full h-2 rounded-full overflow-hidden bg-[var(--nimi-border-subtle)]">
@@ -347,21 +367,21 @@ export default function VaccinePage() {
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
           <span className="flex items-center gap-1.5 text-[12px] text-[var(--nimi-text-muted)]">
             <span className="w-2 h-2 rounded-full bg-[var(--nimi-status-info)]" />
-            一类（免费）<span className="font-medium text-[var(--nimi-text-primary)]">{class1Done}/{class1Rules.length}</span>
+            {i18nText('Vaccine.page.classOneProgress')}<span className="font-medium text-[var(--nimi-text-primary)]">{class1Done}/{class1Rules.length}</span>
           </span>
           <span className="flex items-center gap-1.5 text-[12px] text-[var(--nimi-text-muted)]">
             <span className="w-2 h-2 rounded-full bg-[var(--nimi-status-warning)]" />
-            二类（自费）<span className="font-medium text-[var(--nimi-text-primary)]">{class2Done}/{class2Rules.length}</span>
+            {i18nText('Vaccine.page.classTwoProgress')}<span className="font-medium text-[var(--nimi-text-primary)]">{class2Done}/{class2Rules.length}</span>
           </span>
         </div>
       </Surface>
 
-      {/* ── Upcoming vaccines (主动推送) ──────────────────── */}
+      {/* Upcoming vaccines. */}
       {upcoming.length > 0 && (
         <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="mb-5 rounded-3xl">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-[16px]">🔔</span>
-            <h3 className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">待接种疫苗</h3>
+            <h3 className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Vaccine.page.upcomingTitle')}</h3>
           </div>
           <div className="space-y-2">
             {upcoming.map((r) => {
@@ -377,10 +397,10 @@ export default function VaccinePage() {
                       <VaccineClassBadge rule={r} />
                     </div>
                     <p className={`text-[12px] ${isOverdue ? 'text-[var(--nimi-status-danger)]' : 'text-[var(--nimi-text-muted)]'}`}>
-                      {isOverdue ? `已过建议接种窗口 (${formatAge(r.triggerAge.startMonths)}-${formatAge(r.triggerAge.endMonths)})` : `建议 ${formatAge(r.triggerAge.startMonths)}-${r.triggerAge.endMonths === -1 ? '无上限' : formatAge(r.triggerAge.endMonths)}接种`}
+                      {isOverdue ? i18nText('Vaccine.page.overdueWindow', { start: formatAge(r.triggerAge.startMonths), end: formatAge(r.triggerAge.endMonths) }) : i18nText('Vaccine.page.recommendedWindow', { start: formatAge(r.triggerAge.startMonths), end: r.triggerAge.endMonths === -1 ? i18nText('Vaccine.page.noUpperLimit') : formatAge(r.triggerAge.endMonths) })}
                     </p>
                   </div>
-                  <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="primary" size="sm">记录</Button>
+                  <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="primary" size="sm">{i18nText('Vaccine.page.record')}</Button>
                 </div>
               );
             })}
@@ -427,7 +447,7 @@ export default function VaccinePage() {
 
       {/* ── View toggle ──────────────────────────────────────── */}
       <div className="flex gap-1 rounded-full bg-[var(--nimi-action-ghost-hover)] p-1 mb-5 w-fit">
-        {([['timeline', '📋 时间轴'], ['list', '📊 列表']] as const).map(([k, l]) => (
+        {([['timeline', i18nText('Vaccine.tab.timeline')], ['list', i18nText('Vaccine.tab.list')]] as const).map(([k, l]) => (
           <button key={k} onClick={() => setActiveTab(k)}
             className={`px-4 py-1.5 text-[13px] font-medium rounded-full transition-all ${activeTab === k ? 'bg-[var(--nimi-surface-card)] text-[var(--nimi-text-primary)] shadow-[var(--nimi-elevation-base)]' : 'text-[var(--nimi-text-muted)]'}`}>
             {l}
@@ -454,8 +474,8 @@ export default function VaccinePage() {
 
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`text-[14px] font-bold ${isCurrent ? 'text-[var(--nimi-action-primary-bg)]' : 'text-[var(--nimi-text-primary)]'}`}>{bucket.label}</span>
-                  {isCurrent && <span className="text-[12px] px-2 py-0.5 rounded-full bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]">当前阶段</span>}
-                  {bucketComplete && <span className="text-[12px] px-2 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,var(--nimi-surface-card))] text-[var(--nimi-action-primary-bg)]">全部完成</span>}
+                  {isCurrent && <span className="text-[12px] px-2 py-0.5 rounded-full bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]">{i18nText('Vaccine.page.currentStage')}</span>}
+                  {bucketComplete && <span className="text-[12px] px-2 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,var(--nimi-surface-card))] text-[var(--nimi-action-primary-bg)]">{i18nText('Vaccine.page.stageComplete')}</span>}
                 </div>
 
                 <div className="space-y-1.5">
@@ -479,13 +499,13 @@ export default function VaccinePage() {
                             <VaccineClassBadge rule={r} />
                           </div>
                           <p className="text-[12px] truncate text-[var(--nimi-text-muted)]">
-                            {done && rec ? `${fmtDate(rec.vaccinatedAt)} 接种${rec.hospital ? ` · ${rec.hospital}` : ''}` : r.description}
+                            {done && rec ? i18nText('Vaccine.page.vaccinatedRecord', { date: fmtDate(rec.vaccinatedAt), hospital: rec.hospital ? ` · ${rec.hospital}` : '' }) : r.description}
                           </p>
                         </div>
                         {done ? (
-                          <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm" className="shrink-0">修改</Button>
+                          <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm" className="shrink-0">{i18nText('Vaccine.page.change')}</Button>
                         ) : (
-                          <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm" className="shrink-0">记录</Button>
+                          <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm" className="shrink-0">{i18nText('Vaccine.page.record')}</Button>
                         )}
                       </div>
                     );
@@ -497,12 +517,12 @@ export default function VaccinePage() {
         </div>
       )}
 
-      {/* ── List view — grouped by 一类 / 二类 ─────────────────── */}
+      {/* List view grouped by vaccine class. */}
       {activeTab === 'list' && (
         <div className="space-y-6">
           {([
-            { label: '一类疫苗', sub: '国家免疫规划 · 免费 · 必须接种', rules: class1Rules, done: class1Done },
-            { label: '二类疫苗', sub: '非免疫规划 · 自费 · 推荐接种', rules: class2Rules, done: class2Done },
+            { label: i18nText('Vaccine.page.classOneTitle'), sub: i18nText('Vaccine.classOneSub'), rules: class1Rules, done: class1Done },
+            { label: i18nText('Vaccine.page.classTwoTitle'), sub: i18nText('Vaccine.classTwoSub'), rules: class2Rules, done: class2Done },
           ] as const).map((group) => (
             <div key={group.label}>
               <div className="flex items-baseline gap-2 mb-2">
@@ -532,13 +552,13 @@ export default function VaccinePage() {
                         </div>
                         <p className="text-[12px] text-[var(--nimi-text-muted)]">
                           {done && rec ? fmtDate(rec.vaccinatedAt) : `${formatAge(r.triggerAge.startMonths)}-${r.triggerAge.endMonths === -1 ? '∞' : formatAge(r.triggerAge.endMonths)}`}
-                          {isOverdue && ' · 已过期'}
+                          {isOverdue && i18nText('Vaccine.page.expiredSuffix')}
                         </p>
                       </div>
                       {done ? (
-                        <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm">修改</Button>
+                        <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm">{i18nText('Vaccine.page.change')}</Button>
                       ) : (
-                        <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="primary" size="sm">记录</Button>
+                        <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="primary" size="sm">{i18nText('Vaccine.page.record')}</Button>
                       )}
                     </div>
                   );

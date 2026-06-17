@@ -23,6 +23,14 @@ export interface ReminderExplain {
   sources: readonly ReminderExplainSource[];
 }
 
+export type ReminderRepeatCadenceUnit = 'day' | 'week' | 'month';
+
+export interface ReminderRepeatRule {
+  cadenceUnit: ReminderRepeatCadenceUnit;
+  interval: number;
+  maxRepeats: number;
+}
+
 export interface ReminderRule {
   ruleId: string;
   domain: ReminderDomain;
@@ -35,7 +43,7 @@ export interface ReminderRule {
   priority: ReminderPriority;
   nurtureMode: { relaxed: ReminderVisibility; balanced: ReminderVisibility; advanced: ReminderVisibility };
   actionType: ActionType;
-  repeatRule?: { intervalMonths: number; maxRepeats: number };
+  repeatRule?: ReminderRepeatRule;
   explain?: ReminderExplain;
   expiryMonths?: number;
   tags?: readonly string[];
@@ -762,7 +770,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 12,
+      "cadenceUnit": "month",
+      "interval": 12,
       "maxRepeats": -1
     },
     "explain": {
@@ -1181,7 +1190,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 12,
+      "cadenceUnit": "month",
+      "interval": 12,
       "maxRepeats": 3
     },
     "explain": {
@@ -1410,7 +1420,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 6,
+      "cadenceUnit": "month",
+      "interval": 6,
       "maxRepeats": 4
     },
     "explain": {
@@ -1451,7 +1462,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 6,
+      "cadenceUnit": "month",
+      "interval": 6,
       "maxRepeats": -1
     },
     "explain": {
@@ -1533,7 +1545,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "record_data",
     "repeatRule": {
-      "intervalMonths": 0,
+      "cadenceUnit": "week",
+      "interval": 1,
       "maxRepeats": -1
     },
     "explain": {
@@ -1840,7 +1853,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 12,
+      "cadenceUnit": "month",
+      "interval": 12,
       "maxRepeats": 6
     },
     "explain": {
@@ -1882,7 +1896,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "record_data",
     "repeatRule": {
-      "intervalMonths": 1,
+      "cadenceUnit": "month",
+      "interval": 1,
       "maxRepeats": 12
     },
     "explain": {
@@ -1923,7 +1938,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "record_data",
     "repeatRule": {
-      "intervalMonths": 3,
+      "cadenceUnit": "month",
+      "interval": 3,
       "maxRepeats": 8
     },
     "explain": {
@@ -1964,7 +1980,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "record_data",
     "repeatRule": {
-      "intervalMonths": 6,
+      "cadenceUnit": "month",
+      "interval": 6,
       "maxRepeats": -1
     },
     "explain": {
@@ -3659,15 +3676,15 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     "ruleId": "PO-REM-PGRW-001",
     "domain": "growth",
     "category": "personalized",
-    "kind": "consult",
-    "title": "身高增速放缓提示",
-    "description": "连续两次测量显示身高增长速度明显低于同期参考范围，建议关注营养和运动状况。如持续偏离，建议咨询儿科医生。",
+    "kind": "task",
+    "title": "身高增速变化记录与儿科咨询",
+    "description": "连续两次测量显示身高增长速度低于已入库参考范围。请核对测量记录，并带客观数据咨询儿科或儿童保健专业人员。",
     "triggerAge": {
       "startMonths": 0,
       "endMonths": -1
     },
     "triggerCondition": {
-      "dataField": "growth_measurements.height.velocity",
+      "dataField": "health_record_values[growth.height].velocity",
       "operator": "trend_declining",
       "value": 2
     },
@@ -3677,16 +3694,16 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
       "balanced": "push",
       "advanced": "push"
     },
-    "actionType": "ai_consult",
+    "actionType": "go_hospital",
     "explain": {
-      "whyNow": "连续两次测量身高增速偏低，先理解数据再考虑专业咨询。",
+      "whyNow": "连续两次测量身高增速偏低时，最重要的是确认测量是否一致，并让专业人员结合体格检查判断。",
       "howTo": [
-        "打开 AI 顾问，让它基于孩子的生长曲线解读速率变化。",
-        "对照最近的营养摄入、睡眠、运动情况寻找可能原因。",
-        "决定是否需要预约儿科/内分泌科门诊。",
-        "咨询结论落到 ParentOS 的生长档案备注。"
+        "核对最近两次身高测量的日期、工具和测量姿势。",
+        "导出生长记录或截图，保留原始测量值。",
+        "预约儿科、儿童保健或内分泌相关门诊咨询。",
+        "将专业人员的结论和后续复查时间写入 ParentOS 生长档案备注。"
       ],
-      "doneWhen": "你已经通过 AI 顾问理解数据，并决定了下一步行动。",
+      "doneWhen": "专业咨询已完成，生长档案中记录了结论和下一次复查时间。",
       "sources": [
         {
           "citation": "WHO-growth-velocity-2009"
@@ -3702,15 +3719,15 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     "ruleId": "PO-REM-PGRW-002",
     "domain": "growth",
     "category": "personalized",
-    "kind": "consult",
-    "title": "体重增长异常提示",
-    "description": "体重百分位跨越两条主要百分位线（如从 P50 降至 P10），建议咨询医生排查原因。",
+    "kind": "task",
+    "title": "体重百分位变化记录与儿科咨询",
+    "description": "体重百分位跨越两条主要百分位线。请核对原始记录，并带数据咨询儿科或儿童保健专业人员。",
     "triggerAge": {
       "startMonths": 0,
       "endMonths": -1
     },
     "triggerCondition": {
-      "dataField": "growth_measurements.weight.percentile_shift",
+      "dataField": "health_record_values[growth.weight].percentile_shift",
       "operator": "gt",
       "value": 2
     },
@@ -3720,16 +3737,16 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
       "balanced": "push",
       "advanced": "push"
     },
-    "actionType": "ai_consult",
+    "actionType": "go_hospital",
     "explain": {
-      "whyNow": "体重百分位跨越两条主要线属于需要专业排查的信号，先理解数据再决定就诊路径。",
+      "whyNow": "体重百分位跨越两条主要线需要专业人员结合饮食、疾病史和体格检查判断，系统只负责提醒你带齐客观数据。",
       "howTo": [
-        "打开 AI 顾问，让它基于当前测量描述体重变化的客观事实。",
-        "回顾近期饮食、活动、疾病史是否与变化吻合。",
-        "讨论是否需要预约儿科就诊排查原因。",
-        "将咨询结论和后续行动记入档案。"
+        "核对最近体重测量的日期、秤具和记录单位。",
+        "整理近期饮食、活动和疾病史，作为就诊信息。",
+        "预约儿科或儿童保健门诊咨询。",
+        "将专业咨询结论和复查安排记入 ParentOS 档案。"
       ],
-      "doneWhen": "已理解数据含义并决定了就诊或继续观察的具体行动。",
+      "doneWhen": "专业咨询已完成，档案中有结论、复查时间或继续记录计划。",
       "sources": [
         {
           "citation": "WHO-growth-standards-2006"
@@ -3745,15 +3762,15 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     "ruleId": "PO-REM-PVIS-001",
     "domain": "vision",
     "category": "personalized",
-    "kind": "consult",
+    "kind": "task",
     "title": "远视储备消耗过快提示",
-    "description": "近两次远视储备测量值下降速度高于同龄参考值，近视风险升高。建议增加户外活动时间，减少近距离用眼。",
+    "description": "近两次远视储备测量值下降速度高于已入库参考阈值。请核对验光记录，并咨询眼科专业人员。",
     "triggerAge": {
       "startMonths": 36,
       "endMonths": 144
     },
     "triggerCondition": {
-      "dataField": "growth_measurements.hyperopia-reserve.velocity",
+      "dataField": "health_record_values[vision.left_axial_length|vision.right_axial_length].trend_delta",
       "operator": "trend_declining",
       "value": 2
     },
@@ -3763,16 +3780,16 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
       "balanced": "push",
       "advanced": "push"
     },
-    "actionType": "ai_consult",
+    "actionType": "go_hospital",
     "explain": {
-      "whyNow": "近两次远视储备下降过快，需要理解趋势并立即调整用眼/户外节奏。",
+      "whyNow": "屈光变化需要结合验光条件、眼轴、视力和医生检查判断，系统只提供趋势触发和记录闭环。",
       "howTo": [
-        "打开 AI 顾问，让它基于两次屈光数据描述变化斜率。",
-        "核对最近户外时间、近距离用眼时长。",
-        "讨论具体可行的户外增量和用眼规则。",
-        "在 ParentOS 户外目标中相应上调每周分钟数。"
+        "核对最近两次验光日期、验光方式和原始屈光数据。",
+        "同时带上眼轴、裸眼视力等已记录数据。",
+        "预约眼科或视光专业机构复核。",
+        "将专业结论和下一次复查日期写入 ParentOS 视力档案。"
       ],
-      "doneWhen": "你已调整了具体的户外/用眼计划，并与孩子达成共识。",
+      "doneWhen": "专业复核已完成，视力档案中记录了结论和复查日期。",
       "sources": [
         {
           "citation": "NHC-vision-2023"
@@ -3789,9 +3806,9 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     "ruleId": "PO-REM-PMLS-001",
     "domain": "language",
     "category": "personalized",
-    "kind": "consult",
+    "kind": "task",
     "title": "语言发育里程碑未达成提示",
-    "description": "孩子已超过该里程碑的典型达成月龄范围上限，且尚未记录达成。建议关注语言输入量，如持续未达成可咨询发育行为儿科医生。",
+    "description": "孩子已超过该里程碑的典型达成月龄范围上限，且尚未记录达成。请补充观察记录，并咨询儿童保健或发育行为儿科专业人员。",
     "triggerAge": {
       "startMonths": 9,
       "endMonths": 36
@@ -3807,16 +3824,16 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
       "balanced": "push",
       "advanced": "push"
     },
-    "actionType": "ai_consult",
+    "actionType": "go_hospital",
     "explain": {
-      "whyNow": "已超过典型达成月龄上限且未记录达成，需要先理解情况再决定行动。",
+      "whyNow": "里程碑未记录达成需要先区分漏记和真实未达成，再由专业人员结合现场评估判断。",
       "howTo": [
-        "打开 AI 顾问，描述孩子目前的语言表现和家庭输入习惯。",
-        "讨论可以立刻改善的家庭环境（共读、真实对话）。",
-        "判断是否需要预约发育行为儿科门诊。",
-        "将讨论结论记入档案。"
+        "先补录最近一周能观察到的语言表达样例。",
+        "核对该里程碑是否只是漏记。",
+        "预约儿童保健或发育行为儿科专业咨询。",
+        "将专业评估结论和后续观察要求写入 ParentOS 档案。"
       ],
-      "doneWhen": "已明确下一步是自行观察一段时间还是预约专业评估。",
+      "doneWhen": "专业咨询已完成，档案中记录了结论和后续观察要求。",
       "sources": [
         {
           "citation": "CDC-milestones-2022"
@@ -3832,9 +3849,9 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     "ruleId": "PO-REM-PINT-001",
     "domain": "interest",
     "category": "personalized",
-    "kind": "consult",
+    "kind": "practice",
     "title": "兴趣模式识别提示",
-    "description": "AI 分析观察日记发现孩子在某个领域持续表现出浓厚兴趣（同一智能倾向标签连续出现 5 次以上），可以考虑为这个兴趣提供更多探索机会。",
+    "description": "观察日记中同一兴趣标签连续出现 5 次以上，适合安排一次低成本探索，并继续记录孩子的真实投入。",
     "triggerAge": {
       "startMonths": 36,
       "endMonths": -1
@@ -3850,16 +3867,16 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
       "balanced": "silent",
       "advanced": "push"
     },
-    "actionType": "ai_consult",
+    "actionType": "observe",
     "explain": {
-      "whyNow": "AI 在日记中识别到一个持续兴趣信号，适合咨询讨论如何扩展或深化。",
+      "whyNow": "同一兴趣标签多次出现说明孩子可能正在形成稳定偏好，下一步应先给一次具体探索机会，而不是立即长期投入。",
       "howTo": [
-        "打开 AI 顾问查看识别出的兴趣标签及其出现上下文。",
-        "讨论哪些资源、活动能延展这个兴趣而不过度主导。",
-        "设定一个月内的小尝试（新书、新活动、新同伴）。",
-        "在 ParentOS 日记里标记尝试结果。"
+        "回看最近 5 条相关兴趣观察，确认场景是否一致。",
+        "安排一次低成本探索（新书、新活动、新同伴或一次试课）。",
+        "观察孩子是否主动要求继续，而不是只完成家长安排。",
+        "在 ParentOS 日记里记录尝试结果。"
       ],
-      "doneWhen": "你已经和 AI 顾问确定了一个具体、短期、可执行的延展尝试。",
+      "doneWhen": "已完成一次低成本探索，并记录了孩子是否主动延续兴趣。",
       "sources": [
         {
           "citation": "ParentOS-methodology"
@@ -3890,7 +3907,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 12,
+      "cadenceUnit": "month",
+      "interval": 12,
       "maxRepeats": 8
     },
     "explain": {
@@ -3932,7 +3950,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 12,
+      "cadenceUnit": "month",
+      "interval": 12,
       "maxRepeats": 3
     },
     "explain": {
@@ -3975,7 +3994,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 1,
+      "cadenceUnit": "month",
+      "interval": 1,
       "maxRepeats": 96
     },
     "explain": {
@@ -4021,7 +4041,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 3,
+      "cadenceUnit": "month",
+      "interval": 3,
       "maxRepeats": 32
     },
     "explain": {
@@ -4063,7 +4084,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "record_data",
     "repeatRule": {
-      "intervalMonths": 12,
+      "cadenceUnit": "month",
+      "interval": 12,
       "maxRepeats": 12
     },
     "explain": {
@@ -4105,7 +4127,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "record_data",
     "repeatRule": {
-      "intervalMonths": 3,
+      "cadenceUnit": "month",
+      "interval": 3,
       "maxRepeats": 48
     },
     "explain": {
@@ -4150,7 +4173,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "record_data",
     "repeatRule": {
-      "intervalMonths": 6,
+      "cadenceUnit": "month",
+      "interval": 6,
       "maxRepeats": 16
     },
     "explain": {
@@ -4194,7 +4218,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "record_data",
     "repeatRule": {
-      "intervalMonths": 6,
+      "cadenceUnit": "month",
+      "interval": 6,
       "maxRepeats": 14
     },
     "explain": {
@@ -4446,7 +4471,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 6,
+      "cadenceUnit": "month",
+      "interval": 6,
       "maxRepeats": -1
     },
     "tags": [
@@ -4478,7 +4504,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 6,
+      "cadenceUnit": "month",
+      "interval": 6,
       "maxRepeats": -1
     },
     "tags": [
@@ -4510,7 +4537,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 12,
+      "cadenceUnit": "month",
+      "interval": 12,
       "maxRepeats": -1
     },
     "tags": [
@@ -4542,7 +4570,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 6,
+      "cadenceUnit": "month",
+      "interval": 6,
       "maxRepeats": -1
     },
     "tags": [
@@ -4574,7 +4603,8 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
     },
     "actionType": "go_hospital",
     "repeatRule": {
-      "intervalMonths": 6,
+      "cadenceUnit": "month",
+      "interval": 6,
       "maxRepeats": -1
     },
     "tags": [

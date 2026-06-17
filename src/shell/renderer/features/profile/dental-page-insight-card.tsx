@@ -1,11 +1,13 @@
 import { Surface } from '@nimiplatform/kit/ui';
 import { useMemo } from 'react';
-import type { ReactNode } from 'react';
 import type { DentalRecordRow } from '../../bridge/sqlite-bridge.js';
+import { REMINDER_RULES } from '../../knowledge-base/index.js';
 import {
   computeDentalOverviewStates,
   parseDentalToothIds,
 } from './dental-page-domain.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 interface DentalInsightCardProps {
   childName: string;
@@ -39,7 +41,15 @@ const CHIP_CLASSES: Record<ChipTone, { chip: string; dot: string }> = {
   },
 };
 
-const CN_MONTHS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+const DENTAL_CHECKUP_INTERVAL_MONTHS = requiredDentalFollowupIntervalMonths('PO-DEN-FOLLOWUP-CHECKUP');
+
+function requiredDentalFollowupIntervalMonths(ruleId: string) {
+  const rule = REMINDER_RULES.find((candidate) => candidate.ruleId === ruleId);
+  if (!rule?.repeatRule || rule.repeatRule.cadenceUnit !== 'month') {
+    throw new Error(`Dental insight requires ${ruleId} to resolve to a month-cadence reminder rule`);
+  }
+  return rule.repeatRule.interval;
+}
 
 function isPermanentId(id: string): boolean {
   const n = Number(id);
@@ -73,7 +83,7 @@ export function DentalInsightCard({ childName, ageLabel, records }: DentalInsigh
       .at(-1);
     const nextCheckDate = (() => {
       const base = latestCheckup ? new Date(latestCheckup) : new Date();
-      base.setMonth(base.getMonth() + 6);
+      base.setMonth(base.getMonth() + DENTAL_CHECKUP_INTERVAL_MONTHS);
       return base;
     })();
 
@@ -98,39 +108,35 @@ export function DentalInsightCard({ childName, ageLabel, records }: DentalInsigh
 
   const chips: Chip[] = [];
   if (stats.concernPosition && stats.concernKind === 'lost_waiting') {
-    chips.push({ label: `关注 ${stats.concernPosition} 号牙 · 已脱落待恒牙`, tone: 'warn' });
+    chips.push({ label: i18nText('Dental.insight.chip.lostWaiting', { toothId: stats.concernPosition }), tone: 'warn' });
   } else if (stats.concernPosition && stats.concernKind === 'caries') {
-    chips.push({ label: `关注 ${stats.concernPosition} 号牙 · 龋齿`, tone: 'alert' });
+    chips.push({ label: i18nText('Dental.insight.chip.caries', { toothId: stats.concernPosition }), tone: 'alert' });
   } else if (stats.eruptedCount > 0) {
-    chips.push({ label: '整体状态平稳', tone: 'ok' });
+    chips.push({ label: i18nText('Dental.insight.chip.stable'), tone: 'ok' });
   }
-  chips.push({ label: `下次检查 · 建议 ${CN_MONTHS[stats.nextCheckMonth - 1]} 月`, tone: 'info' });
+  chips.push({ label: i18nText('Dental.insight.chip.nextCheckMonth', { month: stats.nextCheckMonth }), tone: 'info' });
   chips.push({
-    label: stats.hasCleaning ? '维持扫牙习惯' : stats.hasFluoride ? '保持涂氟节奏' : '建议养成扫牙习惯',
+    label: stats.hasCleaning
+      ? i18nText('Dental.insight.chip.keepCleaningHabit')
+      : stats.hasFluoride
+        ? i18nText('Dental.insight.chip.keepFluorideCadence')
+        : i18nText('Dental.insight.chip.buildCleaningHabit'),
     tone: 'ok',
   });
 
-  const paragraph1: ReactNode = stats.eruptedCount === 0 ? (
-    <>尚未记录萌出信息，补充记录后可生成更完整的口腔发育画像。</>
-  ) : (
-    <>
-      {childName} 在 {ageLabel} 时已萌出 <strong className="font-semibold">{stats.eruptedCount} 颗牙</strong>，
-      其中恒牙 <strong className="font-semibold">{stats.permanentPresent}</strong> 颗、
-      乳牙 <strong className="font-semibold">{stats.primaryPresent}</strong> 颗在位。
-    </>
-  );
+  const paragraph1 = stats.eruptedCount === 0
+    ? i18nText('Dental.insight.emptyEruptionInfo')
+    : i18nText('Dental.insight.eruptionSummary', {
+        childName,
+        ageLabel,
+        eruptedCount: stats.eruptedCount,
+        permanentPresent: stats.permanentPresent,
+        primaryPresent: stats.primaryPresent,
+      });
 
-  const paragraph2: ReactNode = stats.cariesCount > 0 ? (
-    <>
-      当前龋齿 <strong className="font-semibold">{stats.cariesCount}</strong> 处，
-      建议<strong className="font-semibold">及时随访治疗</strong>。
-    </>
-  ) : (
-    <>
-      龋齿情况为 <strong className="font-semibold">0</strong>，
-      口腔整体发育处于 <strong className="font-semibold">正常范围</strong>。
-    </>
-  );
+  const paragraph2 = stats.cariesCount > 0
+    ? i18nText('Dental.insight.cariesSummary', { cariesCount: stats.cariesCount })
+    : i18nText('Dental.insight.noCariesSummary');
 
   return (
     <Surface
@@ -149,9 +155,11 @@ export function DentalInsightCard({ childName, ageLabel, records }: DentalInsigh
               <path d="M19 15l.9 2.1 2.1.9-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z" />
             </svg>
           </span>
-          <span className="text-[12px] font-semibold tracking-normal text-[var(--nimi-text-primary)]">AI 观察</span>
+          <span className="text-[12px] font-semibold tracking-normal text-[var(--nimi-text-primary)]">
+            {i18nText('Dental.insight.aiObservation')}
+          </span>
           <span className="text-[11px] text-[var(--nimi-text-muted)]">
-            基于 <span className="font-mono">{stats.totalRecords}</span> 条记录 · {ageLabel}
+            {i18nText('Dental.insight.recordContext', { totalRecords: stats.totalRecords, ageLabel })}
           </span>
         </div>
       </div>

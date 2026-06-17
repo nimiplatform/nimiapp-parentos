@@ -39,14 +39,30 @@ import {
   isRecordDataReminder,
   type RecordDataReminderSelection,
 } from './record-data-capture.js';
+import { i18nText } from '../../i18n/index.js';
+
 
 const textPrimaryClass = 'text-[var(--nimi-text-primary)]';
 const textMutedClass = 'text-[var(--nimi-text-muted)]';
 
-const DOMAIN_LABELS: Record<string, string> = {
-  vaccine: '疫苗', growth: '生长', vision: '视力', dental: '口腔', sleep: '睡眠',
-  'bone-age': '骨龄', checkup: '体检', nutrition: '营养', safety: '安全', language: '语言', motor: '运动',
+const DOMAIN_LABEL_KEYS: Record<string, string> = {
+  vaccine: 'Reminders.domain.vaccine',
+  growth: 'Reminders.domain.growth',
+  vision: 'Reminders.domain.vision',
+  dental: 'Reminders.domain.dental',
+  sleep: 'Reminders.domain.sleep',
+  'bone-age': 'Reminders.domain.boneAge',
+  checkup: 'Reminders.domain.checkup',
+  nutrition: 'Reminders.domain.nutrition',
+  safety: 'Reminders.domain.safety',
+  language: 'Reminders.domain.language',
+  motor: 'Reminders.domain.motor',
 };
+
+function domainLabel(domain: string): string {
+  const key = DOMAIN_LABEL_KEYS[domain];
+  return key ? i18nText(key) : domain;
+}
 
 function useReminderStates(childId: string | null) {
   const [states, setStates] = useState<ReminderState[]>([]);
@@ -82,34 +98,46 @@ function primaryAction(reminder: ActiveReminder): ReminderPrimaryAction {
   // W5 will replace these Link primaries with drawer-driven actions per PO-REMI-011.
   // For W4a we only normalize the kind dispatch to the new 4-kind taxonomy.
   if (reminder.kind === 'guide' || reminder.kind === 'practice') {
-    return { label: '打开笔记', to: `/journal?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}` };
+    return { label: i18nText('Reminders.action.openNote'), to: `/journal?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}` };
   }
   if (reminder.kind === 'consult') {
-    return { label: '问问 AI 顾问', to: `/advisor?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}` };
+    return { label: i18nText('Reminders.action.askAdvisor'), to: `/advisor?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}` };
   }
-  if (reminder.rule.domain === 'vaccine') return { label: '记录疫苗', to: domainDetailRoute(reminder.rule.domain) };
-  if (isRecordDataReminder(reminder)) return { label: '记录数据', kind: 'capture' };
-  if (reminder.rule.domain === 'growth') return { label: '记录数据', to: domainDetailRoute(reminder.rule.domain) };
-  return { label: reminder.rule.actionType === 'go_hospital' ? '查看详情' : '查看档案', to: domainDetailRoute(reminder.rule.domain) };
+  if (reminder.rule.domain === 'vaccine') return { label: i18nText('Reminders.action.recordVaccine'), to: domainDetailRoute(reminder.rule.domain) };
+  if (isRecordDataReminder(reminder)) return { label: i18nText('Reminders.action.recordData'), kind: 'capture' };
+  if (reminder.rule.domain === 'growth') return { label: i18nText('Reminders.action.recordData'), to: domainDetailRoute(reminder.rule.domain) };
+  return { label: reminder.rule.actionType === 'go_hospital' ? i18nText('Reminders.action.viewDetails') : i18nText('Reminders.action.viewProfile'), to: domainDetailRoute(reminder.rule.domain) };
 }
 
 function statusLabel(reminder: ActiveReminder) {
   switch (reminder.lifecycle) {
-    case 'completed': return '已完成';
-    case 'scheduled': return reminder.state?.scheduledDate ? `已安排 ${reminder.state.scheduledDate}` : '已安排';
-    case 'snoozed': return reminder.state?.snoozedUntil ? `已推迟至 ${reminder.state.snoozedUntil}` : '已推迟';
-    case 'overdue': return reminder.overdueDays > 0 ? `逾期${reminder.overdueDays}天` : '已逾期';
-    case 'due': return '今天到期';
-    default: return reminder.daysUntilStart > 0 ? `${reminder.daysUntilStart}天后开始` : '本周';
+    case 'completed': return i18nText('Reminders.status.completed');
+    case 'scheduled': return reminder.state?.scheduledDate
+      ? i18nText('Reminders.status.scheduledDate', { date: reminder.state.scheduledDate })
+      : i18nText('Reminders.status.scheduled');
+    case 'snoozed': return reminder.state?.snoozedUntil
+      ? i18nText('Reminders.status.snoozedUntil', { date: reminder.state.snoozedUntil })
+      : i18nText('Reminders.status.snoozed');
+    case 'overdue': return reminder.overdueDays > 0
+      ? i18nText('Reminders.status.overdueDays', { days: reminder.overdueDays })
+      : i18nText('Reminders.status.overdue');
+    case 'due': return i18nText('Reminders.status.dueToday');
+    default: return reminder.daysUntilStart > 0
+      ? i18nText('Reminders.status.startsInDays', { days: reminder.daysUntilStart })
+      : i18nText('Reminders.status.thisWeek');
   }
 }
 
 function historyLabel(item: ReminderHistoryItem) {
   switch (item.historyType) {
-    case 'completed': return '已完成';
-    case 'scheduled': return item.state?.scheduledDate ? `已安排 ${item.state.scheduledDate}` : '已安排';
-    case 'snoozed': return item.state?.snoozedUntil ? `已推迟至 ${item.state.snoozedUntil}` : '已推迟';
-    case 'not_applicable': return '不适用';
+    case 'completed': return i18nText('Reminders.status.completed');
+    case 'scheduled': return item.state?.scheduledDate
+      ? i18nText('Reminders.status.scheduledDate', { date: item.state.scheduledDate })
+      : i18nText('Reminders.status.scheduled');
+    case 'snoozed': return item.state?.snoozedUntil
+      ? i18nText('Reminders.status.snoozedUntil', { date: item.state.snoozedUntil })
+      : i18nText('Reminders.status.snoozed');
+    case 'not_applicable': return i18nText('Reminders.status.notApplicable');
   }
 }
 
@@ -147,11 +175,11 @@ function SectionCard({ title, hint, count, children, collapsible = false, defaul
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {typeof count === 'number' && (
-            <StatusBadge tone="neutral" className="shrink-0">{count} 项</StatusBadge>
+            <StatusBadge tone="neutral" className="shrink-0">{i18nText('Reminders.page.itemCount', { count })}</StatusBadge>
           )}
           {collapsible && (
             <Button type="button" tone="ghost" size="sm" onClick={() => setCollapsed((v) => !v)} className="gap-1 px-2.5 py-1 text-[12px]">
-              <span>{collapsed ? '展开' : '收起'}</span>
+              <span>{collapsed ? i18nText('Reminders.action.expand') : i18nText('Reminders.action.collapse')}</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                 className={cn('transition-transform duration-200', collapsed ? 'rotate-0' : 'rotate-180')}>
                 <path d="M6 9l6 6 6-6" />
@@ -179,9 +207,9 @@ function TodayHero({
   if (!reminder) {
     return (
       <Surface material="glass-thin" tone="card" padding="none" className="rounded-2xl p-6">
-        <StatusBadge tone="success" shape="dot">今日</StatusBadge>
-        <h2 className={cn('mt-3 text-[24px] font-semibold tracking-tight', textPrimaryClass)}>今天没有待办</h2>
-        <p className={cn('mt-2 text-[14px] leading-relaxed', textMutedClass)}>当前没有需要立即处理的事项。</p>
+        <StatusBadge tone="success" shape="dot">{i18nText('Reminders.page.todayBadge')}</StatusBadge>
+        <h2 className={cn('mt-3 text-[24px] font-semibold tracking-tight', textPrimaryClass)}>{i18nText('Reminders.page.noTodayTitle')}</h2>
+        <p className={cn('mt-2 text-[14px] leading-relaxed', textMutedClass)}>{i18nText('Reminders.page.noTodayDescription')}</p>
       </Surface>
     );
   }
@@ -189,7 +217,7 @@ function TodayHero({
   const canComplete = canDirectlyCompleteReminder(reminder);
   return (
     <Surface material="glass-thin" tone="card" padding="none" className="rounded-2xl p-6">
-      <StatusBadge tone="success" shape="dot">今日</StatusBadge>
+      <StatusBadge tone="success" shape="dot">{i18nText('Reminders.page.todayBadge')}</StatusBadge>
       <h2 className={cn('mt-3 text-[24px] font-semibold tracking-tight', textPrimaryClass)}>{reminder.rule.title}</h2>
       <p className={cn('mt-2 text-[14px] leading-relaxed', textMutedClass)}>{statusLabel(reminder)}</p>
       <div className="flex flex-wrap items-center gap-2 mt-5">
@@ -203,7 +231,7 @@ function TodayHero({
           </Button>
         )}
         {canComplete && (
-          <Button type="button" tone="secondary" size="md" onClick={() => onComplete(reminder)}>标记完成</Button>
+          <Button type="button" tone="secondary" size="md" onClick={() => onComplete(reminder)}>{i18nText('Reminders.action.markComplete')}</Button>
         )}
       </div>
     </Surface>
@@ -223,14 +251,16 @@ function ReminderRow({ reminder, onOpenDetail, onComplete, onSnooze, onSchedule,
   onOpenCapture: (r: ActiveReminder) => void;
 }) {
   const primary = primaryAction(reminder);
-  const domain = DOMAIN_LABELS[reminder.rule.domain] ?? reminder.rule.domain;
+  const domain = domainLabel(reminder.rule.domain);
   const isOverdue = reminder.lifecycle === 'overdue';
   // For non-task kinds, trim the inline description; the drawer owns the full
   // explain rendering (whyNow / howTo / doneWhen / sources) per PO-REMI-011.
   const shortDescription = reminder.kind === 'task'
     ? reminder.rule.description
     : reminder.rule.explain?.whyNow ?? reminder.rule.description;
-  const completeLabel = reminder.kind === 'task' ? '完成' : '我已了解';
+  const completeLabel = reminder.kind === 'task'
+    ? i18nText('Reminders.action.complete')
+    : i18nText('Reminders.action.acknowledged');
   const canComplete = canDirectlyCompleteReminder(reminder);
 
   return (
@@ -247,7 +277,7 @@ function ReminderRow({ reminder, onOpenDetail, onComplete, onSnooze, onSchedule,
       </div>
       <div className="flex flex-wrap gap-2 mt-4">
         <Button type="button" tone="primary" size="sm" onClick={() => onOpenDetail(reminder)}>
-          查看详情
+          {i18nText('Reminders.action.viewDetails')}
         </Button>
         {primary.kind === 'capture' ? (
           <Button type="button" tone="secondary" size="sm" onClick={() => onOpenCapture(reminder)}>
@@ -261,15 +291,15 @@ function ReminderRow({ reminder, onOpenDetail, onComplete, onSnooze, onSchedule,
         {canComplete && (
           <Button type="button" tone="secondary" size="sm" onClick={() => onComplete(reminder)}>{completeLabel}</Button>
         )}
-        <Button type="button" tone="ghost" size="sm" onClick={() => onSnooze(reminder)}>推迟</Button>
+        <Button type="button" tone="ghost" size="sm" onClick={() => onSnooze(reminder)}>{i18nText('Reminders.action.snooze')}</Button>
         {reminder.kind === 'task' && (
-          <Button type="button" tone="ghost" size="sm" onClick={() => onSchedule(reminder)}>安排</Button>
+          <Button type="button" tone="ghost" size="sm" onClick={() => onSchedule(reminder)}>{i18nText('Reminders.action.schedule')}</Button>
         )}
         {canMarkNotApplicable(reminder) && (
-          <Button type="button" tone="danger" size="sm" onClick={() => onNotApplicable(reminder)}>不适用</Button>
+          <Button type="button" tone="danger" size="sm" onClick={() => onNotApplicable(reminder)}>{i18nText('Reminders.action.notApplicable')}</Button>
         )}
         {reminder.rule.repeatRule && (
-          <Button type="button" tone="ghost" size="sm" onClick={() => onAdjustFrequency(reminder)}>调整</Button>
+          <Button type="button" tone="ghost" size="sm" onClick={() => onAdjustFrequency(reminder)}>{i18nText('Reminders.action.adjust')}</Button>
         )}
       </div>
     </Surface>
@@ -338,7 +368,7 @@ export default function RemindersPage() {
 
   const handleSchedule = useCallback((reminder: ActiveReminder) => {
     const suggestion = reminder.state?.scheduledDate ?? localToday;
-    const scheduledDate = window.prompt('安排日期 (YYYY-MM-DD)', suggestion);
+    const scheduledDate = window.prompt(i18nText('Reminders.page.schedulePrompt'), suggestion);
     if (!scheduledDate) return;
     void handleAction(reminder, 'schedule', scheduledDate);
   }, [handleAction, localToday]);
@@ -362,11 +392,11 @@ export default function RemindersPage() {
     return (
       <div className="flex h-full items-center justify-center px-6">
         <EmptyState
-          title="尚未选择孩子"
-          description="选择孩子后即可查看对应的提醒中心。"
+          title={i18nText('Reminders.page.noChildTitle')}
+          description={i18nText('Reminders.page.noChildDescription')}
           action={(
             <Button asChild tone="secondary" size="sm">
-              <Link to="/timeline">返回首页</Link>
+              <Link to="/timeline">{i18nText('Reminders.action.backHome')}</Link>
             </Button>
           )}
         />
@@ -378,12 +408,12 @@ export default function RemindersPage() {
     return (
       <div className="flex h-full items-center justify-center px-6">
         <InlineAlert tone="danger" className="max-w-2xl">
-          <p className="font-semibold">提醒目录不完整</p>
+          <p className="font-semibold">{i18nText('Reminders.page.unknownRuleTitle')}</p>
           <p className="mt-1 text-[14px]">
-          发现数据库中存在未登记的 ruleId：{agendaResult.ruleIds.join('、')}
+            {i18nText('Reminders.page.unknownRuleIds', { ruleIds: agendaResult.ruleIds.join(i18nText('Common.list.separator')) })}
           </p>
           <p className="mt-1 text-[14px]">
-          为保护数据不被误读，提醒页面已按 PO-TIME-007 fail-close。重启 ParentOS 即可触发 schema v17 自动清理这些游离记录；如果重启后仍有未登记的 ruleId，请联系开发修复规则目录。
+            {i18nText('Reminders.page.unknownRuleFailClose')}
           </p>
         </InlineAlert>
       </div>
@@ -393,7 +423,7 @@ export default function RemindersPage() {
   if (loading || customTodosLoading || !agenda) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className={cn('text-sm', textMutedClass)}>加载中...</p>
+        <p className={cn('text-sm', textMutedClass)}>{i18nText('Reminders.page.loading')}</p>
       </div>
     );
   }
@@ -404,14 +434,14 @@ export default function RemindersPage() {
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button asChild tone="ghost" size="sm" className="aspect-square px-0">
-            <Link to="/timeline" aria-label="返回首页">
+            <Link to="/timeline" aria-label={i18nText('Reminders.action.backHome')}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             </Link>
           </Button>
           <div>
-            <h1 className={cn('text-[24px] font-semibold tracking-tight', textPrimaryClass)}>提醒中心</h1>
+            <h1 className={cn('text-[24px] font-semibold tracking-tight', textPrimaryClass)}>{i18nText('Reminders.page.title')}</h1>
             <p className={cn('mt-1 text-[14px]', textMutedClass)}>
-              今天 {agenda.todayFocus.length} 项，近期 {agenda.upcoming.length} 项，历史 {agenda.history.length} 项
+              {i18nText('Reminders.page.subtitle', { today: agenda.todayFocus.length, upcoming: agenda.upcoming.length, history: agenda.history.length })}
             </p>
           </div>
         </div>
@@ -425,19 +455,19 @@ export default function RemindersPage() {
               onOpenCapture={openRecordDataCapture}
             />
             <div className="grid grid-cols-1 gap-4">
-              {agenda.p0Overflow.count > 0 && <SummaryTile label="更多重要" value={String(agenda.p0Overflow.count)} hint="超出首屏的高优先级提醒。" tone="warning" />}
-              {agenda.onboardingCatchup.count > 0 && <SummaryTile label="历史补录" value={String(agenda.onboardingCatchup.count)} hint="在档案创建前已过期的事项。" tone="info" />}
-              <SummaryTile label="今天" value={String(agenda.todayFocus.length)} hint="今天值得处理的事项。" tone="success" />
-              <SummaryTile label="近期" value={String(agenda.upcoming.length)} hint="近期重要，但不急于今天。" tone="info" />
-              <SummaryTile label="逾期汇总" value={String(agenda.overdueSummary.count)} hint="较早的逾期事项折叠在这里。" tone="danger" />
+              {agenda.p0Overflow.count > 0 && <SummaryTile label={i18nText('Reminders.page.summary.p0Overflow.label')} value={String(agenda.p0Overflow.count)} hint={i18nText('Reminders.page.summary.p0Overflow.hint')} tone="warning" />}
+              {agenda.onboardingCatchup.count > 0 && <SummaryTile label={i18nText('Reminders.page.summary.catchup.label')} value={String(agenda.onboardingCatchup.count)} hint={i18nText('Reminders.page.summary.catchup.hint')} tone="info" />}
+              <SummaryTile label={i18nText('Reminders.page.summary.today.label')} value={String(agenda.todayFocus.length)} hint={i18nText('Reminders.page.summary.today.hint')} tone="success" />
+              <SummaryTile label={i18nText('Reminders.page.summary.upcoming.label')} value={String(agenda.upcoming.length)} hint={i18nText('Reminders.page.summary.upcoming.hint')} tone="info" />
+              <SummaryTile label={i18nText('Reminders.page.summary.overdue.label')} value={String(agenda.overdueSummary.count)} hint={i18nText('Reminders.page.summary.overdue.hint')} tone="danger" />
             </div>
           </div>
         </Surface>
 
         {/* Today */}
-        <SectionCard count={agenda.todayFocus.length} title="今日事项" hint="默认折叠，需要时再展开查看今天的完整事项和操作。" collapsible defaultCollapsed>
+        <SectionCard count={agenda.todayFocus.length} title={i18nText('Reminders.page.section.today.title')} hint={i18nText('Reminders.page.section.today.hint')} collapsible defaultCollapsed>
           <div className="space-y-4">
-            {agenda.todayFocus.length === 0 ? <p className={cn('text-[14px]', textMutedClass)}>今天没有需要立即处理的事项。</p>
+            {agenda.todayFocus.length === 0 ? <p className={cn('text-[14px]', textMutedClass)}>{i18nText('Reminders.page.empty.today')}</p>
             : agenda.todayFocus.map((r) => (
               <ReminderRow key={`${r.rule.ruleId}-${r.repeatIndex}`} reminder={r}
                 onOpenDetail={setActiveReminder}
@@ -449,7 +479,7 @@ export default function RemindersPage() {
         </SectionCard>
 
         {agenda.p0Overflow.count > 0 && (
-          <SectionCard count={agenda.p0Overflow.count} title="更多重要事项" hint="高优先级事项始终可见，超出首屏容量后折叠到这里。">
+          <SectionCard count={agenda.p0Overflow.count} title={i18nText('Reminders.page.section.p0Overflow.title')} hint={i18nText('Reminders.page.section.p0Overflow.hint')}>
             <div className="space-y-4">
               {agenda.p0Overflow.items.map((r) => (
                 <ReminderRow key={`p0-${r.rule.ruleId}-${r.repeatIndex}`} reminder={r}
@@ -463,7 +493,7 @@ export default function RemindersPage() {
         )}
 
         {agenda.onboardingCatchup.count > 0 && (
-          <SectionCard count={agenda.onboardingCatchup.count} title="历史补录" hint="这些提醒在档案创建前已过期，不会进入主待办列表。">
+          <SectionCard count={agenda.onboardingCatchup.count} title={i18nText('Reminders.page.section.catchup.title')} hint={i18nText('Reminders.page.section.catchup.hint')}>
             <div className="space-y-4">
               {agenda.onboardingCatchup.items.map((r) => (
                 <ReminderRow key={`cold-${r.rule.ruleId}-${r.repeatIndex}`} reminder={r}
@@ -477,9 +507,9 @@ export default function RemindersPage() {
         )}
 
         {/* Upcoming */}
-        <SectionCard count={agenda.upcoming.length} title="近期" hint="近期值得关注的事项和阶段指导。">
+        <SectionCard count={agenda.upcoming.length} title={i18nText('Reminders.page.section.upcoming.title')} hint={i18nText('Reminders.page.section.upcoming.hint')}>
           <div className="space-y-4">
-            {agenda.upcoming.length === 0 ? <p className={cn('text-[14px]', textMutedClass)}>近期没有新的事项需要安排。</p>
+            {agenda.upcoming.length === 0 ? <p className={cn('text-[14px]', textMutedClass)}>{i18nText('Reminders.page.empty.upcoming')}</p>
             : agenda.upcoming.map((r) => (
               <ReminderRow key={`${r.rule.ruleId}-${r.repeatIndex}`} reminder={r}
                 onOpenDetail={setActiveReminder}
@@ -491,9 +521,9 @@ export default function RemindersPage() {
         </SectionCard>
 
         {/* History */}
-        <SectionCard count={agenda.history.length} title="历史记录" hint="已完成、已安排、已推迟和不适用的提醒都在这里。">
+        <SectionCard count={agenda.history.length} title={i18nText('Reminders.page.section.history.title')} hint={i18nText('Reminders.page.section.history.hint')}>
           <div className="space-y-3">
-            {agenda.history.length === 0 ? <p className={cn('text-[14px]', textMutedClass)}>暂无提醒历史。</p>
+            {agenda.history.length === 0 ? <p className={cn('text-[14px]', textMutedClass)}>{i18nText('Reminders.page.empty.history')}</p>
             : agenda.history.map((item) => (
               <Surface key={`${item.rule.ruleId}-${item.repeatIndex}`} material="glass-thin" tone="card" padding="none" className="flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
                 <div className="min-w-0">
@@ -502,9 +532,9 @@ export default function RemindersPage() {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {item.historyType === 'completed' && (
-                    <Button type="button" tone="secondary" size="sm" onClick={() => void handleAction(item, 'restore')}>恢复待办</Button>
+                    <Button type="button" tone="secondary" size="sm" onClick={() => void handleAction(item, 'restore')}>{i18nText('Reminders.action.restoreTodo')}</Button>
                   )}
-                  <StatusBadge tone="neutral">{DOMAIN_LABELS[item.rule.domain] ?? item.rule.domain}</StatusBadge>
+                  <StatusBadge tone="neutral">{domainLabel(item.rule.domain)}</StatusBadge>
                 </div>
               </Surface>
             ))}
@@ -513,20 +543,22 @@ export default function RemindersPage() {
 
         {/* Custom todos history */}
         {completedCustomTodos.length > 0 && (
-          <SectionCard count={completedCustomTodos.length} title="日常待办记录" hint="这里收纳你手动添加并已完成的日常待办。">
+          <SectionCard count={completedCustomTodos.length} title={i18nText('Reminders.page.section.customTodos.title')} hint={i18nText('Reminders.page.section.customTodos.hint')}>
             <div className="space-y-3">
               {completedCustomTodos.map((todo) => (
                 <Surface key={todo.todoId} material="glass-thin" tone="card" padding="none" className="flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
                   <div className="min-w-0">
                     <p className={cn('text-[14px] font-medium [overflow-wrap:anywhere]', textPrimaryClass)}>{todo.title}</p>
                     <p className={cn('mt-1 text-[13px]', textMutedClass)}>
-                      {formatDateLabel(todo.completedAt) ? `已完成 ${formatDateLabel(todo.completedAt)}` : '已完成'}
-                      {todo.dueDate ? ` · 截止 ${todo.dueDate}` : ''}
+                      {formatDateLabel(todo.completedAt)
+                        ? i18nText('Reminders.page.customCompletedAt', { date: formatDateLabel(todo.completedAt) })
+                        : i18nText('Reminders.page.customCompletedFallback')}
+                      {todo.dueDate ? i18nText('Reminders.page.customDueDate', { date: todo.dueDate }) : ''}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <Button type="button" tone="secondary" size="sm" onClick={() => void handleRestoreCustomTodo(todo.todoId)}>恢复待办</Button>
-                    <Button type="button" tone="ghost" size="sm" onClick={() => void handleDeleteCustomTodo(todo.todoId)}>删除</Button>
+                    <Button type="button" tone="secondary" size="sm" onClick={() => void handleRestoreCustomTodo(todo.todoId)}>{i18nText('Reminders.action.restoreTodo')}</Button>
+                    <Button type="button" tone="ghost" size="sm" onClick={() => void handleDeleteCustomTodo(todo.todoId)}>{i18nText('Reminders.action.delete')}</Button>
                   </div>
                 </Surface>
               ))}
@@ -559,10 +591,10 @@ export default function RemindersPage() {
         />
       ) : null}
 
-      {freqModalReminder && child && freqModalReminder.rule.repeatRule && (
+      {freqModalReminder && child && freqModalReminder.rule.repeatRule?.cadenceUnit === 'month' && (
         <FrequencyModal
           childId={child.childId} ruleId={freqModalReminder.rule.ruleId} ruleTitle={freqModalReminder.rule.title}
-          currentIntervalMonths={freqModalReminder.rule.repeatRule.intervalMonths} existingOverride={null}
+          currentIntervalMonths={freqModalReminder.rule.repeatRule.interval} existingOverride={null}
           canDisable={freqModalReminder.rule.priority !== 'P0'}
           onSaved={() => { void reload(); void reloadFreqOverrides(); }} onClose={() => setFreqModalReminder(null)} />
       )}

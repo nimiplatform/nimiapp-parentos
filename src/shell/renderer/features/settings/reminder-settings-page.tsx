@@ -31,8 +31,8 @@ export default function ReminderSettingsPage() {
     for (const [ruleId, override] of overrides.entries()) {
       if (!override.modifiedAt) continue; // skip empty/cleared
       const rule = REMINDER_RULES.find((r) => r.ruleId === ruleId);
-      if (!rule || !rule.repeatRule) continue;
-      result.push({ ruleId, ruleTitle: rule.title, domain: rule.domain, defaultInterval: rule.repeatRule.intervalMonths, override });
+      if (!rule || rule.repeatRule?.cadenceUnit !== 'month') continue;
+      result.push({ ruleId, ruleTitle: rule.title, domain: rule.domain, defaultInterval: rule.repeatRule.interval, override });
     }
     setEntries(result.sort((a, b) => a.domain.localeCompare(b.domain)));
     setLoading(false);
@@ -83,7 +83,7 @@ export default function ReminderSettingsPage() {
                     {entry.override.disabled ? (
                       <span className="text-[var(--nimi-status-danger)]"> {t('Settings.reminders.disabled')}</span>
                     ) : (
-                      <span className="text-[var(--nimi-action-primary-bg)]"> {t('Settings.reminders.overrideInterval', { months: entry.override.intervalMonths })}</span>
+                      <span className="text-[var(--nimi-action-primary-bg)]"> {t('Settings.reminders.overrideInterval', { months: entry.override.interval })}</span>
                     )}
                   </p>
                 </div>

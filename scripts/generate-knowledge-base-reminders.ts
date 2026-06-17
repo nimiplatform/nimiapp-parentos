@@ -23,6 +23,12 @@ interface ReminderExplainShape {
   sources: ReminderExplainSource[];
 }
 
+export interface ReminderRepeatRuleShape {
+  cadenceUnit: 'day' | 'week' | 'month';
+  interval: number;
+  maxRepeats: number;
+}
+
 export interface BaseReminderRule {
   ruleId: string;
   domain: string;
@@ -35,7 +41,7 @@ export interface BaseReminderRule {
   priority: string;
   nurtureMode: { relaxed: string; balanced: string; advanced: string };
   actionType: string;
-  repeatRule?: { intervalMonths: number; maxRepeats: number };
+  repeatRule?: ReminderRepeatRuleShape;
   explain?: ReminderExplainShape;
   expiryMonths?: number;
   tags?: string[];
@@ -61,7 +67,7 @@ export function liftOrthodonticRules(readYaml: (filename: string) => unknown): B
       domain: string;
       title: string;
       description: string;
-      intervalMonths: number;
+      repeatRule: ReminderRepeatRuleShape;
       priority: string;
       actionType: string;
       nurtureMode: { relaxed: string; balanced: string; advanced: string };
@@ -121,7 +127,7 @@ export function liftOrthodonticRules(readYaml: (filename: string) => unknown): B
       priority: rule.priority,
       nurtureMode: rule.nurtureMode,
       actionType: rule.actionType,
-      repeatRule: { intervalMonths: rule.intervalMonths, maxRepeats: -1 },
+      repeatRule: rule.repeatRule,
       tags: ['dental-followup', `trigger:${rule.triggeredBy.dentalEventType}`],
     });
   }

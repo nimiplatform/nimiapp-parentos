@@ -92,14 +92,14 @@ describe('reminder engine eligibility', () => {
       ...baseRule,
       ruleId: 'PO-REM-TEST-101',
       priority: 'P0',
-      repeatRule: { intervalMonths: 1, maxRepeats: 3 },
+      repeatRule: { cadenceUnit: 'month', interval: 1, maxRepeats: 3 },
       triggerAge: { startMonths: 12, endMonths: 15 },
       nurtureMode: { relaxed: 'push', balanced: 'push', advanced: 'push' },
       actionType: 'go_hospital',
     };
 
     const reminders = computeEligibleReminders([p0Rule], makeContext(), [], new Map([
-      ['PO-REM-TEST-101', { intervalMonths: 1, disabled: true, modifiedAt: '2026-04-01T00:00:00.000Z' }],
+      ['PO-REM-TEST-101', { cadenceUnit: 'month', interval: 1, disabled: true, modifiedAt: '2026-04-01T00:00:00.000Z' }],
     ]));
 
     expect(reminders.map((item) => item.rule.ruleId)).toContain('PO-REM-TEST-101');
@@ -111,7 +111,7 @@ describe('reminder engine eligibility', () => {
       ...baseRule,
       ruleId: 'PO-REM-TEST-200',
       actionType: 'record_data',
-      repeatRule: { intervalMonths: 1, maxRepeats: 3 },
+      repeatRule: { cadenceUnit: 'month', interval: 1, maxRepeats: 3 },
       triggerAge: { startMonths: 12, endMonths: 15 },
     };
 
@@ -353,7 +353,7 @@ describe('reminder engine orchestration', () => {
         ruleId: 'PO-REM-TEST-603',
         domain: 'growth',
         actionType: 'record_data',
-        repeatRule: { intervalMonths: 12, maxRepeats: 4 },
+        repeatRule: { cadenceUnit: 'month', interval: 12, maxRepeats: 4 },
         triggerAge: { startMonths: 12, endMonths: 60 },
       },
     ];
@@ -362,7 +362,7 @@ describe('reminder engine orchestration', () => {
       ageMonths: 18,
       localToday: '2026-10-01',
     }), [], new Map([
-      ['PO-REM-TEST-603', { intervalMonths: 6, disabled: false, modifiedAt: '2026-09-01T00:00:00.000Z' }],
+      ['PO-REM-TEST-603', { cadenceUnit: 'month', interval: 6, disabled: false, modifiedAt: '2026-09-01T00:00:00.000Z' }],
     ]));
 
     expect([
@@ -397,7 +397,7 @@ describe('repeat instance expiry with persisted state', () => {
     actionType: 'record_data',
     priority: 'P2',
     triggerAge: { startMonths: 36, endMonths: 216 },
-    repeatRule: { intervalMonths: 6, maxRepeats: -1 },
+    repeatRule: { cadenceUnit: 'month', interval: 6, maxRepeats: -1 },
   };
 
   it('expires orphan persisted-state instances far beyond the hard ceiling', () => {

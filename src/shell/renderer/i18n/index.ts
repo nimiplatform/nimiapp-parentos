@@ -18,6 +18,15 @@ const resources = {
 
 const detectedLanguage = detectDefaultAppLanguage();
 
+function syncDocumentMeta(language: string): void {
+  const appLanguage = resolveAppLanguage(language);
+  syncDocumentAppLanguage(appLanguage);
+  if (typeof document === 'undefined') {
+    return;
+  }
+  document.title = i18n.t('Meta.title');
+}
+
 // Eager init — resources are statically bundled so init is synchronous.
 // Must happen before React renders to avoid Suspense on useTranslation().
 void i18n
@@ -34,8 +43,16 @@ void i18n
   });
 
 i18n.on('languageChanged', (language) => {
-  syncDocumentAppLanguage(resolveAppLanguage(language));
+  syncDocumentMeta(language);
 });
-syncDocumentAppLanguage(detectedLanguage);
+syncDocumentMeta(detectedLanguage);
+
+export function i18nText(key: string, options?: Record<string, unknown>): string {
+  return i18n.t(key, options);
+}
+
+export function i18nTextForLanguage(language: string, key: string, options?: Record<string, unknown>): string {
+  return i18n.t(key, { ...options, lng: language });
+}
 
 export { i18n };

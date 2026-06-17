@@ -8,6 +8,7 @@ export interface ReminderRuleValidationShape {
     endMonths: number;
   };
   triggerCondition?: unknown;
+  repeatRule?: unknown;
   explain?: unknown;
   source?: unknown;
 }
@@ -76,6 +77,31 @@ export function validateReminderRule(rule: ReminderRuleValidationShape) {
 
   if (rule.category === 'personalized' && !rule.triggerCondition) {
     issues.push(`Rule ${rule.ruleId} is personalized but missing triggerCondition`);
+  }
+
+  if (rule.repeatRule !== undefined) {
+    if (typeof rule.repeatRule !== 'object' || rule.repeatRule == null || Array.isArray(rule.repeatRule)) {
+      issues.push(`Rule ${rule.ruleId} repeatRule must be an object`);
+    } else {
+      const repeatRule = rule.repeatRule as {
+        cadenceUnit?: unknown;
+        interval?: unknown;
+        intervalMonths?: unknown;
+        maxRepeats?: unknown;
+      };
+      if (repeatRule.intervalMonths !== undefined) {
+        issues.push(`Rule ${rule.ruleId} repeatRule.intervalMonths is retired; use cadenceUnit + interval`);
+      }
+      if (!['day', 'week', 'month'].includes(String(repeatRule.cadenceUnit))) {
+        issues.push(`Rule ${rule.ruleId} repeatRule.cadenceUnit must be day, week, or month`);
+      }
+      if (!Number.isInteger(repeatRule.interval) || Number(repeatRule.interval) <= 0) {
+        issues.push(`Rule ${rule.ruleId} repeatRule.interval must be a positive integer`);
+      }
+      if (!Number.isInteger(repeatRule.maxRepeats)) {
+        issues.push(`Rule ${rule.ruleId} repeatRule.maxRepeats must be an integer`);
+      }
+    }
   }
 
   return issues;

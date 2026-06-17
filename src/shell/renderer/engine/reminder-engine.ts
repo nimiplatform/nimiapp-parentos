@@ -148,6 +148,7 @@ const P0_TODAY_LIMIT = 3;
 type ReminderRuleWithExpiryOverride = GenReminderRule & {
   expiryMonths?: number;
 };
+type ReminderRepeatRule = NonNullable<GenReminderRule['repeatRule']>;
 
 export function reminderKey(ruleId: string, repeatIndex: number) {
   return `${ruleId}:${repeatIndex}`;
@@ -203,6 +204,10 @@ function diffDays(left: string, right: string) {
   return Math.floor((leftDate.getTime() - rightDate.getTime()) / DAY_MS);
 }
 
+function monthsBetween(left: string, right: string) {
+  return Math.max(0, Math.floor(diffDays(left, right) / 30.4375));
+}
+
 function comparePriority(a: ReminderPriority, b: ReminderPriority) {
   return (PRIORITY_ORDER[a] ?? 9) - (PRIORITY_ORDER[b] ?? 9);
 }
@@ -238,13 +243,72 @@ function getRuleExpiryOverride(rule: GenReminderRule) {
   return expiryMonths;
 }
 
-function deriveExpiryMonths(rule: GenReminderRule, intervalMonths?: number) {
+function repeatRuleWithOverride(rule: GenReminderRule, override?: { cadenceUnit?: string; interval?: number } | null): ReminderRepeatRule | null {
+  if (!rule.repeatRule) return null;
+  if (
+    rule.repeatRule.cadenceUnit === 'month' &&
+    override?.cadenceUnit === 'month' &&
+    typeof override.interval === 'number' &&
+    Number.isFinite(override.interval) &&
+    override.interval > 0
+  ) {
+    return { ...rule.repeatRule, interval: override.interval };
+  }
+  return rule.repeatRule;
+}
+
+function repeatCadenceDays(repeatRule: ReminderRepeatRule) {
+  if (repeatRule.cadenceUnit === 'day') return repeatRule.interval;
+  if (repeatRule.cadenceUnit === 'week') return repeatRule.interval * 7;
+  return 0;
+}
+
+function repeatWindowMonths(repeatRule: ReminderRepeatRule) {
+  if (repeatRule.cadenceUnit === 'month') return repeatRule.interval;
+  return Math.max(1, Math.ceil(repeatCadenceDays(repeatRule) / 30.4375));
+}
+
+function repeatStartDate(rule: GenReminderRule, birthDate: string, repeatRule: ReminderRepeatRule, repeatIndex: number) {
+  const anchor = addMonths(birthDate, rule.triggerAge.startMonths);
+  if (repeatRule.cadenceUnit === 'month') {
+    return addMonths(anchor, repeatIndex * repeatRule.interval);
+  }
+  return addDays(anchor, repeatIndex * repeatCadenceDays(repeatRule));
+}
+
+function repeatEndDate(rule: GenReminderRule, birthDate: string, repeatRule: ReminderRepeatRule, repeatIndex: number) {
+  const absoluteEndDate = addMonths(birthDate, rule.triggerAge.endMonths === -1 ? 216 : rule.triggerAge.endMonths);
+  const startDate = repeatStartDate(rule, birthDate, repeatRule, repeatIndex);
+  const endDate = repeatRule.cadenceUnit === 'month'
+    ? addDays(addMonths(startDate, repeatRule.interval), -1)
+    : addDays(startDate, repeatCadenceDays(repeatRule) - 1);
+  return endDate < absoluteEndDate ? endDate : absoluteEndDate;
+}
+
+function repeatInstanceAgeMonths(rule: GenReminderRule, birthDate: string, repeatRule: ReminderRepeatRule, repeatIndex: number) {
+  if (repeatRule.cadenceUnit === 'month') {
+    return rule.triggerAge.startMonths + repeatIndex * repeatRule.interval;
+  }
+  return monthsBetween(repeatStartDate(rule, birthDate, repeatRule, repeatIndex), birthDate);
+}
+
+function repeatIterationLimit(rule: GenReminderRule, birthDate: string, repeatRule: ReminderRepeatRule) {
+  if (repeatRule.maxRepeats !== -1) return repeatRule.maxRepeats;
+  const startDate = addMonths(birthDate, rule.triggerAge.startMonths);
+  const endDate = addMonths(birthDate, rule.triggerAge.endMonths === -1 ? 216 : rule.triggerAge.endMonths);
+  if (repeatRule.cadenceUnit === 'month') {
+    return Math.ceil(Math.max(0, rule.triggerAge.endMonths === -1 ? 216 - rule.triggerAge.startMonths : rule.triggerAge.endMonths - rule.triggerAge.startMonths) / repeatRule.interval);
+  }
+  return Math.ceil(Math.max(0, diffDays(endDate, startDate)) / repeatCadenceDays(repeatRule));
+}
+
+function deriveExpiryMonths(rule: GenReminderRule, repeatRule?: ReminderRepeatRule | null) {
   const override = getRuleExpiryOverride(rule);
   if (override != null) return override;
   if (rule.triggerAge.endMonths === -1) return null;
 
-  const baseWindowMonths = rule.repeatRule
-    ? intervalMonths ?? rule.repeatRule.intervalMonths
+  const baseWindowMonths = repeatRule
+    ? repeatWindowMonths(repeatRule)
     : Math.max(rule.triggerAge.endMonths - rule.triggerAge.startMonths, 0);
 
   return Math.max(baseWindowMonths * 2, 3);
@@ -259,21 +323,21 @@ const PERSISTED_STATE_EXPIRY_FACTOR = 1.5;
 const PERSISTED_STATE_EXPIRY_FLOOR = 12;
 
 function isEligibleRepeatInstance(
-  triggerAge: number,
-  effectiveEndMonths: number,
+  effectiveStartDate: string,
+  effectiveEndDate: string,
   expiryMonths: number | null,
-  ageMonths: number,
+  localToday: string,
   hasPersistedState: boolean,
 ) {
   if (hasPersistedState) {
     if (expiryMonths != null) {
       const hardCeiling = Math.max(expiryMonths * PERSISTED_STATE_EXPIRY_FACTOR, PERSISTED_STATE_EXPIRY_FLOOR);
-      if (ageMonths > effectiveEndMonths + hardCeiling) return false;
+      if (localToday > addMonths(effectiveEndDate, hardCeiling)) return false;
     }
     return true;
   }
-  if (ageMonths < triggerAge - 1) return false;
-  if (expiryMonths != null && ageMonths > effectiveEndMonths + expiryMonths) return false;
+  if (diffDays(effectiveStartDate, localToday) > 31) return false;
+  if (expiryMonths != null && localToday > addMonths(effectiveEndDate, expiryMonths)) return false;
   return true;
 }
 
@@ -366,22 +430,17 @@ export function computeEligibleReminders(
     const kind = rule.kind;
 
     if (rule.repeatRule) {
-      const intervalMonths = override?.intervalMonths ?? rule.repeatRule.intervalMonths;
-      const { maxRepeats } = rule.repeatRule;
-      const maxCount = maxRepeats === -1 ? 100 : maxRepeats;
-      const absoluteEndAge = rule.triggerAge.endMonths === -1 ? 216 : rule.triggerAge.endMonths;
-      const expiryMonths = deriveExpiryMonths(rule, intervalMonths);
+      const repeatRule = repeatRuleWithOverride(rule, override);
+      if (!repeatRule) continue;
+      const maxCount = repeatIterationLimit(rule, birthDate, repeatRule);
+      const expiryMonths = deriveExpiryMonths(rule, repeatRule);
 
       for (let repeatIndex = 0; repeatIndex <= maxCount; repeatIndex += 1) {
-        const triggerAge = rule.triggerAge.startMonths + repeatIndex * intervalMonths;
-        if (triggerAge > absoluteEndAge) break;
-
         const state = stateMap.get(reminderKey(rule.ruleId, repeatIndex)) ?? null;
-        const effectiveEndMonths = Math.min(triggerAge + intervalMonths - 1, absoluteEndAge);
-        if (!isEligibleRepeatInstance(triggerAge, effectiveEndMonths, expiryMonths, context.ageMonths, Boolean(state))) continue;
-
-        const effectiveStartDate = addMonths(birthDate, triggerAge);
-        const effectiveEndDate = addMonths(birthDate, effectiveEndMonths);
+        const effectiveStartDate = repeatStartDate(rule, birthDate, repeatRule, repeatIndex);
+        const effectiveEndDate = repeatEndDate(rule, birthDate, repeatRule, repeatIndex);
+        if (!isEligibleRepeatInstance(effectiveStartDate, effectiveEndDate, expiryMonths, context.localToday, Boolean(state))) continue;
+        const effectiveAgeMonths = repeatInstanceAgeMonths(rule, birthDate, repeatRule, repeatIndex);
         const deliveryDisposition = isColdStartReminder(
           rule,
           kind,
@@ -393,11 +452,11 @@ export function computeEligibleReminders(
           rule,
           visibility,
           repeatIndex,
-          effectiveAgeMonths: triggerAge,
+          effectiveAgeMonths,
           effectiveStartDate,
           effectiveEndDate,
           kind,
-          status: state?.status ?? (context.ageMonths >= triggerAge ? 'active' : 'pending'),
+          status: state?.status ?? (context.localToday >= effectiveStartDate ? 'active' : 'pending'),
           overdueDays: Math.max(0, diffDays(context.localToday, effectiveEndDate)),
           daysUntilStart: diffDays(effectiveStartDate, context.localToday),
           daysUntilEnd: diffDays(effectiveEndDate, context.localToday),
@@ -683,15 +742,17 @@ export function buildReminderAgenda(
     const visibility = rule.nurtureMode[context.domainOverrides?.[rule.domain] ?? context.nurtureMode];
     if (visibility === 'hidden') continue;
     const kind = rule.kind;
-    const intervalMonths = freqOverrides?.get(rule.ruleId)?.intervalMonths ?? rule.repeatRule?.intervalMonths ?? null;
-    const effectiveAgeMonths = rule.repeatRule
-      ? rule.triggerAge.startMonths + state.repeatIndex * (intervalMonths ?? rule.repeatRule.intervalMonths)
+    const birthDate = context.birthDate.slice(0, 10);
+    const repeatRule = repeatRuleWithOverride(rule, freqOverrides?.get(rule.ruleId));
+    const effectiveAgeMonths = repeatRule
+      ? repeatInstanceAgeMonths(rule, birthDate, repeatRule, state.repeatIndex)
       : rule.triggerAge.startMonths;
-    const effectiveStartDate = addMonths(context.birthDate.slice(0, 10), effectiveAgeMonths);
-    const effectiveEndDate = addMonths(
-      context.birthDate.slice(0, 10),
-      rule.triggerAge.endMonths === -1 ? 216 : rule.triggerAge.endMonths,
-    );
+    const effectiveStartDate = repeatRule
+      ? repeatStartDate(rule, birthDate, repeatRule, state.repeatIndex)
+      : addMonths(birthDate, effectiveAgeMonths);
+    const effectiveEndDate = repeatRule
+      ? repeatEndDate(rule, birthDate, repeatRule, state.repeatIndex)
+      : addMonths(birthDate, rule.triggerAge.endMonths === -1 ? 216 : rule.triggerAge.endMonths);
     let historyType: ReminderHistoryItem['historyType'] | null = null;
     // Kind-scoped terminal signals per PO-REMI-003 surface in history equivalently
     // to legacy completedAt: a guide that has been acknowledged, a practice that
