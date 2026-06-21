@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { render, screen } from '@testing-library/react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { HealthCaptureModal } from './health-capture-modal.js';
 import { useAppStore, type ChildProfile } from '../../app-shell/app-store.js';
 
@@ -11,6 +11,7 @@ vi.mock('../../bridge/sqlite-bridge.js', async () => ({
   insertMeasurement: vi.fn(),
   insertTannerAssessment: vi.fn(),
   insertFitnessAssessment: vi.fn(),
+  insertPostureAssessment: vi.fn(),
   saveAttachment: vi.fn(),
 }));
 
@@ -37,6 +38,10 @@ beforeAll(() => {
 });
 
 describe('HealthCaptureModal', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it('opens to the requested sidebar group when initialGroupId is provided', () => {
     render(
       <HealthCaptureModal
@@ -64,5 +69,21 @@ describe('HealthCaptureModal', () => {
 
     // Default order opens growth first.
     expect(screen.getByText('添加生长记录')).toBeTruthy();
+  });
+
+  it('sizes the posture capture dialog on the overlay panel instead of overflowing a default dialog width', () => {
+    render(
+      <HealthCaptureModal
+        open
+        childId="child-1"
+        childBirthDate="2020-12-17"
+        initialGroupId="posture"
+        onClose={() => undefined}
+      />,
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'health-capture-modal' });
+    expect(dialog.style.width).toBe('920px');
+    expect(dialog.style.maxWidth).toBe('calc(100vw - 32px)');
   });
 });

@@ -17,7 +17,7 @@
  *   L  = 920  → use for: fitness
  *   XL = 1040 → use for: vision, dental, medical, development
  *
- * All chrome (radius 28, max-h 88vh, shadow, header/footer height) is owned by
+ * All chrome (radius 14, max-h 88vh, shadow, header/footer height) is owned by
  * this module. Per-page Content components must NOT redefine width, radius,
  * padding, or footer chrome.
  */
@@ -43,8 +43,10 @@ const SIZE_WIDTH: Record<HealthModalSize, number> = {
   XL: 1040,
 };
 
+const MODAL_VIEWPORT_MAX_WIDTH = 'calc(100vw - 32px)';
+
 export const HEALTH_MODAL_TOKENS = {
-  radius: 28,
+  radius: 14,
   fieldRadius: 14,
   fieldHeight: 48,
   headerHeight: 72,
@@ -90,21 +92,28 @@ export function HealthRecordModalShell({
       open
       kind="dialog"
       onClose={onClose}
-      panelClassName="parentos-health-modal-panel rounded-3xl"
+      panelClassName="parentos-health-modal-panel"
+      panelStyle={{
+        width,
+        maxWidth: MODAL_VIEWPORT_MAX_WIDTH,
+        borderRadius: HEALTH_MODAL_TOKENS.radius,
+        overflow: 'hidden',
+      }}
       contentClassName="!p-0"
     >
       <DialogTitle className="sr-only">{ariaLabel}</DialogTitle>
-    <div
-      className="relative flex overflow-hidden bg-[var(--nimi-surface-card)]"
-      style={{
-        width,
-        maxWidth: 'calc(100vw - 32px)',
-        maxHeight: HEALTH_MODAL_TOKENS.maxHeight,
-      }}
+      <div
+        className="parentos-health-modal-surface relative flex overflow-hidden bg-[var(--nimi-surface-card)]"
+        style={{
+          width: '100%',
+          maxWidth: '100%',
+          maxHeight: HEALTH_MODAL_TOKENS.maxHeight,
+          borderRadius: HEALTH_MODAL_TOKENS.radius,
+        }}
       >
         {sidebar}
         <div className="flex min-w-0 flex-1 flex-col bg-[var(--nimi-surface-card)]">{children}</div>
-    </div>
+      </div>
     </OverlayShell>
   );
 }

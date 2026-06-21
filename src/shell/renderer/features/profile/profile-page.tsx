@@ -23,6 +23,9 @@ import { ProfileGroupCard } from './profile-page-group-card.js';
 import { formatMetricSnapshotValue, groupLabel, metricLabel } from './health-record-display.js';
 import { ProfilePostureCard } from './profile-page-posture-card.js';
 
+const PROFILE_CAPTURE_SEARCH_PARAM = 'capture';
+const PROFILE_CAPTURE_MANUAL_VALUE = 'manual';
+
 function profileCompleteness(child: {
   birthWeightKg: number | null;
   birthHeightCm: number | null;
@@ -79,6 +82,7 @@ export default function ProfilePage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const focusGroupId = searchParams.get('focus');
+  const captureMode = searchParams.get(PROFILE_CAPTURE_SEARCH_PARAM);
   const activeChildId = useAppStore((state) => state.activeChildId);
   const children = useAppStore((state) => state.children);
   const activeChild = children.find((child) => child.childId === activeChildId);
@@ -116,6 +120,17 @@ export default function ProfilePage() {
     }
     void loadRecords(activeChildId);
   }, [activeChildId, loadRecords]);
+
+  useEffect(() => {
+    if (captureMode !== PROFILE_CAPTURE_MANUAL_VALUE || !activeChild) return;
+    setCaptureGroupId(null);
+    setCaptureMetricId(null);
+    setCaptureOpen(true);
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete(PROFILE_CAPTURE_SEARCH_PARAM);
+    setSearchParams(nextSearchParams, { replace: true });
+  }, [activeChild, captureMode, searchParams, setSearchParams]);
 
   // ?focus=<groupId> is set when the user records data from the timeline
   // dashboard; after the group card mounts we scroll it into view and clear

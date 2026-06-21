@@ -48,6 +48,11 @@ describe('HealthRecordModalShell', () => {
     expect(dialog.className).toContain('fixed');
     expect(dialog.className).toContain('top-1/2');
     expect(dialog.className).toContain('parentos-health-modal-panel');
+    expect(dialog.style.borderRadius).toBe('14px');
+    expect(dialog.style.overflow).toBe('hidden');
+
+    const surface = dialog.querySelector('.parentos-health-modal-surface') as HTMLElement | null;
+    expect(surface?.style.borderRadius).toBe('14px');
 
     const backdrop = document.body.querySelector('.nimi-overlay-backdrop');
     expect(backdrop).not.toBeNull();
@@ -78,5 +83,23 @@ describe('HealthRecordModalShell', () => {
       expect(panel).toBeTruthy();
       expect(panel?.className).toContain('z-[120]');
     });
+  });
+
+  it.each([
+    ['S', '460px'],
+    ['M', '720px'],
+    ['L', '920px'],
+    ['XL', '1040px'],
+  ] as const)('assigns %s width to the overlay panel itself', (size, width) => {
+    render(
+      <HealthRecordModalShell open size={size} ariaLabel={`${size}-record-modal`} onClose={vi.fn()}>
+        <ModalHeader title="添加记录" onClose={vi.fn()} />
+        <ModalContent>content</ModalContent>
+      </HealthRecordModalShell>,
+    );
+
+    const dialog = screen.getByRole('dialog', { name: `${size}-record-modal` });
+    expect(dialog.style.width).toBe(width);
+    expect(dialog.style.maxWidth).toBe('calc(100vw - 32px)');
   });
 });
