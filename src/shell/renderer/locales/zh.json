@@ -3,10 +3,14 @@
     "title": "成长底稿"
   },
   "App": {
-    "loading": "加载中..."
+    "loading": "加载中...",
+    "logoAlt": "ParentOS 标志"
   },
   "Auth": {
     "clickToAuthorize": "点击以在浏览器中授权",
+    "launchEnter": "进入成长底稿",
+    "desktopLogoIdleHint": "点击授权并进入成长底稿",
+    "signinTagline": "AI 驱动的儿童成长操作系统",
     "desktopAuthFailed": "授权失败。点击标志重试。",
     "currentAccount": "当前账号",
     "authorizeDesktopButton": "授权桌面端",

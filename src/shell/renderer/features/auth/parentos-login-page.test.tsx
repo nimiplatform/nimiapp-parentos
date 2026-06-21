@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { isValidElement } from 'react';
 import { render } from '@testing-library/react';
 import { useAppStore } from '../../app-shell/app-store.js';
 
@@ -89,5 +90,24 @@ describe('ParentOSLoginPage', () => {
     expect(props.branding?.logoAltText).toBe('ParentOS Logo');
     expect(props.branding?.logo).toContain('/src-tauri/icons/icon.png');
     expect(props.desktopBrowserAuth?.hintVisibility).toBe('hover-or-status');
+  });
+
+  it('uses the Nimi default desktop auth background with ParentOS branding', () => {
+    render(<ParentOSLoginPage />);
+
+    const props = shellAuthPageSpy.mock.calls[0]?.[0] as {
+      appearance?: { rootClassName?: string; shellClassName?: string; contentClassName?: string };
+      background?: (state: { isLogoHovered: boolean; mode: 'desktop-browser' }) => unknown;
+      copy?: { desktopLogoIdleHintText?: string };
+    };
+
+    expect(props.appearance?.rootClassName).toBeUndefined();
+    expect(props.appearance?.shellClassName).toBe('absolute inset-0 z-10 flex flex-col items-center justify-center p-0');
+    expect(props.appearance?.contentClassName).toBe('');
+    expect(props.copy?.desktopLogoIdleHintText).toBe('点击授权并进入成长底稿');
+
+    expect(typeof props.background).toBe('function');
+    const background = props.background?.({ isLogoHovered: false, mode: 'desktop-browser' });
+    expect(isValidElement(background)).toBe(true);
   });
 });

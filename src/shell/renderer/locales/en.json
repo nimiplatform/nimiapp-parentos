@@ -3,10 +3,14 @@
     "title": "ParentOS"
   },
   "App": {
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "logoAlt": "ParentOS logo"
   },
   "Auth": {
     "clickToAuthorize": "Click to authorize in browser",
+    "launchEnter": "Enter ParentOS",
+    "desktopLogoIdleHint": "Click to authorize and enter ParentOS",
+    "signinTagline": "The AI operating system for your child's growth",
     "desktopAuthFailed": "Authorization failed. Click logo to retry.",
     "currentAccount": "Current account",
     "authorizeDesktopButton": "Authorize desktop",

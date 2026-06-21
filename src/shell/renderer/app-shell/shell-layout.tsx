@@ -1,16 +1,15 @@
 import { useState, useRef, useEffect, type MouseEvent as ReactMouseEvent, type ReactNode, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, User, BookText, MessageCircle, TrendingUp, Settings, LogOut, ChevronDown, Check, UserPlus, type LucideProps } from 'lucide-react';
+import { Home, User, BookText, MessageCircle, TrendingUp, Settings, ChevronDown, Check, UserPlus, type LucideProps } from 'lucide-react';
 import { AmbientBackground, Surface, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths, type ChildProfile } from './app-store.js';
 import { startParentosWindowDrag } from '../bridge/window-drag.js';
 import { setAppSetting } from '../bridge/sqlite-bridge.js';
-import { syncParentOSLocalDataScope } from '../infra/parentos-bootstrap.js';
-import { logoutParentOSRuntimeAccount } from '../features/auth/parentos-auth-adapter.js';
 import { isoNow } from '../bridge/ulid.js';
 import { ProfileTodoDrawer } from '../features/profile/profile-todo-drawer.js';
 import { ChildAvatar } from '../shared/child-avatar.js';
+import parentosLogoUrl from '../../../../src-tauri/icons/icon.png';
 
 const navItems: Array<{ to: string; labelKey: string; Icon: ComponentType<LucideProps> }> = [
   { to: '/timeline', labelKey: 'Shell.navigation.timeline', Icon: Home },
@@ -157,12 +156,9 @@ const accountMenuItems = [
 function AccountAvatarMenu() {
   const { t } = useTranslation();
   const authUser = useAppStore((s) => s.auth.user);
-  const clearAuth = useAppStore((s) => s.clearAuthSession);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [logoutError, setLogoutError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const openMenu = () => { setMounted(true); requestAnimationFrame(() => setOpen(true)); };
@@ -178,25 +174,6 @@ function AccountAvatarMenu() {
     document.addEventListener('keydown', escHandler);
     return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', escHandler); };
   }, [open]);
-
-  const handleLogout = async () => {
-    // PO-SHELL-008: revoke through Runtime account custody (single source of
-    // truth). Local auth projection is cleared only after Runtime accepts logout.
-    setLogoutError(null);
-    setLoggingOut(true);
-    try {
-      await logoutParentOSRuntimeAccount();
-      closeMenu();
-      clearAuth();
-      void syncParentOSLocalDataScope(null);
-    } catch (error) {
-      setMounted(true);
-      setOpen(true);
-      setLogoutError(error instanceof Error ? error.message : String(error || t('Shell.account.logoutFailed')));
-    } finally {
-      setLoggingOut(false);
-    }
-  };
 
   const displayName = authUser?.displayName || t('Shell.account.unnamedUser');
   const initial = displayName.charAt(0).toUpperCase();
@@ -254,26 +231,6 @@ function AccountAvatarMenu() {
                 {t(item.labelKey)}
               </button>
             ))}
-          </div>
-
-          {/* ── Divider ── */}
-          <div className="mx-3 border-t border-[var(--nimi-border-subtle)]" />
-
-          {/* ── Logout ── */}
-          <div className="px-1.5 py-1.5">
-            {logoutError ? (
-              <div className="mx-1.5 mb-1.5 rounded-lg border border-[color-mix(in_srgb,var(--nimi-status-danger)_28%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))] px-2.5 py-2 text-[12px] leading-[1.5] text-[var(--nimi-status-danger)]">
-                {logoutError}
-              </div>
-            ) : null}
-            <button
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] text-[var(--nimi-status-danger)] transition-all hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <LogOut size={18} strokeWidth={1.8} className="text-[var(--nimi-status-danger)]" />
-              {loggingOut ? t('Shell.account.loggingOut') : t('Shell.account.logout')}
-            </button>
           </div>
         </Surface>
       )}
@@ -346,10 +303,15 @@ export function ShellLayout({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
         <header
-          className="z-20 flex h-[60px] shrink-0 items-center gap-4 bg-transparent px-6"
+          className="z-20 flex h-[60px] shrink-0 items-center gap-4 bg-transparent pl-2 pr-6"
           onMouseDown={handleWindowDragMouseDown}
         >
           <div className="flex min-w-0 items-center gap-2">
+            <img
+              src={parentosLogoUrl}
+              alt={t('App.logoAlt')}
+              className="h-6 w-6 shrink-0 rounded-[6px] object-contain"
+            />
             <h1 className="text-[18px] font-semibold text-[var(--nimi-text-primary)]">ParentOS</h1>
             {hasActiveChild ? (
               <>

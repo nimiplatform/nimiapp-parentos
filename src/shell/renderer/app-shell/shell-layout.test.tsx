@@ -10,30 +10,14 @@ import { i18n } from '../i18n/index.js';
 const { setAppSettingMock } = vi.hoisted(() => ({
   setAppSettingMock: vi.fn().mockResolvedValue(undefined),
 }));
-const { syncParentOSLocalDataScopeMock } = vi.hoisted(() => ({
-  syncParentOSLocalDataScopeMock: vi.fn().mockResolvedValue(undefined),
-}));
-const { logoutParentOSRuntimeAccountMock } = vi.hoisted(() => ({
-  logoutParentOSRuntimeAccountMock: vi.fn().mockResolvedValue(undefined),
-}));
 
 vi.mock('../bridge/sqlite-bridge.js', () => ({
   setAppSetting: setAppSettingMock,
-}));
-vi.mock('../infra/parentos-bootstrap.js', () => ({
-  syncParentOSLocalDataScope: syncParentOSLocalDataScopeMock,
-}));
-vi.mock('../features/auth/parentos-auth-adapter.js', () => ({
-  logoutParentOSRuntimeAccount: logoutParentOSRuntimeAccountMock,
 }));
 
 describe('ShellLayout', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('zh');
-    syncParentOSLocalDataScopeMock.mockReset();
-    syncParentOSLocalDataScopeMock.mockResolvedValue(undefined);
-    logoutParentOSRuntimeAccountMock.mockReset();
-    logoutParentOSRuntimeAccountMock.mockResolvedValue(undefined);
     useAppStore.setState({
       bootstrapReady: true,
       familyId: 'family-1',
@@ -137,6 +121,24 @@ describe('ShellLayout', () => {
     expect(main?.className).toContain('z-0');
   });
 
+  it('places the ParentOS logo before the topbar title', () => {
+    render(
+      <MemoryRouter>
+        <ShellLayout>
+          <div>APP_CONTENT</div>
+        </ShellLayout>
+      </MemoryRouter>,
+    );
+
+    const logo = screen.getByRole('img', { name: 'ParentOS 标志' });
+    const title = screen.getByRole('heading', { name: 'ParentOS' });
+
+    expect(logo.getAttribute('src')).toContain('/src-tauri/icons/icon.png');
+    expect(title.parentElement?.firstElementChild).toBe(logo);
+    expect(title.closest('header')?.className).toContain('pl-2');
+    expect(title.closest('header')?.className).toContain('pr-6');
+  });
+
   it('hides shell navigation until a child profile is active', () => {
     useAppStore.setState({
       activeChildId: null,
@@ -156,7 +158,7 @@ describe('ShellLayout', () => {
     expect(screen.getByTestId('shell-main-drag-region')).toBeTruthy();
   });
 
-  it('syncs ParentOS local data scope back to anonymous on logout', async () => {
+  it('does not expose logout from the account avatar menu', async () => {
     render(
       <MemoryRouter>
         <ShellLayout>
@@ -166,31 +168,9 @@ describe('ShellLayout', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: '打开账号菜单' }));
-    fireEvent.click(await screen.findByRole('button', { name: '退出登录' }));
 
-    await waitFor(() => {
-      expect(logoutParentOSRuntimeAccountMock).toHaveBeenCalledTimes(1);
-      expect(syncParentOSLocalDataScopeMock).toHaveBeenCalledWith(null);
-    });
-    expect(useAppStore.getState().auth.user).toBeNull();
-  });
-
-  it('keeps the runtime-projected auth session when Runtime logout fails', async () => {
-    logoutParentOSRuntimeAccountMock.mockRejectedValue(new Error('runtime refused logout'));
-
-    render(
-      <MemoryRouter>
-        <ShellLayout>
-          <div>APP_CONTENT</div>
-        </ShellLayout>
-      </MemoryRouter>,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: '打开账号菜单' }));
-    fireEvent.click(await screen.findByRole('button', { name: '退出登录' }));
-
-    expect(await screen.findByText('runtime refused logout')).toBeTruthy();
-    expect(syncParentOSLocalDataScopeMock).not.toHaveBeenCalled();
-    expect(useAppStore.getState().auth.user?.id).toBe('user-1');
+    expect(await screen.findByText('Parent User')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '退出登录' })).toBeNull();
+    expect(screen.queryByText(/退出登录/)).toBeNull();
   });
 });
