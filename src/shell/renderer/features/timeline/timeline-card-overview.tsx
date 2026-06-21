@@ -85,6 +85,7 @@ const QUICK_LINK_ICON_META: Record<string, { src: string; offsetX?: number; scal
 };
 
 const DEFAULT_QUICK_LINK_ICON_META: { src: string; offsetX?: number; scale?: number; bg?: string } = { src: smartScanIcon };
+const PROFILE_MANUAL_CAPTURE_PATH = '/profile?capture=manual';
 
 function QuickLinkIcon({ src, offsetX = 0, scale = 1, bg }: { src: string; offsetX?: number; scale?: number; bg?: string }) {
   return (
@@ -187,8 +188,7 @@ function RecentChangeLeadCell({ item }: { item: RecentChangeItem }) {
   return (
     <Link
       to={item.to}
-      className="col-span-3 flex flex-col rounded-[22px] p-6 transition-all duration-200 hover:-translate-y-0.5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]"
-      style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card"
+      className="dashboard-inset dashboard-inset--interactive col-span-3 flex flex-col rounded-[22px] p-6 transition-all duration-200 hover:-translate-y-0.5"
     >
       <div className="flex items-center gap-3">
         <RecentChangeIcon item={item} size={20} />
@@ -217,8 +217,7 @@ function RecentChangeSecondaryCell({ item }: { item: RecentChangeItem }) {
   return (
     <Link
       to={item.to}
-      className="block rounded-[18px] p-4 transition-all duration-200 hover:-translate-y-0.5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]"
-      style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card"
+      className="dashboard-inset dashboard-inset--interactive block rounded-[18px] p-4 transition-all duration-200 hover:-translate-y-0.5"
     >
       <div className="flex items-start gap-3">
         <RecentChangeIcon item={item} size={16} />
@@ -256,7 +255,7 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
           <div className="col-span-2 space-y-3">
             {secondary.map((item) => <RecentChangeSecondaryCell key={item.id} item={item} />)}
             {secondary.length === 0 ? (
-              <div className="rounded-[18px] p-4 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+              <div className="dashboard-inset rounded-[18px] p-4">
                 <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.recentNeedsMoreTitle')}</p>
                 <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>
                   {i18nText('Timeline.home.recentNeedsMoreBody')}
@@ -266,12 +265,12 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
           </div>
         </div>
       ) : (
-        <div className="rounded-[22px] p-7 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+        <div className="dashboard-inset rounded-[22px] p-7">
           <p className="text-[16px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.noRecentTitle')}</p>
           <p className="mt-2 text-[14px] leading-relaxed" style={{ color: textMuted }}>
             {i18nText('Timeline.home.noRecentBody')}
           </p>
-          <Link to="/journal" className="mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[14px] font-medium text-white transition-all hover:-translate-y-0.5" style={{ background: textMain, boxShadow: '0 4px 14px rgba(0,0,0,0.08)' }}>
+          <Link to={PROFILE_MANUAL_CAPTURE_PATH} className="mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[14px] font-medium text-white transition-all hover:-translate-y-0.5" style={{ background: textMain, boxShadow: '0 4px 14px rgba(0,0,0,0.08)' }}>
             {i18nText('Timeline.home.recordOne')} <span>→</span>
           </Link>
         </div>
@@ -287,7 +286,7 @@ export function StageFocusCard({ periods }: { periods: Array<{ periodId: string;
       {periods.length > 0 ? (
         <div className="space-y-4">
           {periods.slice(0, 2).map((period) => (
-            <div key={period.periodId} className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+            <div key={period.periodId} className="dashboard-inset rounded-[16px] p-5">
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[12px] font-semibold text-amber-600">{i18nText('Timeline.home.sensitivePeriodBadge')}</span>
                 <p className="text-[14px] font-semibold" style={{ color: textMain }}>{period.title}</p>
@@ -300,7 +299,7 @@ export function StageFocusCard({ periods }: { periods: Array<{ periodId: string;
           ))}
         </div>
       ) : (
-        <div className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+        <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.stageStableTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText('Timeline.home.stageStableBody')}</p>
         </div>
@@ -319,9 +318,8 @@ export function QuickLinksStrip({ ageMonths }: { ageMonths: number }) {
           (() => {
             const iconMeta = QUICK_LINK_ICON_META[item.id] ?? DEFAULT_QUICK_LINK_ICON_META;
             return (
-              <Link key={item.to} to={item.to}
-                className="group flex flex-col items-center rounded-[20px] px-3 py-5 transition-all duration-200 hover:-translate-y-1 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]"
-                style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+              <Link key={item.id} to={item.to}
+                className="dashboard-quick-link group flex flex-col items-center rounded-[20px] px-3 py-5 transition-all duration-200 hover:-translate-y-1">
                 <QuickLinkIcon src={iconMeta.src} offsetX={iconMeta.offsetX} scale={iconMeta.scale} bg={iconMeta.bg} />
                 <p className="text-[13px] font-semibold" style={{ color: textMain }}>{item.label}</p>
               </Link>

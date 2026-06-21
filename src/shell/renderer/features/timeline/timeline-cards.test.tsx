@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import { MilestoneTimelineCard, ObservationDistributionCard, RecentLinesCard, SleepTrendCard } from './timeline-cards.js';
+import { GrowthSnapshotCard, MilestoneTimelineCard, ObservationDistributionCard, QuickLinksStrip, RecentChangesHeroCard, RecentLinesCard, SleepTrendCard } from './timeline-cards.js';
 
 vi.mock('@tauri-apps/api/core', () => ({
   convertFileSrc: (value: string) => value,
@@ -101,6 +101,55 @@ describe('timeline dashboard cards', () => {
     expect(screen.getByText('当前阶段暂无匹配的里程碑')).toBeTruthy();
     expect(screen.getByText('还没有带维度标记的观察记录')).toBeTruthy();
   });
+  it('keeps dashboard inner blocks unframed until an entry is hovered', () => {
+    const { container } = renderInRouter(
+      <>
+        <SleepTrendCard
+          summary={{
+            points: [],
+            avgDurationMinutes: null,
+            latestBedtime: null,
+            latestWakeTime: null,
+            totalRecords: 0,
+          }}
+        />
+        <GrowthSnapshotCard
+          snapshot={{
+            updatedAt: null,
+            updatedLabel: '暂无成长测量记录',
+            metrics: [],
+            trends: [],
+          }}
+        />
+        <QuickLinksStrip ageMonths={156} />
+      </>,
+    );
+
+    const plainBlocks = container.querySelectorAll('.dashboard-inset');
+    expect(plainBlocks).toHaveLength(2);
+    for (const block of plainBlocks) {
+      expect(block.hasAttribute('data-nimi-material')).toBe(false);
+      expect(block.className).not.toContain('bg-[var(--nimi-material');
+      expect(block.className).not.toContain('border-[var(--nimi-material');
+    }
+
+    const quickLinks = container.querySelectorAll('.dashboard-quick-link');
+    expect(quickLinks.length).toBeGreaterThan(0);
+    for (const link of quickLinks) {
+      expect(link.hasAttribute('data-nimi-material')).toBe(false);
+      expect(link.className).not.toContain('bg-[var(--nimi-material');
+      expect(link.className).not.toContain('border-[var(--nimi-material');
+    }
+  });
+
+  it('routes the recent-changes empty-state CTA into manual health data capture', () => {
+    const { container } = renderInRouter(<RecentChangesHeroCard items={[]} />);
+
+    const hrefs = Array.from(container.querySelectorAll('a')).map((link) => link.getAttribute('href'));
+    expect(hrefs).toContain('/profile?capture=manual');
+    expect(hrefs).not.toContain('/journal');
+  });
+
   it('renders keepsake badges and reason tags in recent lines', () => {
     renderInRouter(
       <RecentLinesCard

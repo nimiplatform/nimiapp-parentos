@@ -715,6 +715,30 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   display: none;
 }
 
+.dashboard-inset {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dashboard-inset--interactive:hover {
+  border-color: color-mix(in srgb, var(--nimi-border-subtle) 55%, transparent);
+  background: color-mix(in srgb, var(--nimi-surface-card) 48%, transparent);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+}
+
+.dashboard-quick-link {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dashboard-quick-link:hover {
+  border-color: color-mix(in srgb, var(--nimi-border-subtle) 58%, transparent);
+  background: color-mix(in srgb, var(--nimi-surface-card) 68%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+
 /* Advisor composer textarea — scrollbar hidden until overflow, subtle on hover */
 .advisor-page-shell {
   background: transparent;

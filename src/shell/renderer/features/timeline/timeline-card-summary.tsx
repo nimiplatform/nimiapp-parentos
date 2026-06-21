@@ -22,7 +22,7 @@ function MiniTrendRow({ trend }: { trend: GrowthTrendItem }) {
   const deltaArrow = isUp ? '↑' : isDown ? '↓' : '';
 
   return (
-    <div className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+    <div className="dashboard-inset rounded-[16px] p-5">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[13px] font-medium" style={{ color: textMuted }}>{trend.label}</p>
@@ -69,7 +69,7 @@ export function GrowthSnapshotCard({ snapshot }: { snapshot: { updatedAt: string
       {snapshot.trends.length > 0 ? (
         <div className="space-y-3">{snapshot.trends.map((trend) => <MiniTrendRow key={trend.id} trend={trend} />)}</div>
       ) : (
-        <div className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+        <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.noGrowthSnapshotTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText('Timeline.home.noGrowthSnapshotBody')}</p>
         </div>
@@ -85,8 +85,7 @@ export function RecentLinesCard({ lines }: { lines: RecentLineItem[] }) {
       {lines.length > 0 ? (
         <div className="grid grid-cols-4 gap-4">
           {lines.map((line) => (
-            <Link key={line.id} to={line.to} className="rounded-[16px] p-5 transition-all duration-200 hover:-translate-y-1 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]"
-              style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+            <Link key={line.id} to={line.to} className="dashboard-inset dashboard-inset--interactive rounded-[16px] p-5 transition-all duration-200 hover:-translate-y-1">
               <div className="flex items-center justify-between gap-2">
                 <span
                   className="rounded-full px-2 py-0.5 text-[12px] font-medium"
@@ -105,7 +104,7 @@ export function RecentLinesCard({ lines }: { lines: RecentLineItem[] }) {
           ))}
         </div>
       ) : (
-        <div className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+        <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.noRecentLinesTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText('Timeline.home.noRecentLinesBody')}</p>
         </div>
@@ -133,7 +132,7 @@ export function OutdoorGoalCard({
     return (
       <Cd cls="col-span-4">
         <Hdr title={i18nText('Timeline.home.outdoorGoalTitle')} to="/profile" link={i18nText('Timeline.home.setGoal')} />
-        <div className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+        <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.noOutdoorGoalTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>
             {i18nText('Timeline.home.noOutdoorGoalBody')}

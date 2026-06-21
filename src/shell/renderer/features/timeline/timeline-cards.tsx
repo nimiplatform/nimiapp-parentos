@@ -67,7 +67,7 @@ export function SleepTrendCard({ summary }: { summary: SleepTrendSummary }) {
           </div>
         </>
       ) : (
-        <div className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+        <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.card.sleep.emptyTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText('Timeline.card.sleep.emptySubtitle')}</p>
         </div>
@@ -122,7 +122,7 @@ export function VisionCard({ snapshot }: { snapshot: VisionSnapshotSummary }) {
           </div>
         </>
       ) : (
-        <div className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+        <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.card.vision.emptyTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText('Timeline.card.vision.emptySubtitle')}</p>
         </div>
@@ -144,7 +144,7 @@ export function MilestoneTimelineCard({ summary }: { summary: MilestoneTimelineS
           <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#4ECCA3' }}>{i18nText('Timeline.card.milestone.recentlyAchieved')}</p>
           <div className="space-y-2">
             {summary.recentlyAchieved.map((item) => (
-              <div key={item.milestoneId} className="flex items-center gap-3 rounded-[14px] px-4 py-3 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+              <div key={item.milestoneId} className="dashboard-inset flex items-center gap-3 rounded-[14px] px-4 py-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[13px]" style={{ background: 'rgba(78,204,163,0.15)', color: '#4ECCA3' }}>&#10003;</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-semibold" style={{ color: textMain }}>{item.title}</p>
@@ -160,7 +160,7 @@ export function MilestoneTimelineCard({ summary }: { summary: MilestoneTimelineS
           <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#818CF8' }}>{i18nText('Timeline.card.milestone.upcoming')}</p>
           <div className="space-y-2">
             {summary.upcoming.map((item) => (
-              <div key={item.milestoneId} className="flex items-center gap-3 rounded-[14px] px-4 py-3 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+              <div key={item.milestoneId} className="dashboard-inset flex items-center gap-3 rounded-[14px] px-4 py-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px]" style={{ background: 'rgba(129,140,248,0.15)', color: '#818CF8' }}>&#9679;</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-semibold" style={{ color: textMain }}>{item.title}</p>
@@ -172,7 +172,7 @@ export function MilestoneTimelineCard({ summary }: { summary: MilestoneTimelineS
         </div>
       ) : null}
       {!hasAchieved && !hasUpcoming ? (
-        <div className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+        <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.card.milestone.emptyTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText('Timeline.card.milestone.emptySubtitle')}</p>
         </div>
@@ -206,7 +206,7 @@ export function ObservationDistributionCard({ summary }: { summary: ObservationD
           </div>
         </>
       ) : (
-        <div className="rounded-[16px] p-5 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+        <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.card.observation.emptyTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText('Timeline.card.observation.emptySubtitle')}</p>
         </div>
@@ -227,7 +227,7 @@ export function MonthlyReportCard({ report }: { report: MonthlyReportSummary }) 
         <Hdr title={i18nText('Timeline.card.monthlyReport.title')} to="/reports" link={i18nText('Timeline.action.viewFullReport')} />
         <p className="text-[14px] leading-[1.8]" style={{ color: textMain }}>{teaser}</p>
         {actionText ? (
-          <div className="mt-4 rounded-[14px] p-4 nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]" style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.03), 0 6px 18px rgba(15,23,42,0.04)' }} data-nimi-material="glass-regular" data-nimi-tone="card">
+          <div className="dashboard-inset mt-4 rounded-[14px] p-4">
             <p className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: textMuted }}>{i18nText('Timeline.card.monthlyReport.todoTitle')}</p>
             <p className="mt-1.5 text-[14px] font-medium" style={{ color: textMain }}>{actionText}</p>
           </div>
