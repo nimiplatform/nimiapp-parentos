@@ -287,13 +287,13 @@ function createParentOSRuntimeAuthMetadataProvider(accountRuntime: Runtime): () 
     auth: accountRuntime.auth,
   });
   return async () => {
+    const appSessionMetadata = await requiredRuntimeSessionMetadata();
     const session = await accountRuntime.account.getAccountSessionStatus({
       caller: parentosRuntimeAccountCaller,
-    });
-    if (session.state !== AccountSessionState.AUTHENTICATED || !session.accountProjection?.accountId) {
-      return {};
+    }).catch(() => null);
+    if (session?.state !== AccountSessionState.AUTHENTICATED || !session.accountProjection?.accountId) {
+      return appSessionMetadata;
     }
-    const appSessionMetadata = await requiredRuntimeSessionMetadata();
     const protectedAccessMetadata = await getParentOSRuntimeProtectedAccessMetadata(
       accountRuntime,
       session.accountProjection.accountId,

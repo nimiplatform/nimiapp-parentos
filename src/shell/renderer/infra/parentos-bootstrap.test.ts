@@ -433,6 +433,29 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     expect(dbInitMock).toHaveBeenCalledWith(null);
   });
 
+  it('still provides Runtime app-session metadata for anonymous app-storage requests', async () => {
+    getAccountSessionStatusMock.mockResolvedValue({
+      state: AccountSessionState.ANONYMOUS,
+      accountProjection: null,
+    });
+
+    await runParentOSBootstrap();
+
+    const appRuntimeOptions = runtimeConstructorOptions[1] as {
+      authMetadata?: () => Promise<Record<string, string>>;
+    };
+    expect(typeof appRuntimeOptions.authMetadata).toBe('function');
+
+    authorizeExternalPrincipalMock.mockClear();
+    const runtimeMetadata = await appRuntimeOptions.authMetadata!();
+
+    expect(runtimeMetadata).toEqual({
+      'x-nimi-session-id': 'session-1',
+      'x-nimi-session-token': 'session-token-1',
+    });
+    expect(authorizeExternalPrincipalMock).not.toHaveBeenCalled();
+  });
+
   it('initializes ParentOS AIConfig from first-run evidence after Runtime readiness', async () => {
     getAccountSessionStatusMock.mockResolvedValue({
       state: AccountSessionState.ANONYMOUS,
