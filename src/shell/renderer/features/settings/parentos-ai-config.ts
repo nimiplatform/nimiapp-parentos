@@ -4,7 +4,7 @@ import type {
   NimiAIProfileOriginRef,
   NimiAIScopeRef,
 } from '@nimiplatform/sdk/ai';
-import { createEmptyNimiAIConfig } from '@nimiplatform/sdk/ai';
+import { createEmptyNimiAIConfig, validateNimiAIConfig } from '@nimiplatform/sdk/ai';
 import type { NimiJsonValue } from '@nimiplatform/sdk/contracts';
 import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
 import { isoNow } from '../../bridge/ulid.js';
@@ -18,6 +18,7 @@ export const PARENTOS_AI_SCOPE_REF: NimiAIScopeRef = {
 };
 
 const PARENTOS_AI_CONFIG_SETTING_KEY = 'parentos.ai.config';
+export const PARENTOS_AI_CONFIG_QUARANTINE_PREFIX = `${PARENTOS_AI_CONFIG_SETTING_KEY}.quarantine.`;
 
 export type ParentosCapabilityId = 'text.generate' | 'text.generate.vision' | 'audio.transcribe';
 
@@ -154,31 +155,33 @@ function normalizeTargetRef(value: unknown): NimiAIConfigTargetRef | null {
   const kind = trimString(object.kind);
   if (kind === 'cloud-connector') {
     const connectorId = trimString(object.connectorId);
+    const remoteModelCatalogId = trimString(object.remoteModelCatalogId);
     const providerModelId = trimString(object.providerModelId);
     const provider = trimString(object.provider);
-    if (!connectorId || !providerModelId) {
+    if (!connectorId || !remoteModelCatalogId || !providerModelId) {
       return null;
     }
     return {
       kind,
       connectorId,
+      remoteModelCatalogId,
       providerModelId,
       ...(provider ? { provider } : {}),
     };
   }
   if (kind === 'local-runtime') {
-    const targetId = trimString(object.targetId);
-    const profileId = trimString(object.profileId);
+    const version = trimString(object.version);
+    const profileBindingId = trimString(object.profileBindingId);
     const readinessRef = trimString(object.readinessRef);
-    if (!targetId && !profileId && !readinessRef) {
+    if (version !== 'v2') {
       return null;
     }
-    return {
-      kind,
-      ...(targetId ? { targetId } : {}),
-      ...(profileId ? { profileId } : {}),
-      ...(readinessRef ? { readinessRef } : {}),
-    };
+    if (Boolean(profileBindingId) === Boolean(readinessRef)) {
+      return null;
+    }
+    return profileBindingId
+      ? { kind, version: 'v2', profileBindingId }
+      : { kind, version: 'v2', readinessRef };
   }
   if (kind === 'profile-slice') {
     const sourceProfileId = trimString(object.sourceProfileId);
@@ -191,7 +194,7 @@ function normalizeTargetRef(value: unknown): NimiAIConfigTargetRef | null {
   return null;
 }
 
-function normalizeTargetRefs(value: unknown): NimiAIConfig['capabilities']['targetRefs'] {
+function normalizeTargetRefs(value: unknown): NimiAIConfig['capabilities']['targetRefs'] | null {
   const object = asObject(value);
   if (!object) {
     return {};
@@ -199,10 +202,14 @@ function normalizeTargetRefs(value: unknown): NimiAIConfig['capabilities']['targ
   const normalized: { [capabilityId: string]: NimiAIConfigTargetRef } = {};
   for (const [capabilityId, targetRefValue] of Object.entries(object)) {
     const key = trimString(capabilityId);
-    const targetRef = normalizeTargetRef(targetRefValue);
-    if (key && targetRef) {
-      normalized[key] = targetRef;
+    if (!key || targetRefValue == null) {
+      continue;
     }
+    const targetRef = normalizeTargetRef(targetRefValue);
+    if (!targetRef) {
+      return null;
+    }
+    normalized[key] = targetRef;
   }
   return normalized;
 }
@@ -248,15 +255,54 @@ export function parsePersistedParentosAIConfig(value: unknown): NimiAIConfig | n
   if (!scopeRef || !capabilities) {
     return null;
   }
+  const targetRefs = normalizeTargetRefs(capabilities.targetRefs);
+  if (!targetRefs) {
+    return null;
+  }
 
-  return {
+  const normalized = {
     scopeRef,
     capabilities: {
-      targetRefs: normalizeTargetRefs(capabilities.targetRefs),
+      targetRefs,
       selectedParams: normalizeSelectedParams(capabilities.selectedParams),
     },
     profileOrigin: normalizeProfileOrigin(object.profileOrigin),
   };
+  const validation = validateNimiAIConfig(normalized);
+  return validation.valid ? normalized : null;
+}
+
+function storedParentosAIScopeMatches(value: unknown): boolean {
+  let parsedValue = value;
+  if (typeof parsedValue === 'string') {
+    const raw = trimString(parsedValue);
+    if (!raw) {
+      return false;
+    }
+    try {
+      parsedValue = JSON.parse(raw) as unknown;
+    } catch {
+      return false;
+    }
+  }
+  const object = asObject(parsedValue);
+  return Boolean(object && normalizeScopeRef(object.scopeRef));
+}
+
+async function quarantineInvalidParentosAIConfig(raw: string): Promise<void> {
+  const quarantinedAt = isoNow();
+  await setAppSetting(
+    `${PARENTOS_AI_CONFIG_QUARANTINE_PREFIX}${encodeURIComponent(quarantinedAt)}`,
+    JSON.stringify({
+      schemaVersion: 1,
+      reasonCode: 'PARENTOS_AI_CONFIG_STORE_INVALID',
+      originalKey: PARENTOS_AI_CONFIG_SETTING_KEY,
+      quarantinedAt,
+      raw,
+    }),
+    quarantinedAt,
+  );
+  await setAppSetting(PARENTOS_AI_CONFIG_SETTING_KEY, '', quarantinedAt);
 }
 
 export async function loadPersistedParentosAIConfig(): Promise<NimiAIConfig | null> {
@@ -266,6 +312,10 @@ export async function loadPersistedParentosAIConfig(): Promise<NimiAIConfig | nu
   }
   const parsed = parsePersistedParentosAIConfig(raw);
   if (!parsed) {
+    if (storedParentosAIScopeMatches(raw)) {
+      await quarantineInvalidParentosAIConfig(String(raw));
+      return null;
+    }
     throw new Error('Persisted ParentOS AI config is invalid');
   }
   return parsed;

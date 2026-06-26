@@ -7,6 +7,26 @@ import {
   resolveParentosTextSurfaceConfig,
 } from './parentos-ai-runtime.js';
 
+const localTextTargetRef = {
+  kind: 'local-runtime' as const,
+  version: 'v2' as const,
+  profileBindingId: 'local-runtime:qwen3',
+};
+
+const cloudTextTargetRef = {
+  kind: 'cloud-connector' as const,
+  connectorId: 'openai-main',
+  remoteModelCatalogId: 'remote-catalog:openai-main:gpt-5.4',
+  providerModelId: 'gpt-5.4',
+};
+
+const cloudVisionTargetRef = {
+  kind: 'cloud-connector' as const,
+  connectorId: 'openai-vision',
+  remoteModelCatalogId: 'remote-catalog:openai-vision:gpt-5.4-vision',
+  providerModelId: 'gpt-5.4-vision',
+};
+
 describe('parentos-ai-runtime access helpers', () => {
   beforeEach(() => {
     useAppStore.setState({
@@ -25,10 +45,7 @@ describe('parentos-ai-runtime access helpers', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'text.generate': {
-              kind: 'local-runtime',
-              targetId: 'qwen3',
-            },
+            'text.generate': localTextTargetRef,
           },
           selectedParams: {},
         },
@@ -37,9 +54,9 @@ describe('parentos-ai-runtime access helpers', () => {
     });
 
     expect(resolveParentosBinding('text.generate')).toEqual({
-      model: 'qwen3',
+      model: 'local-runtime:qwen3',
       route: 'local',
-      localModelId: 'qwen3',
+      targetRef: localTextTargetRef,
     });
   });
 
@@ -49,11 +66,7 @@ describe('parentos-ai-runtime access helpers', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'text.generate': {
-              kind: 'cloud-connector',
-              connectorId: 'openai-main',
-              providerModelId: 'gpt-5.4',
-            },
+            'text.generate': cloudTextTargetRef,
           },
           selectedParams: {},
         },
@@ -65,6 +78,7 @@ describe('parentos-ai-runtime access helpers', () => {
       model: 'gpt-5.4',
       route: 'cloud',
       connectorId: 'openai-main',
+      targetRef: cloudTextTargetRef,
     });
   });
 
@@ -77,13 +91,10 @@ describe('parentos-ai-runtime access helpers', () => {
             'text.generate': {
               kind: 'cloud-connector',
               connectorId: 'openai-main',
+              remoteModelCatalogId: 'remote-catalog:openai-main:gpt-5.4-mini',
               providerModelId: 'gpt-5.4-mini',
             },
-            'text.generate.vision': {
-              kind: 'cloud-connector',
-              connectorId: 'openai-vision',
-              providerModelId: 'gpt-5.4-vision',
-            },
+            'text.generate.vision': cloudVisionTargetRef,
           },
           selectedParams: {},
         },
@@ -95,6 +106,7 @@ describe('parentos-ai-runtime access helpers', () => {
       model: 'gpt-5.4-vision',
       route: 'cloud',
       connectorId: 'openai-vision',
+      targetRef: cloudVisionTargetRef,
     });
   });
 
@@ -112,11 +124,7 @@ describe('parentos-ai-runtime access helpers', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'text.generate': {
-              kind: 'cloud-connector',
-              connectorId: 'openai-main',
-              providerModelId: 'gpt-5.4',
-            },
+            'text.generate': cloudTextTargetRef,
           },
           selectedParams: {},
         },
@@ -128,6 +136,7 @@ describe('parentos-ai-runtime access helpers', () => {
       model: 'gpt-5.4',
       route: 'cloud',
       connectorId: 'openai-main',
+      targetRef: cloudTextTargetRef,
       temperature: undefined,
       topP: undefined,
       maxTokens: undefined,

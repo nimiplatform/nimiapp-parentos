@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { PARENTOS_AI_SCOPE_REF } from './parentos-ai-config.js';
 import {
-  ensureParentosLocalRuntimeReady,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
   resolveParentosImageTextRuntimeConfig,
   resolveParentosSpeechTranscribeRuntimeConfig,
   resolveParentosSpeechTranscribeConfig,
@@ -26,7 +24,6 @@ const {
       defaultEndpoint: 'http://127.0.0.1:1234/v1',
       models: [
         {
-          localModelId: 'local-qwen3',
           label: 'qwen3',
           engine: 'llama',
           model: 'qwen3',
@@ -34,12 +31,10 @@ const {
           provider: 'llama',
           endpoint: 'http://127.0.0.1:1234/v1',
           status: 'active',
-          goRuntimeLocalModelId: 'local-qwen3',
           goRuntimeStatus: 'active',
           capabilities: ['text.generate'],
         },
         {
-          localModelId: 'local-gemma-vision',
           label: 'gemma-4-vision',
           engine: 'llama',
           model: 'gemma-4-vision',
@@ -47,12 +42,10 @@ const {
           provider: 'llama',
           endpoint: 'http://127.0.0.1:1234/v1',
           status: 'active',
-          goRuntimeLocalModelId: 'local-gemma-vision',
           goRuntimeStatus: 'active',
           capabilities: ['text.generate.vision'],
         },
         {
-          localModelId: 'local-whisper-large-v3',
           label: 'whisper-large-v3',
           engine: 'speech',
           model: 'whisper-large-v3',
@@ -60,7 +53,6 @@ const {
           provider: 'speech',
           endpoint: 'http://127.0.0.1:1234/v1',
           status: 'active',
-          goRuntimeLocalModelId: 'local-whisper-large-v3',
           goRuntimeStatus: 'active',
           capabilities: ['audio.transcribe'],
         },
@@ -117,6 +109,23 @@ vi.mock('../../infra/parentos-runtime-route-options.js', () => ({
   loadParentosRuntimeRouteOptions: loadParentosRuntimeRouteOptionsMock,
 }));
 
+function localTargetRef(localAssetId: string) {
+  return {
+    kind: 'local-runtime' as const,
+    version: 'v2' as const,
+    profileBindingId: `local-runtime:${localAssetId}`,
+  };
+}
+
+function cloudTargetRef(connectorId: string, providerModelId: string) {
+  return {
+    kind: 'cloud-connector' as const,
+    connectorId,
+    remoteModelCatalogId: `remote-catalog:${connectorId}:${providerModelId}`,
+    providerModelId,
+  };
+}
+
 describe('parentos-ai-runtime', () => {
   beforeEach(() => {
     useAppStore.setState({ aiConfig: null });
@@ -138,10 +147,7 @@ describe('parentos-ai-runtime', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'text.generate': {
-              kind: 'local-runtime',
-              targetId: 'local-gemma-4',
-            },
+            'text.generate': localTargetRef('local-gemma-4'),
           },
           selectedParams: {
             'text.generate': {
@@ -155,9 +161,9 @@ describe('parentos-ai-runtime', () => {
     });
 
     expect(resolveParentosTextGenerateConfig({ temperature: 0.7, topP: 0.9, maxTokens: 1024 })).toEqual({
-      model: 'local-gemma-4',
+      model: 'local-runtime:local-gemma-4',
       route: 'local',
-      localModelId: 'local-gemma-4',
+      targetRef: localTargetRef('local-gemma-4'),
       temperature: 0.2,
       topP: 0.9,
       maxTokens: 900,
@@ -171,10 +177,7 @@ describe('parentos-ai-runtime', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'audio.transcribe': {
-              kind: 'local-runtime',
-              targetId: 'local-whisper-large-v3',
-            },
+            'audio.transcribe': localTargetRef('local-whisper-large-v3'),
           },
           selectedParams: {
             'audio.transcribe': {
@@ -189,9 +192,9 @@ describe('parentos-ai-runtime', () => {
     });
 
     expect(resolveParentosSpeechTranscribeConfig({ language: 'zh-CN', responseFormat: 'text', timestamps: false })).toEqual({
-      model: 'local-whisper-large-v3',
+      model: 'local-runtime:local-whisper-large-v3',
       route: 'local',
-      localModelId: 'local-whisper-large-v3',
+      targetRef: localTargetRef('local-whisper-large-v3'),
       language: 'zh-CN',
       responseFormat: 'text',
       timestamps: false,
@@ -208,11 +211,7 @@ describe('parentos-ai-runtime', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'text.generate': {
-              kind: 'cloud-connector',
-              connectorId: 'openai-main',
-              providerModelId: 'gpt-5.4',
-            },
+            'text.generate': cloudTargetRef('openai-main', 'gpt-5.4'),
           },
           selectedParams: {},
         },
@@ -224,6 +223,7 @@ describe('parentos-ai-runtime', () => {
       model: 'gpt-5.4',
       route: 'cloud',
       connectorId: 'openai-main',
+      targetRef: cloudTargetRef('openai-main', 'gpt-5.4'),
       temperature: undefined,
       topP: undefined,
       maxTokens: 1000,
@@ -237,11 +237,7 @@ describe('parentos-ai-runtime', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'audio.transcribe': {
-              kind: 'cloud-connector',
-              connectorId: 'openai-main',
-              providerModelId: 'gpt-4o-mini-transcribe',
-            },
+            'audio.transcribe': cloudTargetRef('openai-main', 'gpt-4o-mini-transcribe'),
           },
           selectedParams: {},
         },
@@ -255,6 +251,7 @@ describe('parentos-ai-runtime', () => {
       model: 'gpt-4o-mini-transcribe',
       route: 'cloud',
       connectorId: 'openai-main',
+      targetRef: cloudTargetRef('openai-main', 'gpt-4o-mini-transcribe'),
       language: 'zh-CN',
       responseFormat: undefined,
       timestamps: undefined,
@@ -271,10 +268,7 @@ describe('parentos-ai-runtime', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'text.generate': {
-              kind: 'local-runtime',
-              targetId: 'local-qwen3',
-            },
+            'text.generate': localTargetRef('local-qwen3'),
           },
           selectedParams: {},
         },
@@ -283,14 +277,14 @@ describe('parentos-ai-runtime', () => {
     });
 
     await expect(resolveParentosTextRuntimeConfig('parentos.advisor', { maxTokens: 1000 })).resolves.toEqual({
-      model: 'local-qwen3',
+      model: 'local-runtime:local-qwen3',
       route: 'local',
       connectorId: undefined,
       temperature: undefined,
       topP: undefined,
       maxTokens: 1000,
       timeoutMs: undefined,
-      localModelId: 'local-qwen3',
+      targetRef: localTargetRef('local-qwen3'),
     });
   });
 
@@ -300,10 +294,7 @@ describe('parentos-ai-runtime', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'text.generate': {
-              kind: 'local-runtime',
-              targetId: 'local-qwen3',
-            },
+            'text.generate': localTargetRef('local-qwen3'),
           },
           selectedParams: {},
         },
@@ -321,10 +312,7 @@ describe('parentos-ai-runtime', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'text.generate': {
-              kind: 'local-runtime',
-              targetId: 'local-qwen3',
-            },
+            'text.generate': localTargetRef('local-qwen3'),
           },
           selectedParams: {},
         },
@@ -343,15 +331,9 @@ describe('parentos-ai-runtime', () => {
         capabilities: {
           targetRefs: {
             'text.generate': {
-              kind: 'cloud-connector',
-              connectorId: 'chat-main',
-              providerModelId: 'gemini-3.1-flash-lite-preview',
+              ...cloudTargetRef('chat-main', 'gemini-3.1-flash-lite-preview'),
             },
-            'text.generate.vision': {
-              kind: 'cloud-connector',
-              connectorId: 'vision-main',
-              providerModelId: 'gemini-3.1-pro-vision',
-            },
+            'text.generate.vision': cloudTargetRef('vision-main', 'gemini-3.1-pro-vision'),
           },
           selectedParams: {
             'text.generate.vision': {
@@ -402,7 +384,7 @@ describe('parentos-ai-runtime', () => {
       topP: undefined,
       maxTokens: 1200,
       timeoutMs: undefined,
-      localModelId: undefined,
+      targetRef: cloudTargetRef('vision-main', 'gemini-3.1-pro-vision'),
     });
   });
 
@@ -412,10 +394,7 @@ describe('parentos-ai-runtime', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'audio.transcribe': {
-              kind: 'local-runtime',
-              targetId: 'local-whisper-large-v3',
-            },
+            'audio.transcribe': localTargetRef('local-whisper-large-v3'),
           },
           selectedParams: {},
         },
@@ -426,7 +405,7 @@ describe('parentos-ai-runtime', () => {
     await expect(resolveParentosSpeechTranscribeRuntimeConfig('parentos.journal.voice-observation', {
       language: 'zh-CN',
     })).resolves.toEqual({
-      model: 'local-whisper-large-v3',
+      model: 'local-runtime:local-whisper-large-v3',
       route: 'local',
       connectorId: undefined,
       language: 'zh-CN',
@@ -436,7 +415,7 @@ describe('parentos-ai-runtime', () => {
       speakerCount: undefined,
       prompt: undefined,
       timeoutMs: undefined,
-      localModelId: 'local-whisper-large-v3',
+      targetRef: localTargetRef('local-whisper-large-v3'),
     });
   });
 
@@ -452,11 +431,7 @@ describe('parentos-ai-runtime', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'text.generate': {
-              kind: 'cloud-connector',
-              connectorId: 'openai-main',
-              providerModelId: 'gpt-5.4',
-            },
+            'text.generate': cloudTargetRef('openai-main', 'gpt-5.4'),
           },
           selectedParams: {},
         },
@@ -472,6 +447,7 @@ describe('parentos-ai-runtime', () => {
       topP: undefined,
       maxTokens: 1000,
       timeoutMs: undefined,
+      targetRef: cloudTargetRef('openai-main', 'gpt-5.4'),
     });
   });
 
@@ -481,11 +457,7 @@ describe('parentos-ai-runtime', () => {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
-            'audio.transcribe': {
-              kind: 'cloud-connector',
-              connectorId: 'openai-main',
-              providerModelId: 'gpt-4o-mini-transcribe',
-            },
+            'audio.transcribe': cloudTargetRef('openai-main', 'gpt-4o-mini-transcribe'),
           },
           selectedParams: {},
         },
@@ -506,31 +478,7 @@ describe('parentos-ai-runtime', () => {
       speakerCount: undefined,
       prompt: undefined,
       timeoutMs: undefined,
-    });
-  });
-
-  it('warms local ParentOS runtime assets when a local model id is present', async () => {
-    await ensureParentosLocalRuntimeReady({
-      route: 'local',
-      localModelId: 'local-qwen3',
-      timeoutMs: 60000,
-    });
-
-    expect(warmLocalAssetMock).toHaveBeenCalledWith({
-      localAssetId: 'local-qwen3',
-      timeoutMs: 60000,
-    });
-  });
-
-  it('uses the shared warm timeout when callers do not provide one', async () => {
-    await ensureParentosLocalRuntimeReady({
-      route: 'local',
-      localModelId: 'local-qwen3',
-    });
-
-    expect(warmLocalAssetMock).toHaveBeenCalledWith({
-      localAssetId: 'local-qwen3',
-      timeoutMs: PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS,
+      targetRef: cloudTargetRef('openai-main', 'gpt-4o-mini-transcribe'),
     });
   });
 });

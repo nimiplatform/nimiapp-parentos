@@ -74,7 +74,7 @@ function targetSourceLabel(targetRef: NimiAIConfigTargetRef | null): string {
     return targetRef.provider || targetRef.connectorId || 'Cloud';
   }
   if (targetRef.kind === 'local-runtime') {
-    return targetRef.profileId || targetRef.readinessRef || 'Local Runtime';
+    return targetRef.profileBindingId || targetRef.readinessRef || 'Local Runtime';
   }
   return 'Profile slice';
 }
@@ -158,16 +158,18 @@ function targetRefToPickerSelection(targetRef: NimiAIConfigTargetRef | null): Pa
       model: targetRef.providerModelId,
       provider: targetRef.provider,
       modelId: targetRef.providerModelId,
+      remoteModelCatalogId: targetRef.remoteModelCatalogId,
+      providerModelId: targetRef.providerModelId,
     };
   }
   if (targetRef.kind === 'local-runtime') {
-    const model = targetRef.targetId || targetRef.profileId || targetRef.readinessRef || '';
+    const model = targetRef.profileBindingId || targetRef.readinessRef || '';
     return {
       source: 'local',
       connectorId: '',
       model,
-      localModelId: targetRef.targetId,
-      modelId: targetRef.targetId,
+      profileBindingId: targetRef.profileBindingId,
+      readinessRef: targetRef.readinessRef,
     };
   }
   return undefined;
@@ -176,25 +178,27 @@ function targetRefToPickerSelection(targetRef: NimiAIConfigTargetRef | null): Pa
 function pickerSelectionToTargetRef(selection: RouteModelPickerSelection): NimiAIConfigTargetRef {
   if (selection.source === 'cloud') {
     const connectorId = selection.connectorId.trim();
-    const providerModelId = (selection.modelId || selection.model).trim();
-    if (!connectorId || !providerModelId) {
+    const remoteModelCatalogId = String(selection.remoteModelCatalogId || '').trim();
+    const providerModelId = String(selection.providerModelId || selection.modelId || selection.model).trim();
+    if (!connectorId || !remoteModelCatalogId || !providerModelId) {
       throw new Error('ParentOS cloud model selection is incomplete.');
     }
     return {
       kind: 'cloud-connector',
       connectorId,
+      remoteModelCatalogId,
       providerModelId,
       ...(selection.provider ? { provider: selection.provider } : {}),
     };
   }
-  const targetId = (selection.localModelId || selection.modelId || selection.model).trim();
-  if (!targetId) {
+  const profileBindingId = String(selection.profileBindingId || '').trim();
+  const readinessRef = String(selection.readinessRef || '').trim();
+  if (Boolean(profileBindingId) === Boolean(readinessRef)) {
     throw new Error('ParentOS local model selection is incomplete.');
   }
-  return {
-    kind: 'local-runtime',
-    targetId,
-  };
+  return profileBindingId
+    ? { kind: 'local-runtime', version: 'v2', profileBindingId }
+    : { kind: 'local-runtime', version: 'v2', readinessRef };
 }
 
 export function ParentosAICapabilityCard({

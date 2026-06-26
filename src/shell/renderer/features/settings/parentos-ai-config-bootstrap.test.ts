@@ -132,14 +132,12 @@ describe('parentos-ai-config-bootstrap', () => {
     expect(savedConfig?.scopeRef).toEqual(PARENTOS_AI_SCOPE_REF);
     expect(savedConfig?.capabilities.targetRefs['text.generate']).toEqual({
       kind: 'local-runtime',
-      targetId: 'local',
-      profileId: 'runtime-baseline:ready',
+      version: 'v2',
       readinessRef: 'execution_evidence_ready',
     });
     expect(savedConfig?.capabilities.targetRefs['audio.transcribe']).toEqual({
       kind: 'local-runtime',
-      targetId: 'speech',
-      profileId: 'runtime-baseline:ready',
+      version: 'v2',
       readinessRef: 'execution_evidence_ready',
     });
   });
@@ -155,11 +153,13 @@ describe('parentos-ai-config-bootstrap', () => {
             kind: 'cloud-connector',
             connectorId: 'connector-openai',
             provider: 'openai',
+            remoteModelCatalogId: 'remote-catalog:connector-openai:gpt-runtime',
             providerModelId: 'gpt-runtime',
           },
           'audio.transcribe': {
             kind: 'local-runtime',
-            targetId: 'existing-stt',
+            version: 'v2',
+            profileBindingId: 'local-runtime:existing-stt',
           },
         },
         selectedParams: {},
@@ -194,6 +194,7 @@ describe('parentos-ai-config-bootstrap', () => {
       kind: 'cloud-connector',
       connectorId: 'connector-openai',
       provider: 'openai',
+      remoteModelCatalogId: 'remote-catalog:connector-openai:gpt-runtime',
       providerModelId: 'gpt-runtime',
     });
   });

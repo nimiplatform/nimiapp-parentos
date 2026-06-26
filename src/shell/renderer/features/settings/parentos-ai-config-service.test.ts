@@ -58,7 +58,8 @@ describe('parentos-ai-config-service', () => {
         targetRefs: {
           'text.generate': {
             kind: 'local-runtime',
-            targetId: 'local-model',
+            version: 'v2',
+            profileBindingId: 'local-runtime:local-model',
           },
         },
         selectedParams: {},
@@ -71,7 +72,8 @@ describe('parentos-ai-config-service', () => {
 
     expect(saved.capabilities.targetRefs['text.generate']).toEqual({
       kind: 'local-runtime',
-      targetId: 'local-model',
+      version: 'v2',
+      profileBindingId: 'local-runtime:local-model',
     });
     expect(mockSetAppSetting).toHaveBeenCalledTimes(1);
     expect(useAppStore.getState().aiConfig).toEqual(saved);
@@ -86,7 +88,8 @@ describe('parentos-ai-config-service', () => {
         targetRefs: {
           'text.generate': {
             kind: 'local-runtime',
-            targetId: 'local-model',
+            version: 'v2',
+            profileBindingId: 'local-runtime:local-model',
           },
         },
         selectedParams: {},

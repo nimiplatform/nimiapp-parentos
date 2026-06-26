@@ -34,7 +34,8 @@ const defaultLocalAIConfig = {
     targetRefs: {
       'text.generate': {
         kind: 'local-runtime' as const,
-        targetId: 'local-qwen3',
+        version: 'v2' as const,
+        profileBindingId: 'local-runtime:local-qwen3',
       },
     },
     selectedParams: {},
@@ -200,7 +201,6 @@ const {
     local: {
       defaultEndpoint: 'http://127.0.0.1:1234/v1',
       models: [{
-        localModelId: 'local-qwen3',
         label: 'qwen3',
         engine: 'llama',
         model: 'qwen3',
@@ -208,7 +208,6 @@ const {
         provider: 'llama',
         endpoint: 'http://127.0.0.1:1234/v1',
         status: 'active',
-        goRuntimeLocalModelId: 'local-qwen3',
         goRuntimeStatus: 'active',
         capabilities: ['text.generate'],
       }],
@@ -562,14 +561,11 @@ describe('AdvisorPage', () => {
       input: Array<{ role: string; content: string }>;
     };
     expect(streamInput.route).toBe('local');
-    expect(streamInput.model).toBe('local-qwen3');
+    expect(streamInput.model).toBe('local-runtime:local-qwen3');
     const promptText = streamInput.input.map((message) => message.content).join('\n');
     expect(promptText).toContain('当前策略：unknown-clarifier');
     expect(promptText).toContain('已审核领域');
-    expect(warmLocalAssetMock).toHaveBeenCalledWith({
-      localAssetId: 'local-qwen3',
-      timeoutMs: 180000,
-    });
+    expect(warmLocalAssetMock).not.toHaveBeenCalled();
 
     const userCall = insertAiMessageMock.mock.calls.find((call) => call[0].role === 'user')?.[0];
     expect(userCall?.contextSnapshot).toBeTruthy();
@@ -761,7 +757,7 @@ describe('AdvisorPage', () => {
       metadata: { surfaceId: string };
     };
     expect(streamInput.route).toBe('local');
-    expect(streamInput.model).toBe('local-qwen3');
+    expect(streamInput.model).toBe('local-runtime:local-qwen3');
     expect(streamInput.metadata.surfaceId).toBe('parentos.advisor');
     const promptText = streamInput.input.map((message) => message.content).join('\n');
     expect(promptText).toContain('当前策略：reviewed-advice');
@@ -914,6 +910,7 @@ describe('AdvisorPage', () => {
             'text.generate': {
               kind: 'cloud-connector',
               connectorId: 'connector-1',
+              remoteModelCatalogId: 'remote-catalog:connector-1:gpt-5.4',
               providerModelId: 'gpt-5.4',
             },
           },

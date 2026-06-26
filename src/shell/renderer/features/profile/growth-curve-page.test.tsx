@@ -18,7 +18,6 @@ const {
   deleteMeasurementMock,
   saveTextFileViaDialogMock,
   resolveParentosTextRuntimeConfigMock,
-  ensureParentosLocalRuntimeReadyMock,
   buildParentosRuntimeMetadataMock,
 } = vi.hoisted(() => ({
   getMeasurementsMock: vi.fn().mockResolvedValue([
@@ -57,7 +56,6 @@ const {
     temperature: 0.3,
     maxTokens: 256,
   }),
-  ensureParentosLocalRuntimeReadyMock: vi.fn().mockResolvedValue(undefined),
   buildParentosRuntimeMetadataMock: vi.fn().mockReturnValue({
     callerKind: 'third-party-app',
     callerId: 'nimi.parentos',
@@ -80,9 +78,7 @@ vi.mock('../../bridge/sqlite-bridge.js', () => ({
 
 vi.mock('../settings/parentos-ai-runtime.js', () => ({
   resolveParentosTextRuntimeConfig: resolveParentosTextRuntimeConfigMock,
-  ensureParentosLocalRuntimeReady: ensureParentosLocalRuntimeReadyMock,
   buildParentosRuntimeMetadata: buildParentosRuntimeMetadataMock,
-  PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS: 1000,
 }));
 
 vi.mock('../reports/report-export.js', () => ({
@@ -133,8 +129,6 @@ describe('GrowthCurvePage', () => {
       temperature: 0.3,
       maxTokens: 256,
     });
-    ensureParentosLocalRuntimeReadyMock.mockResolvedValue(undefined);
-
     useAppStore.setState({
       bootstrapReady: true,
       familyId: 'family-1',

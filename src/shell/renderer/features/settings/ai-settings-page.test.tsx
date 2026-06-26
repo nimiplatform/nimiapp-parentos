@@ -99,7 +99,8 @@ describe('AiSettingsPage', () => {
           targetRefs: {
             'text.generate': {
               kind: 'local-runtime',
-              targetId: 'local-import/gemma-4-26B-A4B-it-Q8_0',
+              version: 'v2',
+              profileBindingId: 'local-runtime:local-import/gemma-4-26B-A4B-it-Q8_0',
             },
           },
           selectedParams: {},
@@ -110,7 +111,8 @@ describe('AiSettingsPage', () => {
     const { container } = renderPage();
 
     await waitFor(() => {
-      expect(container.textContent).toContain('local-import/gemma-4-26B-A4B-it-Q8_0');
+      expect(container.textContent).toContain('Local runtime target');
+      expect(container.textContent).not.toContain('targetId');
       expect(container.textContent).toContain('模型已配置');
       expect(container.textContent).toContain('1 / 3 已绑定');
     });

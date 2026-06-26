@@ -33,7 +33,7 @@ export type ParentosCallParams = {
   model?: string;
   route?: 'local' | 'cloud';
   connectorId?: string;
-  localModelId?: string;
+  targetRef?: NimiAIConfigTargetRef;
 };
 
 export function resolveParentosBinding(capabilityId: ParentosCapabilityId): ParentosCallParams | null {
@@ -85,13 +85,13 @@ export type ParentosSpeechTranscribeParams = ParentosCallParams & {
 export type ParentosResolvedTextRuntimeParams = ParentosTextGenerateParams & {
   model: string;
   route: 'local' | 'cloud';
-  localModelId?: string;
+  targetRef: NimiAIConfigTargetRef;
 };
 
 export type ParentosResolvedSpeechTranscribeParams = ParentosSpeechTranscribeParams & {
   model: string;
   route: 'local' | 'cloud';
-  localModelId?: string;
+  targetRef: NimiAIConfigTargetRef;
 };
 
 export interface ParentosTextGenerationInput {
@@ -133,7 +133,6 @@ export interface ParentosSpeechTranscribeOutput {
   };
 }
 
-export const PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS = 180_000;
 const TEXT_IMAGE_INPUT_CAPABILITY = 'text.generate.vision' satisfies ParentosCapabilityId;
 const IMAGE_INPUT_UNSUPPORTED_ERROR_MESSAGE = i18nText('AISettings.runtime.imageInputUnsupported');
 
@@ -169,23 +168,63 @@ function readParentosTargetRef(capabilityId: ParentosCapabilityId): NimiAIConfig
   return config ? targetRefFromConfig(config, capabilityId) : null;
 }
 
+function localRuntimeRefValue(targetRef: Extract<NimiAIConfigTargetRef, { kind: 'local-runtime' }>): string {
+  return String(targetRef.profileBindingId || targetRef.readinessRef || '').trim();
+}
+
 function parentosCallParamsFromTargetRef(targetRef: NimiAIConfigTargetRef): ParentosCallParams {
   if (targetRef.kind === 'cloud-connector') {
     return {
       model: targetRef.providerModelId,
       route: 'cloud',
       connectorId: targetRef.connectorId,
+      targetRef,
     };
   }
   if (targetRef.kind === 'local-runtime') {
-    const model = String(targetRef.targetId || targetRef.profileId || targetRef.readinessRef || '').trim();
+    const model = localRuntimeRefValue(targetRef);
     return {
       model: model || undefined,
       route: 'local',
-      localModelId: String(targetRef.targetId || '').trim() || undefined,
+      targetRef,
     };
   }
   return {};
+}
+
+function runtimeDurableTargetRefFromAIConfigTargetRef(
+  targetRef: NimiAIConfigTargetRef,
+): NonNullable<NonNullable<ExecuteScenarioRequest['head']>['targetRef']> {
+  if (targetRef.kind === 'cloud-connector') {
+    return {
+      target: {
+        oneofKind: 'cloud',
+        cloud: {
+          version: 'v2',
+          connectorId: String(targetRef.connectorId || '').trim(),
+          remoteModelCatalogId: String(targetRef.remoteModelCatalogId || '').trim(),
+          providerModelId: String(targetRef.providerModelId || '').trim(),
+          provider: String(targetRef.provider || '').trim(),
+        },
+      },
+    };
+  }
+  if (targetRef.kind === 'local-runtime') {
+    const profileBindingId = String(targetRef.profileBindingId || '').trim();
+    const readinessRef = String(targetRef.readinessRef || '').trim();
+    return {
+      target: {
+        oneofKind: 'localRuntime',
+        localRuntime: {
+          version: 'v2',
+          ref: profileBindingId
+            ? { oneofKind: 'profileBindingId', profileBindingId }
+            : { oneofKind: 'readinessRef', readinessRef },
+        },
+      },
+    };
+  }
+  throw createMissingBindingError('text.generate', 'parentos.advisor');
 }
 
 function createMissingBindingError(capabilityId: ParentosCapabilityId, surfaceId: ParentosAISurfaceId): Error {
@@ -275,18 +314,21 @@ function requireResolvedModel(input: ParentosCallParams, capabilityId: ParentosC
   readonly model: string;
   readonly route: 'local' | 'cloud';
   readonly connectorId?: string;
-  readonly localModelId?: string;
+  readonly targetRef: NimiAIConfigTargetRef;
 } {
   const model = String(input.model || '').trim();
   const route = input.route === 'cloud' ? 'cloud' : input.route === 'local' ? 'local' : null;
   if (!model || !route) {
     throw createMissingBindingError(capabilityId, surfaceId);
   }
+  if (!input.targetRef) {
+    throw createMissingBindingError(capabilityId, surfaceId);
+  }
   return {
     model,
     route,
     connectorId: input.connectorId,
-    localModelId: input.localModelId,
+    targetRef: input.targetRef,
   };
 }
 
@@ -403,27 +445,6 @@ export async function resolveParentosSpeechTranscribeRuntimeConfig(
   };
 }
 
-export async function ensureParentosLocalRuntimeReady(input: {
-  route?: 'local' | 'cloud';
-  localModelId?: string;
-  timeoutMs?: number;
-}): Promise<void> {
-  if (input.route !== 'local') {
-    return;
-  }
-  const localModelId = String(input.localModelId || '').trim();
-  if (!localModelId) {
-    return;
-  }
-  const timeoutMs = typeof input.timeoutMs === 'number' && Number.isFinite(input.timeoutMs) && input.timeoutMs > 0
-    ? Math.trunc(input.timeoutMs)
-    : PARENTOS_LOCAL_RUNTIME_WARM_TIMEOUT_MS;
-  await getParentOSNimiClient().runtime.local.warmLocalAsset({
-    localAssetId: localModelId,
-    timeoutMs,
-  });
-}
-
 function toModelRef(params: ParentosResolvedTextRuntimeParams | ParentosResolvedSpeechTranscribeParams): NimiModelRef {
   return {
     modelId: params.model,
@@ -462,11 +483,6 @@ export async function runParentosTextGenerate(
   const params = input.capabilityId === TEXT_IMAGE_INPUT_CAPABILITY
     ? await resolveParentosImageTextRuntimeConfig(input.surfaceId, input.defaults)
     : await resolveParentosTextRuntimeConfig(input.surfaceId, input.defaults);
-  await ensureParentosLocalRuntimeReady({
-    route: params.route,
-    localModelId: params.localModelId,
-    timeoutMs: params.timeoutMs,
-  });
   const model = createNimiRuntimeAIModel({
     runtime: getParentOSNimiClient().runtime,
     appId: PARENTOS_AI_SCOPE_REF.ownerId,
@@ -474,6 +490,7 @@ export async function runParentosTextGenerate(
     routePolicy: params.route,
     connectorId: params.connectorId,
     timeoutMs: params.timeoutMs,
+    targetRef: params.targetRef,
     metadata: toParentosCoreMetadata(input.surfaceId, input.metadata),
   });
   return runNimiTextGenerate({
@@ -487,11 +504,6 @@ export async function streamParentosTextGenerate(
   handlers: Parameters<typeof streamNimiTextResponse>[1] = {},
 ): Promise<NimiTextStreamResponseResult> {
   const params = await resolveParentosTextRuntimeConfig(input.surfaceId, input.defaults);
-  await ensureParentosLocalRuntimeReady({
-    route: params.route,
-    localModelId: params.localModelId,
-    timeoutMs: params.timeoutMs,
-  });
   const model = createNimiRuntimeAIModel({
     runtime: getParentOSNimiClient().runtime,
     appId: PARENTOS_AI_SCOPE_REF.ownerId,
@@ -499,6 +511,7 @@ export async function streamParentosTextGenerate(
     routePolicy: params.route,
     connectorId: params.connectorId,
     timeoutMs: params.timeoutMs,
+    targetRef: params.targetRef,
     metadata: toParentosCoreMetadata(input.surfaceId, input.metadata),
   });
   return streamNimiTextResponse({
@@ -607,6 +620,7 @@ function buildTextScenarioRequest(input: ParentosTextGenerationInput, params: Pa
       fallback: FallbackPolicy.DENY,
       timeoutMs: Number(params.timeoutMs ?? 0),
       connectorId: String(params.connectorId || ''),
+      targetRef: runtimeDurableTargetRefFromAIConfigTargetRef(params.targetRef),
     },
     scenarioType: ScenarioType.TEXT_GENERATE,
     executionMode: ExecutionMode.SYNC,
@@ -650,11 +664,6 @@ export async function runParentosMultimodalTextGenerate(input: ParentosTextGener
   const params = input.capabilityId === TEXT_IMAGE_INPUT_CAPABILITY
     ? await resolveParentosImageTextRuntimeConfig(input.surfaceId, input.defaults)
     : await resolveParentosTextRuntimeConfig(input.surfaceId, input.defaults);
-  await ensureParentosLocalRuntimeReady({
-    route: params.route,
-    localModelId: params.localModelId,
-    timeoutMs: params.timeoutMs,
-  });
   const response = await getParentOSNimiClient().runtime.ai.executeScenario(
     buildTextScenarioRequest(input, params),
     {
@@ -680,11 +689,6 @@ export async function runParentosSpeechTranscribe(
     throw new Error('voice observation transcription requires audio bytes');
   }
   const params = await resolveParentosSpeechTranscribeRuntimeConfig(input.surfaceId, input.defaults);
-  await ensureParentosLocalRuntimeReady({
-    route: params.route,
-    localModelId: params.localModelId,
-    timeoutMs: params.timeoutMs,
-  });
   const response = await getParentOSNimiClient().runtime.ai.executeScenario({
     head: {
       appId: PARENTOS_AI_SCOPE_REF.ownerId,
@@ -694,6 +698,7 @@ export async function runParentosSpeechTranscribe(
       fallback: FallbackPolicy.DENY,
       timeoutMs: Number(params.timeoutMs ?? 0),
       connectorId: String(params.connectorId || ''),
+      targetRef: runtimeDurableTargetRefFromAIConfigTargetRef(params.targetRef),
     },
     scenarioType: ScenarioType.SPEECH_TRANSCRIBE,
     executionMode: ExecutionMode.SYNC,
