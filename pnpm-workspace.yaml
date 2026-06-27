@@ -1,7 +1,5 @@
 packages:
   - .
-  - ../../nimi/kit
-  - ../../nimi/sdks/typescript
 
 overrides:
   '@nimiplatform/kit': link:../../nimi/kit
