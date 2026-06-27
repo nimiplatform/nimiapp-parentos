@@ -4,6 +4,8 @@ use std::sync::{OnceLock, RwLock};
 use serde::Deserialize;
 use tauri::Manager;
 
+use nimi_shell_tauri::capabilities::storage;
+
 pub const PARENTOS_APP_ID: &str = "nimi.parentos";
 
 const STORAGE_POLICY_REF: &str = "nimi-data-app-roots";
@@ -60,18 +62,12 @@ fn roots_from_projection(
 ) -> Result<ParentOSAppStorageRoots, String> {
     require_ready_projection(projection)?;
     Ok(ParentOSAppStorageRoots {
-        data_root: nimi_shell_tauri::runtime_app_storage::canonical_storage_root(
+        data_root: storage::canonical_storage_root(
             &projection.durable_data_root,
             "ParentOS durable data root",
         )?,
-        cache_root: nimi_shell_tauri::runtime_app_storage::canonical_storage_root(
-            &projection.cache_root,
-            "ParentOS cache root",
-        )?,
-        temp_root: nimi_shell_tauri::runtime_app_storage::canonical_storage_root(
-            &projection.temp_root,
-            "ParentOS temp root",
-        )?,
+        cache_root: storage::canonical_storage_root(&projection.cache_root, "ParentOS cache root")?,
+        temp_root: storage::canonical_storage_root(&projection.temp_root, "ParentOS temp root")?,
     })
 }
 
@@ -137,11 +133,7 @@ pub fn data_child_path(child: impl AsRef<Path>) -> Result<PathBuf, String> {
     let data_root_text = data_root
         .to_str()
         .ok_or_else(|| "ParentOS durable data root is not valid UTF-8".to_string())?;
-    nimi_shell_tauri::runtime_app_storage::scoped_storage_child(
-        data_root_text,
-        "ParentOS durable data root",
-        child,
-    )
+    storage::scoped_storage_child(data_root_text, "ParentOS durable data root", child)
 }
 
 #[cfg(test)]
@@ -151,19 +143,19 @@ pub fn install_test_app_storage_roots(
     temp_root: PathBuf,
 ) -> Result<ParentOSAppStorageRoots, String> {
     let roots = ParentOSAppStorageRoots {
-        data_root: nimi_shell_tauri::runtime_app_storage::canonical_storage_root(
+        data_root: storage::canonical_storage_root(
             data_root
                 .to_str()
                 .ok_or_else(|| "test ParentOS data root is not valid UTF-8".to_string())?,
             "test ParentOS durable data root",
         )?,
-        cache_root: nimi_shell_tauri::runtime_app_storage::canonical_storage_root(
+        cache_root: storage::canonical_storage_root(
             cache_root
                 .to_str()
                 .ok_or_else(|| "test ParentOS cache root is not valid UTF-8".to_string())?,
             "test ParentOS cache root",
         )?,
-        temp_root: nimi_shell_tauri::runtime_app_storage::canonical_storage_root(
+        temp_root: storage::canonical_storage_root(
             temp_root
                 .to_str()
                 .ok_or_else(|| "test ParentOS temp root is not valid UTF-8".to_string())?,

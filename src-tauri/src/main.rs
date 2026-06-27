@@ -1,10 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use serde::Serialize;
-// Shared modules from kit/shell/tauri crate
-use nimi_shell_tauri::oauth_commands;
-use nimi_shell_tauri::runtime_bridge;
-use nimi_shell_tauri::session_logging;
+use serde::{Deserialize, Serialize};
+use tauri::Manager;
+
+// Shared standard shell capabilities from kit/shell/tauri crate.
+use nimi_shell_tauri::capabilities::{oauth, runtime, session_logging};
 
 // App-local modules
 mod app_storage;
@@ -27,6 +27,23 @@ struct ParentOSStorageDirs {
     parentos_cache_root: String,
     parentos_temp_root: String,
     parentos_db_path: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ConfirmDialogPayload {
+    #[allow(dead_code)]
+    title: Option<String>,
+    #[allow(dead_code)]
+    description: Option<String>,
+    #[allow(dead_code)]
+    level: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ConfirmDialogResult {
+    confirmed: bool,
 }
 
 #[tauri::command]
@@ -56,8 +73,7 @@ fn storage_dirs_from_roots(
     })
 }
 
-#[tauri::command]
-fn parentos_start_window_drag(window: tauri::WebviewWindow) -> Result<(), String> {
+fn start_dragging_window(window: tauri::WebviewWindow) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     if window.is_fullscreen().unwrap_or(false) {
         return Ok(());
@@ -69,6 +85,39 @@ fn parentos_start_window_drag(window: tauri::WebviewWindow) -> Result<(), String
         Ok(result) => result,
         Err(_) => Err("window drag unavailable".to_string()),
     }
+}
+
+#[tauri::command]
+fn start_window_drag(window: tauri::WebviewWindow) -> Result<(), String> {
+    start_dragging_window(window)
+}
+
+#[tauri::command]
+fn parentos_start_window_drag(window: tauri::WebviewWindow) -> Result<(), String> {
+    start_dragging_window(window)
+}
+
+#[tauri::command]
+fn focus_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .or_else(|| app.webview_windows().into_values().next())
+        .ok_or_else(|| "main window unavailable".to_string())?;
+    let _ = window.unminimize();
+    window.show().map_err(|error| error.to_string())?;
+    window.set_focus().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn confirm_dialog(payload: ConfirmDialogPayload) -> Result<ConfirmDialogResult, String> {
+    let _ = payload;
+    Err(nimi_shell_tauri::capabilities::standard_shell_error(
+        "capability-unavailable",
+        "parentos-native-confirm-dialog-unavailable",
+        "Use ParentOS in-app confirmation UI for product confirmations.",
+        "tauri",
+        None,
+    ))
 }
 
 fn load_dotenv_files() {
@@ -114,12 +163,15 @@ fn main() {
             get_storage_dirs,
             prepare_parentos_app_storage,
             parentos_start_window_drag,
-            oauth_commands::open_external_url,
-            oauth_commands::oauth_listen_for_code,
-            runtime_bridge::runtime_bridge_unary,
-            runtime_bridge::runtime_bridge_stream_open,
-            runtime_bridge::runtime_bridge_stream_close,
-            runtime_bridge::runtime_bridge_status,
+            confirm_dialog,
+            start_window_drag,
+            focus_main_window,
+            oauth::open_external_url,
+            oauth::oauth_listen_for_code,
+            runtime::runtime_bridge_unary,
+            runtime::runtime_bridge_stream_open,
+            runtime::runtime_bridge_stream_close,
+            runtime::runtime_bridge_status,
             session_logging::log_renderer_event,
             journal_audio::save_journal_voice_audio,
             journal_audio::delete_journal_voice_audio,
