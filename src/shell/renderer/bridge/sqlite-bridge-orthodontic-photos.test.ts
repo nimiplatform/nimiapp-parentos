@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@tauri-apps/api/core', () => ({
+vi.mock('./shell-command.js', () => ({
   invoke: vi.fn(),
 }));
 
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from './shell-command.js';
 import {
   attachOrthodonticPhoto,
   canonicalizePhotoMime,

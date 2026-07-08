@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAppStore, computeAgeMonths, computeAgeMonthsAt } from '../../app-shell/app-store.js';
-import { invoke } from '@tauri-apps/api/core';
-import { getCurrentWebview } from '@tauri-apps/api/webview';
+import { invoke } from '../../bridge/shell-command.js';
 import {
   insertDentalRecord,
   updateDentalRecord,
@@ -57,6 +56,12 @@ import {
   type DentalEruptionCandidate,
 } from './dental-eruption-scan.js';
 import { i18nText } from '../../i18n/index.js';
+
+type DentalPhotoPayload = {
+  fileName: string;
+  mimeType: string;
+  base64: string;
+};
 
 
 /* ── Main view ───────────────────────────────────────────── */
@@ -124,32 +129,31 @@ export function DentalHistoryView() {
     setFormPhotoFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const appendPhotoPaths = async (paths: string[]) => {
+  const appendPhotoPayloads = (photos: DentalPhotoPayload[]) => {
     const remaining = Math.max(0, PHOTO_MAX - totalPhotoCount);
     if (remaining === 0) return;
-    const slice = paths.slice(0, remaining);
-    const newPreviews: string[] = [];
-    const newFiles: PendingDentalPhoto[] = [];
-    for (const path of slice) {
-      try {
-        const payload = await invoke<{ fileName: string; mimeType: string; base64: string }>(
-          'read_dropped_image_as_base64',
-          { path },
-        );
-        if (!payload.base64) continue;
-        newPreviews.push(`data:${payload.mimeType};base64,${payload.base64}`);
-        newFiles.push({ base64: payload.base64, mimeType: payload.mimeType, fileName: payload.fileName });
-      } catch { /* skip non-image / unreadable */ }
-    }
-    if (newFiles.length === 0) return;
-    setFormPhotoPreviews((prev) => [...prev, ...newPreviews]);
-    setFormPhotoFiles((prev) => [...prev, ...newFiles]);
+    const slice = photos.filter((photo) => photo.base64 && photo.mimeType).slice(0, remaining);
+    if (slice.length === 0) return;
+    setFormPhotoPreviews((prev) => [
+      ...prev,
+      ...slice.map((photo) => `data:${photo.mimeType};base64,${photo.base64}`),
+    ]);
+    setFormPhotoFiles((prev) => [
+      ...prev,
+      ...slice.map((photo) => ({
+        base64: photo.base64,
+        mimeType: photo.mimeType,
+        fileName: photo.fileName,
+      })),
+    ]);
   };
 
   const pickPhotoFiles = async () => {
     try {
-      const paths = await invoke<string[]>('pick_image_files', { title: i18nText('Dental.history.pickPhotoTitle') });
-      if (paths && paths.length > 0) await appendPhotoPaths(paths);
+      const photos = await invoke<DentalPhotoPayload[]>('pick_image_files_as_base64', {
+        title: i18nText('Dental.history.pickPhotoTitle'),
+      });
+      if (photos && photos.length > 0) appendPhotoPayloads(photos);
     } catch (error) {
       catchLog('dental', 'action:pick-photo-files-failed')(error);
     }
@@ -195,14 +199,12 @@ export function DentalHistoryView() {
 
   const pickScanPhoto = async () => {
     try {
-      const paths = await invoke<string[]>('pick_image_files', { title: i18nText('Dental.scan.pickPhotoTitle') });
-      if (!paths || paths.length === 0) return;
-      const [firstPath] = paths;
-      if (!firstPath) return;
-      const payload = await invoke<{ fileName: string; mimeType: string; base64: string }>(
-        'read_dropped_image_as_base64',
-        { path: firstPath },
-      );
+      const photos = await invoke<DentalPhotoPayload[]>('pick_image_files_as_base64', {
+        title: i18nText('Dental.scan.pickPhotoTitle'),
+      });
+      if (!photos || photos.length === 0) return;
+      const payload = photos[0];
+      if (!payload) return;
       if (!payload.base64) return;
       const photo: PendingDentalPhoto = {
         base64: payload.base64,
@@ -361,31 +363,6 @@ export function DentalHistoryView() {
     setOrthoAppliances(clearAligners);
     setOrthoCheckins(checkinLists.flat());
   };
-
-  useEffect(() => {
-    if (!showForm) return;
-    let unlisten: (() => void) | null = null;
-    let cancelled = false;
-    void getCurrentWebview().onDragDropEvent((event) => {
-      const payload = event.payload as { type: string; paths?: string[] };
-      if (payload.type === 'enter' || payload.type === 'over') {
-        setPhotoDragOver(true);
-      } else if (payload.type === 'leave') {
-        setPhotoDragOver(false);
-      } else if (payload.type === 'drop') {
-        setPhotoDragOver(false);
-        const paths = payload.paths ?? [];
-        if (paths.length > 0) void appendPhotoPaths(paths);
-      }
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlisten = fn;
-    }).catch(catchLog('dental', 'action:register-drag-drop-failed'));
-    return () => {
-      cancelled = true;
-      if (unlisten) unlisten();
-    };
-  }, [showForm]);
 
   useEffect(() => {
     if (!activeChildId) return;

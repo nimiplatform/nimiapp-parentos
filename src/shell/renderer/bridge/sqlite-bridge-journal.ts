@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from './shell-command.js';
 import type { KeepsakeReason } from '../features/journal/journal-page-helpers.js';
 
 export interface JournalEntryRow {

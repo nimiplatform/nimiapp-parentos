@@ -1,7 +1,7 @@
 import { IconButton } from '@nimiplatform/kit/ui';
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { convertFileSrc } from '../../bridge/shell-command.js';
 import { i18nText } from '../../i18n/index.js';
 
 

@@ -18,7 +18,7 @@ import {
   type ExecuteScenarioRequest,
   type ExecuteScenarioResponse,
   type ScenarioArtifact,
-} from '@nimiplatform/sdk/runtime/generated';
+} from '@nimiplatform/sdk/runtime/wire-types';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { getParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import type { ParentosCapabilityId } from './parentos-ai-config.js';
@@ -42,11 +42,7 @@ export function resolveParentosBinding(capabilityId: ParentosCapabilityId): Pare
 }
 
 export function buildParentosRuntimeMetadata(surfaceId: ParentosAISurfaceId): CoreMetadata {
-  return {
-    callerKind: 'developer-registered-local-app',
-    callerId: 'nimi.parentos',
-    surfaceId,
-  };
+  return { surfaceId };
 }
 
 function toParentosCoreMetadata(
@@ -55,14 +51,36 @@ function toParentosCoreMetadata(
 ): CoreMetadata {
   const projected: Record<string, string> = {};
   for (const [key, value] of Object.entries(metadata ?? {})) {
+    if (isHostOwnedRuntimeMetadataKey(key)) {
+      throw new Error(`ParentOS renderer metadata cannot provide host-owned Runtime field: ${key}`);
+    }
     if (typeof value === 'string') {
       projected[key] = value;
     }
   }
   return {
-    ...buildParentosRuntimeMetadata(surfaceId),
     ...projected,
+    ...buildParentosRuntimeMetadata(surfaceId),
   };
+}
+
+function isHostOwnedRuntimeMetadataKey(key: string): boolean {
+  const normalized = key.replace(/[-_]/gu, '').toLowerCase();
+  return normalized === 'appid'
+    || normalized === 'participantid'
+    || normalized === 'callerkind'
+    || normalized === 'callerid'
+    || normalized === 'authorization'
+    || normalized === 'protectedaccesstoken'
+    || normalized === 'appsession'
+    || normalized.includes('accesstoken')
+    || normalized.includes('sessiontoken')
+    || normalized.includes('providerapikey')
+    || normalized.includes('secret')
+    || normalized === 'xnimiappid'
+    || normalized === 'xnimiparticipantid'
+    || normalized === 'xnimicallerkind'
+    || normalized === 'xnimicallerid';
 }
 
 export type ParentosTextGenerateParams = ParentosCallParams & {
@@ -225,6 +243,16 @@ function runtimeDurableTargetRefFromAIConfigTargetRef(
     };
   }
   throw createMissingBindingError('text.generate', 'parentos.advisor');
+}
+
+export async function ensureParentosLocalRuntimeReady(input: {
+  readonly targetRef: NimiAIConfigTargetRef;
+  readonly surfaceId: ParentosAISurfaceId;
+}): Promise<void> {
+  if (input.targetRef.kind !== 'local-runtime') {
+    return;
+  }
+  await getParentOSNimiClient().runtime.ready();
 }
 
 function createMissingBindingError(capabilityId: ParentosCapabilityId, surfaceId: ParentosAISurfaceId): Error {
@@ -483,6 +511,10 @@ export async function runParentosTextGenerate(
   const params = input.capabilityId === TEXT_IMAGE_INPUT_CAPABILITY
     ? await resolveParentosImageTextRuntimeConfig(input.surfaceId, input.defaults)
     : await resolveParentosTextRuntimeConfig(input.surfaceId, input.defaults);
+  await ensureParentosLocalRuntimeReady({
+    targetRef: params.targetRef,
+    surfaceId: input.surfaceId,
+  });
   const model = createNimiRuntimeAIModel({
     runtime: getParentOSNimiClient().runtime,
     appId: PARENTOS_AI_SCOPE_REF.ownerId,
@@ -504,6 +536,10 @@ export async function streamParentosTextGenerate(
   handlers: Parameters<typeof streamNimiTextResponse>[1] = {},
 ): Promise<NimiTextStreamResponseResult> {
   const params = await resolveParentosTextRuntimeConfig(input.surfaceId, input.defaults);
+  await ensureParentosLocalRuntimeReady({
+    targetRef: params.targetRef,
+    surfaceId: input.surfaceId,
+  });
   const model = createNimiRuntimeAIModel({
     runtime: getParentOSNimiClient().runtime,
     appId: PARENTOS_AI_SCOPE_REF.ownerId,
@@ -664,6 +700,10 @@ export async function runParentosMultimodalTextGenerate(input: ParentosTextGener
   const params = input.capabilityId === TEXT_IMAGE_INPUT_CAPABILITY
     ? await resolveParentosImageTextRuntimeConfig(input.surfaceId, input.defaults)
     : await resolveParentosTextRuntimeConfig(input.surfaceId, input.defaults);
+  await ensureParentosLocalRuntimeReady({
+    targetRef: params.targetRef,
+    surfaceId: input.surfaceId,
+  });
   const response = await getParentOSNimiClient().runtime.ai.executeScenario(
     buildTextScenarioRequest(input, params),
     {
@@ -689,6 +729,10 @@ export async function runParentosSpeechTranscribe(
     throw new Error('voice observation transcription requires audio bytes');
   }
   const params = await resolveParentosSpeechTranscribeRuntimeConfig(input.surfaceId, input.defaults);
+  await ensureParentosLocalRuntimeReady({
+    targetRef: params.targetRef,
+    surfaceId: input.surfaceId,
+  });
   const response = await getParentOSNimiClient().runtime.ai.executeScenario({
     head: {
       appId: PARENTOS_AI_SCOPE_REF.ownerId,

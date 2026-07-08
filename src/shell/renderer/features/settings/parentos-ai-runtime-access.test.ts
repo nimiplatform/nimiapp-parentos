@@ -110,10 +110,8 @@ describe('parentos-ai-runtime access helpers', () => {
     });
   });
 
-  it('builds stable ParentOS runtime metadata for governed surfaces', () => {
+  it('builds renderer-safe ParentOS runtime metadata for governed surfaces', () => {
     expect(buildParentosRuntimeMetadata('parentos.advisor')).toEqual({
-      callerKind: 'developer-registered-local-app',
-      callerId: 'nimi.parentos',
       surfaceId: 'parentos.advisor',
     });
   });

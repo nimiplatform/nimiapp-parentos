@@ -31,8 +31,23 @@ describe('ParentOS developer app auth bridge boundary', () => {
     expect(tauriMainSource).not.toContain('oauth_commands::oauth_token_exchange');
   });
 
+  it('uses Kit standard code-only OAuth bridge rather than an app-local or removed Tauri bridge factory', () => {
+    expect(bridgeSource).toContain('createStandardShellOAuthCodeBridge');
+    expect(bridgeSource).not.toContain('createTauriOAuthCodeBridge');
+    expect(bridgeSource).not.toContain('createStandardShellOAuthBridge');
+  });
+
   it('registers standard shell capabilities and shell-ui aliases through Kit', () => {
-    expect(tauriMainSource).toContain('use nimi_shell_tauri::capabilities::{oauth, runtime, session_logging}');
+    expect(tauriMainSource).toContain('use nimi_shell_tauri::capabilities::{');
+    expect(tauriMainSource).toContain('data');
+    expect(tauriMainSource).toContain('storage');
+    expect(tauriMainSource).toContain('oauth');
+    expect(tauriMainSource).toContain('runtime');
+    expect(tauriMainSource).toContain('session_logging');
+    expect(tauriMainSource).toContain('data::data_path_resolve');
+    expect(tauriMainSource).toContain('storage::storage_read_json');
+    expect(tauriMainSource).toContain('storage::storage_write_json');
+    expect(tauriMainSource).toContain('storage::storage_remove_json');
     expect(tauriMainSource).toContain('oauth::open_external_url');
     expect(tauriMainSource).toContain('oauth::oauth_listen_for_code');
     expect(tauriMainSource).toContain('runtime::runtime_bridge_unary');

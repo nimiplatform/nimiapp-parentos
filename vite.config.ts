@@ -25,6 +25,7 @@ export default defineConfig(() => {
     root: path.resolve(__dirname, 'src/shell/renderer'),
     envDir: __dirname,
     envPrefix: ['VITE_', 'NIMI_'],
+    base: './',
     define: {
       'globalThis.__NIMI_IMPORT_META_ENV__': 'import.meta.env',
       'import.meta.env.VITE_NIMI_SHELL_MODE': JSON.stringify('parentos'),
@@ -66,24 +67,31 @@ export default defineConfig(() => {
         { find: 'scheduler', replacement: require.resolve('scheduler') },
         { find: '@tauri-apps/api/core', replacement: path.resolve(__dirname, 'node_modules/@tauri-apps/api/core.js') },
         { find: /^@nimiplatform\/sdk$/, replacement: path.resolve(nimiSdkSourceRoot, 'index.ts') },
+        { find: /^@nimiplatform\/sdk\/app$/, replacement: path.resolve(nimiSdkSourceRoot, 'core/app/index.ts') },
         { find: /^@nimiplatform\/sdk\/ai$/, replacement: path.resolve(nimiSdkSourceRoot, 'core/ai/index.ts') },
         { find: /^@nimiplatform\/sdk\/contracts$/, replacement: path.resolve(nimiSdkSourceRoot, 'core/contracts/index.ts') },
         { find: /^@nimiplatform\/sdk\/features\/conversation$/, replacement: path.resolve(nimiSdkSourceRoot, 'features/conversation/index.ts') },
+        { find: /^@nimiplatform\/sdk\/features\/generation$/, replacement: path.resolve(nimiSdkSourceRoot, 'features/generation/index.ts') },
         { find: /^@nimiplatform\/sdk\/realm$/, replacement: path.resolve(nimiSdkSourceRoot, 'realm/index.ts') },
         { find: /^@nimiplatform\/sdk\/realm\/generated$/, replacement: path.resolve(nimiSdkSourceRoot, 'realm/generated.ts') },
         { find: /^@nimiplatform\/sdk\/runtime$/, replacement: path.resolve(nimiSdkSourceRoot, 'runtime/index.ts') },
         { find: /^@nimiplatform\/sdk\/runtime\/generated$/, replacement: path.resolve(nimiSdkSourceRoot, 'runtime/generated.ts') },
+        { find: /^@nimiplatform\/sdk\/runtime\/wire-types$/, replacement: path.resolve(nimiSdkSourceRoot, 'runtime/wire-types/index.ts') },
         { find: /^@nimiplatform\/sdk\/types$/, replacement: path.resolve(nimiSdkSourceRoot, 'types/index.ts') },
         { find: /^@nimiplatform\/kit\/auth$/, replacement: path.resolve(nimiKitSourceRoot, 'auth/src/index.ts') },
+        { find: /^@nimiplatform\/kit\/auth\/shell$/, replacement: path.resolve(nimiKitSourceRoot, 'auth/src/shell/index.ts') },
         { find: /^@nimiplatform\/kit\/auth\/styles\.css$/, replacement: path.resolve(nimiKitSourceRoot, 'auth/src/styles.css') },
+        { find: /^@nimiplatform\/kit\/core\/desktop-open$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/desktop-open.ts') },
         { find: /^@nimiplatform\/kit\/core\/model-config$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/model-config/index.ts') },
         { find: /^@nimiplatform\/kit\/core\/oauth$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/oauth/index.ts') },
+        { find: /^@nimiplatform\/kit\/core\/shell-mode$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/shell-mode.ts') },
         { find: /^@nimiplatform\/kit\/core\/runtime-capabilities$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/runtime-capabilities/index.ts') },
         { find: /^@nimiplatform\/kit\/core\/sdk-contract$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/sdk-contract.ts') },
         { find: /^@nimiplatform\/kit\/features\/model-config$/, replacement: path.resolve(nimiKitSourceRoot, 'features/model-config/src/index.ts') },
         { find: /^@nimiplatform\/kit\/features\/model-picker$/, replacement: path.resolve(nimiKitSourceRoot, 'features/model-picker/src/index.ts') },
         { find: /^@nimiplatform\/kit\/features\/model-picker\/runtime$/, replacement: path.resolve(nimiKitSourceRoot, 'features/model-picker/src/runtime.ts') },
         { find: /^@nimiplatform\/kit\/features\/model-picker\/ui$/, replacement: path.resolve(nimiKitSourceRoot, 'features/model-picker/src/ui.ts') },
+        { find: /^@nimiplatform\/kit\/shell\/capabilities$/, replacement: path.resolve(nimiKitSourceRoot, 'shell/capabilities/src/index.ts') },
         { find: /^@nimiplatform\/kit\/shell\/renderer\/bridge$/, replacement: path.resolve(nimiKitSourceRoot, 'shell/renderer/src/bridge/index.ts') },
         { find: /^@nimiplatform\/kit\/ui$/, replacement: path.resolve(nimiKitSourceRoot, 'ui/src/index.ts') },
         { find: /^@nimiplatform\/kit\/ui\/styles\.css$/, replacement: path.resolve(nimiKitSourceRoot, 'ui/src/styles.css') },
@@ -102,28 +110,53 @@ export default defineConfig(() => {
       // entry scanner doesn't follow dynamic imports, so the dep is
       // invisible at dev-server start without this hint and the first
       // export attempt fails with "Failed to resolve import".
-      include: ['html-to-image', 'jspdf'],
+      include: [
+        '@radix-ui/react-avatar',
+        '@radix-ui/react-dialog',
+        '@radix-ui/react-popover',
+        '@radix-ui/react-scroll-area',
+        '@radix-ui/react-select',
+        '@radix-ui/react-slot',
+        '@radix-ui/react-tooltip',
+        '@protobuf-ts/runtime',
+        '@tauri-apps/api/core',
+        '@tauri-apps/api/event',
+        'class-variance-authority',
+        'clsx',
+        'html-to-image',
+        'jspdf',
+        'react-dom',
+        'tailwind-merge',
+        'zustand',
+      ],
       exclude: [
         '@nimiplatform/kit',
         '@nimiplatform/kit/ui',
         '@nimiplatform/kit/auth',
+        '@nimiplatform/kit/auth/shell',
+        '@nimiplatform/kit/core/desktop-open',
         '@nimiplatform/kit/core/model-config',
         '@nimiplatform/kit/core/oauth',
+        '@nimiplatform/kit/core/shell-mode',
         '@nimiplatform/kit/core/runtime-capabilities',
         '@nimiplatform/kit/core/sdk-contract',
         '@nimiplatform/kit/features/model-config',
         '@nimiplatform/kit/features/model-picker',
         '@nimiplatform/kit/features/model-picker/runtime',
         '@nimiplatform/kit/features/model-picker/ui',
+        '@nimiplatform/kit/shell/capabilities',
         '@nimiplatform/kit/shell/renderer/bridge',
         '@nimiplatform/sdk',
+        '@nimiplatform/sdk/app',
         '@nimiplatform/sdk/ai',
         '@nimiplatform/sdk/contracts',
         '@nimiplatform/sdk/features/conversation',
+        '@nimiplatform/sdk/features/generation',
         '@nimiplatform/sdk/realm',
         '@nimiplatform/sdk/realm/generated',
         '@nimiplatform/sdk/runtime',
         '@nimiplatform/sdk/runtime/generated',
+        '@nimiplatform/sdk/runtime/wire-types',
         '@nimiplatform/sdk/types',
       ],
     },
@@ -143,6 +176,15 @@ export default defineConfig(() => {
       emptyOutDir: true,
       sourcemap: true,
       rollupOptions: {
+        treeshake: {
+          moduleSideEffects(id) {
+            const normalizedId = id.split(path.sep).join('/');
+            if (normalizedId.includes('/kit/auth/src/') && !normalizedId.endsWith('.css')) {
+              return false;
+            }
+            return true;
+          },
+        },
         input: {
           main: path.resolve(__dirname, 'src/shell/renderer/index.html'),
         },
@@ -154,6 +196,43 @@ export default defineConfig(() => {
               normalizedId.includes('/sdk/src/runtime/generated/')
               || normalizedId.includes('/sdks/typescript/core-generated/runtime-protobuf/')
             ) {
+              if (matchesAny(normalizedId, [
+                '/runtime/v1/common',
+                '/runtime/v1/runtime_target_identity',
+                '/runtime/v1/voice',
+              ])) {
+                return 'sdk-runtime-shared-generated';
+              }
+              if (matchesAny(normalizedId, [
+                '/runtime/v1/ai',
+                '/runtime/v1/agent_service',
+                '/runtime/v1/workflow',
+                '/runtime/v1/local_runtime_device_environment',
+              ])) {
+                return 'sdk-runtime-ai-generated';
+              }
+              if (matchesAny(normalizedId, [
+                '/runtime/v1/account',
+                '/runtime/v1/app',
+                '/runtime/v1/auth',
+                '/runtime/v1/audit',
+                '/runtime/v1/grant',
+              ])) {
+                return 'sdk-runtime-account-generated';
+              }
+              if (matchesAny(normalizedId, [
+                '/runtime/v1/agent_common',
+                '/runtime/v1/agent_companion',
+                '/runtime/v1/agent_group_message_candidate',
+                '/runtime/v1/agent_participation',
+                '/runtime/v1/artifact_service',
+                '/runtime/v1/delegated_control',
+                '/runtime/v1/external_agent',
+                '/runtime/v1/knowledge',
+                '/runtime/v1/memory',
+              ])) {
+                return 'sdk-runtime-agent-generated';
+              }
               if (
                 normalizedId.includes('/sdk/src/runtime/generated/google/')
                 || normalizedId.includes('/sdks/typescript/core-generated/runtime-protobuf/google/')
@@ -311,15 +390,40 @@ export default defineConfig(() => {
               || normalizedId.includes('/node_modules/d3-')
               || isNodePackage(normalizedId, 'react-smooth')
               || isNodePackage(normalizedId, 'recharts-scale')
+              || isNodePackage(normalizedId, 'victory-vendor')
+              || isNodePackage(normalizedId, 'decimal.js-light')
+              || isNodePackage(normalizedId, 'internmap')
+              || isNodePackage(normalizedId, 'eventemitter3')
               || isNodePackage(normalizedId, 'prop-types')
               || isNodePackage(normalizedId, 'react-is')
-              || isNodePackage(normalizedId, 'eventemitter3')
-              || isNodePackage(normalizedId, 'internmap')
-              || isNodePackage(normalizedId, 'decimal.js-light')
               || isNodePackage(normalizedId, 'tiny-invariant')
               || isNodePackage(normalizedId, 'fast-equals')
             ) {
-              return 'vendor-misc';
+              return 'vendor-charts';
+            }
+            if (isNodePackage(normalizedId, 'html-to-image')) {
+              return 'vendor-image-export';
+            }
+            if (
+              isNodePackage(normalizedId, 'jspdf')
+              || isNodePackage(normalizedId, 'fflate')
+            ) {
+              return 'vendor-pdf-export';
+            }
+            if (
+              isNodePackage(normalizedId, 'html2canvas')
+              || isNodePackage(normalizedId, 'canvg')
+              || isNodePackage(normalizedId, 'dompurify')
+              || isNodePackage(normalizedId, 'rgbcolor')
+              || isNodePackage(normalizedId, 'svg-pathdata')
+              || isNodePackage(normalizedId, 'stackblur-canvas')
+              || isNodePackage(normalizedId, 'performance-now')
+              || isNodePackage(normalizedId, 'raf')
+            ) {
+              return 'vendor-canvas-export';
+            }
+            if (isNodePackage(normalizedId, 'core-js')) {
+              return 'vendor-polyfills';
             }
             if (
               isNodePackage(normalizedId, 'i18next')
@@ -427,11 +531,8 @@ export default defineConfig(() => {
             ) {
               return 'vendor-react-ui';
             }
-            if (
-              isNodePackage(normalizedId, 'three')
-              || isNodePackage(normalizedId, 'simplex-noise')
-            ) {
-              return 'vendor-three';
+            if (isNodePackage(normalizedId, 'simplex-noise')) {
+              return 'vendor-noise';
             }
             if (isNodePackage(normalizedId, '@tanstack/virtual-core')) {
               return 'vendor-virtual';
@@ -441,12 +542,6 @@ export default defineConfig(() => {
             }
             if (isNodePackage(normalizedId, 'openapi-fetch')) {
               return 'sdk-client';
-            }
-            if (
-              isNodePackage(normalizedId, 'html-to-image')
-              || isNodePackage(normalizedId, 'jspdf')
-            ) {
-              return 'vendor-canvas-export';
             }
             return 'vendor-misc';
           },

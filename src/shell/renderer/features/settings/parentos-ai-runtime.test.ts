@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { PARENTOS_AI_SCOPE_REF } from './parentos-ai-config.js';
 import {
+  ensureParentosLocalRuntimeReady,
   resolveParentosImageTextRuntimeConfig,
   resolveParentosSpeechTranscribeRuntimeConfig,
   resolveParentosSpeechTranscribeConfig,
@@ -13,10 +14,12 @@ import {
 
 const {
   warmLocalAssetMock,
+  runtimeReadyMock,
   loadParentosRuntimeRouteOptionsMock,
   getParentOSNimiClientMock,
 } = vi.hoisted(() => ({
   warmLocalAssetMock: vi.fn(async () => ({})),
+  runtimeReadyMock: vi.fn(async () => ({})),
   loadParentosRuntimeRouteOptionsMock: vi.fn(async (capability: string): Promise<any> => ({
     capability,
     selected: null,
@@ -94,6 +97,7 @@ const {
   })),
   getParentOSNimiClientMock: vi.fn(() => ({
     runtime: {
+      ready: vi.fn(async () => ({})),
       local: {
         warmLocalAsset: vi.fn(async () => ({})),
       },
@@ -130,10 +134,12 @@ describe('parentos-ai-runtime', () => {
   beforeEach(() => {
     useAppStore.setState({ aiConfig: null });
     warmLocalAssetMock.mockReset();
+    runtimeReadyMock.mockReset();
     loadParentosRuntimeRouteOptionsMock.mockClear();
     getParentOSNimiClientMock.mockClear();
     getParentOSNimiClientMock.mockReturnValue({
       runtime: {
+        ready: runtimeReadyMock,
         local: {
           warmLocalAsset: warmLocalAssetMock,
         },
@@ -286,6 +292,22 @@ describe('parentos-ai-runtime', () => {
       timeoutMs: undefined,
       targetRef: localTargetRef('local-qwen3'),
     });
+  });
+
+  it('warms Runtime readiness for local runtime targets only', async () => {
+    await ensureParentosLocalRuntimeReady({
+      targetRef: localTargetRef('local-qwen3'),
+      surfaceId: 'parentos.advisor',
+    });
+
+    expect(runtimeReadyMock).toHaveBeenCalledTimes(1);
+
+    await ensureParentosLocalRuntimeReady({
+      targetRef: cloudTargetRef('openai-main', 'gpt-5.4'),
+      surfaceId: 'parentos.advisor',
+    });
+
+    expect(runtimeReadyMock).toHaveBeenCalledTimes(1);
   });
 
   it('fails closed for OCR when only the generic chat binding is configured', async () => {

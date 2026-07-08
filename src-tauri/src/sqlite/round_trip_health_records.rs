@@ -126,7 +126,10 @@ fn migrations_reject_retired_growth_measurements_instead_of_backfilling_or_dropp
             |row| row.get(0),
         )
         .expect("count retired table");
-    assert_eq!(table_count, 1, "migration must not destructively drop retired tables");
+    assert_eq!(
+        table_count, 1,
+        "migration must not destructively drop retired tables"
+    );
 }
 
 #[test]

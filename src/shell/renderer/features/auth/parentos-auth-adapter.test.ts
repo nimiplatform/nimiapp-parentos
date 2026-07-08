@@ -20,7 +20,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AccountCallerMode,
   AccountSessionState,
-} from '@nimiplatform/sdk/runtime/generated';
+} from '@nimiplatform/sdk/runtime/wire-types';
 
 const mockGetAccountSessionStatus = vi.fn();
 const mockBeginLogin = vi.fn();
@@ -68,6 +68,9 @@ const PARENTOS_CALLER = {
   deviceId: 'parentos-local-developer-device',
   mode: AccountCallerMode.LOCAL_DEVELOPER_APP,
   scopes: [],
+  launchHostId: '',
+  launchNonce: '',
+  releaseDescriptorRef: '',
 };
 
 describe('parentos-auth-adapter (PO-SHELL-008)', () => {

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { convertFileSrc } from '../bridge/shell-command.js';
 import { computeAgeMonths, type ChildProfile } from '../app-shell/app-store.js';
 import female03 from './assets/default-avatars/female-0-3.png';
 import female1218 from './assets/default-avatars/female-12-18.png';

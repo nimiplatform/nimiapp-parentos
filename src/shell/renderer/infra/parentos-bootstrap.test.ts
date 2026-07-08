@@ -8,10 +8,10 @@
  * - Authenticated subject for the local SQLite scope comes from the runtime
  *   account projection (`runtime.account.getAccountSessionStatus`), never
  *   from a legacy persisted session bridge.
- * - Runtime app registration and Nimi Data app-storage projection are hard
- *   prerequisites for local storage. Anonymous / unavailable runtime account
- *   states still do NOT fail bootstrap; ParentOS opens against the anonymous
- *   local scope after the storage projection is available.
+ * - Tauri/Electron hosts own Nimi Data app-storage root binding before
+ *   renderer hydration. Anonymous / unavailable runtime account states still
+ *   do NOT fail bootstrap; ParentOS opens against the anonymous local scope
+ *   without receiving storage root authority.
  * - The bootstrap must never invoke the legacy shared desktop auth-session
  *   bridge (`auth_session_load`/`save`/`clear`) and must never persist a
  *   refresh token at any layer.
@@ -21,14 +21,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AccountCallerMode,
   AccountSessionState,
-} from '@nimiplatform/sdk/runtime/generated';
+} from '@nimiplatform/sdk/runtime/wire-types';
 
 const getRuntimeDefaultsMock = vi.fn();
 const createNimiClientMock = vi.fn();
 const RuntimeMock = vi.fn();
 const createNimiRuntimeFullAppRegistrationMock = vi.fn();
 const createNimiRuntimeAppSessionMetadataProviderMock = vi.fn();
-const prepareParentOSAppStorageMock = vi.fn();
 const dbInitMock = vi.fn();
 const getAppSettingMock = vi.fn();
 const getChildMock = vi.fn();
@@ -42,13 +41,14 @@ const getAccountSessionStatusMock = vi.fn();
 const registerAppMock = vi.fn();
 const openSessionMock = vi.fn();
 const authorizeExternalPrincipalMock = vi.fn();
-const getAppStorageMock = vi.fn();
 const runtimeReadyMock = vi.fn();
 let currentNimiClientMock: unknown = null;
 const runtimeConstructorOptions: unknown[] = [];
+let electronRuntimeAvailable = false;
 
 vi.mock('../bridge/index.js', () => ({
   getParentOSRuntimeDefaults: getRuntimeDefaultsMock,
+  hasElectronRuntime: () => electronRuntimeAvailable,
   hasTauriRuntime: () => false,
   invokeTauri: vi.fn(),
 }));
@@ -81,7 +81,6 @@ vi.mock('@nimiplatform/sdk/types', () => ({
 }));
 
 vi.mock('../bridge/sqlite-bridge.js', () => ({
-  prepareParentOSAppStorage: prepareParentOSAppStorageMock,
   dbInit: dbInitMock,
   getAppSetting: getAppSettingMock,
   getChild: getChildMock,
@@ -116,9 +115,6 @@ function buildRuntimeMock(options: unknown): {
   runtime: {
     ready: ReturnType<typeof vi.fn>;
   };
-  appLifecycle: {
-    storage: ReturnType<typeof vi.fn>;
-  };
   account: {
     getAccountSessionStatus: ReturnType<typeof vi.fn>;
   };
@@ -137,9 +133,6 @@ function buildRuntimeMock(options: unknown): {
     runtime: {
       ready: runtimeReadyMock,
     },
-    appLifecycle: {
-      storage: getAppStorageMock,
-    },
     account: {
       getAccountSessionStatus: getAccountSessionStatusMock,
     },
@@ -157,6 +150,7 @@ function buildRuntimeMock(options: unknown): {
 describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
   beforeEach(async () => {
     vi.resetModules();
+    electronRuntimeAvailable = false;
 
     ({ useAppStore } = await import('../app-shell/app-store.js'));
     ({
@@ -173,7 +167,6 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     RuntimeMock.mockReset();
     createNimiRuntimeFullAppRegistrationMock.mockReset();
     createNimiRuntimeAppSessionMetadataProviderMock.mockReset();
-    prepareParentOSAppStorageMock.mockReset();
     dbInitMock.mockReset();
     getAppSettingMock.mockReset();
     getChildMock.mockReset();
@@ -187,7 +180,6 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     registerAppMock.mockReset();
     openSessionMock.mockReset();
     authorizeExternalPrincipalMock.mockReset();
-    getAppStorageMock.mockReset();
     runtimeReadyMock.mockReset();
 
     useAppStore.setState({
@@ -265,20 +257,6 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
       config: {},
     });
     loadAndApplyPersistedAppLanguageMock.mockResolvedValue(undefined);
-    getAppStorageMock.mockResolvedValue({
-      appId: 'nimi.parentos',
-      state: 'ready',
-      storagePolicyRef: 'nimi-data-app-roots',
-      durableDataRoot: '/runtime/apps/nimi.parentos/data',
-      cacheRoot: '/runtime/apps/nimi.parentos/cache',
-      tempRoot: '/runtime/apps/nimi.parentos/tmp',
-    });
-    prepareParentOSAppStorageMock.mockResolvedValue({
-      parentosDataRoot: '/runtime/apps/nimi.parentos/data',
-      parentosCacheRoot: '/runtime/apps/nimi.parentos/cache',
-      parentosTempRoot: '/runtime/apps/nimi.parentos/tmp',
-      parentosDbPath: '/runtime/apps/nimi.parentos/data/sqlite/anonymous.db',
-    });
     loadPersistedParentosAIConfigMock.mockResolvedValue(null);
     getAppSettingMock.mockResolvedValue('');
     getChildMock.mockResolvedValue(null);
@@ -297,15 +275,12 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
       accountProjection: { accountId: 'acct-1', displayName: 'User One' },
     });
     await runParentOSBootstrap();
-    expect(RuntimeMock).toHaveBeenCalledTimes(2);
-    expect(createNimiRuntimeFullAppRegistrationMock).toHaveBeenCalledTimes(1);
-    expect(createNimiRuntimeAppSessionMetadataProviderMock).toHaveBeenCalledTimes(1);
-    expect(registerAppMock).toHaveBeenCalledWith(expect.objectContaining({
-      appId: 'nimi.parentos',
-      appInstanceId: 'nimi.parentos.local-developer',
-      deviceId: 'parentos-local-developer-device',
-      capabilities: ['ai.spend.meter'],
-    }));
+    expect(RuntimeMock).toHaveBeenCalledTimes(1);
+    expect(createNimiRuntimeFullAppRegistrationMock).not.toHaveBeenCalled();
+    expect(createNimiRuntimeAppSessionMetadataProviderMock).not.toHaveBeenCalled();
+    expect(registerAppMock).not.toHaveBeenCalled();
+    expect(openSessionMock).not.toHaveBeenCalled();
+    expect(authorizeExternalPrincipalMock).not.toHaveBeenCalled();
     expect(createNimiClientMock).toHaveBeenCalledTimes(1);
     const call = createNimiClientMock.mock.calls[0]![0] as {
       appId?: string;
@@ -316,7 +291,7 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     } & Record<string, unknown>;
     expect(call.appId).toBe('nimi.parentos');
     expect(call.runtime).toBe((currentNimiClientMock as { runtime: unknown }).runtime);
-    const appRuntimeOptions = runtimeConstructorOptions[1] as {
+    const appRuntimeOptions = runtimeConstructorOptions[0] as {
       appId: string;
       authMetadata?: () => Promise<Record<string, string>>;
       transport?: {
@@ -327,35 +302,17 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     };
     expect(appRuntimeOptions).toEqual(expect.objectContaining({
       appId: 'nimi.parentos',
+      hostOwnedIdentity: true,
+      metadata: {
+        surfaceId: 'parentos.runtime',
+      },
       transport: {
         type: 'tauri-ipc',
         commandNamespace: 'runtime_bridge',
         eventNamespace: 'runtime_bridge',
       },
     }));
-    expect(typeof appRuntimeOptions.authMetadata).toBe('function');
-    const runtimeMetadata = await appRuntimeOptions.authMetadata!();
-    expect(openSessionMock).toHaveBeenCalledWith(expect.objectContaining({
-      appId: 'nimi.parentos',
-      appInstanceId: 'nimi.parentos.platform-runtime-session',
-      deviceId: 'platform-runtime-session',
-      ttlSeconds: 3600,
-    }));
-    expect(authorizeExternalPrincipalMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        appId: 'nimi.parentos',
-        externalPrincipalId: 'nimi.parentos',
-        subjectUserId: 'acct-1',
-        scopes: ['ai.spend.meter'],
-      }),
-      expect.anything(),
-    );
-    expect(runtimeMetadata).toEqual(expect.objectContaining({
-      'x-nimi-session-id': 'session-1',
-      'x-nimi-session-token': 'session-token-1',
-      'x-nimi-access-token-id': 'protected-token-id',
-      'x-nimi-access-token-secret': 'protected-secret',
-    }));
+    expect(appRuntimeOptions.authMetadata).toBeUndefined();
     expect(call.realm).toBeUndefined();
     expect(call.app).toBe(false);
     expect(call.permissions).toBe(false);
@@ -368,6 +325,37 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     expect(call).not.toHaveProperty('sessionStore');
   });
 
+  it('uses electron-ipc Runtime transport when the Electron preload bridge is present', async () => {
+    electronRuntimeAvailable = true;
+    getAccountSessionStatusMock.mockResolvedValue({
+      state: AccountSessionState.ANONYMOUS,
+      accountProjection: null,
+    });
+
+    await runParentOSBootstrap();
+
+    const appRuntimeOptions = runtimeConstructorOptions[0] as {
+      appId: string;
+      hostOwnedIdentity?: boolean;
+      authMetadata?: () => Promise<Record<string, string>>;
+      transport?: {
+        type?: string;
+        commandNamespace?: string;
+        eventNamespace?: string;
+      };
+    };
+    expect(appRuntimeOptions).toEqual(expect.objectContaining({
+      appId: 'nimi.parentos',
+      hostOwnedIdentity: true,
+      transport: {
+        type: 'electron-ipc',
+      },
+    }));
+    expect(appRuntimeOptions.transport?.commandNamespace).toBeUndefined();
+    expect(appRuntimeOptions.transport?.eventNamespace).toBeUndefined();
+    expect(appRuntimeOptions.authMetadata).toBeUndefined();
+  });
+
   it('uses LOCAL_DEVELOPER_APP caller with canonical nimi.parentos local-developer instance', async () => {
     expect(parentosRuntimeAccountCaller).toEqual({
       appId: 'nimi.parentos',
@@ -375,6 +363,9 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
       deviceId: 'parentos-local-developer-device',
       mode: AccountCallerMode.LOCAL_DEVELOPER_APP,
       scopes: [],
+      launchHostId: '',
+      launchNonce: '',
+      releaseDescriptorRef: '',
     });
   });
 
@@ -392,20 +383,7 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     expect(getAccountSessionStatusMock).toHaveBeenCalledWith({
       caller: parentosRuntimeAccountCaller,
     });
-    expect(getAppStorageMock).toHaveBeenCalledWith({ appId: 'nimi.parentos' });
-    expect(prepareParentOSAppStorageMock).toHaveBeenCalledTimes(1);
-    expect(prepareParentOSAppStorageMock).toHaveBeenCalledWith({
-      appId: 'nimi.parentos',
-      state: 'ready',
-      storagePolicyRef: 'nimi-data-app-roots',
-      durableDataRoot: '/runtime/apps/nimi.parentos/data',
-      cacheRoot: '/runtime/apps/nimi.parentos/cache',
-      tempRoot: '/runtime/apps/nimi.parentos/tmp',
-    });
-    expect(getAppStorageMock.mock.invocationCallOrder[0]).toBeLessThan(
-      prepareParentOSAppStorageMock.mock.invocationCallOrder[0]!,
-    );
-    expect(prepareParentOSAppStorageMock.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(getAccountSessionStatusMock.mock.invocationCallOrder[0]).toBeLessThan(
       dbInitMock.mock.invocationCallOrder[0]!,
     );
     expect(dbInitMock).toHaveBeenCalledWith('acct-42');
@@ -433,7 +411,7 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     expect(dbInitMock).toHaveBeenCalledWith(null);
   });
 
-  it('still provides Runtime app-session metadata for anonymous app-storage requests', async () => {
+  it('does not provide renderer authMetadata for anonymous app-storage requests', async () => {
     getAccountSessionStatusMock.mockResolvedValue({
       state: AccountSessionState.ANONYMOUS,
       accountProjection: null,
@@ -441,18 +419,11 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
 
     await runParentOSBootstrap();
 
-    const appRuntimeOptions = runtimeConstructorOptions[1] as {
+    const appRuntimeOptions = runtimeConstructorOptions[0] as {
       authMetadata?: () => Promise<Record<string, string>>;
     };
-    expect(typeof appRuntimeOptions.authMetadata).toBe('function');
-
-    authorizeExternalPrincipalMock.mockClear();
-    const runtimeMetadata = await appRuntimeOptions.authMetadata!();
-
-    expect(runtimeMetadata).toEqual({
-      'x-nimi-session-id': 'session-1',
-      'x-nimi-session-token': 'session-token-1',
-    });
+    expect(appRuntimeOptions.authMetadata).toBeUndefined();
+    expect(openSessionMock).not.toHaveBeenCalled();
     expect(authorizeExternalPrincipalMock).not.toHaveBeenCalled();
   });
 
@@ -464,7 +435,7 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
 
     await runParentOSBootstrap();
 
-    expect(runtimeReadyMock).toHaveBeenCalledTimes(3);
+    expect(runtimeReadyMock).toHaveBeenCalledTimes(2);
     expect(ensureParentosAIConfigFromFirstRunEvidenceMock).toHaveBeenCalledTimes(1);
     expect(ensureParentosAIConfigFromFirstRunEvidenceMock).toHaveBeenCalledWith({
       client: currentNimiClientMock,
@@ -493,27 +464,22 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
     expect(dbInitMock).toHaveBeenCalledWith(null);
   });
 
-  it('fails bootstrap when local developer Runtime app registration is rejected', async () => {
-    registerAppMock.mockResolvedValue({ accepted: false, reasonCode: 100 });
+  it('fails bootstrap when renderer Runtime readiness fails before account projection', async () => {
+    runtimeReadyMock.mockRejectedValueOnce(new Error('RUNTIME_UNAVAILABLE'));
 
     await runParentOSBootstrap();
 
     expect(useAppStore.getState().bootstrapReady).toBe(false);
-    expect(useAppStore.getState().bootstrapError).toContain(
-      'ParentOS Runtime account caller registration rejected',
-    );
+    expect(useAppStore.getState().bootstrapError).toContain('RUNTIME_UNAVAILABLE');
     expect(useAppStore.getState().auth.status).toBe('unauthenticated');
-    expect(prepareParentOSAppStorageMock).not.toHaveBeenCalled();
-    expect(getAppStorageMock).not.toHaveBeenCalled();
     expect(getAccountSessionStatusMock).not.toHaveBeenCalled();
-    expect(runtimeReadyMock).toHaveBeenCalledTimes(1);
     expect(dbInitMock).not.toHaveBeenCalled();
   });
 
   it('retries vNext runtime client construction after a failed bootstrap', async () => {
-    registerAppMock
-      .mockResolvedValueOnce({ accepted: false, reasonCode: 100 })
-      .mockResolvedValue({ accepted: true });
+    runtimeReadyMock
+      .mockRejectedValueOnce(new Error('RUNTIME_UNAVAILABLE'))
+      .mockResolvedValue(undefined);
     getAccountSessionStatusMock.mockResolvedValue({
       state: AccountSessionState.ANONYMOUS,
       accountProjection: null,
@@ -523,51 +489,16 @@ describe('parentos-bootstrap (PO-SHELL-001 / PO-SHELL-008)', () => {
 
     expect(useAppStore.getState().bootstrapReady).toBe(false);
     expect(getAccountSessionStatusMock).not.toHaveBeenCalled();
-    expect(getAppStorageMock).not.toHaveBeenCalled();
-    expect(createNimiClientMock).not.toHaveBeenCalled();
+    expect(createNimiClientMock).toHaveBeenCalledTimes(1);
 
     await ensureParentOSRuntimeClientReady();
 
     expect(useAppStore.getState().bootstrapReady).toBe(true);
-    expect(createNimiClientMock).toHaveBeenCalledTimes(1);
+    expect(createNimiClientMock).toHaveBeenCalledTimes(2);
     expect(getAccountSessionStatusMock).toHaveBeenCalledWith({
       caller: parentosRuntimeAccountCaller,
     });
     expect(dbInitMock).toHaveBeenLastCalledWith(null);
-  });
-
-  it('fails bootstrap when Nimi Data app storage preparation fails', async () => {
-    getAccountSessionStatusMock.mockResolvedValue({
-      state: AccountSessionState.ANONYMOUS,
-      accountProjection: null,
-    });
-    prepareParentOSAppStorageMock.mockRejectedValue(new Error('APP_NOT_REGISTERED'));
-
-    await runParentOSBootstrap();
-
-    expect(useAppStore.getState().bootstrapReady).toBe(false);
-    expect(useAppStore.getState().bootstrapError).toContain('APP_NOT_REGISTERED');
-    expect(getAccountSessionStatusMock).not.toHaveBeenCalled();
-    expect(dbInitMock).not.toHaveBeenCalled();
-  });
-
-  it('fails bootstrap when Runtime returns a non-ready Nimi Data storage projection', async () => {
-    getAppStorageMock.mockResolvedValue({
-      appId: 'nimi.parentos',
-      state: 'storage_unavailable',
-      storagePolicyRef: 'nimi-data-app-roots',
-      durableDataRoot: '/runtime/apps/nimi.parentos/data',
-      cacheRoot: '/runtime/apps/nimi.parentos/cache',
-      tempRoot: '/runtime/apps/nimi.parentos/tmp',
-    });
-
-    await runParentOSBootstrap();
-
-    expect(useAppStore.getState().bootstrapReady).toBe(false);
-    expect(useAppStore.getState().bootstrapError).toContain('Runtime ready state');
-    expect(prepareParentOSAppStorageMock).not.toHaveBeenCalled();
-    expect(getAccountSessionStatusMock).not.toHaveBeenCalled();
-    expect(dbInitMock).not.toHaveBeenCalled();
   });
 
   // -------------------------------------------------------------------------

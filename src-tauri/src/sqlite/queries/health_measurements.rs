@@ -1,8 +1,8 @@
 use rusqlite::params;
 use serde::Serialize;
 
-use super::health_records::health_record_authority;
 use super::super::get_conn;
+use super::health_records::health_record_authority;
 
 // ── Retained Measurement Facade ─────────────────────────────
 
@@ -59,7 +59,9 @@ fn measurement_alias_metric_ids() -> Result<Vec<&'static str>, String> {
     let mut metric_ids = Vec::new();
     for alias in measurement_type_aliases() {
         let Some(metric_id) = measurement_type_alias_to_metric_id(alias) else {
-            return Err(format!("measurement facade alias \"{alias}\" has no metric mapping"));
+            return Err(format!(
+                "measurement facade alias \"{alias}\" has no metric mapping"
+            ));
         };
         if !authority.metrics_by_id.contains_key(metric_id) {
             return Err(format!(
@@ -106,7 +108,10 @@ fn metric_qualifier(metric_id: &str) -> Option<&'static str> {
     None
 }
 
-fn measurement_protocol_and_group(metric_id: &str, age_months: i32) -> Result<(String, String), String> {
+fn measurement_protocol_and_group(
+    metric_id: &str,
+    age_months: i32,
+) -> Result<(String, String), String> {
     let authority = health_record_authority()?;
     let metric = authority
         .metrics_by_id
@@ -114,13 +119,32 @@ fn measurement_protocol_and_group(metric_id: &str, age_months: i32) -> Result<(S
         .ok_or_else(|| format!("measurement facade metric id \"{metric_id}\" does not resolve in health-metric-registry.yaml"))?;
 
     let protocol_preference: &[&str] = match metric_id {
-        "growth.height" | "growth.weight" if age_months <= 36 => &["growth-infant-monthly", "growth-child-quarterly", "growth-school-biannual"],
-        "growth.height" | "growth.weight" if age_months >= 84 => &["growth-school-biannual", "growth-child-quarterly", "growth-infant-monthly"],
-        "growth.height" | "growth.weight" => &["growth-child-quarterly", "growth-infant-monthly", "growth-school-biannual"],
+        "growth.height" | "growth.weight" if age_months <= 36 => &[
+            "growth-infant-monthly",
+            "growth-child-quarterly",
+            "growth-school-biannual",
+        ],
+        "growth.height" | "growth.weight" if age_months >= 84 => &[
+            "growth-school-biannual",
+            "growth-child-quarterly",
+            "growth-infant-monthly",
+        ],
+        "growth.height" | "growth.weight" => &[
+            "growth-child-quarterly",
+            "growth-infant-monthly",
+            "growth-school-biannual",
+        ],
         "growth.head_circumference" => &["growth-infant-monthly"],
-        "vision.left_visual_acuity" | "vision.right_visual_acuity" => &["vision-basic", "vision-full-exam"],
-        "vision.left_axial_length" | "vision.right_axial_length" | "vision.left_iop" | "vision.right_iop" => &["vision-full-exam"],
-        "development.bone_age_years" | "development.body_fat_percentage" => &["development-auxiliary-measurement"],
+        "vision.left_visual_acuity" | "vision.right_visual_acuity" => {
+            &["vision-basic", "vision-full-exam"]
+        }
+        "vision.left_axial_length"
+        | "vision.right_axial_length"
+        | "vision.left_iop"
+        | "vision.right_iop" => &["vision-full-exam"],
+        "development.bone_age_years" | "development.body_fat_percentage" => {
+            &["development-auxiliary-measurement"]
+        }
         _ => &[],
     };
 
@@ -150,7 +174,10 @@ fn measurement_metric_unit(metric_id: &str) -> Result<Option<String>, String> {
         .clone())
 }
 
-fn measurement_source_to_event_kind(source: Option<&str>, has_linked_reminder: bool) -> &'static str {
+fn measurement_source_to_event_kind(
+    source: Option<&str>,
+    has_linked_reminder: bool,
+) -> &'static str {
     if has_linked_reminder {
         return "reminder_linked";
     }
@@ -243,7 +270,8 @@ pub fn insert_measurement(
     if linked_reminder_state_id.is_some() ^ linked_reminder_rule_id.is_some() {
         return Err("insert_measurement reminder-linked writes require both linkedReminderStateId and linkedReminderRuleId".to_string());
     }
-    let has_linked_reminder = linked_reminder_state_id.is_some() && linked_reminder_rule_id.is_some();
+    let has_linked_reminder =
+        linked_reminder_state_id.is_some() && linked_reminder_rule_id.is_some();
     let source_is_reminder = matches!(source.as_deref().map(str::trim), Some("reminder"));
     if source_is_reminder && !has_linked_reminder {
         return Err("insert_measurement source=reminder requires linkedReminderStateId and linkedReminderRuleId".to_string());
@@ -318,23 +346,24 @@ pub fn get_measurements(
         .map(str::trim)
         .filter(|value| !value.is_empty())
     {
-        Some(_) => {
-            "SELECT v.valueId, v.childId, v.metricId, v.valueNumber, e.effectiveDate,
+        Some(_) => "SELECT v.valueId, v.childId, v.metricId, v.valueNumber, e.effectiveDate,
                     e.ageMonths, e.notes, e.recordKind, e.sourceSurface, v.createdAt
              FROM health_record_values v
              JOIN health_record_events e ON e.eventId = v.eventId
              WHERE v.childId = ?1 AND v.metricId = ?2 AND v.valueNumber IS NOT NULL
-             ORDER BY e.effectiveDate, v.createdAt".to_string()
-        }
+             ORDER BY e.effectiveDate, v.createdAt"
+            .to_string(),
         None => {
-            format!("SELECT v.valueId, v.childId, v.metricId, v.valueNumber, e.effectiveDate,
+            format!(
+                "SELECT v.valueId, v.childId, v.metricId, v.valueNumber, e.effectiveDate,
                     e.ageMonths, e.notes, e.recordKind, e.sourceSurface, v.createdAt
              FROM health_record_values v
              JOIN health_record_events e ON e.eventId = v.eventId
              WHERE v.childId = ?1
                AND v.metricId IN ({allowed_metric_sql})
                AND v.valueNumber IS NOT NULL
-             ORDER BY e.effectiveDate, v.createdAt")
+             ORDER BY e.effectiveDate, v.createdAt"
+            )
         }
     };
     let mut stmt = conn

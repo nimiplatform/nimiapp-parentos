@@ -8,7 +8,7 @@ import {
   cn,
 } from '@nimiplatform/kit/ui';
 import { useMemo, useState } from 'react';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { convertFileSrc } from '../../bridge/shell-command.js';
 import type {
   AttachmentRow,
   DentalRecordRow,

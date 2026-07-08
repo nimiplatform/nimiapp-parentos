@@ -2,18 +2,62 @@ pub mod migrations;
 pub mod queries;
 
 use rusqlite::Connection;
+use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 
 use crate::app_storage;
 
 static DB_CONN: std::sync::OnceLock<Mutex<Connection>> = std::sync::OnceLock::new();
 static DB_SCOPE: std::sync::OnceLock<Mutex<String>> = std::sync::OnceLock::new();
+static DB_OPERATION_BARRIER: std::sync::OnceLock<Mutex<()>> = std::sync::OnceLock::new();
+static DB_CONNECTION_HANDLE: DbConnectionHandle = DbConnectionHandle;
 
 const ANONYMOUS_DB_SCOPE: &str = "anonymous";
 
+pub struct DbConnectionHandle;
+
+pub struct DbConnectionGuard {
+    _operation_guard: MutexGuard<'static, ()>,
+    conn_guard: MutexGuard<'static, Connection>,
+}
+
+impl Deref for DbConnectionGuard {
+    type Target = Connection;
+
+    fn deref(&self) -> &Self::Target {
+        &self.conn_guard
+    }
+}
+
+impl DerefMut for DbConnectionGuard {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.conn_guard
+    }
+}
+
+impl DbConnectionHandle {
+    pub fn lock(&self) -> Result<DbConnectionGuard, String> {
+        let operation_guard = db_operation_barrier()
+            .lock()
+            .map_err(|error| error.to_string())?;
+        let conn_mutex = DB_CONN
+            .get()
+            .ok_or_else(|| "parentos sqlite connection is not initialized".to_string())?;
+        let conn_guard = conn_mutex.lock().map_err(|error| error.to_string())?;
+        Ok(DbConnectionGuard {
+            _operation_guard: operation_guard,
+            conn_guard,
+        })
+    }
+}
+
 fn db_scope_lock() -> &'static Mutex<String> {
     DB_SCOPE.get_or_init(|| Mutex::new(ANONYMOUS_DB_SCOPE.to_string()))
+}
+
+fn db_operation_barrier() -> &'static Mutex<()> {
+    DB_OPERATION_BARRIER.get_or_init(|| Mutex::new(()))
 }
 
 fn hash_subject_user_id(subject_user_id: &str) -> u64 {
@@ -60,6 +104,7 @@ fn resolve_db_path_for_scope(scope: &str) -> Result<PathBuf, String> {
     Ok(accounts_dir.join(format!("{scope}.db")))
 }
 
+#[cfg(test)]
 pub fn resolve_db_path() -> Result<PathBuf, String> {
     let scope = db_scope_lock()
         .lock()
@@ -78,25 +123,34 @@ fn open_connection_for_scope(scope: &str) -> Result<Connection, String> {
     Ok(conn)
 }
 
-pub fn get_conn() -> Result<&'static Mutex<Connection>, String> {
-    if let Some(conn) = DB_CONN.get() {
-        return Ok(conn);
+pub fn get_conn() -> Result<&'static DbConnectionHandle, String> {
+    if DB_CONN.get().is_some() {
+        return Ok(&DB_CONNECTION_HANDLE);
     }
 
-    let scope = db_scope_lock()
+    let _operation_guard = db_operation_barrier()
         .lock()
-        .map_err(|error| error.to_string())?
-        .clone();
-    let conn = Mutex::new(open_connection_for_scope(&scope)?);
-    let _ = DB_CONN.set(conn);
+        .map_err(|error| error.to_string())?;
+    if DB_CONN.get().is_none() {
+        let scope = db_scope_lock()
+            .lock()
+            .map_err(|error| error.to_string())?
+            .clone();
+        let conn = Mutex::new(open_connection_for_scope(&scope)?);
+        let _ = DB_CONN.set(conn);
+    }
 
     DB_CONN
         .get()
+        .map(|_| &DB_CONNECTION_HANDLE)
         .ok_or_else(|| "failed to initialize parentos sqlite connection".to_string())
 }
 
 #[tauri::command]
 pub fn db_init(subject_user_id: Option<String>) -> Result<String, String> {
+    let _operation_guard = db_operation_barrier()
+        .lock()
+        .map_err(|error| error.to_string())?;
     let requested_scope = normalize_db_scope(subject_user_id.as_deref());
     let mut current_scope = db_scope_lock().lock().map_err(|error| error.to_string())?;
 

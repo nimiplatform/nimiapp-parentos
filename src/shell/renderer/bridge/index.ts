@@ -7,11 +7,11 @@ export {
   invokeChecked,
   BridgeError,
   getDaemonStatus,
-  createTauriOAuthCodeBridge,
   oauthListenForCode,
   openExternalUrl,
   focusMainWindow,
   parseRuntimeBridgeDaemonStatus,
+  hasElectronRuntime,
   hasTauriRuntime,
   invokeTauri,
 } from '@nimiplatform/kit/shell/renderer/bridge';
@@ -22,8 +22,8 @@ export type {
   JsonPrimitive,
 } from '@nimiplatform/kit/shell/renderer/bridge';
 
-import { createTauriOAuthCodeBridge } from '@nimiplatform/kit/shell/renderer/bridge';
-export const parentosTauriOAuthBridge = createTauriOAuthCodeBridge();
+import { createStandardShellOAuthCodeBridge } from '@nimiplatform/kit/shell/renderer/bridge';
+export const parentosTauriOAuthBridge = createStandardShellOAuthCodeBridge();
 
 export type { ParentOSRuntimeDefaults } from './parentos-types.js';
 export { getParentOSRuntimeDefaults } from './parentos-runtime-defaults.js';

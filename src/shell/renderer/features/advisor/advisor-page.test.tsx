@@ -492,6 +492,7 @@ describe('AdvisorPage', () => {
     getParentOSNimiClientMock.mockReturnValue({
       runtime: {
         appId: 'nimi.parentos',
+        ready: vi.fn(async () => ({})),
         local: {
           warmLocalAsset: warmLocalAssetMock,
         },

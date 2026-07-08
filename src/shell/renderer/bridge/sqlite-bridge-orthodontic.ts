@@ -7,7 +7,7 @@
  * Rust layer, surfaced as a user-visible error.
  */
 
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from './shell-command.js';
 
 /**
  * caseType values READABLE from storage. `unknown-legacy` is a

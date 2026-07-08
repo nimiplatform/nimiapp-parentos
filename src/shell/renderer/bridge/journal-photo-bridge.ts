@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from './shell-command.js';
 
 export interface SavedJournalPhoto {
   path: string;

@@ -4,7 +4,7 @@ import {
   ConnectorStatus,
   LocalAssetKind,
   LocalAssetStatus,
-} from '@nimiplatform/sdk/runtime/generated';
+} from '@nimiplatform/sdk/runtime/wire-types';
 
 const listLocalAssetsMock = vi.fn();
 const listConnectorsMock = vi.fn();
@@ -98,6 +98,7 @@ describe('parentos-runtime-route-options', () => {
     expect(snapshot).toEqual({
       capability: 'audio.transcribe',
       selectedTargetRef: null,
+      snapshotRevision: 'route-options:v1:audio.transcribe',
       inventory: {
         capability: 'audio.transcribe',
         targets: [],

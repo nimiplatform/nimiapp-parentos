@@ -21,7 +21,7 @@
  *   src-tauri/src/photos/mod.rs (codec gate)
  */
 
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from './shell-command.js';
 
 // ── Admitted enums ────────────────────────────────────────────────────────
 

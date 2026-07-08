@@ -4,21 +4,20 @@
  * Two-phase flow (designed so the OS save dialog appears *immediately*
  * on click, not after a multi-second render):
  *
- *   1. `pick_report_save_path` (Rust) opens the native rfd save
- *      dialog and returns the chosen absolute path (or null on
- *      cancel).
+ *   1. Rust opens the native rfd save dialog and returns a one-shot
+ *      save target grant (or null on cancel).
  *   2. The renderer then captures the article DOM with `html-to-image`
  *      (SVG <foreignObject> + native browser paint — supports modern
  *      CSS like var(), color-mix(), oklch()) and, for PDF, wraps the
  *      bitmap in an A4 jsPDF document.
- *   3. `write_report_file_at` (Rust) writes the bytes to the path
- *      picked in step 1.
+ *   3. Rust writes the bytes by consuming the one-shot grant picked in
+ *      step 1.
  *
  * window.print() is intentionally avoided: under the Tauri WebView on
  * Windows it yields an empty/blank print dialog.
  * ───────────────────────────────────────────────────────────── */
 
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '../../bridge/shell-command.js';
 import { i18nText } from '../../i18n/index.js';
 
 export type PrintMode = 'letter' | 'professional';
@@ -56,7 +55,7 @@ interface ExportOptions {
 }
 
 export interface ExportResult {
-  /** Absolute path the user chose, or null if the dialog was cancelled. */
+  /** Display-only save target label, or null if the dialog was cancelled. */
   savedPath: string | null;
   /** Filename presented to / accepted by the user. */
   filename: string;
@@ -64,28 +63,33 @@ export interface ExportResult {
 
 type SaveKind = 'pdf' | 'png' | 'csv';
 
-async function pickSavePath(
+type ReportSaveGrant = {
+  saveTargetId: string;
+  displayPath: string;
+};
+
+async function createReportSaveGrant(
   defaultFilename: string,
   kind: SaveKind,
   title: string,
-): Promise<string | null> {
-  return invoke<string | null>('pick_report_save_path', {
+): Promise<ReportSaveGrant | null> {
+  return invoke<ReportSaveGrant | null>('report_export_create_save_grant', {
     defaultFilename,
     kind,
     title,
   });
 }
 
-async function writeReportFileAt(path: string, base64Data: string): Promise<string> {
-  return invoke<string>('write_report_file_at', { path, base64Data });
+async function writeReportGrant(saveTargetId: string, base64Data: string): Promise<ReportSaveGrant> {
+  return invoke<ReportSaveGrant>('report_export_write_grant', { saveTargetId, base64Data });
 }
 
 /**
  * Saves a UTF-8 text payload (e.g. a CSV export) through the same native
  * "Save as" dialog pipeline as the report exports. A programmatic
  * `<a download>` is inert in the Tauri WebView, so text exports must
- * round-trip through Rust. Returns the chosen absolute path, or null if
- * the dialog was cancelled.
+ * round-trip through Rust. Returns a display-only saved target label, or
+ * null if the dialog was cancelled.
  */
 export async function saveTextFileViaDialog(params: {
   text: string;
@@ -93,10 +97,11 @@ export async function saveTextFileViaDialog(params: {
   kind: SaveKind;
   title: string;
 }): Promise<string | null> {
-  const chosenPath = await pickSavePath(params.defaultFilename, params.kind, params.title);
-  if (!chosenPath) return null;
+  const grant = await createReportSaveGrant(params.defaultFilename, params.kind, params.title);
+  if (!grant) return null;
   const base64Data = await blobToBase64(new Blob([params.text]));
-  return writeReportFileAt(chosenPath, base64Data);
+  const saved = await writeReportGrant(grant.saveTargetId, base64Data);
+  return saved.displayPath;
 }
 
 /**
@@ -449,13 +454,13 @@ export async function exportReportAsImage(
   }
 
   const filename = options.filename ?? `growth-report-${formatTimestamp(new Date())}.png`;
-  const chosenPath = await pickSavePath(filename, 'png', i18nText('Reports.export.saveImageTitle'));
-  if (!chosenPath) return { savedPath: null, filename };
+  const grant = await createReportSaveGrant(filename, 'png', i18nText('Reports.export.saveImageTitle'));
+  if (!grant) return { savedPath: null, filename };
 
   const canvas = await renderTargetToCanvas(target, options);
   const base64Data = canvasToPngBase64(canvas);
-  const savedPath = await writeReportFileAt(chosenPath, base64Data);
-  return { savedPath, filename };
+  const saved = await writeReportGrant(grant.saveTargetId, base64Data);
+  return { savedPath: saved.displayPath, filename };
 }
 
 /**
@@ -473,8 +478,8 @@ export async function exportReportAsPdf(
   }
 
   const filename = options.filename ?? `growth-report-${formatTimestamp(new Date())}.pdf`;
-  const chosenPath = await pickSavePath(filename, 'pdf', i18nText('Reports.export.savePdfTitle'));
-  if (!chosenPath) return { savedPath: null, filename };
+  const grant = await createReportSaveGrant(filename, 'pdf', i18nText('Reports.export.savePdfTitle'));
+  if (!grant) return { savedPath: null, filename };
 
   const canvas = await renderTargetToCanvas(target, options);
   const { jsPDF } = await import('jspdf');
@@ -498,6 +503,6 @@ export async function exportReportAsPdf(
 
   const pdfBlob = pdf.output('blob');
   const base64Data = await blobToBase64(pdfBlob);
-  const savedPath = await writeReportFileAt(chosenPath, base64Data);
-  return { savedPath, filename };
+  const saved = await writeReportGrant(grant.saveTargetId, base64Data);
+  return { savedPath: saved.displayPath, filename };
 }

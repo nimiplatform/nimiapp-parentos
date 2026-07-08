@@ -1,12 +1,15 @@
-import { hasTauriInvoke, invoke } from './index.js';
+import {
+  hasNimiShellRuntime,
+  startWindowDrag,
+} from '@nimiplatform/kit/shell/renderer/bridge';
 
 export async function startParentosWindowDrag(): Promise<void> {
-  if (!hasTauriInvoke()) {
+  if (!hasNimiShellRuntime()) {
     return;
   }
 
   try {
-    await invoke('parentos_start_window_drag', {});
+    await startWindowDrag();
   } catch {
     // Dragging is best-effort and should not break interaction.
   }

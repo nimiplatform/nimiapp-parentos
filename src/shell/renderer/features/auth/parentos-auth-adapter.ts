@@ -1,4 +1,4 @@
-import type { AuthPlatformAdapter } from '@nimiplatform/kit/auth';
+import type { AuthPlatformAdapter } from '@nimiplatform/kit/auth/shell';
 import {
   ensureParentOSRuntimeClientReady,
   loadParentOSRuntimeAccountUser,

@@ -26,29 +26,7 @@ fn extension_to_mime(extension: &str) -> Option<&'static str> {
     }
 }
 
-#[tauri::command]
-pub fn pick_image_files(title: Option<String>) -> Result<Vec<String>, String> {
-    let start_dir = dirs::picture_dir()
-        .or_else(dirs::home_dir)
-        .unwrap_or_else(std::env::temp_dir);
-    let dialog = rfd::FileDialog::new()
-        .set_directory(&start_dir)
-        .set_title(title.as_deref().unwrap_or("Select photos"))
-        .add_filter(
-            "Images",
-            &["jpg", "jpeg", "png", "webp", "gif", "heic", "heif", "bmp"],
-        )
-        .add_filter("All Files", &["*"]);
-    let selected = dialog.pick_files().unwrap_or_default();
-    Ok(selected
-        .into_iter()
-        .map(|path| path.to_string_lossy().to_string())
-        .collect())
-}
-
-#[tauri::command]
-pub fn read_dropped_image_as_base64(path: String) -> Result<DroppedImagePayload, String> {
-    let candidate = PathBuf::from(path.trim());
+fn read_image_path_as_base64(candidate: PathBuf) -> Result<DroppedImagePayload, String> {
     if !candidate.is_absolute() {
         return Err("dropped image path must be absolute".to_string());
     }
@@ -96,4 +74,105 @@ pub fn read_dropped_image_as_base64(path: String) -> Result<DroppedImagePayload,
         mime_type: mime_type.to_string(),
         base64,
     })
+}
+
+pub fn read_image_files_as_base64(paths: Vec<String>) -> Result<Vec<DroppedImagePayload>, String> {
+    paths
+        .into_iter()
+        .map(|path| read_image_path_as_base64(PathBuf::from(path.trim())))
+        .collect()
+}
+
+#[tauri::command]
+pub fn pick_image_files_as_base64(
+    title: Option<String>,
+) -> Result<Vec<DroppedImagePayload>, String> {
+    let start_dir = dirs::picture_dir()
+        .or_else(dirs::home_dir)
+        .unwrap_or_else(std::env::temp_dir);
+    let dialog = rfd::FileDialog::new()
+        .set_directory(&start_dir)
+        .set_title(title.as_deref().unwrap_or("Select photos"))
+        .add_filter(
+            "Images",
+            &["jpg", "jpeg", "png", "webp", "gif", "heic", "heif", "bmp"],
+        );
+    let selected = dialog.pick_files().unwrap_or_default();
+    read_image_files_as_base64(
+        selected
+            .into_iter()
+            .map(|path| path.display().to_string())
+            .collect(),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::{self, OpenOptions};
+    use std::path::Path;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn unique_temp_path(file_name: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock should be after unix epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!("parentos-dropped-file-test-{nonce}-{file_name}"))
+    }
+
+    fn cleanup_path(path: &Path) {
+        if path.is_dir() {
+            let _ = fs::remove_dir_all(path);
+        } else {
+            let _ = fs::remove_file(path);
+        }
+    }
+
+    #[test]
+    fn read_image_path_as_base64_accepts_supported_image_file() {
+        let path = unique_temp_path("sample.png");
+        fs::write(&path, [0x89, b'P', b'N', b'G']).expect("write sample png bytes");
+
+        let payload = read_image_path_as_base64(path.clone()).expect("image payload");
+
+        assert_eq!(
+            payload.file_name,
+            path.file_name().unwrap().to_string_lossy()
+        );
+        assert_eq!(payload.mime_type, "image/png");
+        assert_eq!(
+            payload.base64,
+            BASE64_STANDARD.encode([0x89, b'P', b'N', b'G'])
+        );
+        cleanup_path(&path);
+    }
+
+    #[test]
+    fn read_image_path_as_base64_rejects_directory() {
+        let path = unique_temp_path("directory.png");
+        fs::create_dir(&path).expect("create temp directory");
+
+        let error = read_image_path_as_base64(path.clone()).expect_err("directory must fail");
+
+        assert!(error.contains("not a file"));
+        cleanup_path(&path);
+    }
+
+    #[test]
+    fn read_image_path_as_base64_rejects_oversized_file() {
+        let path = unique_temp_path("large.png");
+        let file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&path)
+            .expect("create temp sparse file");
+        file.set_len(MAX_DROPPED_IMAGE_BYTES + 1)
+            .expect("resize sparse file");
+
+        let error = read_image_path_as_base64(path.clone()).expect_err("oversized file must fail");
+
+        assert!(error.contains("exceeds"));
+        cleanup_path(&path);
+    }
 }

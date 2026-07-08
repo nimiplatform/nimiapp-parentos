@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ShellAuthPage } from '@nimiplatform/kit/auth';
+import { ShellAuthPage } from '@nimiplatform/kit/auth/shell';
 import '@nimiplatform/kit/auth/styles.css';
 import { useAppStore } from '../../app-shell/app-store.js';
 import {

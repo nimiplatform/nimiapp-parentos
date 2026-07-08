@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   RoutePolicy,
   ScenarioType,
-} from '@nimiplatform/sdk/runtime/generated';
+} from '@nimiplatform/sdk/runtime/wire-types';
 import { PARENTOS_AI_SCOPE_REF, createEmptyParentosAIConfig } from './parentos-ai-config.js';
 import { ensureParentosAIConfigFromFirstRunEvidence } from './parentos-ai-config-bootstrap.js';
 

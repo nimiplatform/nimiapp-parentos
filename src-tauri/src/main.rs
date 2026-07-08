@@ -1,10 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use serde::{Deserialize, Serialize};
-use tauri::Manager;
-
 // Shared standard shell capabilities from kit/shell/tauri crate.
-use nimi_shell_tauri::capabilities::{oauth, runtime, session_logging};
+use nimi_shell_tauri::capabilities::{data, oauth, runtime, session_logging, shell_ui, storage};
 
 // App-local modules
 mod app_storage;
@@ -16,109 +13,10 @@ mod journal_photo;
 mod orthodontic_photos;
 mod photos;
 mod report_export;
+mod runtime_auth;
 mod sqlite;
 #[cfg(test)]
 mod test_support;
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct ParentOSStorageDirs {
-    parentos_data_root: String,
-    parentos_cache_root: String,
-    parentos_temp_root: String,
-    parentos_db_path: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ConfirmDialogPayload {
-    #[allow(dead_code)]
-    title: Option<String>,
-    #[allow(dead_code)]
-    description: Option<String>,
-    #[allow(dead_code)]
-    level: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct ConfirmDialogResult {
-    confirmed: bool,
-}
-
-#[tauri::command]
-fn get_storage_dirs() -> Result<ParentOSStorageDirs, String> {
-    let storage_roots = app_storage::app_storage_roots()?;
-    storage_dirs_from_roots(&storage_roots)
-}
-
-#[tauri::command]
-fn prepare_parentos_app_storage(
-    app: tauri::AppHandle,
-    projection: app_storage::ParentOSAppStorageProjectionInput,
-) -> Result<ParentOSStorageDirs, String> {
-    let storage_roots = app_storage::prepare_app_storage(&app, projection)?;
-    storage_dirs_from_roots(&storage_roots)
-}
-
-fn storage_dirs_from_roots(
-    storage_roots: &app_storage::ParentOSAppStorageRoots,
-) -> Result<ParentOSStorageDirs, String> {
-    let parentos_db_path = sqlite::resolve_db_path()?;
-    Ok(ParentOSStorageDirs {
-        parentos_data_root: storage_roots.data_root.display().to_string(),
-        parentos_cache_root: storage_roots.cache_root.display().to_string(),
-        parentos_temp_root: storage_roots.temp_root.display().to_string(),
-        parentos_db_path: parentos_db_path.display().to_string(),
-    })
-}
-
-fn start_dragging_window(window: tauri::WebviewWindow) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    if window.is_fullscreen().unwrap_or(false) {
-        return Ok(());
-    }
-
-    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        window.start_dragging().map_err(|error| error.to_string())
-    })) {
-        Ok(result) => result,
-        Err(_) => Err("window drag unavailable".to_string()),
-    }
-}
-
-#[tauri::command]
-fn start_window_drag(window: tauri::WebviewWindow) -> Result<(), String> {
-    start_dragging_window(window)
-}
-
-#[tauri::command]
-fn parentos_start_window_drag(window: tauri::WebviewWindow) -> Result<(), String> {
-    start_dragging_window(window)
-}
-
-#[tauri::command]
-fn focus_main_window(app: tauri::AppHandle) -> Result<(), String> {
-    let window = app
-        .get_webview_window("main")
-        .or_else(|| app.webview_windows().into_values().next())
-        .ok_or_else(|| "main window unavailable".to_string())?;
-    let _ = window.unminimize();
-    window.show().map_err(|error| error.to_string())?;
-    window.set_focus().map_err(|error| error.to_string())
-}
-
-#[tauri::command]
-fn confirm_dialog(payload: ConfirmDialogPayload) -> Result<ConfirmDialogResult, String> {
-    let _ = payload;
-    Err(nimi_shell_tauri::capabilities::standard_shell_error(
-        "capability-unavailable",
-        "parentos-native-confirm-dialog-unavailable",
-        "Use ParentOS in-app confirmation UI for product confirmations.",
-        "tauri",
-        None,
-    ))
-}
 
 fn load_dotenv_files() {
     let root_env_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../.env");
@@ -151,21 +49,102 @@ fn configure_runtime_bridge_env() {
     }
 }
 
+fn optional_env_path(keys: &[&str]) -> Option<std::path::PathBuf> {
+    keys.iter()
+        .find_map(|key| {
+            std::env::var(key)
+                .ok()
+                .map(|value| value.trim().to_string())
+                .filter(|value| !value.is_empty())
+        })
+        .map(std::path::PathBuf::from)
+}
+
+fn parentos_standard_app_storage_binding() -> data::StandardDataRootBinding {
+    match optional_env_path(&[
+        "NIMI_APP_DURABLE_DATA_ROOT",
+        "NIMI_PARENTOS_TAURI_DURABLE_DATA_ROOT",
+        "NIMI_PARENTOS_TAURI_STANDARD_DATA_ROOT",
+    ]) {
+        Some(durable_data_root) => data::StandardDataRootBinding::RuntimeLaunchProjection {
+            cache_root: optional_env_path(&[
+                "NIMI_APP_CACHE_ROOT",
+                "NIMI_PARENTOS_TAURI_CACHE_ROOT",
+            ])
+            .or_else(|| Some(durable_data_root.clone())),
+            temp_root: optional_env_path(&["NIMI_APP_TEMP_ROOT", "NIMI_PARENTOS_TAURI_TEMP_ROOT"])
+                .or_else(|| Some(durable_data_root.clone())),
+            durable_data_root,
+            projection_ref: "parentos-tauri-runtime-launch-projection".to_string(),
+        },
+        None => data::StandardDataRootBinding::RuntimeGetAppStorage {
+            app_id: app_storage::PARENTOS_APP_ID.to_string(),
+        },
+    }
+}
+
+fn resolve_parentos_standard_storage() -> Result<
+    (
+        data::StandardAppStorageRootSlot,
+        app_storage::ParentOSAppStorageRoots,
+    ),
+    String,
+> {
+    let standard_roots = tauri::async_runtime::block_on(data::resolve_standard_app_storage_roots(
+        parentos_standard_app_storage_binding(),
+    ))?;
+    let durable_data_root = standard_roots.data_root().display().to_string();
+    let cache_root = standard_roots
+        .cache_root()
+        .unwrap_or_else(|| standard_roots.data_root())
+        .display()
+        .to_string();
+    let temp_root = standard_roots
+        .temp_root()
+        .unwrap_or_else(|| standard_roots.data_root())
+        .display()
+        .to_string();
+    let parentos_roots =
+        app_storage::install_host_app_storage_roots(durable_data_root, cache_root, temp_root)?;
+    Ok((
+        data::StandardAppStorageRootSlot::from_roots(standard_roots),
+        parentos_roots,
+    ))
+}
+
+fn setup_parentos_app_storage_scope(
+    app: &mut tauri::App,
+    roots: &app_storage::ParentOSAppStorageRoots,
+) -> Result<(), Box<dyn std::error::Error>> {
+    app_storage::allow_data_root_in_asset_scope(&app.handle(), roots).map_err(|error| {
+        Box::new(std::io::Error::new(std::io::ErrorKind::Other, error))
+            as Box<dyn std::error::Error>
+    })
+}
+
 fn main() {
     load_dotenv_files();
     configure_runtime_bridge_env();
     session_logging::set_app_session_prefix("parentos");
     session_logging::install_panic_hook();
     session_logging::log_boot_marker("parentos main() entered");
+    runtime_auth::install_parentos_tauri_runtime_auth_provider()
+        .expect("install ParentOS trusted Runtime metadata provider");
+    let (standard_storage_slot, parentos_roots) = resolve_parentos_standard_storage()
+        .expect("bind ParentOS standard Runtime app storage roots");
+    let parentos_roots_for_setup = parentos_roots.clone();
 
     tauri::Builder::default()
+        .manage(standard_storage_slot)
+        .setup(move |app| setup_parentos_app_storage_scope(app, &parentos_roots_for_setup))
         .invoke_handler(tauri::generate_handler![
-            get_storage_dirs,
-            prepare_parentos_app_storage,
-            parentos_start_window_drag,
-            confirm_dialog,
-            start_window_drag,
-            focus_main_window,
+            shell_ui::confirm_dialog,
+            shell_ui::start_window_drag,
+            shell_ui::focus_main_window,
+            data::data_path_resolve,
+            storage::storage_read_json,
+            storage::storage_write_json,
+            storage::storage_remove_json,
             oauth::open_external_url,
             oauth::oauth_listen_for_code,
             runtime::runtime_bridge_unary,
@@ -178,10 +157,9 @@ fn main() {
             journal_photo::save_journal_photo,
             child_avatar::save_child_avatar,
             journal_photo::delete_journal_photo,
-            dropped_file::read_dropped_image_as_base64,
-            dropped_file::pick_image_files,
-            report_export::pick_report_save_path,
-            report_export::write_report_file_at,
+            dropped_file::pick_image_files_as_base64,
+            report_export::report_export_create_save_grant,
+            report_export::report_export_write_grant,
             // Family & Children
             sqlite::queries::create_family,
             sqlite::queries::get_family,

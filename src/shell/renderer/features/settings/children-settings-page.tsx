@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { convertFileSrc } from '../../bridge/shell-command.js';
 import { Button, DatePicker, Surface, TextField, SelectField, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, type NurtureMode } from '../../app-shell/app-store.js';
 import { createChild, createFamily, deleteChild, getChildren, updateChild } from '../../bridge/sqlite-bridge.js';

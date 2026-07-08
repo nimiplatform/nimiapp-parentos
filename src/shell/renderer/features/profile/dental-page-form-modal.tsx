@@ -1,4 +1,4 @@
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { convertFileSrc } from '../../bridge/shell-command.js';
 import { Button, cn, DashedAddButton, DatePicker, TextField, TextareaField } from '@nimiplatform/kit/ui';
 import type { AttachmentRow } from '../../bridge/sqlite-bridge.js';
 import type { ReactNode } from 'react';

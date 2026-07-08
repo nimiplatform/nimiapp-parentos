@@ -1,7 +1,7 @@
 import { Button, DashedAddButton, DatePicker, Surface, TextField } from '@nimiplatform/kit/ui';
 import { useState, useEffect, useMemo } from 'react';
 import { computeAgeMonthsAt, useAppStore } from '../../app-shell/app-store.js';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { convertFileSrc } from '../../bridge/shell-command.js';
 import { insertMeasurement, getMeasurements, saveAttachment, getAttachments, deleteAttachment } from '../../bridge/sqlite-bridge.js';
 import type { MeasurementRow, AttachmentRow } from '../../bridge/sqlite-bridge.js';
 import { ulid, isoNow } from '../../bridge/ulid.js';

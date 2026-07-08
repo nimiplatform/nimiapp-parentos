@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from './shell-command.js';
 
 /**
  * Per-child vision follow-up cadence configuration.

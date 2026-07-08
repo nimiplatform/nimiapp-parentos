@@ -14,7 +14,9 @@ pub(super) fn apply_v21(conn: &Connection) -> Result<(), String> {
             params!["growth_measurements"],
             |row| row.get(0),
         )
-        .map_err(|e| format!("migration v21 check retired growth_measurements table failed: {e}"))?;
+        .map_err(|e| {
+            format!("migration v21 check retired growth_measurements table failed: {e}")
+        })?;
 
     if count > 0 {
         return Err(
