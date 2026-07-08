@@ -237,9 +237,14 @@ export function WelcomePage() {
 
 function WelcomeIntro({ onSkip }: { onSkip: () => void }) {
   return (
-    <section className="parentos-welcome-intro absolute inset-0 z-20 overflow-hidden" aria-label={i18nText('Timeline.welcome.intro.ariaLabel')}>
+    <section
+      data-testid="parentos-welcome-intro"
+      className="parentos-welcome-intro absolute inset-0 z-20 overflow-hidden"
+      aria-label={i18nText('Timeline.welcome.intro.ariaLabel')}
+    >
       <button
         type="button"
+        data-testid="parentos-welcome-intro-skip"
         onClick={onSkip}
         className={cn(
           buttonVariants({ tone: 'ghost', size: 'sm' }),

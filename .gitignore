@@ -1,5 +1,8 @@
 node_modules/
 dist/
+dist-electron/
+build/
+src-electron/dist/
 .DS_Store
 *.log
 
@@ -21,3 +24,4 @@ src-tauri/gen/schemas/
 .nimi/topics/
 
 outputs/
+docs/superpowers/

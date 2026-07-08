@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* global console, process */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, relative } from 'node:path';

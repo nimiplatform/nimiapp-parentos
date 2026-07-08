@@ -7,7 +7,9 @@ export default defineConfig([
   js.configs.recommended,
   ...tseslint.configs.recommended,
   globalIgnores([
+    'build/**',
     'dist/**',
+    'src-electron/dist/**',
     '.nimi/local/**',
     'src-tauri/target/**',
     'node_modules/**',
@@ -44,12 +46,13 @@ export default defineConfig([
     },
   },
   {
-    files: ['scripts/**/*.ts'],
+    files: ['scripts/**/*.{ts,mjs,js}', 'test/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
       globals: {
         ...globals.node,
+        ...globals.browser,
       },
     },
     rules: {

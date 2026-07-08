@@ -7,5 +7,6 @@ overrides:
 
 allowBuilds:
   core-js: true
+  electron-winstaller: false
   esbuild: true
   protobufjs: true

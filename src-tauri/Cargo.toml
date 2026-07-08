@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "ParentOS (成长底稿) — AI-Driven Child Development Companion (Tauri)"
 authors = ["Nimi Team"]
 edition = "2021"
+default-run = "nimiplatform-parentos"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

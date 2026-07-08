@@ -1,0 +1,30 @@
+appId: nimi.parentos
+productName: ParentOS
+directories:
+  output: ../../dist-electron
+files:
+  - dist/**
+  - src-electron/dist/**
+  - package.json
+  - node_modules/**
+  - '!**/target/**'
+  - '!**/src-tauri/target/**'
+  - '!**/node_modules/@nimiplatform/kit/shell/tauri/target/**'
+  - '!**/node_modules/@nimiplatform/kit/**/target/**'
+  - '!**/node_modules/@nimiplatform/{kit,sdk}/**/src/**'
+  - '!**/node_modules/@nimiplatform/sdk/adapters/**'
+  - '!**/node_modules/@nimiplatform/{kit,sdk}/**/test/**'
+  - '!**/test/**'
+  - '!**/*.test.ts'
+  - '!**/*.test.tsx'
+  - '!**/*.example.ts'
+  - '!**/.nimi/**'
+  - '!**/outputs/**'
+  - '!**/src-tauri/gen/**'
+extraResources:
+  - from: ../../build/electron-extra-resources/bin/parentos_host.exe
+    to: bin/parentos_host.exe
+win:
+  icon: ../../src-tauri/icons/icon.ico
+  target:
+    - dir
