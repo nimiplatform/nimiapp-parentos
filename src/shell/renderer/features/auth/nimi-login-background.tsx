@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import * as THREE from 'three';
 import { createNoise3D } from 'simplex-noise';
 
 type NimiLoginBackgroundProfile = 'desktop' | 'web';
@@ -13,6 +12,13 @@ type ParticleBackgroundEnvironment = {
       saveData?: boolean;
     };
   };
+};
+
+type Particle = {
+  x: number;
+  y: number;
+  z: number;
+  radius: number;
 };
 
 const BASE_PARTICLE_CONFIG = {
@@ -81,11 +87,20 @@ export function shouldEnableNimiLoginBackground(env: ParticleBackgroundEnvironme
   }
 
   const canvas = env.document.createElement('canvas') as HTMLCanvasElement;
-  return Boolean(
-    canvas.getContext('webgl2')
-      ?? canvas.getContext('webgl')
-      ?? canvas.getContext('experimental-webgl' as 'webgl'),
-  );
+  return Boolean(canvas.getContext('2d'));
+}
+
+function randomParticle(width: number, height: number): Particle {
+  return {
+    x: (Math.random() - 0.5) * width * 1.5,
+    y: (Math.random() - 0.5) * height * 1.5,
+    z: (Math.random() - 0.5) * 100,
+    radius: Math.random() < 0.3 ? 3.5 : 2,
+  };
+}
+
+function hashCell(cx: number, cy: number): number {
+  return ((cx + 4096) << 13) | (cy + 4096);
 }
 
 export function NimiLoginBackground({
@@ -96,6 +111,7 @@ export function NimiLoginBackground({
   profile?: NimiLoginBackgroundProfile;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isHoveredRef = useRef(isLogoHovered);
 
   useEffect(() => {
@@ -103,7 +119,9 @@ export function NimiLoginBackground({
   }, [isLogoHovered]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
     if (!shouldEnableNimiLoginBackground({
       document: window.document,
       matchMedia: window.matchMedia?.bind(window),
@@ -112,47 +130,30 @@ export function NimiLoginBackground({
       return;
     }
 
-    const container = containerRef.current;
-    let width = container.clientWidth;
-    let height = container.clientHeight;
-    const particleColor = readResolvedColorToken(container, '--nimi-status-info');
-    const lineColor = readResolvedColorToken(container, '--nimi-text-inverse');
+    const context = canvas.getContext('2d', { alpha: true });
+    if (!context) {
+      return;
+    }
+    const canvasElement = canvas;
+    const containerElement = container;
+    const drawingContext = context;
+
+    const particleColor = readResolvedColorToken(containerElement, '--nimi-status-info');
+    const lineColor = readResolvedColorToken(containerElement, '--nimi-text-inverse');
     if (!particleColor || !lineColor) {
       return;
     }
+    const resolvedParticleColor = particleColor;
+    const resolvedLineColor = lineColor;
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, width / height, 1, 1000);
-    camera.position.z = 500;
-
-    const renderer = (() => {
-      try {
-        return new THREE.WebGLRenderer({
-          alpha: true,
-          antialias: true,
-          powerPreference: 'high-performance',
-        });
-      } catch {
-        return null;
-      }
-    })();
-    if (!renderer) {
-      return;
-    }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(width, height);
-    renderer.setClearColor(0x000000, 0);
-    container.appendChild(renderer.domElement);
-
-    const tuning = resolveParticleConfig(profile);
-    const config = {
-      ...tuning,
-      particleColor: new THREE.Color(particleColor),
-      lineColor: new THREE.Color(lineColor),
-    };
-
-    const noise3D = createNoise3D();
-    const connectDistanceSq = config.connectDistance * config.connectDistance;
+    const config = resolveParticleConfig(profile);
+    const particles = Array.from({ length: config.particleCount }, () => (
+      randomParticle(containerElement.clientWidth || 1, containerElement.clientHeight || 1)
+    ));
+    const flockingForces = new Float32Array(config.particleCount * 2);
+    const cellCoords = new Int32Array(config.particleCount * 2);
+    const spatialBuckets = new Map<number, number[]>();
+    const bucketPool: number[][] = [];
     const neighborOffsets = [
       [0, 0],
       [1, -1],
@@ -160,10 +161,25 @@ export function NimiLoginBackground({
       [1, 1],
       [0, 1],
     ] as const;
-    const spatialBuckets = new Map<number, number[]>();
-    const cellCoords = new Int32Array(config.particleCount * 2);
-    const bucketPool: number[][] = [];
+    const noise3D = createNoise3D();
+    const mouse = { x: 9999, y: 9999 };
+    const connectDistanceSq = config.connectDistance * config.connectDistance;
+    let width = 0;
+    let height = 0;
+    let frameId = 0;
+    let lastFrame = performance.now();
     let bucketPoolIndex = 0;
+
+    function resizeCanvas() {
+      width = Math.max(1, containerElement.clientWidth);
+      height = Math.max(1, containerElement.clientHeight);
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      canvasElement.width = Math.floor(width * pixelRatio);
+      canvasElement.height = Math.floor(height * pixelRatio);
+      canvasElement.style.width = `${width}px`;
+      canvasElement.style.height = `${height}px`;
+      drawingContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    }
 
     function acquireBucket(): number[] {
       if (bucketPoolIndex < bucketPool.length) {
@@ -177,10 +193,6 @@ export function NimiLoginBackground({
       return bucket;
     }
 
-    function hashCell(cx: number, cy: number): number {
-      return ((cx + 4096) << 13) | (cy + 4096);
-    }
-
     function computeCurl(x: number, y: number, z: number) {
       const eps = 0.1;
       const psiY = (noise3D(x, y + eps, z) - noise3D(x, y - eps, z)) / (2 * eps);
@@ -188,192 +200,58 @@ export function NimiLoginBackground({
       return { x: psiY, y: -psiX };
     }
 
-    const particleGeometry = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(config.particleCount * 3);
-    const particleVelocities: { x: number; y: number; z: number }[] = [];
-    const particleSizes = new Float32Array(config.particleCount);
-    const flockingForces = new Float32Array(config.particleCount * 2);
+    function registerPair(leftIndex: number, rightIndex: number) {
+      const left = particles[leftIndex]!;
+      const right = particles[rightIndex]!;
+      const dx = left.x - right.x;
+      const dy = left.y - right.y;
+      const dz = left.z - right.z;
+      const distSq = dx * dx + dy * dy + dz * dz;
 
-    const visibleHeight = 2 * Math.tan((camera.fov * Math.PI) / 360) * camera.position.z;
-    const visibleWidth = visibleHeight * camera.aspect;
+      if (distSq >= connectDistanceSq) {
+        return;
+      }
 
-    for (let i = 0; i < config.particleCount; i++) {
-      const x = (Math.random() - 0.5) * visibleWidth * 1.5;
-      const y = (Math.random() - 0.5) * visibleHeight * 1.5;
-      const z = (Math.random() - 0.5) * 100;
-      particlePositions[i * 3] = x;
-      particlePositions[i * 3 + 1] = y;
-      particlePositions[i * 3 + 2] = z;
-      particleVelocities.push({ x: 0, y: 0, z: 0 });
-      particleSizes[i] = Math.random() < 0.3 ? 7.0 : 4.0;
+      const dist = Math.sqrt(distSq);
+      const alpha = 1 - dist / config.connectDistance;
+      drawingContext.globalAlpha = Math.min(0.3, alpha * 0.18);
+      drawingContext.beginPath();
+      drawingContext.moveTo(width / 2 + left.x, height / 2 + left.y);
+      drawingContext.lineTo(width / 2 + right.x, height / 2 + right.y);
+      drawingContext.stroke();
+
+      if (dist <= 0.1) {
+        return;
+      }
+
+      const forceCohesion = (dist / config.connectDistance) * config.cohesionForce;
+      const fx = (dx / dist) * forceCohesion;
+      const fy = (dy / dist) * forceCohesion;
+      flockingForces[leftIndex * 2]! -= fx;
+      flockingForces[leftIndex * 2 + 1]! -= fy;
+      flockingForces[rightIndex * 2]! += fx;
+      flockingForces[rightIndex * 2 + 1]! += fy;
+
+      if (dist >= config.separationDistance) {
+        return;
+      }
+
+      const forceSep = (1 - dist / config.separationDistance) * config.separationForce;
+      const sx = (dx / dist) * forceSep;
+      const sy = (dy / dist) * forceSep;
+      flockingForces[leftIndex * 2]! += sx;
+      flockingForces[leftIndex * 2 + 1]! += sy;
+      flockingForces[rightIndex * 2]! -= sx;
+      flockingForces[rightIndex * 2 + 1]! -= sy;
     }
 
-    particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    particleGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
-
-    const particleMaterial = new THREE.ShaderMaterial({
-      uniforms: { color: { value: config.particleColor } },
-      vertexShader: `
-        attribute float size;
-        void main() {
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = size * (300.0 / -mvPosition.z);
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 color;
-        void main() {
-          float r = distance(gl_PointCoord, vec2(0.5));
-          if (r > 0.5) discard;
-          gl_FragColor = vec4(color, 0.8);
-        }
-      `,
-      transparent: true,
-      depthWrite: false,
-    });
-
-    const particles = new THREE.Points(particleGeometry, particleMaterial);
-    scene.add(particles);
-
-    const maxLines = config.particleCount * 6;
-    const lineGeometry = new THREE.BufferGeometry();
-    const linePositions = new Float32Array(maxLines * 6);
-    const lineOpacities = new Float32Array(maxLines * 2);
-
-    lineGeometry.setAttribute(
-      'position',
-      new THREE.BufferAttribute(linePositions, 3).setUsage(THREE.DynamicDrawUsage),
-    );
-    lineGeometry.setAttribute(
-      'opacity',
-      new THREE.BufferAttribute(lineOpacities, 1).setUsage(THREE.DynamicDrawUsage),
-    );
-
-    const lineMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        color: { value: config.lineColor },
-        uMouse: { value: new THREE.Vector3(9999, 9999, 0) },
-        uRadius: { value: config.mouseRepelRadius * 1.8 },
-      },
-      vertexShader: `
-        uniform vec3 uMouse;
-        uniform float uRadius;
-        attribute float opacity;
-        varying float vOpacity;
-        void main() {
-          float dist = distance(position, uMouse);
-          float baseOpacity = opacity * 0.15;
-          float boost = smoothstep(uRadius, 0.0, dist);
-          vOpacity = baseOpacity + (opacity * boost * 0.4);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 color;
-        varying float vOpacity;
-        void main() {
-          gl_FragColor = vec4(color, min(vOpacity, 0.3));
-        }
-      `,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-
-    const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
-    scene.add(lines);
-
-    const mouse = new THREE.Vector2(9999, 9999);
-    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-    const raycaster = new THREE.Raycaster();
-    const mouse3D = new THREE.Vector3();
-
-    const onMouseMove = (event: MouseEvent) => {
-      const rect = container.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / height) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-      raycaster.ray.intersectPlane(plane, mouse3D);
-    };
-    window.addEventListener('mousemove', onMouseMove);
-
-    let frameId: number;
-    const timer = new THREE.Timer();
-
-    const animate = () => {
-      frameId = requestAnimationFrame(animate);
-      timer.update();
-      const delta = Math.min(timer.getDelta(), 0.05);
-      const time = timer.getElapsed() * config.timeScale;
-
-      lineMaterial.uniforms['uMouse']?.value.copy(mouse3D);
-
-      const positions = particles.geometry.attributes['position']!.array as Float32Array;
-      flockingForces.fill(0);
-
-      let lineIndex = 0;
-      const linePosArray = lineGeometry.attributes['position']!.array as Float32Array;
-      const lineOpArray = lineGeometry.attributes['opacity']!.array as Float32Array;
-      const registerPair = (i: number, j: number) => {
-        const i3 = i * 3;
-        const j3 = j * 3;
-        const dx = positions[i3]! - positions[j3]!;
-        const dy = positions[i3 + 1]! - positions[j3 + 1]!;
-        const dz = positions[i3 + 2]! - positions[j3 + 2]!;
-        const distSq = dx * dx + dy * dy + dz * dz;
-
-        if (distSq >= connectDistanceSq) {
-          return;
-        }
-
-        const dist = Math.sqrt(distSq);
-        if (lineIndex < maxLines) {
-          const alpha = 1.0 - dist / config.connectDistance;
-          const l6 = lineIndex * 6;
-          const l2 = lineIndex * 2;
-          linePosArray[l6] = positions[i3]!;
-          linePosArray[l6 + 1] = positions[i3 + 1]!;
-          linePosArray[l6 + 2] = positions[i3 + 2]!;
-          linePosArray[l6 + 3] = positions[j3]!;
-          linePosArray[l6 + 4] = positions[j3 + 1]!;
-          linePosArray[l6 + 5] = positions[j3 + 2]!;
-          lineOpArray[l2] = alpha * 0.25;
-          lineOpArray[l2 + 1] = alpha * 0.25;
-          lineIndex++;
-        }
-
-        if (dist <= 0.1) {
-          return;
-        }
-
-        const forceCohesion = (dist / config.connectDistance) * config.cohesionForce;
-        const fx = (dx / dist) * forceCohesion;
-        const fy = (dy / dist) * forceCohesion;
-        flockingForces[i * 2]! -= fx;
-        flockingForces[i * 2 + 1]! -= fy;
-        flockingForces[j * 2]! += fx;
-        flockingForces[j * 2 + 1]! += fy;
-
-        if (dist >= config.separationDistance) {
-          return;
-        }
-
-        const forceSep = (1.0 - dist / config.separationDistance) * config.separationForce;
-        const sx = (dx / dist) * forceSep;
-        const sy = (dy / dist) * forceSep;
-        flockingForces[i * 2]! += sx;
-        flockingForces[i * 2 + 1]! += sy;
-        flockingForces[j * 2]! -= sx;
-        flockingForces[j * 2 + 1]! -= sy;
-      };
-
+    function rebuildSpatialBuckets() {
       spatialBuckets.clear();
       bucketPoolIndex = 0;
-      for (let i = 0; i < config.particleCount; i++) {
-        const i3 = i * 3;
-        const cx = Math.floor(positions[i3]! / config.connectDistance);
-        const cy = Math.floor(positions[i3 + 1]! / config.connectDistance);
+      for (let i = 0; i < particles.length; i++) {
+        const particle = particles[i]!;
+        const cx = Math.floor(particle.x / config.connectDistance);
+        const cy = Math.floor(particle.y / config.connectDistance);
         cellCoords[i * 2] = cx;
         cellCoords[i * 2 + 1] = cy;
         const key = hashCell(cx, cy);
@@ -381,13 +259,17 @@ export function NimiLoginBackground({
         if (bucket) {
           bucket.push(i);
         } else {
-          const b = acquireBucket();
-          b.push(i);
-          spatialBuckets.set(key, b);
+          const next = acquireBucket();
+          next.push(i);
+          spatialBuckets.set(key, next);
         }
       }
+    }
 
-      for (const [, bucket] of spatialBuckets) {
+    function drawConnections() {
+      drawingContext.strokeStyle = resolvedLineColor;
+      drawingContext.lineWidth = 1;
+      for (const bucket of spatialBuckets.values()) {
         const cellX = cellCoords[bucket[0]! * 2]!;
         const cellY = cellCoords[bucket[0]! * 2 + 1]!;
         for (const [offsetX, offsetY] of neighborOffsets) {
@@ -419,37 +301,28 @@ export function NimiLoginBackground({
           }
         }
       }
+      drawingContext.globalAlpha = 1;
+    }
 
-      lineGeometry.setDrawRange(0, lineIndex * 2);
-      lineGeometry.attributes['position']!.needsUpdate = true;
-      lineGeometry.attributes['opacity']!.needsUpdate = true;
-
-      const visibleHeightLocal = 2 * Math.tan((camera.fov * Math.PI) / 360) * camera.position.z;
-      const visibleWidthLocal = visibleHeightLocal * camera.aspect;
-      const boundX = visibleWidthLocal / 2 + 50;
-      const boundY = visibleHeightLocal / 2 + 50;
-
+    function updateParticles(delta: number, time: number) {
+      const boundX = width / 2 + 50;
+      const boundY = height / 2 + 50;
       const isHovered = isHoveredRef.current;
       const currentNoiseScale = isHovered ? config.hoverNoiseScale : config.noiseScale;
 
-      for (let i = 0; i < config.particleCount; i++) {
-        const i3 = i * 3;
-        let px = positions[i3]!;
-        let py = positions[i3 + 1]!;
-
-        const curl = computeCurl(px * currentNoiseScale, py * currentNoiseScale, time);
+      for (let i = 0; i < particles.length; i++) {
+        const particle = particles[i]!;
+        const curl = computeCurl(particle.x * currentNoiseScale, particle.y * currentNoiseScale, time);
         const vx = curl.x * 50 * config.baseSpeed;
         const vy = curl.y * 50 * config.baseSpeed;
-
         const fx = flockingForces[i * 2]!;
         const fy = flockingForces[i * 2 + 1]!;
-
         let mx = 0;
         let my = 0;
 
         if (isHovered) {
-          const dcx = -px;
-          const dcy = -py;
+          const dcx = -particle.x;
+          const dcy = -particle.y;
           const distCenter = Math.sqrt(dcx * dcx + dcy * dcy);
           const safeDistCenter = Math.max(distCenter, 0.001);
 
@@ -460,7 +333,7 @@ export function NimiLoginBackground({
           } else if (distCenter > 5) {
             mx = (dcy / safeDistCenter) * config.centerVortexForce * 50;
             my = (-dcx / safeDistCenter) * config.centerVortexForce * 50;
-            const pushStrength = (1.0 - distCenter / config.centerStopRadius) * 20;
+            const pushStrength = (1 - distCenter / config.centerStopRadius) * 20;
             mx -= (dcx / safeDistCenter) * pushStrength;
             my -= (dcy / safeDistCenter) * pushStrength;
           }
@@ -469,8 +342,8 @@ export function NimiLoginBackground({
           mx += (dcy / safeDistCenter) * wave;
           my += (-dcx / safeDistCenter) * wave;
         } else {
-          const dx = px - mouse3D.x;
-          const dy = py - mouse3D.y;
+          const dx = particle.x - mouse.x;
+          const dy = particle.y - mouse.y;
           const distSq = dx * dx + dy * dy;
           if (distSq < config.mouseRepelRadius * config.mouseRepelRadius) {
             const dist = Math.sqrt(distSq);
@@ -481,45 +354,63 @@ export function NimiLoginBackground({
           }
         }
 
-        px += (vx + fx + mx) * delta;
-        py += (vy + fy + my) * delta;
+        particle.x += (vx + fx + mx) * delta;
+        particle.y += (vy + fy + my) * delta;
 
-        if (px > boundX) px -= boundX * 2;
-        else if (px < -boundX) px += boundX * 2;
-        else if (py > boundY) py -= boundY * 2;
-        else if (py < -boundY) py += boundY * 2;
-
-        positions[i3] = px;
-        positions[i3 + 1] = py;
+        if (particle.x > boundX) particle.x -= boundX * 2;
+        else if (particle.x < -boundX) particle.x += boundX * 2;
+        else if (particle.y > boundY) particle.y -= boundY * 2;
+        else if (particle.y < -boundY) particle.y += boundY * 2;
       }
+    }
 
-      particles.geometry.attributes['position']!.needsUpdate = true;
-      renderer.render(scene, camera);
+    function drawParticles() {
+      drawingContext.fillStyle = resolvedParticleColor;
+      drawingContext.globalAlpha = 0.8;
+      for (const particle of particles) {
+        drawingContext.beginPath();
+        drawingContext.arc(width / 2 + particle.x, height / 2 + particle.y, particle.radius, 0, Math.PI * 2);
+        drawingContext.fill();
+      }
+      drawingContext.globalAlpha = 1;
+    }
+
+    function animate(now: number) {
+      frameId = requestAnimationFrame(animate);
+      const delta = Math.min((now - lastFrame) / 1000, 0.05);
+      const time = (now / 1000) * config.timeScale;
+      lastFrame = now;
+
+      flockingForces.fill(0);
+      drawingContext.clearRect(0, 0, width, height);
+      rebuildSpatialBuckets();
+      drawConnections();
+      updateParticles(delta, time);
+      drawParticles();
+    }
+
+    const onMouseMove = (event: MouseEvent) => {
+      const rect = containerElement.getBoundingClientRect();
+      mouse.x = event.clientX - rect.left - width / 2;
+      mouse.y = event.clientY - rect.top - height / 2;
+    };
+    const onMouseLeave = () => {
+      mouse.x = 9999;
+      mouse.y = 9999;
     };
 
-    animate();
-
-    const onResize = () => {
-      if (!containerRef.current) return;
-      width = containerRef.current.clientWidth;
-      height = containerRef.current.clientHeight;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
-    };
-    window.addEventListener('resize', onResize);
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseleave', onMouseLeave);
+    frameId = requestAnimationFrame(animate);
 
     return () => {
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseleave', onMouseLeave);
       cancelAnimationFrame(frameId);
-      container.removeChild(renderer.domElement);
-      renderer.dispose();
-      scene.clear();
-      particleGeometry.dispose();
-      lineGeometry.dispose();
-      particleMaterial.dispose();
-      lineMaterial.dispose();
+      drawingContext.clearRect(0, 0, width, height);
     };
   }, [profile]);
 
@@ -528,6 +419,8 @@ export function NimiLoginBackground({
       ref={containerRef}
       className="absolute inset-0 z-0 pointer-events-none"
       style={{ opacity: 0.8 }}
-    />
+    >
+      <canvas ref={canvasRef} aria-hidden="true" className="h-full w-full" />
+    </div>
   );
 }

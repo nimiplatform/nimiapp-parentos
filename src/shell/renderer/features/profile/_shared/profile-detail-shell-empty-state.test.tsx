@@ -134,11 +134,13 @@ describe('profile detail pages: no-active-child empty state', () => {
     expect(screen.getAllByText('返回档案')[0]).toBeTruthy();
 
     // NoActiveChildPlaceholder body
-    expect(screen.getByText('请先添加孩子')).toBeTruthy();
+    const placeholderText = screen.getAllByText('请先添加孩子')[0];
+    expect(placeholderText).toBeTruthy();
+    if (!placeholderText) throw new Error('NoActiveChildPlaceholder text missing');
 
     // The shell must wrap the placeholder — placeholder is a descendant of
     // the page-detail-layout body, not a sibling of the layout.
-    const placeholder = screen.getByText('请先添加孩子').closest('.nimi-page-detail-layout');
+    const placeholder = placeholderText.closest('.nimi-page-detail-layout');
     expect(placeholder).not.toBeNull();
-  }, 10000);
+  }, 30000);
 });

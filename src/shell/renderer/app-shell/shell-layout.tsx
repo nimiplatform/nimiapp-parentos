@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type MouseEvent as ReactMouseEvent, type ReactNode, type ComponentType } from 'react';
+import { lazy, Suspense, useState, useRef, useEffect, type MouseEvent as ReactMouseEvent, type ReactNode, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Home, User, BookText, MessageCircle, TrendingUp, Settings, ChevronDown, Check, UserPlus, type LucideProps } from 'lucide-react';
@@ -7,9 +7,12 @@ import { useAppStore, computeAgeMonths, type ChildProfile } from './app-store.js
 import { startParentosWindowDrag } from '../bridge/window-drag.js';
 import { setAppSetting } from '../bridge/sqlite-bridge.js';
 import { isoNow } from '../bridge/ulid.js';
-import { ProfileTodoDrawer } from '../features/profile/profile-todo-drawer.js';
 import { ChildAvatar } from '../shared/child-avatar.js';
 import parentosLogoUrl from '../../../../src-tauri/icons/icon.png';
+
+const ProfileTodoDrawer = lazy(() => import('../features/profile/profile-todo-drawer.js').then((m) => ({
+  default: m.ProfileTodoDrawer,
+})));
 
 const navItems: Array<{ to: string; labelKey: string; Icon: ComponentType<LucideProps> }> = [
   { to: '/timeline', labelKey: 'Shell.navigation.timeline', Icon: Home },
@@ -345,7 +348,11 @@ export function ShellLayout({ children }: { children: ReactNode }) {
           <div className="h-full">{children}</div>
         </main>
       </div>
-      {isProfileDetailPage ? <ProfileTodoDrawer /> : null}
+      {isProfileDetailPage ? (
+        <Suspense fallback={null}>
+          <ProfileTodoDrawer />
+        </Suspense>
+      ) : null}
     </AmbientBackground>
   );
 }
