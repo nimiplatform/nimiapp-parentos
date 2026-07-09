@@ -38,7 +38,7 @@ const electronRuntimePackages = [
   'long',
   'protobufjs',
 ];
-const evidenceDir = path.join(appRoot, '.nimi', 'local', 'acceptance', '20260708-build-warning-cleanup');
+const evidenceDir = path.join(appRoot, '.nimi', 'local', 'acceptance', '20260707-tauri-electron-shell-refactory');
 const evidencePath = path.join(evidenceDir, 'package-electron.json');
 const builderLogPath = path.join(evidenceDir, 'electron-builder.log');
 
@@ -216,10 +216,11 @@ async function findPackedTarball(packageName, version) {
 async function rewriteKitRuntimeTarball(kitTgz, sdkVersion) {
   const tarballPath = path.join(packageRoot, kitTgz);
   const rewriteRoot = path.join(packageRoot, 'kit-runtime-tarball');
+  const rewriteRootName = path.basename(rewriteRoot);
   const packageDir = path.join(rewriteRoot, 'package');
   await removeTree(rewriteRoot);
   await mkdir(rewriteRoot, { recursive: true });
-  run('tar', ['--force-local', '-xzf', toTarPath(tarballPath), '-C', toTarPath(rewriteRoot)]);
+  run('tar', ['-xzf', kitTgz, '-C', rewriteRootName], { cwd: packageRoot });
   const manifestPath = path.join(packageDir, 'package.json');
   const manifest = await readPackageJson(manifestPath);
   manifest.dependencies = {
@@ -231,21 +232,18 @@ async function rewriteKitRuntimeTarball(kitTgz, sdkVersion) {
   delete manifest.optionalDependencies;
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
   await rm(tarballPath, { force: true });
-  run('tar', ['--force-local', '-czf', toTarPath(tarballPath), '-C', toTarPath(rewriteRoot), 'package']);
+  run('tar', ['-czf', kitTgz, '-C', rewriteRootName, 'package'], { cwd: packageRoot });
   await removeTree(rewriteRoot);
-}
-
-function toTarPath(value) {
-  return value.replace(/\\/g, '/');
 }
 
 async function extractPackedPackage(tarballName, packageName) {
   const extractRoot = path.join(packageRoot, `${packageName.replace('@', '').replace('/', '-')}-extract`);
+  const extractRootName = path.basename(extractRoot);
   const extractedPackage = path.join(extractRoot, 'package');
   const destination = packageInstallPath(packageName);
   await removeTree(extractRoot);
   await mkdir(extractRoot, { recursive: true });
-  run('tar', ['--force-local', '-xzf', toTarPath(path.join(packageRoot, tarballName)), '-C', toTarPath(extractRoot)]);
+  run('tar', ['-xzf', tarballName, '-C', extractRootName], { cwd: packageRoot });
   await mkdir(path.dirname(destination), { recursive: true });
   await removeTree(destination);
   await cp(extractedPackage, destination, { recursive: true });

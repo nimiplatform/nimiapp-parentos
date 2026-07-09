@@ -40,3 +40,17 @@ test('ParentOS Electron main registers the standard kit shell host without raw N
   assert.doesNotMatch(runtimeAuth, /developerRegistration\s*:\s*true/u, 'trusted metadata provider must take developerRegistration from host input');
   assert.match(main, /return\s+!app\.isPackaged/u, 'packaged Electron must default developerRegistration to false');
 });
+
+test('Electron acceptance records the resolved sidecar path, pid, and init handshake', async () => {
+  const hostClient = await readProjectFile('src-electron/parentos-host-client.ts');
+  const acceptance = await readProjectFile('scripts/acceptance-electron.mjs');
+
+  assert.match(hostClient, /NIMI_PARENTOS_ELECTRON_SIDECAR_LOG/u);
+  assert.match(hostClient, /sidecar-start/u);
+  assert.match(hostClient, /sidecar-ready/u);
+  assert.match(hostClient, /\bhostBin\b/u);
+  assert.match(hostClient, /\bpid\b/u);
+  assert.match(hostClient, /\bresourcesPath\b/u);
+  assert.match(acceptance, /NIMI_PARENTOS_ELECTRON_SIDECAR_LOG/u);
+  assert.match(acceptance, /sidecarEvents/u);
+});

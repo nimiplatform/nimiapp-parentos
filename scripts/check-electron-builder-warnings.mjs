@@ -5,7 +5,7 @@ const builderLogPath = path.join(
   '.nimi',
   'local',
   'acceptance',
-  '20260708-build-warning-cleanup',
+  '20260707-tauri-electron-shell-refactory',
   'electron-builder.log',
 );
 

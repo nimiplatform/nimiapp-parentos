@@ -1,7 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import path from 'node:path';
-import { access } from 'node:fs/promises';
+import { access, appendFile, mkdir } from 'node:fs/promises';
 import { app } from 'electron';
 import {
   NIMI_STANDARD_SHELL_ERROR_CODES,
@@ -95,6 +95,13 @@ export function createParentOSHostClient(input: {
     });
     child = nextChild;
     stderrTail = '';
+    await recordSidecarAcceptanceEvent({
+      event: 'sidecar-start',
+      hostBin,
+      pid: nextChild.pid ?? null,
+      isPackaged: app.isPackaged,
+      resourcesPath: process.resourcesPath,
+    });
 
     nextChild.stdout.setEncoding('utf8');
     nextChild.stderr.setEncoding('utf8');
@@ -120,7 +127,7 @@ export function createParentOSHostClient(input: {
       }
     });
 
-    await sendRawRequest({
+    const ready = await sendRawRequest({
       protocolVersion: PARENTOS_SIDECAR_PROTOCOL_VERSION,
       appId: PARENTOS_APP_ID,
       id: nextRequestId('init'),
@@ -129,6 +136,13 @@ export function createParentOSHostClient(input: {
       durableDataRoot: input.storageRoots.durableDataRoot,
       cacheRoot: input.storageRoots.cacheRoot,
       tempRoot: input.storageRoots.tempRoot,
+    });
+    await recordSidecarAcceptanceEvent({
+      event: 'sidecar-ready',
+      hostBin,
+      pid: nextChild.pid ?? null,
+      ready,
+      protocolVersion: PARENTOS_SIDECAR_PROTOCOL_VERSION,
     });
   }
 
@@ -454,4 +468,22 @@ function normalizeStandardErrorSource(value: unknown): NimiStandardShellErrorSou
 
 function normalizeText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+async function recordSidecarAcceptanceEvent(event: Record<string, unknown>): Promise<void> {
+  const logPath = normalizeText(process.env.NIMI_PARENTOS_ELECTRON_SIDECAR_LOG);
+  if (!logPath) {
+    return;
+  }
+  try {
+    const resolved = path.resolve(logPath);
+    await mkdir(path.dirname(resolved), { recursive: true });
+    await appendFile(
+      resolved,
+      `${JSON.stringify({ at: new Date().toISOString(), ...event })}\n`,
+      'utf8',
+    );
+  } catch {
+    // Acceptance diagnostics must not change sidecar command behavior.
+  }
 }
