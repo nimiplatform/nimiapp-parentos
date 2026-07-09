@@ -56,7 +56,7 @@ export default function TimelinePage() {
       .then((id) => {
         if (id) void reload();
       })
-      .catch(catchLog('timeline', 'action:auto-generate-monthly-report-failed'));
+      .catch(catchLog('timeline', 'action:auto-generate-monthly-report-failed', 'warn'));
   }, [child, loading, d.latestMonthlyReport, reload]);
 
   if (!child) {

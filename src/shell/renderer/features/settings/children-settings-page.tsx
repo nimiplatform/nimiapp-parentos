@@ -276,6 +276,7 @@ export default function ChildrenSettingsPage() {
     };
 
   const isCustom = !recorderPresets().some((p) => p.name === form.recorder.name);
+  const canSubmitChildForm = form.displayName.trim().length > 0 && form.birthDate.trim().length > 0;
 
   return (
     <div className="min-h-full bg-transparent p-6">
@@ -287,8 +288,8 @@ export default function ChildrenSettingsPage() {
         </Link>
 
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <h1 className="text-xl font-bold text-[var(--nimi-text-primary)]">{i18nText('Children.settings.title')}</h1>
             <p className="mt-0.5 text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.subtitle')}</p>
           </div>
@@ -422,7 +423,7 @@ export default function ChildrenSettingsPage() {
 
             {/* Basic info */}
             <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">{i18nText('Children.settings.section.basicInfo')}</p>
-            <div className="mb-5 grid grid-cols-2 gap-4">
+            <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.name')}</label>
                 <TextField value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} className="w-full" inputClassName="text-[14px]" />
@@ -446,7 +447,7 @@ export default function ChildrenSettingsPage() {
 
             {/* Birth measurements */}
             <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">{i18nText('Children.settings.section.birthMeasurements')}</p>
-            <div className="mb-5 grid grid-cols-3 gap-4">
+            <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.birthWeight')}</label>
                 <TextField type="number" step="0.01" value={form.birthWeightKg}
@@ -469,7 +470,7 @@ export default function ChildrenSettingsPage() {
 
             {/* Medical info */}
             <p className="mb-3 text-[14px] font-semibold text-[var(--nimi-text-muted)]">{i18nText('Children.settings.section.healthInfo')}</p>
-            <div className="mb-5 grid grid-cols-2 gap-4">
+            <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.allergies')}</label>
                 <TextField value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })}
@@ -518,7 +519,13 @@ export default function ChildrenSettingsPage() {
 
             {/* Actions */}
             <div className="flex gap-3 border-t border-[var(--nimi-border-subtle)] pt-2">
-              <Button onClick={() => void (editingId ? handleUpdate() : handleAdd())} tone="primary" size="md" className="px-6 text-[14px]">
+              <Button
+                onClick={() => void (editingId ? handleUpdate() : handleAdd())}
+                tone="primary"
+                size="md"
+                disabled={!canSubmitChildForm}
+                className="px-6 text-[14px]"
+              >
                 {editingId ? i18nText('Children.settings.action.save') : i18nText('Children.settings.action.add')}
               </Button>
               <Button onClick={resetForm} tone="secondary" size="md" className="px-6 text-[14px]">

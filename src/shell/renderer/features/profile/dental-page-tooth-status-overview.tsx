@@ -150,13 +150,13 @@ export function ToothStatusOverview({ records }: { records: DentalRecordRow[] })
   };
 
   const renderRow = (leftIds: string[], rightIds: string[]) => (
-    <div className="flex min-w-0 items-center gap-2.5">
+    <div className="flex min-w-[520px] items-center gap-2.5">
       <span className="w-3 shrink-0 text-center text-[11px] text-[var(--nimi-text-muted)]">{i18nText('Dental.toothQuadrant.right')}</span>
-      <div className="grid min-w-0 flex-1 gap-1" style={{ gridTemplateColumns: 'repeat(8, minmax(0, 1fr))' }}>
+      <div className="grid min-w-0 flex-1 gap-1" style={{ gridTemplateColumns: 'repeat(8, minmax(1.75rem, 1fr))' }}>
         {leftIds.map(renderTooth)}
       </div>
       <div className="h-px w-2.5 shrink-0 bg-[var(--nimi-border-subtle)]" />
-      <div className="grid min-w-0 flex-1 gap-1" style={{ gridTemplateColumns: 'repeat(8, minmax(0, 1fr))' }}>
+      <div className="grid min-w-0 flex-1 gap-1" style={{ gridTemplateColumns: 'repeat(8, minmax(1.75rem, 1fr))' }}>
         {rightIds.map(renderTooth)}
       </div>
       <span className="w-3 shrink-0 text-center text-[11px] text-[var(--nimi-text-muted)]">{i18nText('Dental.toothQuadrant.left')}</span>
@@ -185,7 +185,7 @@ export function ToothStatusOverview({ records }: { records: DentalRecordRow[] })
               </svg>
             </span>
             <div
-              className="pointer-events-none absolute left-0 top-6 z-50 w-[280px] rounded-xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-overlay)] p-3.5 text-[11px] leading-relaxed text-[var(--nimi-text-secondary)] opacity-0 shadow-[var(--nimi-elevation-floating)] transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
+              className="hidden pointer-events-none absolute left-0 top-6 z-50 w-[280px] rounded-xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-overlay)] p-3.5 text-[11px] leading-relaxed text-[var(--nimi-text-secondary)] opacity-0 shadow-[var(--nimi-elevation-floating)] transition-opacity duration-200 group-hover:block group-hover:pointer-events-auto group-hover:opacity-100"
             >
               <p className="m-0 mb-1.5 text-[12px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Dental.toothStatus.fdiTitle')}</p>
               <p className="m-0 text-[var(--nimi-text-secondary)]">
@@ -205,8 +205,8 @@ export function ToothStatusOverview({ records }: { records: DentalRecordRow[] })
         </div>
       </div>
 
-      <div className="pb-4">
-        <div className="flex flex-col gap-2.5">
+      <div className="overflow-x-auto pb-4" data-acceptance-scroll-x="tooth-status-overview">
+        <div className="flex min-w-[520px] flex-col gap-2.5">
           <div className="text-center text-[10px] uppercase tracking-[0.2em] text-[var(--nimi-text-muted)]">
             {i18nText('Dental.toothQuadrant.upper')}
           </div>

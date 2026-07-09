@@ -69,12 +69,12 @@ function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={t('Shell.childSwitcher.ariaLabel')}
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--nimi-action-ghost-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nimi-focus-ring-color)]"
+        className="flex min-w-0 max-w-[150px] items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--nimi-action-ghost-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nimi-focus-ring-color)] sm:max-w-[240px]"
       >
         <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-[var(--nimi-border-subtle)]">
           <ChildAvatar child={activeChild} className="h-full w-full object-cover" />
         </span>
-        <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{activeChild.displayName}</span>
+        <span className="block min-w-0 flex-1 truncate text-[14px] font-medium text-[var(--nimi-text-primary)]">{activeChild.displayName}</span>
         <ChevronDown size={13} strokeWidth={2} className="text-[var(--nimi-text-muted)]" />
       </button>
 
@@ -306,7 +306,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
         <header
-          className="z-20 flex h-[60px] shrink-0 items-center gap-4 bg-transparent pl-2 pr-6"
+          className="z-20 flex h-[60px] shrink-0 items-center gap-2 bg-transparent pl-2 pr-3 sm:gap-4 sm:pr-6"
           onMouseDown={handleWindowDragMouseDown}
         >
           <div className="flex min-w-0 items-center gap-2">
@@ -315,7 +315,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
               alt={t('App.logoAlt')}
               className="h-6 w-6 shrink-0 rounded-[6px] object-contain"
             />
-            <h1 className="text-[18px] font-semibold text-[var(--nimi-text-primary)]">ParentOS</h1>
+            <h1 className="hidden text-[18px] font-semibold text-[var(--nimi-text-primary)] sm:block">ParentOS</h1>
             {hasActiveChild ? (
               <>
                 <span className="select-none text-[var(--nimi-border-strong)]" aria-hidden="true">/</span>
