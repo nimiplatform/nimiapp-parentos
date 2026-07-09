@@ -7,7 +7,6 @@ pub mod journal_photo;
 pub mod orthodontic_photos;
 pub mod photos;
 pub mod report_export;
-pub mod runtime_auth;
 pub mod session_logging;
 pub mod sidecar_commands;
 pub mod sqlite;

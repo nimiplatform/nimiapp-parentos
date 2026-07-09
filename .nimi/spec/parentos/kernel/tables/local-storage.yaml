@@ -9,13 +9,13 @@ allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel
 forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 required_top_level_fields: [schema_version, storage_layout, health_record_unification, tables]
 invariants:
-  - Runtime.GetAppStorage(nimi.parentos) owns every durable app data root.
+  - The host-bound installed app standard data root projection for nimi.parentos owns every durable app data root.
   - SQLite schema rows in this table stay bidirectionally aligned with src-tauri migrations.
   - health_record_events and health_record_values are the canonical measurement-shaped health fact storage.
 storage_layout:
   app_id: nimi.parentos
-  authority: Runtime.GetAppStorage(nimi.parentos)
-  durable_data_root_binding: parentosAppDataRoot = Runtime.GetAppStorage(nimi.parentos).durableDataRoot
+  authority: installed app host standard data root projection for nimi.parentos
+  durable_data_root_binding: parentosAppDataRoot = hostBoundStandardDataRoot(nimi.parentos).durableDataRoot
   storage_policy_ref: nimi-data-app-roots
   sqlite:
     anonymous_database: "${parentosAppDataRoot}/sqlite/anonymous.db"
@@ -27,8 +27,8 @@ storage_layout:
     journal_audio: "${parentosAppDataRoot}/journal/audio/{childId}/{entryId}.{ext}"
     child_avatars: "${parentosAppDataRoot}/children/avatars/{childId}.{ext}"
   constraints:
-    - "ParentOS MUST resolve durable data, cache, and temp roots through Runtime.GetAppStorage(nimi.parentos); app code MUST NOT concatenate <nimi_data>/apps/nimi.parentos or write directly under the selected nimi_data root."
-    - "All SQLite database files and user-generated media files MUST live under parentosAppDataRoot and must be rejected when path canonicalization escapes the Runtime-projected root."
+    - "ParentOS MUST receive durable data, cache, and temp roots through the installed app host standard data root binding for nimi.parentos; app code MUST NOT call Runtime.GetAppStorage directly, concatenate <nimi_data>/apps/nimi.parentos, or write directly under the selected nimi_data root."
+    - "All SQLite database files and user-generated media files MUST live under parentosAppDataRoot and must be rejected when path canonicalization escapes the host-projected root."
     - "Deleting a child profile MUST purge every child-scoped on-disk media root: attachments/{childId}, orthodontic/photos/{childId}, journal/photos/{childId}, journal/audio/{childId}, and children/avatars/{childId}.*."
     - "Because ParentOS is pre-launch, this storage layout is hard-cut; direct writes under the selected nimi_data root are not admitted storage roots."
 
@@ -718,7 +718,7 @@ constraints:
   - "Child deletion also purges every child-scoped user-generated file path under storage_layout.files and clears any legacy renderer journal draft key parentos:journal-draft:{childId}; durable journal draft bodies are not admitted in browser localStorage."
   - "vision_followup_settings.cadenceMonths is constrained to the integer range 1..36 at the bridge boundary; values outside this range must fail-close. customNextDate must be ISO 8601 YYYY-MM-DD when present."
   - "orthodontic_cases deletion cascades to orthodontic_appliances, orthodontic_checkins, orthodontic_unwear_intervals, and orthodontic_photo_sessions. orthodontic_appliances deletion cascades to orthodontic_checkins, orthodontic_unwear_intervals, and orthodontic_photo_sessions (when pinned via applianceId)."
-  - "orthodontic_photo_sessions deletion cascades to its attachments rows AND the on-disk session directory under ${parentosAppDataRoot}/orthodontic/photos/{childId}/{sessionId}/, where parentosAppDataRoot = Runtime.GetAppStorage(nimi.parentos).durableDataRoot (PO-ORTHO-012). The attachments-row purge and file purge run inside the same Tauri command transaction; the FK chain does not cascade attachments because attachments is the unified owner-polymorphic table with no per-owner FK back."
+  - "orthodontic_photo_sessions deletion cascades to its attachments rows AND the on-disk session directory under ${parentosAppDataRoot}/orthodontic/photos/{childId}/{sessionId}/, where parentosAppDataRoot = hostBoundStandardDataRoot(nimi.parentos).durableDataRoot (PO-ORTHO-012). The attachments-row purge and file purge run inside the same Tauri command transaction; the FK chain does not cascade attachments because attachments is the unified owner-polymorphic table with no per-owner FK back."
   - "orthodontic_unwear_intervals enforces at most one open interval (endAt IS NULL) per applianceId via a partial unique index, per orthodontic-contract.md#PO-ORTHO-005a."
   - "orthodontic_checkins.checkinType is restricted to aligner-change | expander-activation; legacy wear-daily / retention-wear were permanently retired by migration v15 (PO-ORTHO-005b)."
   - "children.allergies JSON array remains as a quick-access summary; allergy_records is the structured source of truth."

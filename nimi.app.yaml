@@ -1,0 +1,21 @@
+app_id: nimi.parentos
+display_name: ParentOS
+profile: workspace-app
+manifest_role: submitted-input
+summary: >-
+  ParentOS is an installed Nimi app for parent-owned child growth records,
+  reminders, journaling, reports, and runtime-mediated AI assistance.
+permissions:
+  declared_nimi_api_scopes:
+    - scope: runtime.ai.text.generate
+      qualifier: parentos-advisor
+      purpose: Generate parent-facing explanation drafts through Runtime AI using host-owned model configuration.
+    - scope: runtime.ai.text.generate.vision
+      qualifier: parentos-vision
+      purpose: Extract structured observations from parent-provided child development material through Runtime AI.
+    - scope: runtime.ai.audio.transcribe
+      qualifier: parentos-journal-audio
+      purpose: Transcribe parent-recorded local journal audio through Runtime AI.
+    - scope: app.local.drafts
+      qualifier: child-growth-local-records
+      purpose: Store child and family records, drafts, reminders, reports, and local working data in host-owned app storage.

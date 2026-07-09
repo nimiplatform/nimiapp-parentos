@@ -365,22 +365,17 @@ mod tests {
             "parentos-oversized-report-{}.pdf",
             std::process::id()
         ));
-        let grant = register_report_save_grant(
-            grant_id,
-            target.clone(),
-            "pdf".to_string(),
-            None,
-        )
-        .expect("register report save grant");
+        let grant = register_report_save_grant(grant_id, target.clone(), "pdf".to_string(), None)
+            .expect("register report save grant");
         let payload = BASE64_STANDARD.encode(vec![b'a'; MAX_REPORT_EXPORT_BYTES + 1]);
 
         let result = report_export_write_grant(grant.save_target_id.clone(), payload);
-        let second_try = report_export_write_grant(
-            grant.save_target_id,
-            BASE64_STANDARD.encode(b"%PDF-1.7"),
-        );
+        let second_try =
+            report_export_write_grant(grant.save_target_id, BASE64_STANDARD.encode(b"%PDF-1.7"));
 
-        assert!(result.expect_err("oversized payload must fail").contains("exceeds"));
+        assert!(result
+            .expect_err("oversized payload must fail")
+            .contains("exceeds"));
         assert!(
             second_try.is_ok(),
             "oversized payload rejection must not consume the host-owned save grant"

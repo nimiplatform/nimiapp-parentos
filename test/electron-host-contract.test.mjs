@@ -22,7 +22,7 @@ test('ParentOS Electron main registers the standard kit shell host without raw N
   assert.match(main, /\bopenFileDialog\s*:/u);
   assert.match(main, /\brevealInOs\s*:/u);
   assert.match(main, /\bexportDirectory\s*:/u);
-  assert.doesNotMatch(main, /\bcapabilitySetRef\s*:/u);
+  assert.match(main, /capabilitySetRef:\s*'installed-nimi-app-standard-shell-v1'/u);
   assert.match(main, /\bcontextIsolation\s*:\s*true\b/u);
   assert.match(main, /\bnodeIntegration\s*:\s*false\b/u);
   assert.match(main, /\bsandbox\s*:\s*true\b/u);
@@ -34,11 +34,11 @@ test('ParentOS Electron main registers the standard kit shell host without raw N
   assert.match(preload, /\bcontextBridge\b/u);
   assert.match(preload, /\bipcRenderer\b/u);
 
-  assert.match(runtimeAuth, /\bcreateNimiElectronRuntimeAccountTrustedMetadataProvider\b/u);
-  assert.match(runtimeAuth, /\bACCOUNT_CALLER_MODE_LOCAL_DEVELOPER_APP\b/u);
+  assert.match(runtimeAuth, /\bcreateNimiElectronInstalledAppRuntimeAccountTrustedMetadataProvider\b/u);
+  assert.doesNotMatch(runtimeAuth, /\bACCOUNT_CALLER_MODE_LOCAL_DEVELOPER_APP\b/u);
   assert.doesNotMatch(main, /developerRegistration\s*:\s*true/u, 'Electron main must not hardcode developerRegistration=true');
   assert.doesNotMatch(runtimeAuth, /developerRegistration\s*:\s*true/u, 'trusted metadata provider must take developerRegistration from host input');
-  assert.match(main, /return\s+!app\.isPackaged/u, 'packaged Electron must default developerRegistration to false');
+  assert.match(runtimeAuth, /developerRegistration:\s*false/u, 'installed app Runtime account metadata must not use developer registration');
 });
 
 test('Electron acceptance records the resolved sidecar path, pid, and init handshake', async () => {

@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 import type { NimiAIConfig } from '@nimiplatform/sdk/ai';
-import type { ParentOSRuntimeDefaults as RuntimeDefaults } from '../bridge/index.js';
 import { i18nText } from '../i18n/index.js';
+
+type RuntimeDefaults = {
+  readonly webBaseUrl: string;
+};
 
 export type NurtureMode = 'relaxed' | 'balanced' | 'advanced';
 

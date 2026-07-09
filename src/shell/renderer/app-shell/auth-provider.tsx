@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AmbientBackground } from '@nimiplatform/kit/ui';
 import { useAppStore } from './app-store.js';
 import { runParentOSBootstrap } from '../infra/parentos-bootstrap.js';
-import { ParentOSLaunchPage, ParentOSLoginPage } from '../features/auth/parentos-login-page.js';
+import { ParentOSLaunchPage } from '../features/auth/parentos-login-page.js';
 import { i18nText } from '../i18n/index.js';
 
 
@@ -35,10 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         </div>
       </AmbientBackground>
     );
-  }
-
-  if (authStatus === 'unauthenticated') {
-    return <ParentOSLoginPage />;
   }
 
   if (!launchEntered) {

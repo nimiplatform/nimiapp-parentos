@@ -58,10 +58,10 @@ function normalizeParentosAIConfig(config: NimiAIConfig): NimiAIConfig {
 
 async function commitConfig(config: NimiAIConfig): Promise<NimiAIConfig> {
   const resolvedConfig = normalizeParentosAIConfig(config);
-  await savePersistedParentosAIConfig(resolvedConfig);
-  useAppStore.getState().setAIConfig(resolvedConfig);
-  notifyConfigSubscribers(resolvedConfig);
-  return resolvedConfig;
+  const savedConfig = await savePersistedParentosAIConfig(resolvedConfig);
+  useAppStore.getState().setAIConfig(savedConfig);
+  notifyConfigSubscribers(savedConfig);
+  return savedConfig;
 }
 
 const parentosAIConfigStore: NimiAIConfigStore = {

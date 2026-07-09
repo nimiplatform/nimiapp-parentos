@@ -5,6 +5,7 @@ use tauri::Manager;
 
 use nimi_shell_tauri::capabilities::storage;
 
+#[cfg(test)]
 pub const PARENTOS_APP_ID: &str = "nimi.parentos";
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1,33 +1,25 @@
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { appendFileSync, mkdirSync } from 'node:fs';
-import { appendFile, mkdir } from 'node:fs/promises';
-import { app, BrowserWindow, ipcMain, Menu, protocol, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, protocol } from 'electron';
 import {
-  assertOpaqueElectronLocalAgentRef,
   createElectronShellFileProtocolHost,
   createNimiElectronFileAIConfigStore,
   createNimiElectronStandardApplicationMenuTemplate,
   isAllowedElectronRendererUrl,
   registerNimiElectronRuntimeBridge,
-  type NimiElectronRuntimeTrustedCallerMode,
   type NimiElectronStandardDataRootBinding,
 } from '@nimiplatform/kit/shell/electron/main';
 import {
-  Runtime,
-  createNimiRuntimeAppSessionMetadataProvider,
-  createNimiRuntimeFullAppRegistration,
-  resolveNimiRuntimeAppStorageRoots,
-} from '@nimiplatform/sdk/runtime';
-import { createParentOSElectronTrustedRuntimeMetadataProvider } from './runtime-auth.js';
+  createParentOSElectronTrustedRuntimeMetadataProvider,
+  createParentOSRendererLaunchBinding,
+} from './runtime-auth.js';
 import { parentosElectronHostCommandPolicy } from './parentos-command-policy.js';
 import { createParentOSNativeDialogHost } from './parentos-native-dialogs.js';
 import { createParentOSElectronCommandHandlers } from './parentos-command-handlers.js';
 import { createParentOSHostClient } from './parentos-host-client.js';
 
 const PARENTOS_APP_ID = 'nimi.parentos';
-const PARENTOS_RUNTIME_APP_INSTANCE_ID = 'nimi.parentos.local-developer';
-const PARENTOS_RUNTIME_DEVICE_ID = 'parentos-local-developer-device';
 const PARENTOS_RENDERER_DEV_PORT = 1426;
 
 const currentFilePath = fileURLToPath(import.meta.url);
@@ -63,7 +55,6 @@ async function bootstrapElectron(): Promise<void> {
   app.once('before-quit', () => {
     hostClient.close();
   });
-  const localAgentIdentity = resolveParentOSElectronLocalAgentIdentity();
 
   registerNimiElectronRuntimeBridge({
     appId: PARENTOS_APP_ID,
@@ -74,22 +65,17 @@ async function bootstrapElectron(): Promise<void> {
     trustedRuntimeMetadataProvider: createParentOSElectronTrustedRuntimeMetadataProvider({
       appId: PARENTOS_APP_ID,
       runtimeEndpoint,
-      developerRegistration: parentosDeveloperRegistrationEnabled(),
     }),
     commandPolicy: parentosElectronHostCommandPolicy,
     standardShellHost: {
+      capabilitySetRef: 'installed-nimi-app-standard-shell-v1',
       standardDataRootBinding: standardDataRootBinding(standardStorageRoots),
       localAssetRoots,
       localAssetProtocolHost: fileProtocolHost,
-      openExternalUrl: openParentOSExternalUrl,
       focusMainWindow,
       openFileDialog: nativeDialogs.openFileDialog,
       revealInOs: nativeDialogs.revealInOs,
       exportDirectory: nativeDialogs.exportDirectory,
-      ...(localAgentIdentity ? { localAgentIdentity } : {}),
-      runtimeTrustedCaller: {
-        mode: resolveRuntimeTrustedCallerMode(),
-      },
       aiConfigStore: createParentOSAiConfigStore(standardStorageRoots.durableDataRoot),
     },
     commandHandlers: createParentOSElectronCommandHandlers({
@@ -147,6 +133,7 @@ app.on('window-all-closed', () => {
 
 async function createMainWindow(): Promise<BrowserWindow> {
   bootLog('create-window:start');
+  const launchBinding = createParentOSRendererLaunchBinding();
   const window = new BrowserWindow({
     width: 1320,
     height: 900,
@@ -159,6 +146,9 @@ async function createMainWindow(): Promise<BrowserWindow> {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      additionalArguments: [
+        `--nimi-installed-app-launch-binding=${Buffer.from(JSON.stringify(launchBinding), 'utf8').toString('base64url')}`,
+      ],
     },
   });
   bootLog('create-window:constructed');
@@ -261,62 +251,7 @@ async function resolveStandardDataRoot(): Promise<ParentOSStandardStorageRoots> 
       projectionRef: 'parentos-electron-env-runtime-launch-projection',
     };
   }
-  return resolveRuntimeProjectedStandardStorageRoots();
-}
-
-async function resolveRuntimeProjectedStandardStorageRoots(): Promise<ParentOSStandardStorageRoots> {
-  const accountRuntime = new Runtime({
-    appId: PARENTOS_APP_ID,
-    transport: {
-      type: 'node-grpc',
-      endpoint: runtimeEndpoint,
-    },
-  });
-  try {
-    await accountRuntime.ready();
-    await createNimiRuntimeFullAppRegistration(
-      () => ({ auth: accountRuntime.auth }),
-      {
-        appId: PARENTOS_APP_ID,
-        appInstanceId: PARENTOS_RUNTIME_APP_INSTANCE_ID,
-        deviceId: PARENTOS_RUNTIME_DEVICE_ID,
-        capabilities: [],
-        developerRegistration: parentosDeveloperRegistrationEnabled(),
-        rejectionLabel: 'ParentOS Electron Runtime registration rejected',
-      },
-    )();
-    const runtime = new Runtime({
-      appId: PARENTOS_APP_ID,
-      transport: {
-        type: 'node-grpc',
-        endpoint: runtimeEndpoint,
-      },
-      authMetadata: createNimiRuntimeAppSessionMetadataProvider({
-        appId: PARENTOS_APP_ID,
-        appInstanceId: `${PARENTOS_APP_ID}.electron-host-session`,
-        deviceId: 'parentos-electron-host-session',
-        capabilities: [],
-        developerRegistration: parentosDeveloperRegistrationEnabled(),
-        auth: accountRuntime.auth,
-      }),
-    });
-    const roots = await resolveNimiRuntimeAppStorageRoots({
-      appLifecycle: runtime.appLifecycle,
-      appId: PARENTOS_APP_ID,
-      label: 'ParentOS Electron host',
-    });
-    return {
-      durableDataRoot: path.resolve(roots.dataRoot),
-      cacheRoot: path.resolve(roots.cacheRoot),
-      tempRoot: path.resolve(roots.tempRoot),
-      projectionRef: 'parentos-electron-runtime-launch-projection',
-    };
-  } catch (error) {
-    throw new Error(
-      `ParentOS Electron failed to resolve Runtime app storage projection from ${runtimeEndpoint}: ${errorMessage(error)}`,
-      { cause: error },
-    );
-  }
+  throw new Error('ParentOS Electron requires host-bound standard app storage roots.');
 }
 
 function resolveOptionalStandardRoot(envKeys: readonly string[]): string | undefined {
@@ -358,62 +293,6 @@ function createParentOSAiConfigStore(durableDataRoot: string) {
   });
 }
 
-function parentosDeveloperRegistrationEnabled(): boolean {
-  const explicit = normalizeText(process.env.NIMI_PARENTOS_ELECTRON_DEVELOPER_REGISTRATION);
-  if (explicit === '1' || explicit.toLowerCase() === 'true') {
-    return true;
-  }
-  if (explicit === '0' || explicit.toLowerCase() === 'false') {
-    return false;
-  }
-  return !app.isPackaged;
-}
-
-function resolveRuntimeTrustedCallerMode(): NimiElectronRuntimeTrustedCallerMode {
-  const mode = normalizeText(process.env.NIMI_PARENTOS_ELECTRON_RUNTIME_TRUSTED_CALLER_MODE) || 'local-developer-app';
-  if (
-    mode === 'local-developer-app'
-    || mode === 'local-first-party-app'
-    || mode === 'desktop-shell'
-  ) {
-    return mode;
-  }
-  throw new Error(`unsupported ParentOS Electron Runtime trusted caller mode: ${mode}`);
-}
-
-function resolveParentOSElectronLocalAgentIdentity(): {
-  readonly ownerUserId: string;
-  readonly runtimeSourceRef: string;
-  readonly localAgentRef: string;
-} | undefined {
-  const localAgentRef = normalizeText(process.env.NIMI_PARENTOS_ELECTRON_LOCAL_AGENT_REF);
-  if (!localAgentRef) {
-    return undefined;
-  }
-  const ownerUserId = normalizeRequiredEnv(
-    process.env.NIMI_PARENTOS_ELECTRON_LOCAL_AGENT_OWNER_USER_ID,
-    'NIMI_PARENTOS_ELECTRON_LOCAL_AGENT_OWNER_USER_ID',
-  );
-  const runtimeSourceRef = normalizeRequiredEnv(
-    process.env.NIMI_PARENTOS_ELECTRON_LOCAL_AGENT_RUNTIME_SOURCE_REF,
-    'NIMI_PARENTOS_ELECTRON_LOCAL_AGENT_RUNTIME_SOURCE_REF',
-  );
-  if (!localAgentRef.startsWith('local-agent:')) {
-    throw new Error('NIMI_PARENTOS_ELECTRON_LOCAL_AGENT_REF must start with local-agent:');
-  }
-  assertOpaqueElectronLocalAgentRef({
-    ownerUserId,
-    runtimeSourceRef,
-    localAgentRef,
-    command: 'NIMI_PARENTOS_ELECTRON_LOCAL_AGENT_REF',
-  });
-  return {
-    ownerUserId,
-    runtimeSourceRef,
-    localAgentRef,
-  };
-}
-
 function createParentOSFileProtocolHost(roots: readonly string[]) {
   return createElectronShellFileProtocolHost({
     protocol: {
@@ -422,25 +301,6 @@ function createParentOSFileProtocolHost(roots: readonly string[]) {
     },
     roots,
   });
-}
-
-function normalizeRequiredEnv(value: unknown, field: string): string {
-  const normalized = normalizeText(value);
-  if (!normalized) {
-    throw new Error(`${field} is required when NIMI_PARENTOS_ELECTRON_LOCAL_AGENT_REF is set`);
-  }
-  return normalized;
-}
-
-async function openParentOSExternalUrl(url: string): Promise<void> {
-  const capturePath = normalizeText(process.env.NIMI_PARENTOS_ELECTRON_OPEN_EXTERNAL_CAPTURE_FILE);
-  if (capturePath) {
-    const resolved = path.resolve(capturePath);
-    await mkdir(path.dirname(resolved), { recursive: true });
-    await appendFile(resolved, `${url}\n`, 'utf8');
-    return;
-  }
-  await shell.openExternal(url);
 }
 
 async function focusMainWindow(): Promise<void> {

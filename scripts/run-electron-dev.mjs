@@ -1,9 +1,10 @@
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  resolveParentOSRuntimeAppStorageRoots,
+  resolveParentOSDevStorageRoots,
   resolveParentOSRuntimeEndpoint,
 } from './runtime-app-storage-projection.mjs';
 
@@ -28,15 +29,15 @@ for (const signal of SIGNAL_EXIT_CODES.keys()) {
 }
 
 try {
-  const storageRoots = await resolveParentOSRuntimeAppStorageRoots({
-    runtimeEndpoint,
-    label: 'ParentOS Electron dev',
+  const storageRoots = resolveParentOSDevStorageRoots({
     sessionKind: 'electron-dev',
-    errorPrefix: '[run-electron-dev]',
   });
+  const launchNonce = process.env.NIMI_APP_LAUNCH_NONCE
+    || process.env.NIMI_PARENTOS_ELECTRON_LAUNCH_NONCE
+    || randomUUID();
   spawnRenderer();
   await waitForUrl(rendererUrl, 45_000);
-  const electron = spawnElectron(storageRoots);
+  const electron = spawnElectron(storageRoots, launchNonce);
   const exitCode = await waitForExit(electron);
   await requestAllChildrenShutdown('SIGTERM');
   if (exitCode !== null && exitCode !== 0) {
@@ -49,15 +50,17 @@ try {
   process.exit(1);
 }
 
-function spawnElectron(storageRoots) {
+function spawnElectron(storageRoots, launchNonce) {
   const electron = spawnTracked(electronBin, ['src-electron/dist/main.js'], {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: {
       ...process.env,
       NIMI_RUNTIME_GRPC_ADDR: runtimeEndpoint,
+      NIMI_APP_LAUNCH_NONCE: launchNonce,
       NIMI_APP_DURABLE_DATA_ROOT: storageRoots.dataRoot,
       NIMI_APP_CACHE_ROOT: storageRoots.cacheRoot,
       NIMI_APP_TEMP_ROOT: storageRoots.tempRoot,
+      NIMI_PARENTOS_ELECTRON_LAUNCH_NONCE: launchNonce,
       NIMI_PARENTOS_ELECTRON_DURABLE_DATA_ROOT: storageRoots.dataRoot,
       NIMI_PARENTOS_ELECTRON_CACHE_ROOT: storageRoots.cacheRoot,
       NIMI_PARENTOS_ELECTRON_TEMP_ROOT: storageRoots.tempRoot,

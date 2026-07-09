@@ -4,10 +4,12 @@ import type {
   NimiAIProfileOriginRef,
   NimiAIScopeRef,
 } from '@nimiplatform/sdk/ai';
-import { createEmptyNimiAIConfig, validateNimiAIConfig } from '@nimiplatform/sdk/ai';
+import { createEmptyNimiAIConfig, encodeNimiAIScopeRef, validateNimiAIConfig } from '@nimiplatform/sdk/ai';
 import type { NimiJsonValue } from '@nimiplatform/sdk/contracts';
-import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
-import { isoNow } from '../../bridge/ulid.js';
+import {
+  createInstalledNimiAppStandardShellSurface,
+  type JsonObject,
+} from '../../bridge/index.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -16,9 +18,6 @@ export const PARENTOS_AI_SCOPE_REF: NimiAIScopeRef = {
   ownerId: 'nimi.parentos',
   surfaceId: 'parentos.ai',
 };
-
-const PARENTOS_AI_CONFIG_SETTING_KEY = 'parentos.ai.config';
-export const PARENTOS_AI_CONFIG_QUARANTINE_PREFIX = `${PARENTOS_AI_CONFIG_SETTING_KEY}.quarantine.`;
 
 export type ParentosCapabilityId = 'text.generate' | 'text.generate.vision' | 'audio.transcribe';
 
@@ -272,63 +271,59 @@ export function parsePersistedParentosAIConfig(value: unknown): NimiAIConfig | n
   return validation.valid ? normalized : null;
 }
 
-function storedParentosAIScopeMatches(value: unknown): boolean {
-  let parsedValue = value;
-  if (typeof parsedValue === 'string') {
-    const raw = trimString(parsedValue);
-    if (!raw) {
-      return false;
-    }
-    try {
-      parsedValue = JSON.parse(raw) as unknown;
-    } catch {
-      return false;
-    }
-  }
-  const object = asObject(parsedValue);
-  return Boolean(object && normalizeScopeRef(object.scopeRef));
-}
-
-async function quarantineInvalidParentosAIConfig(raw: string): Promise<void> {
-  const quarantinedAt = isoNow();
-  await setAppSetting(
-    `${PARENTOS_AI_CONFIG_QUARANTINE_PREFIX}${encodeURIComponent(quarantinedAt)}`,
-    JSON.stringify({
-      schemaVersion: 1,
-      reasonCode: 'PARENTOS_AI_CONFIG_STORE_INVALID',
-      originalKey: PARENTOS_AI_CONFIG_SETTING_KEY,
-      quarantinedAt,
-      raw,
-    }),
-    quarantinedAt,
-  );
-  await setAppSetting(PARENTOS_AI_CONFIG_SETTING_KEY, '', quarantinedAt);
-}
-
 export async function loadPersistedParentosAIConfig(): Promise<NimiAIConfig | null> {
-  const raw = await getAppSetting(PARENTOS_AI_CONFIG_SETTING_KEY);
-  if (raw == null || (typeof raw === 'string' && !raw.trim())) {
-    return null;
-  }
-  const parsed = parsePersistedParentosAIConfig(raw);
-  if (!parsed) {
-    if (storedParentosAIScopeMatches(raw)) {
-      await quarantineInvalidParentosAIConfig(String(raw));
+  try {
+    const standardShell = createInstalledNimiAppStandardShellSurface();
+    const raw = await standardShell.aiConfig.get(encodeNimiAIScopeRef(PARENTOS_AI_SCOPE_REF));
+    if (raw == null) {
       return null;
     }
+    const parsed = parsePersistedParentosAIConfig(raw);
+    if (parsed) {
+      return parsed;
+    }
     throw new Error('Persisted ParentOS AI config is invalid');
+  } catch (error) {
+    if (isStandardShellAIConfigNotFound(error)) {
+      return null;
+    }
+    throw error;
   }
-  return parsed;
 }
 
-export async function savePersistedParentosAIConfig(config: NimiAIConfig): Promise<void> {
+export async function savePersistedParentosAIConfig(config: NimiAIConfig): Promise<NimiAIConfig> {
   const normalized = parsePersistedParentosAIConfig(config);
   if (!normalized) {
     throw new Error('ParentOS AI config is invalid');
   }
-  await setAppSetting(
-    PARENTOS_AI_CONFIG_SETTING_KEY,
-    JSON.stringify(normalized),
-    isoNow(),
-  );
+  const standardShell = createInstalledNimiAppStandardShellSurface();
+  const saved = await standardShell.aiConfig.set(encodeNimiAIScopeRef(PARENTOS_AI_SCOPE_REF), toJsonObject(normalized));
+  const parsed = parsePersistedParentosAIConfig(saved);
+  if (!parsed) {
+    throw new Error('ParentOS AI config persisted by standard shell is invalid');
+  }
+  return parsed;
+}
+
+function toJsonObject(value: NimiAIConfig): JsonObject {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('ParentOS AI config must be a JSON object');
+  }
+  return value as unknown as JsonObject;
+}
+
+function isStandardShellAIConfigNotFound(error: unknown): boolean {
+  const record = error as {
+    readonly code?: unknown;
+    readonly reasonCode?: unknown;
+    readonly message?: unknown;
+  };
+  const text = [
+    record.code,
+    record.reasonCode,
+    record.message,
+  ].map((value) => String(value || '').toLowerCase()).join(' ');
+  return text.includes('ai-config-scope-not-found')
+    || text.includes('scope-not-found')
+    || text.includes('not-found');
 }

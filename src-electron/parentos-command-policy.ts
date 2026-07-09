@@ -11,9 +11,6 @@ const allowedStandardCommands = new Set<string>([
   NIMI_STANDARD_SHELL_COMMANDS['runtime.unary'],
   NIMI_STANDARD_SHELL_COMMANDS['runtime.streamOpen'],
   NIMI_STANDARD_SHELL_COMMANDS['runtime.streamClose'],
-  NIMI_STANDARD_SHELL_COMMANDS['runtime-lifecycle.status'],
-  NIMI_STANDARD_SHELL_COMMANDS['oauth.openExternalUrl'],
-  NIMI_STANDARD_SHELL_COMMANDS['oauth.listenForCode'],
   NIMI_STANDARD_SHELL_COMMANDS['shell-ui.confirmDialog'],
   NIMI_STANDARD_SHELL_COMMANDS['shell-ui.startWindowDrag'],
   NIMI_STANDARD_SHELL_COMMANDS['shell-ui.focusMainWindow'],
@@ -23,10 +20,8 @@ const allowedStandardCommands = new Set<string>([
   NIMI_STANDARD_SHELL_COMMANDS['storage.removeJson'],
   NIMI_STANDARD_SHELL_COMMANDS['config.get'],
   NIMI_STANDARD_SHELL_COMMANDS['local-assets.resolveUrl'],
-  NIMI_STANDARD_SHELL_COMMANDS['local-agent.identity'],
   NIMI_STANDARD_SHELL_COMMANDS['ai-config.get'],
   NIMI_STANDARD_SHELL_COMMANDS['ai-config.set'],
-  NIMI_STANDARD_SHELL_COMMANDS['artifacts.write'],
 ]);
 
 const deniedCode: NimiStandardShellErrorCode = 'forbidden-renderer-access';

@@ -1,7 +1,19 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 // Shared standard shell capabilities from kit/shell/tauri crate.
-use nimi_shell_tauri::capabilities::{data, oauth, runtime, session_logging, shell_ui, storage};
+use nimi_shell_tauri::capabilities::{
+    ai_config, data, runtime, session_logging, shell_ui, storage,
+};
+use nimi_shell_tauri::installed_app_launch::{
+    build_installed_nimi_app_launch_binding_script,
+    resolve_installed_nimi_app_launch_binding_from_env, InstalledNimiAppLaunchBindingEnvConfig,
+};
+
+const PARENTOS_APP_ID: &str = "nimi.parentos";
+const PARENTOS_RUNTIME_APP_INSTANCE_ID: &str = "nimi.parentos.desktop-installed";
+const PARENTOS_RUNTIME_DEVICE_ID: &str = "desktop-installed-app";
+const PARENTOS_RELEASE_DESCRIPTOR_REF: &str = "nimi.parentos.bundled-with-nimi";
+const DESKTOP_INSTALLED_APP_LAUNCH_HOST_ID: &str = "desktop-electron-installed-app-host";
 
 // App-local modules
 mod app_storage;
@@ -13,7 +25,6 @@ mod journal_photo;
 mod orthodontic_photos;
 mod photos;
 mod report_export;
-mod runtime_auth;
 mod sqlite;
 #[cfg(test)]
 mod test_support;
@@ -60,13 +71,13 @@ fn optional_env_path(keys: &[&str]) -> Option<std::path::PathBuf> {
         .map(std::path::PathBuf::from)
 }
 
-fn parentos_standard_app_storage_binding() -> data::StandardDataRootBinding {
+fn parentos_standard_app_storage_binding() -> Result<data::StandardDataRootBinding, String> {
     match optional_env_path(&[
         "NIMI_APP_DURABLE_DATA_ROOT",
         "NIMI_PARENTOS_TAURI_DURABLE_DATA_ROOT",
         "NIMI_PARENTOS_TAURI_STANDARD_DATA_ROOT",
     ]) {
-        Some(durable_data_root) => data::StandardDataRootBinding::RuntimeLaunchProjection {
+        Some(durable_data_root) => Ok(data::StandardDataRootBinding::RuntimeLaunchProjection {
             cache_root: optional_env_path(&[
                 "NIMI_APP_CACHE_ROOT",
                 "NIMI_PARENTOS_TAURI_CACHE_ROOT",
@@ -76,10 +87,8 @@ fn parentos_standard_app_storage_binding() -> data::StandardDataRootBinding {
                 .or_else(|| Some(durable_data_root.clone())),
             durable_data_root,
             projection_ref: "parentos-tauri-runtime-launch-projection".to_string(),
-        },
-        None => data::StandardDataRootBinding::RuntimeGetAppStorage {
-            app_id: app_storage::PARENTOS_APP_ID.to_string(),
-        },
+        }),
+        None => Err("ParentOS Tauri requires host-bound standard app storage roots".to_string()),
     }
 }
 
@@ -91,7 +100,7 @@ fn resolve_parentos_standard_storage() -> Result<
     String,
 > {
     let standard_roots = tauri::async_runtime::block_on(data::resolve_standard_app_storage_roots(
-        parentos_standard_app_storage_binding(),
+        parentos_standard_app_storage_binding()?,
     ))?;
     let durable_data_root = standard_roots.data_root().display().to_string();
     let cache_root = standard_roots
@@ -112,6 +121,35 @@ fn resolve_parentos_standard_storage() -> Result<
     ))
 }
 
+fn resolve_parentos_installed_launch_binding_script() -> Result<String, String> {
+    let binding = resolve_installed_nimi_app_launch_binding_from_env(
+        InstalledNimiAppLaunchBindingEnvConfig {
+            app_id: PARENTOS_APP_ID,
+            default_app_instance_id: PARENTOS_RUNTIME_APP_INSTANCE_ID,
+            default_device_id: PARENTOS_RUNTIME_DEVICE_ID,
+            default_release_descriptor_ref: PARENTOS_RELEASE_DESCRIPTOR_REF,
+            launch_host_id: DESKTOP_INSTALLED_APP_LAUNCH_HOST_ID,
+            launch_nonce_env_keys: &["NIMI_APP_LAUNCH_NONCE", "NIMI_PARENTOS_TAURI_LAUNCH_NONCE"],
+            realm_base_url_env_keys: &[
+                "NIMI_REALM_BASE_URL",
+                "NIMI_REALM_URL",
+                "NIMI_PARENTOS_TAURI_REALM_BASE_URL",
+            ],
+            app_instance_id_env_keys: &[
+                "NIMI_APP_INSTANCE_ID",
+                "NIMI_PARENTOS_TAURI_APP_INSTANCE_ID",
+            ],
+            device_id_env_keys: &["NIMI_APP_DEVICE_ID", "NIMI_PARENTOS_TAURI_DEVICE_ID"],
+            release_descriptor_ref_env_keys: &[
+                "NIMI_APP_RELEASE_DESCRIPTOR_REF",
+                "NIMI_PARENTOS_TAURI_RELEASE_DESCRIPTOR_REF",
+            ],
+        },
+    )?;
+    build_installed_nimi_app_launch_binding_script(&binding)
+        .map_err(|error| format!("serialize ParentOS installed app launch binding: {error}"))
+}
+
 fn setup_parentos_app_storage_scope(
     app: &mut tauri::App,
     roots: &app_storage::ParentOSAppStorageRoots,
@@ -128,13 +166,14 @@ fn main() {
     session_logging::set_app_session_prefix("parentos");
     session_logging::install_panic_hook();
     session_logging::log_boot_marker("parentos main() entered");
-    runtime_auth::install_parentos_tauri_runtime_auth_provider()
-        .expect("install ParentOS trusted Runtime metadata provider");
     let (standard_storage_slot, parentos_roots) = resolve_parentos_standard_storage()
         .expect("bind ParentOS standard Runtime app storage roots");
     let parentos_roots_for_setup = parentos_roots.clone();
+    let launch_binding_script = resolve_parentos_installed_launch_binding_script()
+        .expect("bind ParentOS installed app launch binding");
 
     tauri::Builder::default()
+        .append_invoke_initialization_script(launch_binding_script)
         .manage(standard_storage_slot)
         .setup(move |app| setup_parentos_app_storage_scope(app, &parentos_roots_for_setup))
         .invoke_handler(tauri::generate_handler![
@@ -145,13 +184,11 @@ fn main() {
             storage::storage_read_json,
             storage::storage_write_json,
             storage::storage_remove_json,
-            oauth::open_external_url,
-            oauth::oauth_listen_for_code,
+            ai_config::ai_config_get,
+            ai_config::ai_config_set,
             runtime::runtime_bridge_unary,
             runtime::runtime_bridge_stream_open,
             runtime::runtime_bridge_stream_close,
-            runtime::runtime_bridge_status,
-            session_logging::log_renderer_event,
             journal_audio::save_journal_voice_audio,
             journal_audio::delete_journal_voice_audio,
             journal_photo::save_journal_photo,

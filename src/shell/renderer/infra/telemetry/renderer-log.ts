@@ -1,5 +1,3 @@
-import { hasTauriRuntime, invokeTauri } from '../../bridge/index.js';
-
 export type ParentosRendererLogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 type JsonObject = Record<string, unknown>;
@@ -118,13 +116,6 @@ export function logRendererEvent(input: {
   const prefix = `[parentos:${payload.area}] ${payload.message}`;
   consoleMethod(payload.level)(prefix, payload.details);
 
-  if (!hasTauriRuntime()) {
-    return;
-  }
-
-  void invokeTauri('log_renderer_event', { payload }).catch((error: unknown) => {
-    consoleMethod('warn')('[parentos:renderer-log] action:tauri-log-forward-failed', describeError(error));
-  });
 }
 
 export function installParentosGlobalErrorLogging(): void {

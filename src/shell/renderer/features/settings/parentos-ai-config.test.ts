@@ -1,19 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { encodeNimiAIScopeRef, type NimiAIConfig } from '@nimiplatform/sdk/ai';
 
-const mockGetAppSetting = vi.fn();
-const mockSetAppSetting = vi.fn();
+const mockAiConfigGet = vi.fn();
+const mockAiConfigSet = vi.fn();
 
-vi.mock('../../bridge/sqlite-bridge.js', () => ({
-  getAppSetting: mockGetAppSetting,
-  setAppSetting: mockSetAppSetting,
-}));
-
-vi.mock('../../bridge/ulid.js', () => ({
-  isoNow: () => '2026-04-10T10:00:00.000Z',
+vi.mock('../../bridge/index.js', () => ({
+  createInstalledNimiAppStandardShellSurface: () => ({
+    aiConfig: {
+      get: mockAiConfigGet,
+      set: mockAiConfigSet,
+    },
+  }),
 }));
 
 const {
-  PARENTOS_AI_CONFIG_QUARANTINE_PREFIX,
   PARENTOS_AI_SCOPE_REF,
   loadPersistedParentosAIConfig,
   parsePersistedParentosAIConfig,
@@ -93,7 +93,7 @@ describe('parentos-ai-config persistence', () => {
   });
 
   it('fails closed when a persisted config exists under the ParentOS key but has the wrong scope', async () => {
-    mockGetAppSetting.mockResolvedValue(JSON.stringify({
+    mockAiConfigGet.mockResolvedValue({
       scopeRef: {
         kind: 'app',
         ownerId: 'desktop',
@@ -104,9 +104,10 @@ describe('parentos-ai-config persistence', () => {
         selectedParams: {},
       },
       profileOrigin: null,
-    }));
+    });
 
     await expect(loadPersistedParentosAIConfig()).rejects.toThrow('Persisted ParentOS AI config is invalid');
+    expect(mockAiConfigGet).toHaveBeenCalledWith(encodeNimiAIScopeRef(PARENTOS_AI_SCOPE_REF));
   });
 
   it('rejects retired local target ids while parsing ParentOS AI config', () => {
@@ -128,8 +129,8 @@ describe('parentos-ai-config persistence', () => {
     expect(parsed).toBeNull();
   });
 
-  it('quarantines invalid persisted ParentOS target refs and clears the active setting', async () => {
-    const raw = JSON.stringify({
+  it('fails closed when standard shell returns invalid ParentOS target refs', async () => {
+    const raw = {
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
         targetRefs: {
@@ -142,34 +143,29 @@ describe('parentos-ai-config persistence', () => {
         selectedParams: {},
       },
       profileOrigin: null,
-    });
-    mockGetAppSetting.mockResolvedValue(raw);
+    };
+    mockAiConfigGet.mockResolvedValue(raw);
+
+    await expect(loadPersistedParentosAIConfig()).rejects.toThrow('Persisted ParentOS AI config is invalid');
+    expect(mockAiConfigSet).not.toHaveBeenCalled();
+  });
+
+  it('returns null when the standard shell reports the scope is missing', async () => {
+    const error = new Error('not found') as Error & { reasonCode?: string };
+    error.reasonCode = 'electron-ai-config-scope-not-found';
+    mockAiConfigGet.mockRejectedValue(error);
 
     await expect(loadPersistedParentosAIConfig()).resolves.toBeNull();
-
-    expect(mockSetAppSetting).toHaveBeenCalledTimes(2);
-    const [quarantineKey, quarantinePayload] = mockSetAppSetting.mock.calls[0]!;
-    expect(quarantineKey).toMatch(new RegExp(`^${PARENTOS_AI_CONFIG_QUARANTINE_PREFIX}`));
-    expect(JSON.parse(quarantinePayload as string)).toMatchObject({
-      schemaVersion: 1,
-      reasonCode: 'PARENTOS_AI_CONFIG_STORE_INVALID',
-      raw,
-    });
-    expect(mockSetAppSetting.mock.calls[1]).toEqual([
-      'parentos.ai.config',
-      '',
-      '2026-04-10T10:00:00.000Z',
-    ]);
   });
 
-  it('fails closed when app setting storage cannot be read', async () => {
-    mockGetAppSetting.mockRejectedValue(new Error('sqlite read failed'));
+  it('fails closed when standard shell storage cannot be read', async () => {
+    mockAiConfigGet.mockRejectedValue(new Error('standard shell read failed'));
 
-    await expect(loadPersistedParentosAIConfig()).rejects.toThrow('sqlite read failed');
+    await expect(loadPersistedParentosAIConfig()).rejects.toThrow('standard shell read failed');
   });
 
-  it('persists the normalized config into app settings', async () => {
-    await savePersistedParentosAIConfig({
+  it('persists the normalized config into standard shell ai-config storage', async () => {
+    const input = {
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
         targetRefs: {
@@ -188,12 +184,15 @@ describe('parentos-ai-config persistence', () => {
         selectedParams: {},
       },
       profileOrigin: null,
-    });
+    } satisfies NimiAIConfig;
+    mockAiConfigSet.mockResolvedValue(input);
 
-    expect(mockSetAppSetting).toHaveBeenCalledTimes(1);
-    expect(mockSetAppSetting).toHaveBeenCalledWith(
-      'parentos.ai.config',
-      JSON.stringify({
+    await expect(savePersistedParentosAIConfig(input)).resolves.toEqual(input);
+
+    expect(mockAiConfigSet).toHaveBeenCalledTimes(1);
+    expect(mockAiConfigSet).toHaveBeenCalledWith(
+      encodeNimiAIScopeRef(PARENTOS_AI_SCOPE_REF),
+      {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
           targetRefs: {
@@ -212,8 +211,7 @@ describe('parentos-ai-config persistence', () => {
           selectedParams: {},
         },
         profileOrigin: null,
-      }),
-      '2026-04-10T10:00:00.000Z',
+      },
     );
   });
 

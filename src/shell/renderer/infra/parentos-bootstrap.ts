@@ -1,11 +1,11 @@
 import {
+  createInstalledNimiAppBootstrap,
   createNimiClient,
   type NimiClient,
 } from '@nimiplatform/sdk';
 import {
-  AccountSessionState,
-  AccountCallerMode,
   type AccountProjection,
+  AccountSessionState,
 } from '@nimiplatform/sdk/runtime/wire-types';
 import {
   Runtime,
@@ -13,8 +13,10 @@ import {
   type RuntimeOptions,
 } from '@nimiplatform/sdk/runtime';
 import {
-  getParentOSRuntimeDefaults,
+  createInstalledNimiAppStandardShellSurface,
   hasElectronRuntime,
+  hasTauriRuntime,
+  readInstalledNimiAppLaunchBinding,
 } from '../bridge/index.js';
 import { useAppStore } from '../app-shell/app-store.js';
 import {
@@ -31,24 +33,12 @@ import { loadAndApplyPersistedAppLanguage } from '../i18n/app-language.js';
 import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
 import { hasParentOSNimiClient, setParentOSNimiClient } from './parentos-nimi-client.js';
 
-// PO-SHELL-001 / PO-SHELL-008: ParentOS is a non-first-party
-// developer-registered local Runtime account/session consumer. Runtime owns
-// login custody, app sessions, and protected access metadata. No app-owned
-// token surface is admitted.
+// PO-SHELL-001 / PO-SHELL-008: ParentOS is an installed Nimi app. Runtime owns
+// login custody, app sessions, and protected access metadata. The renderer may
+// only consume the host-owned launch binding and standard shell surface.
 export const PARENTOS_RUNTIME_APP_ID = 'nimi.parentos';
-export const PARENTOS_RUNTIME_APP_INSTANCE_ID = `${PARENTOS_RUNTIME_APP_ID}.local-developer`;
-export const PARENTOS_RUNTIME_DEVICE_ID = 'parentos-local-developer-device';
 
-export const parentosRuntimeAccountCaller: NimiRuntimeAccountCaller = {
-  appId: PARENTOS_RUNTIME_APP_ID,
-  appInstanceId: PARENTOS_RUNTIME_APP_INSTANCE_ID,
-  deviceId: PARENTOS_RUNTIME_DEVICE_ID,
-  mode: AccountCallerMode.LOCAL_DEVELOPER_APP,
-  scopes: [],
-  launchHostId: '',
-  launchNonce: '',
-  releaseDescriptorRef: '',
-};
+let currentParentOSRuntimeAccountCaller: NimiRuntimeAccountCaller | null = null;
 
 let bootstrapPromise: Promise<void> | null = null;
 let localDataSyncPromise: Promise<void> = Promise.resolve();
@@ -72,11 +62,19 @@ export function normalizeParentOSAccountProjection(
   };
 }
 
+export function getCurrentParentOSRuntimeAccountCaller(): NimiRuntimeAccountCaller {
+  if (!currentParentOSRuntimeAccountCaller) {
+    throw new Error('ParentOS Runtime account caller is unavailable. Launch ParentOS from the Nimi installed app host.');
+  }
+  return currentParentOSRuntimeAccountCaller;
+}
+
 export async function loadParentOSRuntimeAccountUser(
   runtime: Runtime,
+  caller: NimiRuntimeAccountCaller = getCurrentParentOSRuntimeAccountCaller(),
 ): Promise<ParentOSAuthUser | null> {
   const response = await runtime.account.getAccountSessionStatus({
-    caller: parentosRuntimeAccountCaller,
+    caller,
   });
   if (response.state !== AccountSessionState.AUTHENTICATED) {
     return null;
@@ -179,7 +177,6 @@ export function syncParentOSLocalDataScope(subjectUserId?: string | null): Promi
 function parentosRuntimeOptions(): RuntimeOptions {
   return {
     appId: PARENTOS_RUNTIME_APP_ID,
-    hostOwnedIdentity: true,
     metadata: {
       surfaceId: 'parentos.runtime',
     },
@@ -191,6 +188,9 @@ function parentosRuntimeTransport(): RuntimeOptions['transport'] {
   if (hasElectronRuntime()) {
     return { type: 'electron-ipc' };
   }
+  if (!hasTauriRuntime()) {
+    throw new Error('ParentOS requires an installed app Runtime bridge.');
+  }
   return {
     type: 'tauri-ipc',
     commandNamespace: 'runtime_bridge',
@@ -199,15 +199,26 @@ function parentosRuntimeTransport(): RuntimeOptions['transport'] {
 }
 
 async function buildParentOSNimiClient(): Promise<NimiClient> {
-  // PO-SHELL-008 / K-ACCSVC-008: Runtime account custody owns login,
-  // app session metadata, and protected AI spend tokens.
-  // ParentOS renderer constructs only the SDK Runtime transport/client. The
-  // Tauri host trusted metadata provider owns RegisterApp, app session, and
-  // protected access metadata.
+  const standardShell = createInstalledNimiAppStandardShellSurface();
+  const launchBinding = readInstalledNimiAppLaunchBinding();
+  if (launchBinding.appId !== PARENTOS_RUNTIME_APP_ID) {
+    throw new Error(
+      `ParentOS received launch binding for ${launchBinding.appId}.`,
+    );
+  }
+  const realmBaseUrl = requireHostProjectedRealmBaseUrl(launchBinding.realmBaseUrl);
   const runtime = new Runtime(parentosRuntimeOptions());
+  const bootstrap = createInstalledNimiAppBootstrap({
+    realmBaseUrl,
+    runtime,
+    launchBinding,
+    standardShell,
+  });
+  currentParentOSRuntimeAccountCaller = bootstrap.accountCaller;
   const client = createNimiClient({
     appId: PARENTOS_RUNTIME_APP_ID,
-    runtime,
+    runtime: bootstrap.runtime,
+    realm: false,
     app: false,
     permissions: false,
   });
@@ -220,20 +231,15 @@ async function doRunParentOSBootstrap(): Promise<void> {
   const flowId = `parentos-bootstrap-${Date.now().toString(36)}`;
 
   try {
-      // Step 1: Runtime defaults (realm base URL, transport).
-      const runtimeDefaults = await getParentOSRuntimeDefaults();
-      store.setRuntimeDefaults(runtimeDefaults);
-
-    // Step 2: Construct and register the local-developer Runtime platform
-    // client. The SDK helper type-rejects accessToken / refreshToken /
-    // sessionStore inputs.
+    // Step 1: Construct the host-owned Runtime platform client from the
+    // installed app launch binding.
     setParentOSNimiClient(null);
-      const client = await buildParentOSNimiClient();
+    const client = await buildParentOSNimiClient();
     setParentOSNimiClient(client);
     const runtime = client.runtime;
 
-    // Step 3: Host-owned storage roots were already bound before renderer hydration.
-    // Step 4: Resolve the current account from runtime projection. Anonymous /
+    // Step 2: Host-owned storage roots were already bound before renderer hydration.
+    // Step 3: Resolve the current account from runtime projection. Anonymous /
     // unavailable / errors must NOT fail bootstrap (PO-SHELL-001) — ParentOS
     // opens against the anonymous local scope and waits for runtime broker
     // login to switch.
@@ -253,11 +259,11 @@ async function doRunParentOSBootstrap(): Promise<void> {
       store.clearAuthSession();
     }
 
-    // Step 5: Local SQLite scope. Renderer only selects anonymous/account DB
+    // Step 4: Local SQLite scope. Renderer only selects anonymous/account DB
     // scope here; storage roots are host-owned.
     await syncParentOSLocalDataScope(runtimeAccountUser?.id ?? null);
 
-    // Step 6: Runtime SDK readiness (non-blocking — core surfaces work without
+    // Step 5: Runtime SDK readiness (non-blocking — core surfaces work without
     // runtime extras).
     try {
       await runtime.ready();
@@ -290,6 +296,7 @@ async function doRunParentOSBootstrap(): Promise<void> {
     store.setBootstrapError(null);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    currentParentOSRuntimeAccountCaller = null;
     setParentOSNimiClient(null);
     store.clearAuthSession();
     logRendererEvent({
@@ -302,4 +309,12 @@ async function doRunParentOSBootstrap(): Promise<void> {
     store.setBootstrapError(message);
     store.setBootstrapReady(false);
   }
+}
+
+function requireHostProjectedRealmBaseUrl(value: unknown): string {
+  const realmBaseUrl = String(value || '').trim();
+  if (!realmBaseUrl) {
+    throw new Error('ParentOS requires host-projected Realm base URL.');
+  }
+  return realmBaseUrl;
 }

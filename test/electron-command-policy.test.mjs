@@ -31,8 +31,12 @@ test('ParentOS Electron command policy denies token custody and disallowed host 
     NIMI_STANDARD_SHELL_COMMANDS['runtime-lifecycle.start'],
     NIMI_STANDARD_SHELL_COMMANDS['runtime-lifecycle.stop'],
     NIMI_STANDARD_SHELL_COMMANDS['runtime-lifecycle.restart'],
+    NIMI_STANDARD_SHELL_COMMANDS['runtime-lifecycle.status'],
     NIMI_STANDARD_SHELL_COMMANDS['config.set'],
     NIMI_STANDARD_SHELL_COMMANDS['local-agent.runtimeTrustedCaller'],
+    NIMI_STANDARD_SHELL_COMMANDS['oauth.openExternalUrl'],
+    NIMI_STANDARD_SHELL_COMMANDS['oauth.listenForCode'],
+    NIMI_STANDARD_SHELL_COMMANDS['artifacts.write'],
     NIMI_STANDARD_SHELL_COMMANDS['file-dialog.open'],
     NIMI_STANDARD_SHELL_COMMANDS['file-reveal.reveal'],
     NIMI_STANDARD_SHELL_COMMANDS['export.saveFile'],
@@ -54,11 +58,11 @@ test('ParentOS Electron command policy denies token custody and disallowed host 
 test('ParentOS Electron command policy allows broker, Runtime bridge, and app-domain commands', async () => {
   const { parentosElectronHostCommandPolicy } = await loadPolicy();
   for (const command of [
-    NIMI_STANDARD_SHELL_COMMANDS['oauth.openExternalUrl'],
-    NIMI_STANDARD_SHELL_COMMANDS['oauth.listenForCode'],
     NIMI_STANDARD_SHELL_COMMANDS['runtime.unary'],
     NIMI_STANDARD_SHELL_COMMANDS['runtime.streamOpen'],
     NIMI_STANDARD_SHELL_COMMANDS['runtime.streamClose'],
+    NIMI_STANDARD_SHELL_COMMANDS['ai-config.get'],
+    NIMI_STANDARD_SHELL_COMMANDS['ai-config.set'],
   ]) {
     assert.deepEqual(parentosElectronHostCommandPolicy({
       command,

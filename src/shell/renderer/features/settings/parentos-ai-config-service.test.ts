@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore } from '../../app-shell/app-store.js';
 
-const mockSetAppSetting = vi.fn();
+const mockAiConfigSet = vi.fn();
 
-vi.mock('../../bridge/sqlite-bridge.js', () => ({
-  getAppSetting: vi.fn(),
-  setAppSetting: mockSetAppSetting,
-}));
-
-vi.mock('../../bridge/ulid.js', () => ({
-  isoNow: () => '2026-04-10T10:00:00.000Z',
+vi.mock('../../bridge/index.js', () => ({
+  createInstalledNimiAppStandardShellSurface: () => ({
+    aiConfig: {
+      get: vi.fn(),
+      set: mockAiConfigSet,
+    },
+  }),
 }));
 
 const {
@@ -23,8 +23,8 @@ const {
 
 describe('parentos-ai-config-service', () => {
   beforeEach(() => {
-    mockSetAppSetting.mockReset();
-    mockSetAppSetting.mockResolvedValue(undefined);
+    mockAiConfigSet.mockReset();
+    mockAiConfigSet.mockImplementation(async (_scopeRef: string, config: unknown) => config);
     useAppStore.setState({ aiConfig: null });
   });
 
@@ -47,10 +47,10 @@ describe('parentos-ai-config-service', () => {
       probeWarnings: ['AI profile not found: family-advisor'],
     });
     expect(useAppStore.getState().aiConfig).toBe(null);
-    expect(mockSetAppSetting).not.toHaveBeenCalled();
+    expect(mockAiConfigSet).not.toHaveBeenCalled();
   });
 
-  it('commits AI config only after SQLite persistence succeeds', async () => {
+  it('commits AI config only after standard shell persistence succeeds', async () => {
     const unsubscribe = vi.fn();
     const next = {
       scopeRef: PARENTOS_AI_SCOPE_REF,
@@ -75,13 +75,13 @@ describe('parentos-ai-config-service', () => {
       version: 'v2',
       profileBindingId: 'local-runtime:local-model',
     });
-    expect(mockSetAppSetting).toHaveBeenCalledTimes(1);
+    expect(mockAiConfigSet).toHaveBeenCalledTimes(1);
     expect(useAppStore.getState().aiConfig).toEqual(saved);
     expect(unsubscribe).toHaveBeenCalledWith(saved);
   });
 
-  it('does not mutate the live AI config when SQLite persistence fails', async () => {
-    mockSetAppSetting.mockRejectedValue(new Error('sqlite unavailable'));
+  it('does not mutate the live AI config when standard shell persistence fails', async () => {
+    mockAiConfigSet.mockRejectedValue(new Error('standard shell unavailable'));
     const next = {
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
@@ -97,7 +97,7 @@ describe('parentos-ai-config-service', () => {
       profileOrigin: null,
     } as const;
 
-    await expect(commitParentosAIConfig(next)).rejects.toThrow('sqlite unavailable');
+    await expect(commitParentosAIConfig(next)).rejects.toThrow('standard shell unavailable');
     expect(useAppStore.getState().aiConfig).toBe(null);
   });
 });

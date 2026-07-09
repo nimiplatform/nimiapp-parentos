@@ -1,16 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ParentosAISettingsAvailability } from './parentos-ai-settings-availability.js';
 
-const getRuntimeBridgeStatusMock = vi.fn();
 const loadParentosRuntimeRouteOptionsMock = vi.fn();
 const logRendererEventMock = vi.fn();
-
-vi.mock('@nimiplatform/kit/shell/renderer/bridge', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    getDaemonStatus: getRuntimeBridgeStatusMock,
-  };
-});
 
 vi.mock('../../infra/parentos-runtime-route-options.js', () => ({
   loadParentosRuntimeRouteOptions: loadParentosRuntimeRouteOptionsMock,
@@ -21,58 +13,46 @@ vi.mock('../../infra/telemetry/renderer-log.js', () => ({
   logRendererEvent: logRendererEventMock,
 }));
 
+vi.mock('../../i18n/index.js', () => ({
+  i18nText: (key: string) => key,
+}));
+
 const {
+  parentosAISettingsAvailabilityBannerCopy,
+  parentosAISettingsAvailabilityHint,
+  parentosAISettingsAvailabilityLabel,
   probeParentosAISettingsAvailability,
 } = await import('./parentos-ai-settings-availability.js');
 
 describe('parentos-ai-settings-availability', () => {
   beforeEach(() => {
-    getRuntimeBridgeStatusMock.mockReset();
     loadParentosRuntimeRouteOptionsMock.mockReset();
     logRendererEventMock.mockReset();
   });
 
-  it('reports daemon-unavailable when runtime bridge is not running', async () => {
-    getRuntimeBridgeStatusMock.mockResolvedValue({
-      running: false,
-      managed: true,
-      launchMode: 'RUNTIME',
-      grpcAddr: '127.0.0.1:46371',
-      lastError: 'daemon down',
-    });
-
-    const availability = await probeParentosAISettingsAvailability();
-
-    expect(availability).toEqual(expect.objectContaining({
-      kind: 'daemon-unavailable',
-      detail: 'daemon down',
-    }));
-  });
-
   it('reports route-options-failed when the route snapshot probe throws', async () => {
-    getRuntimeBridgeStatusMock.mockResolvedValue({
-      running: true,
-      managed: true,
-      launchMode: 'RUNTIME',
-      grpcAddr: '127.0.0.1:46371',
-    });
     loadParentosRuntimeRouteOptionsMock.mockRejectedValue(new Error('snapshot failed'));
 
     const availability = await probeParentosAISettingsAvailability();
 
-    expect(availability).toEqual(expect.objectContaining({
+    expect(availability).toEqual({
       kind: 'route-options-failed',
+      status: {
+        running: false,
+        managed: false,
+        launchMode: 'INSTALLED_APP',
+        grpcAddr: '',
+        lastError: 'snapshot failed',
+      },
       detail: 'snapshot failed',
+    });
+    expect(logRendererEventMock).toHaveBeenCalledWith(expect.objectContaining({
+      area: 'settings.ai.route-options',
+      message: 'action:runtime-route-options-probe-failed',
     }));
   });
 
-  it('reports ready when daemon and route snapshot probe both succeed', async () => {
-    getRuntimeBridgeStatusMock.mockResolvedValue({
-      running: true,
-      managed: true,
-      launchMode: 'RUNTIME',
-      grpcAddr: '127.0.0.1:46371',
-    });
+  it('reports ready when route snapshot probe succeeds', async () => {
     loadParentosRuntimeRouteOptionsMock.mockResolvedValue({
       capability: 'text.generate',
       selected: null,
@@ -84,8 +64,35 @@ describe('parentos-ai-settings-availability', () => {
 
     const availability = await probeParentosAISettingsAvailability();
 
-    expect(availability).toEqual(expect.objectContaining({
+    expect(availability).toEqual({
       kind: 'ready',
-    }));
+      status: {
+        running: true,
+        managed: false,
+        launchMode: 'INSTALLED_APP',
+        grpcAddr: '',
+      },
+    });
+  });
+
+  it('labels route failures through route snapshot copy instead of daemon lifecycle copy', () => {
+    const availability = {
+      kind: 'route-options-failed' as const,
+      status: {
+        running: false,
+        managed: false,
+        launchMode: 'INSTALLED_APP' as const,
+        grpcAddr: '',
+        lastError: 'snapshot failed',
+      },
+      detail: 'snapshot failed',
+    } satisfies ParentosAISettingsAvailability;
+
+    expect(parentosAISettingsAvailabilityLabel(availability)).toBe('AISettings.availability.routeSnapshotUnavailable');
+    expect(parentosAISettingsAvailabilityHint(availability)).toBe('AISettings.availability.routeSnapshotFailed');
+    expect(parentosAISettingsAvailabilityBannerCopy(availability)).toEqual({
+      kind: 'error',
+      message: 'AISettings.availability.routeSnapshotBanner',
+    });
   });
 });

@@ -1,22 +1,23 @@
-import { getDaemonStatus as getRuntimeBridgeStatus } from '../../bridge/index.js';
-import type { RuntimeBridgeDaemonStatus } from '../../bridge/index.js';
 import { loadParentosRuntimeRouteOptions } from '../../infra/parentos-runtime-route-options.js';
 import { describeError, logRendererEvent } from '../../infra/telemetry/renderer-log.js';
 import { i18nText } from '../../i18n/index.js';
 
+export type ParentosAISettingsRuntimeStatus = {
+  readonly running: boolean;
+  readonly managed: false;
+  readonly launchMode: 'INSTALLED_APP';
+  readonly grpcAddr: '';
+  readonly lastError?: string;
+};
+
 export type ParentosAISettingsAvailability =
   | {
     kind: 'ready';
-    status: RuntimeBridgeDaemonStatus;
-  }
-  | {
-    kind: 'daemon-unavailable';
-    status: RuntimeBridgeDaemonStatus;
-    detail: string;
+    status: ParentosAISettingsRuntimeStatus;
   }
   | {
     kind: 'route-options-failed';
-    status: RuntimeBridgeDaemonStatus;
+    status: ParentosAISettingsRuntimeStatus;
     detail: string;
   };
 
@@ -27,40 +28,25 @@ function errorMessage(error: unknown): string {
   return String(error || 'unknown error');
 }
 
+function runtimeStatus(input?: { readonly lastError?: string }): ParentosAISettingsRuntimeStatus {
+  return {
+    running: !input?.lastError,
+    managed: false,
+    launchMode: 'INSTALLED_APP',
+    grpcAddr: '',
+    ...(input?.lastError ? { lastError: input.lastError } : {}),
+  };
+}
+
 export async function probeParentosAISettingsAvailability(): Promise<ParentosAISettingsAvailability> {
-  const status = await getRuntimeBridgeStatus().catch((error: unknown) => {
-    logRendererEvent({
-      level: 'warn',
-      area: 'settings.ai.runtime-status',
-      message: 'action:runtime-bridge-status-failed',
-      details: {
-        error: describeError(error),
-      },
-    });
-    return {
-      running: false,
-      managed: false,
-      launchMode: 'INVALID' as const,
-      grpcAddr: '127.0.0.1:46371',
-      lastError: errorMessage(error),
-    };
-  });
-
-  if (!status.running) {
-    return {
-      kind: 'daemon-unavailable',
-      status,
-      detail: status.lastError || 'nimi runtime daemon is not running',
-    };
-  }
-
   try {
     await loadParentosRuntimeRouteOptions('text.generate');
     return {
       kind: 'ready',
-      status,
+      status: runtimeStatus(),
     };
   } catch (error) {
+    const detail = errorMessage(error);
     logRendererEvent({
       level: 'error',
       area: 'settings.ai.route-options',
@@ -71,8 +57,8 @@ export async function probeParentosAISettingsAvailability(): Promise<ParentosAIS
     });
     return {
       kind: 'route-options-failed',
-      status,
-      detail: errorMessage(error),
+      status: runtimeStatus({ lastError: detail }),
+      detail,
     };
   }
 }
@@ -86,9 +72,6 @@ export function parentosAISettingsAvailabilityLabel(
   if (availability.kind === 'ready') {
     return i18nText('AISettings.availability.connected');
   }
-  if (availability.kind === 'daemon-unavailable') {
-    return i18nText('AISettings.availability.notConnected');
-  }
   return i18nText('AISettings.availability.routeSnapshotUnavailable');
 }
 
@@ -97,9 +80,6 @@ export function parentosAISettingsAvailabilityHint(
 ): string {
   if (!availability || availability.kind === 'ready') {
     return '';
-  }
-  if (availability.kind === 'daemon-unavailable') {
-    return i18nText('AISettings.availability.daemonHint');
   }
   return i18nText('AISettings.availability.routeSnapshotFailed', { detail: availability.detail });
 }
@@ -112,14 +92,6 @@ export function parentosAISettingsAvailabilityBannerCopy(
 } | null {
   if (!availability || availability.kind === 'ready') {
     return null;
-  }
-  if (availability.kind === 'daemon-unavailable') {
-    return {
-      kind: 'warning',
-      message: i18nText('AISettings.availability.daemonBanner', {
-        detail: availability.detail ? ` (${availability.detail})` : '',
-      }),
-    };
   }
   return {
     kind: 'error',

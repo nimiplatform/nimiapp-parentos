@@ -1,14 +1,12 @@
-import {
-  Runtime,
-  createNimiRuntimeAppSessionMetadataProvider,
-  createNimiRuntimeFullAppRegistration,
-  resolveNimiRuntimeAppStorageRoots,
-} from '@nimiplatform/sdk/runtime';
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const PARENTOS_APP_ID = 'nimi.parentos';
-export const PARENTOS_RUNTIME_APP_INSTANCE_ID = 'nimi.parentos.local-developer';
-export const PARENTOS_RUNTIME_DEVICE_ID = 'parentos-local-developer-device';
 export const DEFAULT_PARENTOS_RUNTIME_ENDPOINT = '127.0.0.1:46371';
+
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const appRoot = path.resolve(currentDir, '..');
 
 export function resolveParentOSRuntimeEndpoint(...envKeys) {
   for (const key of envKeys) {
@@ -18,55 +16,20 @@ export function resolveParentOSRuntimeEndpoint(...envKeys) {
   return DEFAULT_PARENTOS_RUNTIME_ENDPOINT;
 }
 
-export async function resolveParentOSRuntimeAppStorageRoots(input) {
-  const runtimeEndpoint = String(input.runtimeEndpoint || '').trim() || DEFAULT_PARENTOS_RUNTIME_ENDPOINT;
+export function resolveParentOSDevStorageRoots(input) {
   const sessionKind = normalizeSessionKind(input.sessionKind);
-  const accountRuntime = new Runtime({
-    appId: PARENTOS_APP_ID,
-    transport: {
-      type: 'node-grpc',
-      endpoint: runtimeEndpoint,
-    },
-  });
-  try {
-    await accountRuntime.ready();
-    await createNimiRuntimeFullAppRegistration(
-      () => ({ auth: accountRuntime.auth }),
-      {
-        appId: PARENTOS_APP_ID,
-        appInstanceId: PARENTOS_RUNTIME_APP_INSTANCE_ID,
-        deviceId: PARENTOS_RUNTIME_DEVICE_ID,
-        capabilities: [],
-        developerRegistration: true,
-        rejectionLabel: `${input.label} Runtime registration rejected`,
-      },
-    )();
-    const runtime = new Runtime({
-      appId: PARENTOS_APP_ID,
-      transport: {
-        type: 'node-grpc',
-        endpoint: runtimeEndpoint,
-      },
-      authMetadata: createNimiRuntimeAppSessionMetadataProvider({
-        appId: PARENTOS_APP_ID,
-        appInstanceId: `${PARENTOS_APP_ID}.${sessionKind}-session`,
-        deviceId: `parentos-${sessionKind}-session`,
-        capabilities: [],
-        developerRegistration: true,
-        auth: accountRuntime.auth,
-      }),
-    });
-    return await resolveNimiRuntimeAppStorageRoots({
-      appLifecycle: runtime.appLifecycle,
-      appId: PARENTOS_APP_ID,
-      label: input.label,
-    });
-  } catch (error) {
-    throw new Error(
-      `${input.errorPrefix} failed to resolve Runtime app storage projection from ${runtimeEndpoint}: ${errorMessage(error)}`,
-      { cause: error },
-    );
+  const appIdSegment = PARENTOS_APP_ID.replace(/[^a-z0-9._-]/giu, '_');
+  const baseRoot = String(process.env.NIMI_PARENTOS_DEV_STORAGE_ROOT || '').trim()
+    || path.join(appRoot, '.local', 'installed-app-host', appIdSegment, sessionKind);
+  const roots = {
+    dataRoot: path.join(baseRoot, 'data'),
+    cacheRoot: path.join(baseRoot, 'cache'),
+    tempRoot: path.join(baseRoot, 'temp'),
+  };
+  for (const root of Object.values(roots)) {
+    mkdirSync(root, { recursive: true });
   }
+  return roots;
 }
 
 function normalizeSessionKind(value) {
@@ -75,11 +38,4 @@ function normalizeSessionKind(value) {
     throw new Error(`ParentOS Runtime session kind is invalid: ${normalized || '(empty)'}`);
   }
   return normalized;
-}
-
-function errorMessage(error) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error || 'unknown error');
 }

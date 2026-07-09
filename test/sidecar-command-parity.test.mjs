@@ -12,13 +12,11 @@ const STANDARD_TAURI_COMMANDS = new Set([
   'storage_read_json',
   'storage_write_json',
   'storage_remove_json',
-  'open_external_url',
-  'oauth_listen_for_code',
   'runtime_bridge_unary',
   'runtime_bridge_stream_open',
   'runtime_bridge_stream_close',
-  'runtime_bridge_status',
-  'log_renderer_event',
+  'ai_config_get',
+  'ai_config_set',
 ]);
 const ELECTRON_NATIVE_APP_COMMANDS = new Set([
   'pick_image_files_as_base64',
