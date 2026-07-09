@@ -102,11 +102,6 @@ async function main() {
     await waitForParentOSPostLaunchReady(page, 30_000);
     await skipWelcomeIntroIfPresent(page);
 
-    await page.setViewportSize({ width: 1365, height: 900 });
-    await page.screenshot({ path: path.join(screenshotDir, 'desktop.png'), fullPage: true });
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.screenshot({ path: path.join(screenshotDir, 'narrow.png'), fullPage: true });
-
     const domSnapshot = await page.evaluate((key) => ({
       title: document.title,
       readyState: document.readyState,
@@ -149,38 +144,36 @@ async function main() {
       code: 'must-not-exchange-in-parentos-tauri',
     });
     assert.equal(tokenExchangeResult.ok, false, 'oauth.tokenExchange must fail closed in Tauri');
+    const authSessionCommandResults = await invokeUnavailableStandardCommands(page, [
+      NIMI_STANDARD_SHELL_COMMANDS['auth.sessionLoad'],
+      NIMI_STANDARD_SHELL_COMMANDS['auth.sessionSave'],
+      NIMI_STANDARD_SHELL_COMMANDS['auth.sessionClear'],
+    ]);
+    const protectedRuntimeHealthResult = await invokeProtectedRuntimeHealth(page);
+    assert.equal(
+      protectedRuntimeHealthResult.ok,
+      true,
+      `Runtime health protected call must succeed through the host broker: ${JSON.stringify(protectedRuntimeHealthResult.error)}`,
+    );
+    const identitySpoofResult = await invokeRendererIdentitySpoof(page);
+    assert.equal(identitySpoofResult.ok, false, 'renderer-supplied Runtime identity metadata must fail closed');
+    const identitySpoofErrorText = JSON.stringify(identitySpoofResult.error);
+    assert.doesNotMatch(identitySpoofErrorText, /missing required key payload/i, 'identity spoof gate must send the runtime bridge payload shape correctly');
+    assert.match(
+      identitySpoofErrorText,
+      /RUNTIME_BRIDGE_RENDERER_HOST_OWNED_IDENTITY_METADATA_FORBIDDEN|host-owned identity/i,
+      `identity spoof gate must fail on host-owned identity metadata, got ${identitySpoofErrorText}`,
+    );
 
-    const timestamp = new Date().toISOString();
-    const familyId = `fam_tauri_${Date.now()}`;
-    const childId = `child_tauri_${Date.now()}`;
-    await expectBridgeOk(page, 'db_init', { subjectUserId: null });
-    await expectBridgeOk(page, 'create_family', {
-      familyId,
-      displayName: 'Tauri Acceptance Family',
-      now: timestamp,
-    });
-    await expectBridgeOk(page, 'create_child', {
-      childId,
-      familyId,
-      displayName: '小明',
-      gender: 'male',
-      birthDate: '2020-01-02',
-      birthWeightKg: 3.2,
-      birthHeightCm: 50,
-      birthHeadCircCm: null,
-      avatarPath: null,
-      nurtureMode: 'balanced',
-      nurtureModeOverrides: null,
-      allergies: null,
-      medicalNotes: null,
-      recorderProfiles: null,
-      now: timestamp,
-    });
-    await expectBridgeOk(page, 'set_app_setting', { key: 'activeChildId', value: childId, now: timestamp });
-    childrenResult = await expectBridgeOk(page, 'get_children', { familyId });
-    assert.equal(childrenResult.value.length, 1);
-    assert.equal(childrenResult.value[0].childId, childId);
-    assert.equal(childrenResult.value[0].displayName, '小明');
+    const childDisplayName = `Tauri Acceptance Child ${Date.now()}`;
+    const childUiResult = await createAcceptanceChildThroughUi(page, childDisplayName);
+    const familyResult = await expectBridgeOk(page, 'get_family', {});
+    assert.ok(familyResult.value?.familyId, `get_family must return the UI-created family: ${JSON.stringify(familyResult.value)}`);
+    childrenResult = await expectBridgeOk(page, 'get_children', { familyId: familyResult.value.familyId });
+    assert.ok(
+      childrenResult.value.some((child) => child.displayName === childDisplayName),
+      `sidecar get_children must include the UI-created child: ${JSON.stringify(childrenResult.value)}`,
+    );
 
     const reportExportMissingGrantResult = await invokeBridge(page, 'report_export_write_grant', {
       saveTargetId: 'missing-acceptance-grant',
@@ -188,7 +181,22 @@ async function main() {
     });
     assert.equal(reportExportMissingGrantResult.ok, false, 'report export write without grant must fail closed');
 
-    const dentalRouteSnapshot = await navigateAndCaptureRoute(page, '/profile/dental', path.join(screenshotDir, 'dental.png'));
+    await page.setViewportSize({ width: 1365, height: 900 });
+    const dentalRouteSnapshot = await navigateAndCaptureRoute(page, '/profile/dental', path.join(screenshotDir, 'desktop.png'));
+    assert.match(
+      dentalRouteSnapshot.bodyText,
+      new RegExp(escapeRegExp(childDisplayName), 'i'),
+      'desktop routed screenshot must reflect the seeded acceptance child/family, not a welcome shell',
+    );
+    const desktopOverflowScan = await assertNoVisibleOverflow(page, 'tauri-desktop-dental');
+    await page.setViewportSize({ width: 390, height: 844 });
+    const dentalRouteNarrowSnapshot = await captureCurrentRouteSnapshot(page, path.join(screenshotDir, 'narrow.png'));
+    assert.match(
+      dentalRouteNarrowSnapshot.bodyText,
+      new RegExp(escapeRegExp(childDisplayName), 'i'),
+      'narrow routed screenshot must reflect the seeded acceptance child/family, not a welcome shell',
+    );
+    const narrowOverflowScan = await assertNoVisibleOverflow(page, 'tauri-narrow-dental');
 
     await Promise.allSettled(consoleCaptureTasks);
     await writeFile(path.join(evidenceDir, 'evidence.json'), JSON.stringify({
@@ -198,9 +206,18 @@ async function main() {
       domSnapshot,
       focusMainWindowResult,
       tokenExchangeResult,
+      authSessionCommandResults,
+      protectedRuntimeHealthResult,
+      identitySpoofResult,
+      childUiResult,
       childrenResult,
       reportExportMissingGrantResult,
       dentalRouteSnapshot,
+      dentalRouteNarrowSnapshot,
+      overflowScan: {
+        desktop: desktopOverflowScan,
+        narrow: narrowOverflowScan,
+      },
       consoleEvents,
       pageErrors,
       stdoutTail,
@@ -294,6 +311,328 @@ async function invokeBridge(page, command, payload) {
   }, { key: bridgeKey, command, payload });
 }
 
+async function createAcceptanceChildThroughUi(page, displayName) {
+  const settingsUrl = await routeUrl(page, '/settings/children');
+  await page.goto(settingsUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await waitForRouteReady(page, '/settings/children');
+  await waitForChildrenSettingsReady(page);
+  if (!await childFormVisible(page)) {
+    await clickButtonByText(page, [/^\u6dfb\u52a0\u5b69\u5b50$/u, /^Add child$/i, /\u6dfb\u52a0\u5bb6\u5ead\u6210\u5458/u]);
+    await page.waitForFunction(() => document.body?.innerText?.includes('\u51fa\u751f\u65e5\u671f') || document.body?.innerText?.includes('Birth date'), null, { timeout: 10_000 });
+  }
+
+  const disabledBefore = await readButtonStateByText(page, [/^\u6dfb\u52a0$/u, /^Add$/i]);
+  assert.equal(disabledBefore.disabled, true, 'child submit button must be disabled before required fields are filled');
+
+  const nameInput = await inputAfterLabel(page, [/\u59d3\u540d/u, /Name/i]);
+  await setInputValue(nameInput, displayName);
+  const disabledAfterName = await readButtonStateByText(page, [/^\u6dfb\u52a0$/u, /^Add$/i]);
+  assert.equal(disabledAfterName.disabled, true, 'child submit button must remain disabled until birth date is filled');
+
+  const birthDateInput = await inputAfterLabel(page, [/\u51fa\u751f\u65e5\u671f/u, /Birth date/i]);
+  await clickFieldContainingInput(birthDateInput);
+  await waitForButtonVisibleByText(page, [/^\u786e\u5b9a$/u, /^Confirm$/i, /^OK$/i]);
+  await clickButtonByText(page, [/^\u786e\u5b9a$/u, /^Confirm$/i, /^OK$/i]);
+  await waitForButtonDisabledByText(page, [/^\u6dfb\u52a0$/u, /^Add$/i], false);
+  const disabledAfterBirth = await readButtonStateByText(page, [/^\u6dfb\u52a0$/u, /^Add$/i]);
+  assert.equal(disabledAfterBirth.disabled, false, 'child submit button must enable after required fields are filled');
+
+  await clickButtonByText(page, [/^\u6dfb\u52a0$/u, /^Add$/i]);
+  await page.waitForFunction((expectedName) => {
+    const text = document.body?.innerText ?? '';
+    return text.includes(expectedName);
+  }, displayName, { timeout: 30_000 });
+  return {
+    mode: 'playwright-ui',
+    displayName,
+    settingsUrl,
+    disabledBefore,
+    disabledAfterName,
+    disabledAfterBirth,
+    finalUrl: page.url(),
+  };
+}
+
+async function setInputValue(locator, value) {
+  await locator.evaluate((input, nextValue) => {
+    const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    valueSetter?.call(input, nextValue);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+}
+
+async function clickFieldContainingInput(locator) {
+  const handle = await locator.evaluateHandle((input) => input.parentElement ?? input);
+  const element = handle.asElement();
+  assert.ok(element, 'input field container not found');
+  await element.click({ timeout: 10_000 });
+}
+
+async function clickButtonByText(page, patterns) {
+  const handle = await page.evaluateHandle((patternSources) => {
+    const patterns = patternSources.map(({ source, flags }) => new RegExp(source, flags));
+    const elements = Array.from(document.querySelectorAll('button,a,[role="button"],input,textarea,select,div,span'))
+      .filter((element) => element instanceof HTMLElement)
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+      });
+    const matches = elements.filter((element) => {
+      const text = (element.innerText || element.textContent || '').trim();
+      return patterns.some((pattern) => pattern.test(text));
+    }).sort((left, right) => {
+      const leftText = (left.innerText || left.textContent || '').trim();
+      const rightText = (right.innerText || right.textContent || '').trim();
+      return leftText.length - rightText.length;
+    });
+    return matches[0] ?? null;
+  }, patterns.map((pattern) => ({ source: pattern.source, flags: pattern.flags })));
+  const element = handle.asElement();
+  if (!element) {
+    const buttons = await page.evaluate(() => Array.from(document.querySelectorAll('button,a,[role="button"],input,textarea,select,div,span'))
+      .filter((element) => element instanceof HTMLElement)
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+      })
+      .map((element) => (element.innerText || element.textContent || '').trim())
+      .filter(Boolean));
+    assert.fail(`button not found; visible buttons: ${JSON.stringify(buttons)}`);
+  }
+  await element.click({ timeout: 10_000 });
+}
+
+async function waitForButtonVisibleByText(page, patterns) {
+  await page.waitForFunction((patternSources) => {
+    const compiled = patternSources.map(({ source, flags }) => new RegExp(source, flags));
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = window.getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+    };
+    return Array.from(document.querySelectorAll('button'))
+      .some((button) => visible(button) && compiled.some((pattern) => pattern.test((button.innerText || button.textContent || '').trim())));
+  }, patterns.map((pattern) => ({ source: pattern.source, flags: pattern.flags })), { timeout: 10_000 });
+}
+
+async function invokeUnavailableStandardCommands(page, commands) {
+  const results = {};
+  for (const command of commands) {
+    const result = await invokeBridge(page, command, {});
+    assert.equal(result.ok, false, `${command} must fail closed`);
+    results[command] = result;
+  }
+  return results;
+}
+
+async function invokeRendererIdentitySpoof(page) {
+  return invokeBridge(page, NIMI_STANDARD_SHELL_COMMANDS['runtime.unary'], {
+    payload: {
+      methodId: '/nimi.runtime.v1.RuntimeAuditService/GetRuntimeHealth',
+      requestBytesBase64: '',
+      metadata: {
+        appId: 'evil.parentos.spoof',
+        participantId: 'evil.participant',
+        callerKind: 'third-party-app',
+        callerId: 'evil.caller',
+        extra: {
+          'x-nimi-app-id': 'evil.extra.app',
+        },
+      },
+    },
+  });
+}
+
+async function invokeProtectedRuntimeHealth(page) {
+  return invokeBridge(page, NIMI_STANDARD_SHELL_COMMANDS['runtime.unary'], {
+    payload: {
+      methodId: '/nimi.runtime.v1.RuntimeAuditService/GetRuntimeHealth',
+      requestBytesBase64: '',
+      metadata: {
+        surfaceId: 'parentos.acceptance.runtime-health',
+      },
+    },
+  });
+}
+
+async function routeUrl(page, route) {
+  return page.evaluate((nextRoute) => new URL(nextRoute, window.location.origin).href, route);
+}
+
+async function waitForRouteReady(page, route) {
+  await page.waitForFunction((nextRoute) => window.location.pathname === nextRoute, route, { timeout: 10_000 });
+  await waitForParentOSUiReady(page, 60_000);
+  await enterLaunchPageIfPresent(page);
+  await waitForParentOSPostLaunchReady(page, 30_000);
+}
+
+async function childFormVisible(page) {
+  return page.evaluate(() => {
+    const text = document.body?.innerText ?? '';
+    return (text.includes('\u51fa\u751f\u65e5\u671f') || /Birth date/i.test(text))
+      && Array.from(document.querySelectorAll('input')).some((input) => {
+        const rect = input.getBoundingClientRect();
+        const style = window.getComputedStyle(input);
+        return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+      });
+  });
+}
+
+async function waitForChildrenSettingsReady(page) {
+  await page.waitForFunction(() => {
+    const text = document.body?.innerText ?? '';
+    return !text.includes('Loading...')
+      && !text.includes('\u52a0\u8f7d\u4e2d')
+      && (text.includes('\u5b69\u5b50\u7ba1\u7406') || /Child management/i.test(text))
+      && (text.includes('\u6dfb\u52a0\u5b69\u5b50') || /Add child/i.test(text) || text.includes('\u51fa\u751f\u65e5\u671f') || /Birth date/i.test(text));
+  }, null, { timeout: 30_000 });
+}
+
+async function inputAfterLabel(page, patterns) {
+  const handle = await page.evaluateHandle((patternSources) => {
+    const compiled = patternSources.map(({ source, flags }) => new RegExp(source, flags));
+    const visible = (element) => {
+      if (!(element instanceof HTMLElement)) return false;
+      const rect = element.getBoundingClientRect();
+      const style = window.getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+    };
+    const label = Array.from(document.querySelectorAll('label'))
+      .find((candidate) => visible(candidate) && compiled.some((pattern) => pattern.test(candidate.textContent || '')));
+    if (!label) return null;
+    const containers = [
+      label,
+      label.parentElement,
+      label.parentElement?.nextElementSibling,
+      label.parentElement?.parentElement,
+    ].filter(Boolean);
+    for (const container of containers) {
+      const input = container.querySelector?.('input');
+      if (input instanceof HTMLInputElement && visible(input)) return input;
+    }
+    return null;
+  }, patterns.map((pattern) => ({ source: pattern.source, flags: pattern.flags })));
+  const element = handle.asElement();
+  assert.ok(element, `input not found for labels: ${patterns.map((pattern) => pattern.toString()).join(', ')}`);
+  return element;
+}
+
+async function readButtonStateByText(page, patterns) {
+  const state = await page.evaluate((patternSources) => {
+    const compiled = patternSources.map(({ source, flags }) => new RegExp(source, flags));
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = window.getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+    };
+    const buttons = Array.from(document.querySelectorAll('button'))
+      .filter((button) => visible(button) && compiled.some((pattern) => pattern.test((button.innerText || button.textContent || '').trim())))
+      .sort((left, right) => {
+        const leftText = (left.innerText || left.textContent || '').trim();
+        const rightText = (right.innerText || right.textContent || '').trim();
+        return leftText.length - rightText.length;
+      });
+    const button = buttons[0];
+    if (!button) return null;
+    return {
+      text: (button.innerText || button.textContent || '').trim(),
+      disabled: button.disabled || button.getAttribute('aria-disabled') === 'true',
+    };
+  }, patterns.map((pattern) => ({ source: pattern.source, flags: pattern.flags })));
+  assert.ok(state, `button not found for state check: ${patterns.map((pattern) => pattern.toString()).join(', ')}`);
+  return state;
+}
+
+async function waitForButtonDisabledByText(page, patterns, expectedDisabled) {
+  await page.waitForFunction(({ patternSources, expected }) => {
+    const compiled = patternSources.map(({ source, flags }) => new RegExp(source, flags));
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = window.getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+    };
+    const buttons = Array.from(document.querySelectorAll('button'))
+      .filter((button) => visible(button) && compiled.some((pattern) => pattern.test((button.innerText || button.textContent || '').trim())))
+      .sort((left, right) => {
+        const leftText = (left.innerText || left.textContent || '').trim();
+        const rightText = (right.innerText || right.textContent || '').trim();
+        return leftText.length - rightText.length;
+      });
+    const button = buttons[0];
+    if (!button) return false;
+    const disabled = button.disabled || button.getAttribute('aria-disabled') === 'true';
+    return disabled === expected;
+  }, {
+    patternSources: patterns.map((pattern) => ({ source: pattern.source, flags: pattern.flags })),
+    expected: expectedDisabled,
+  }, { timeout: 10_000 });
+}
+
+async function assertNoVisibleOverflow(page, label) {
+  const overflowScan = await page.evaluate((scanLabel) => {
+    const viewportWidth = window.innerWidth;
+    const root = document.querySelector('[data-testid="shell-main-drag-region"]') ?? document.body;
+    const issues = [];
+    const isVisible = (element) => {
+      if (!(element instanceof HTMLElement)) return false;
+      const rect = element.getBoundingClientRect();
+      const style = window.getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+    };
+    const selectorFor = (element) => {
+      if (!(element instanceof HTMLElement)) return element.tagName.toLowerCase();
+      const testId = element.getAttribute('data-testid');
+      if (testId) return `${element.tagName.toLowerCase()}[data-testid="${testId}"]`;
+      const scrollScope = element.getAttribute('data-acceptance-scroll-x');
+      if (scrollScope) return `${element.tagName.toLowerCase()}[data-acceptance-scroll-x="${scrollScope}"]`;
+      const text = (element.innerText || element.textContent || '').trim().replace(/\s+/gu, ' ').slice(0, 80);
+      return `${element.tagName.toLowerCase()}${text ? `:${text}` : ''}`;
+    };
+    for (const element of Array.from(root.querySelectorAll('*'))) {
+      if (!(element instanceof HTMLElement)) continue;
+      if (!isVisible(element)) continue;
+      if (element.closest('[data-acceptance-scroll-x]')) continue;
+      const rect = element.getBoundingClientRect();
+      const style = window.getComputedStyle(element);
+      if (rect.left < -2 || rect.right > viewportWidth + 2) {
+        issues.push({
+          type: 'viewport-overflow-x',
+          selector: selectorFor(element),
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+          width: Math.round(rect.width),
+        });
+      }
+      const clipsText = element.scrollWidth > element.clientWidth + 1
+        && style.textOverflow !== 'ellipsis'
+        && !['auto', 'scroll'].includes(style.overflowX);
+      if (clipsText) {
+        issues.push({
+          type: 'text-overflow-x',
+          selector: selectorFor(element),
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+        });
+      }
+    }
+    return {
+      label: scanLabel,
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      issueCount: issues.length,
+      issues: issues.slice(0, 20),
+    };
+  }, label);
+  assert.equal(overflowScan.issueCount, 0, `${label} has visible overflow: ${JSON.stringify(overflowScan.issues)}`);
+  return overflowScan;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}
+
 async function navigateAndCaptureRoute(page, route, screenshotPath) {
   const protocol = await page.evaluate(() => window.location.protocol);
   if (protocol === 'file:') {
@@ -326,6 +665,24 @@ async function navigateAndCaptureRoute(page, route, screenshotPath) {
   assert.equal(snapshot.routed, true, 'route must remain inside ParentOS routed surface');
   assert.equal(snapshot.alertText, '', `route must not render alert: ${snapshot.alertText}`);
   assert.match(snapshot.bodyText, /口腔档案|Dental/i, 'dental route must render real dental UI text');
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  return { ...snapshot, screenshot: screenshotPath };
+}
+
+async function captureCurrentRouteSnapshot(page, screenshotPath) {
+  await waitForParentOSUiReady(page, 60_000);
+  await waitForParentOSPostLaunchReady(page, 30_000);
+  const snapshot = await page.evaluate(() => ({
+    url: window.location.href,
+    bodyText: document.body?.innerText?.slice(0, 2000) ?? '',
+    routed: Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]')),
+    alertText: document.querySelector('[role="alert"]')?.textContent?.trim() ?? '',
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+  }));
+  assert.equal(snapshot.routed, true, 'current route must remain inside ParentOS routed surface');
+  assert.equal(snapshot.alertText, '', `current route must not render alert: ${snapshot.alertText}`);
+  assert.match(snapshot.url, /\/profile\/dental|#\/profile\/dental/u, 'current route must remain on dental route');
+  assert.match(snapshot.bodyText, /口腔档案|牙齿状态总览|FDI|Dental/i, 'current route must render real dental UI text');
   await page.screenshot({ path: screenshotPath, fullPage: true });
   return { ...snapshot, screenshot: screenshotPath };
 }

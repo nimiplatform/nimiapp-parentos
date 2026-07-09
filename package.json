@@ -40,7 +40,7 @@
     "check:ai-boundary": "pnpm exec tsx scripts/check-parentos-ai-boundary.ts",
     "check:phase1-closeout": "pnpm run generate:knowledge-base && pnpm run generate:who-lms-assets && pnpm run check:spec-consistency && pnpm run check:knowledge-base && pnpm run check:nurture-mode-safety && pnpm run check:ai-boundary && pnpm run typecheck && pnpm run test && pnpm run lint && cargo test --manifest-path src-tauri/Cargo.toml",
     "check:phase2-closeout": "pnpm run generate:knowledge-base && pnpm run generate:who-lms-assets && pnpm run check:spec-consistency && pnpm run check:knowledge-base && pnpm run check:nurture-mode-safety && pnpm run check:ai-boundary && pnpm run typecheck && pnpm run test && pnpm run lint && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
-    "test:contracts": "node --import tsx --test test/electron-host-contract.test.mjs test/electron-command-policy.test.mjs test/raw-path-shell-contract.test.mjs test/sidecar-command-parity.test.mjs test/electron-package-config.test.mjs",
+    "test:contracts": "node --import tsx --test test/electron-host-contract.test.mjs test/electron-command-policy.test.mjs test/raw-path-shell-contract.test.mjs test/sidecar-command-parity.test.mjs test/electron-package-config.test.mjs test/acceptance-script-contract.test.mjs",
     "test:sidecar-protocol": "pnpm run build:electron:host && node --test test/sidecar-protocol.test.mjs",
     "acceptance:tauri": "node scripts/acceptance-tauri.mjs",
     "acceptance:electron": "node scripts/acceptance-electron.mjs",
