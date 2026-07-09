@@ -342,7 +342,7 @@ function standardDataRootBinding(roots: ParentOSStandardStorageRoots): NimiElect
 function resolveStandardLocalAssetRoots(durableDataRoot: string): string[] {
   const fromEnv = normalizeText(process.env.NIMI_PARENTOS_ELECTRON_STANDARD_LOCAL_ASSET_ROOTS);
   if (!fromEnv) {
-    return [durableDataRoot, app.getPath('downloads')].map((filePath) => path.resolve(filePath));
+    return [durableDataRoot].map((filePath) => path.resolve(filePath));
   }
   return fromEnv
     .split(path.delimiter)

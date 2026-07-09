@@ -75,3 +75,29 @@ test('production renderer and Tauri command registry do not expose raw filesyste
     'window drag must use the standard kit shell command, not the app-prefixed alias',
   );
 });
+
+test('Electron shell does not expose generic raw path standard surfaces to ParentOS renderer', () => {
+  const electronPolicy = readRepoFile('src-electron/parentos-command-policy.ts');
+  const electronMain = readRepoFile('src-electron/main.ts');
+
+  assert.doesNotMatch(
+    electronPolicy,
+    /NIMI_STANDARD_SHELL_COMMANDS\['file-dialog\.open'\]/u,
+    'ParentOS renderer must use app-owned picker bytes commands, not generic shell file-dialog absolute paths',
+  );
+  assert.doesNotMatch(
+    electronPolicy,
+    /NIMI_STANDARD_SHELL_COMMANDS\['file-reveal\.reveal'\]/u,
+    'ParentOS renderer must not receive reusable absolute paths for OS reveal',
+  );
+  assert.doesNotMatch(
+    electronPolicy,
+    /NIMI_STANDARD_SHELL_COMMANDS\['export\.saveFile'\]/u,
+    'ParentOS report export must use host-owned one-shot grants, not generic shell save-file paths',
+  );
+  assert.doesNotMatch(
+    electronMain,
+    /app\.getPath\(\s*['"]downloads['"]\s*\)/u,
+    'Electron local asset roots must not grant renderer authority over the user Downloads directory',
+  );
+});

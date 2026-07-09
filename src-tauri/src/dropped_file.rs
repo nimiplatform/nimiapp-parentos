@@ -175,4 +175,24 @@ mod tests {
         assert!(error.contains("exceeds"));
         cleanup_path(&path);
     }
+
+    #[test]
+    fn read_image_path_as_base64_rejects_relative_paths() {
+        let error = read_image_path_as_base64(PathBuf::from("relative.png"))
+            .expect_err("relative paths must not be accepted as renderer authority");
+
+        assert!(error.contains("absolute"));
+    }
+
+    #[test]
+    fn read_image_path_as_base64_rejects_unsupported_extension() {
+        let path = unique_temp_path("sample.txt");
+        fs::write(&path, b"not an image").expect("write sample text file");
+
+        let error = read_image_path_as_base64(path.clone())
+            .expect_err("unsupported image extension must fail closed");
+
+        assert!(error.contains("supported image type"));
+        cleanup_path(&path);
+    }
 }

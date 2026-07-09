@@ -26,9 +26,6 @@ const allowedStandardCommands = new Set<string>([
   NIMI_STANDARD_SHELL_COMMANDS['local-agent.identity'],
   NIMI_STANDARD_SHELL_COMMANDS['ai-config.get'],
   NIMI_STANDARD_SHELL_COMMANDS['ai-config.set'],
-  NIMI_STANDARD_SHELL_COMMANDS['file-dialog.open'],
-  NIMI_STANDARD_SHELL_COMMANDS['file-reveal.reveal'],
-  NIMI_STANDARD_SHELL_COMMANDS['export.saveFile'],
   NIMI_STANDARD_SHELL_COMMANDS['artifacts.write'],
 ]);
 
