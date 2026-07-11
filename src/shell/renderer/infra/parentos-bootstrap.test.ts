@@ -7,6 +7,8 @@ const getAppSettingMock = vi.fn();
 const getChildMock = vi.fn();
 const getFamilyMock = vi.fn();
 const getChildrenMock = vi.fn();
+const appHostBootstrapMock = vi.fn();
+const readRuntimeBytesMock = vi.fn();
 
 vi.mock('@nimiplatform/sdk', () => ({
   createInstalledNimiAppBootstrap: createInstalledNimiAppBootstrapMock,
@@ -52,12 +54,26 @@ describe('ParentOS installed-app bootstrap hardcut', () => {
     getChildMock.mockReset();
     getFamilyMock.mockReset();
     getChildrenMock.mockReset();
+    appHostBootstrapMock.mockReset();
+    readRuntimeBytesMock.mockReset();
 
     const standardShell = {
-      artifacts: { readRuntimeBytes: vi.fn() },
+      appHost: { bootstrap: appHostBootstrapMock },
+      artifacts: { readRuntimeBytes: readRuntimeBytesMock },
     };
+    appHostBootstrapMock.mockResolvedValue({
+      state: 'ready',
+      trustClass: 'local-development',
+      appId: 'nimi.parentos',
+      bootstrapArtifactId: 'parentos-bootstrap-artifact',
+      expiresAtUnixMs: Date.now() + 30_000,
+    });
+    readRuntimeBytesMock.mockResolvedValue({ bytes: new Uint8Array([1]), mimeType: 'application/json' });
     createInstalledNimiAppStandardShellSurfaceMock.mockReturnValue(standardShell);
-    createInstalledNimiAppBootstrapMock.mockReturnValue({ artifacts: standardShell.artifacts });
+    createInstalledNimiAppBootstrapMock.mockReturnValue({
+      appHost: standardShell.appHost,
+      artifacts: standardShell.artifacts,
+    });
 
     ({ useAppStore } = await import('../app-shell/app-store.js'));
     ({ runParentOSBootstrap, ensureParentOSRuntimeClientReady } = await import('./parentos-bootstrap.js'));
@@ -81,6 +97,8 @@ describe('ParentOS installed-app bootstrap hardcut', () => {
     expect(createInstalledNimiAppBootstrapMock).toHaveBeenCalledWith({
       standardShell: expect.objectContaining({ artifacts: expect.any(Object) }),
     });
+    expect(appHostBootstrapMock).toHaveBeenCalledTimes(1);
+    expect(readRuntimeBytesMock).toHaveBeenCalledWith('parentos-bootstrap-artifact');
     expect(useAppStore.getState().bootstrapReady).toBe(false);
     expect(useAppStore.getState().bootstrapFailure).toMatchObject({
       state: 'capability-unavailable',
@@ -95,9 +113,7 @@ describe('ParentOS installed-app bootstrap hardcut', () => {
       reasonCode: 'runtime-service-unavailable',
       actionHint: 'start_verified_runtime_service',
     });
-    createInstalledNimiAppBootstrapMock.mockImplementationOnce(() => {
-      throw error;
-    });
+    appHostBootstrapMock.mockRejectedValueOnce(error);
 
     await runParentOSBootstrap({ force: true });
 

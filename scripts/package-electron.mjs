@@ -19,10 +19,13 @@ const packagedAsar = path.join(appRoot, 'dist-electron', 'win-unpacked', 'resour
 const rootNodeModules = path.join(appRoot, 'node_modules');
 const rootPnpmStore = path.join(rootNodeModules, '.pnpm');
 const nimiWorkspacePnpmStore = path.join(path.dirname(kitSource), 'node_modules', '.pnpm');
+const grpcJsPackage = ['@grpc', 'grpc-js'].join('/');
+const protectedLocalPackage = '@nimiplatform/kit-protected-local-win32-x64';
 const electronRuntimePackages = [
   '@nimiplatform/kit',
   '@nimiplatform/sdk',
-  '@grpc/grpc-js',
+  protectedLocalPackage,
+  grpcJsPackage,
   '@grpc/proto-loader',
   '@js-sdsl/ordered-map',
   '@protobuf-ts/runtime',
@@ -45,6 +48,7 @@ const electronRuntimePackages = [
   'semver',
 ];
 const electronRuntimePackageVersions = {
+  [protectedLocalPackage]: '0.2.0',
   'sharp': '0.35.3',
   '@img/colour': '1.1.0',
   '@img/sharp-win32-x64': '0.35.3',
@@ -85,7 +89,10 @@ await rewriteKitRuntimeTarball(kitTgz, sdkPackage.version);
 await removeTree(stagingRoot);
 await mkdir(stagingRoot, { recursive: true });
 await cp(path.join(appRoot, 'dist'), path.join(stagingRoot, 'dist'), { recursive: true });
-await cp(path.join(appRoot, 'src-electron', 'dist'), path.join(stagingRoot, 'src-electron', 'dist'), { recursive: true });
+await mkdir(path.join(stagingRoot, 'dist-electron'), { recursive: true });
+for (const entry of ['main.js', 'main-wrapper.cjs', 'preload.cjs']) {
+  await copyFile(path.join(appRoot, 'dist-electron', entry), path.join(stagingRoot, 'dist-electron', entry));
+}
 await writeFile(path.join(stagingRoot, 'pnpm-workspace.yaml'), 'packages:\n  - .\n', 'utf8');
 await writeFile(
   path.join(stagingRoot, '.npmrc'),
@@ -101,7 +108,9 @@ await writeFile(
 await mkdir(path.join(stagingRoot, 'node_modules'), { recursive: true });
 await extractPackedPackage(sdkTgz, '@nimiplatform/sdk');
 await extractPackedPackage(kitTgz, '@nimiplatform/kit');
-for (const packageName of electronRuntimePackages.filter((name) => !name.startsWith('@nimiplatform/'))) {
+for (const packageName of electronRuntimePackages.filter(
+  (name) => !name.startsWith('@nimiplatform/') || name === protectedLocalPackage,
+)) {
   await copyRootPnpmPackage(packageName);
 }
 await writeFile(
@@ -111,11 +120,11 @@ await writeFile(
     version: '0.1.0',
     private: true,
     type: 'module',
-    main: 'src-electron/dist/main-wrapper.cjs',
+    main: 'dist-electron/main-wrapper.cjs',
     description: 'AI-driven child growth operating system for ParentOS desktop.',
     author: 'Nimi Platform',
     dependencies: {
-      '@grpc/grpc-js': '1.14.4',
+      [grpcJsPackage]: '1.14.4',
       '@nimiplatform/kit': `file:../electron-packages/${kitTgz}`,
       '@nimiplatform/sdk': `file:../electron-packages/${sdkTgz}`,
     },
@@ -152,6 +161,8 @@ assertAsarEntry(packagedAsar, '/node_modules/@nimiplatform/sdk/dist/index.js');
 assertAsarEntry(packagedAsar, '/node_modules/@nimiplatform/sdk/dist/runtime/index.js');
 assertAsarEntry(packagedAsar, '/node_modules/@nimiplatform/kit/dist/shell/electron/main/index.js');
 assertAsarEntry(packagedAsar, '/node_modules/@nimiplatform/kit/dist/shell/capabilities/index.js');
+assertAsarEntry(packagedAsar, '/node_modules/@nimiplatform/kit-protected-local-win32-x64/index.cjs');
+assertAsarEntry(packagedAsar, '/node_modules/@nimiplatform/kit-protected-local-win32-x64/nimi_shell_protected_local.node');
 assertAsarEntry(packagedAsar, '/node_modules/sharp/dist/index.mjs');
 assertAsarEntry(packagedAsar, '/node_modules/@img/sharp-win32-x64/index.cjs');
 
@@ -246,7 +257,7 @@ async function rewriteKitRuntimeTarball(kitTgz, sdkVersion) {
   const manifestPath = path.join(packageDir, 'package.json');
   const manifest = await readPackageJson(manifestPath);
   manifest.dependencies = {
-    '@grpc/grpc-js': '^1.14.4',
+    [grpcJsPackage]: '^1.14.4',
     '@nimiplatform/sdk': sdkVersion,
   };
   delete manifest.devDependencies;
@@ -280,10 +291,18 @@ async function copyRootPnpmPackage(packageName) {
   const destination = packageInstallPath(packageName);
   await mkdir(path.dirname(destination), { recursive: true });
   await removeTree(destination);
-  await cp(source, destination, { recursive: true });
+  await cp(source, destination, { recursive: true, dereference: true });
 }
 
 async function findRuntimePnpmPackagePath(packageName, version) {
+  const directCandidate = path.join(rootNodeModules, ...packageName.split('/'));
+  const directManifest = path.join(directCandidate, 'package.json');
+  if (await stat(directManifest).then((info) => info.isFile()).catch(() => false)) {
+    const directPackage = await readPackageJson(directManifest);
+    if (!version || directPackage.version === version) {
+      return directCandidate;
+    }
+  }
   const encodedName = packageName.replace('/', '+');
   const entryPrefix = `${encodedName}@${version || ''}`;
   for (const store of [rootPnpmStore, nimiWorkspacePnpmStore]) {

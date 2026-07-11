@@ -7,15 +7,21 @@ summary: >-
   reminders, journaling, reports, and runtime-mediated AI assistance.
 permissions:
   declared_nimi_api_scopes:
-    - scope: runtime.ai.text.generate
+    - scope: ai.spend.meter
       qualifier: parentos-advisor
       purpose: Generate parent-facing explanation drafts through Runtime AI using host-owned model configuration.
-    - scope: runtime.ai.text.generate.vision
+    - scope: ai.spend.meter
       qualifier: parentos-vision
       purpose: Extract structured observations from parent-provided child development material through Runtime AI.
-    - scope: runtime.ai.audio.transcribe
+    - scope: ai.spend.meter
       qualifier: parentos-journal-audio
       purpose: Transcribe parent-recorded local journal audio through Runtime AI.
-    - scope: app.local.drafts
-      qualifier: child-growth-local-records
+    - scope: file.read.scoped
+      qualifier: app-local-drafts
+      purpose: Read child and family records, drafts, reminders, reports, and local working data in host-owned app storage.
+    - scope: file.write.scoped
+      qualifier: app-local-drafts
       purpose: Store child and family records, drafts, reminders, reports, and local working data in host-owned app storage.
+    - scope: data.scope.read
+      qualifier: runtime.artifacts
+      purpose: Read the Runtime-owned bootstrap artifact through the admitted typed app-host operation.

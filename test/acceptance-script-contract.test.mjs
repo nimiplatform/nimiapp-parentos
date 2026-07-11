@@ -21,12 +21,19 @@ test('live acceptance verifies the protected ParentOS failure UX end to end', as
   }
 });
 
-test('live acceptance verifies native-carrier and direct Runtime negative paths', async () => {
-  for (const scriptPath of acceptanceScripts) {
-    const source = await readFile(scriptPath, 'utf8');
+test('live acceptance verifies native-carrier and direct Runtime paths', async () => {
+  const electronSource = await readFile('scripts/acceptance-electron.mjs', 'utf8');
+  assert.match(electronSource, /artifacts\.readRuntimeBytes/u, 'packaged Electron must exercise the installed artifact carrier');
+  assert.match(electronSource, /artifactResult\.ok, false/u, 'direct packaged Electron must fail closed before admission');
 
-    assert.match(source, /artifacts\.readRuntimeBytes/u, `${scriptPath} must exercise the installed artifact carrier`);
-    assert.match(source, /artifactResult\.ok, false/u, `${scriptPath} must require artifact fail-close before admission`);
+  const tauriSource = await readFile('scripts/acceptance-tauri.mjs', 'utf8');
+  assert.match(tauriSource, /nimi\.app-host\.bootstrap/u, 'official Tauri dev must bootstrap the supervised app host');
+  assert.match(tauriSource, /trustClass/u, 'official Tauri dev must assert local-development trust');
+  assert.match(tauriSource, /artifacts\.readRuntimeBytes/u, 'official Tauri dev must exercise the admitted artifact carrier');
+  assert.match(tauriSource, /artifactResult\.ok, true/u, 'official Tauri dev must require real artifact success');
+
+  for (const scriptPath of acceptanceScripts) {
+    const source = scriptPath.endsWith('tauri.mjs') ? tauriSource : electronSource;
     assert.match(source, /runtime\.unary/u, `${scriptPath} must attempt direct Runtime access`);
     assert.match(source, /directRuntimeResult\.ok, false/u, `${scriptPath} must require direct Runtime denial`);
     assert.match(source, /appDomainResult\.ok, false/u, `${scriptPath} must require app-domain data denial`);

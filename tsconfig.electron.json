@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "noEmit": false,
     "allowImportingTsExtensions": false,
-    "outDir": "src-electron/dist",
+    "outDir": "dist-electron",
     "rootDir": "src-electron",
     "types": [
       "node",

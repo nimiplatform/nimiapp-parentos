@@ -26,7 +26,13 @@ async function main() {
 
   const port = Number(process.env.NIMI_PARENTOS_TAURI_ACCEPTANCE_CDP_PORT || await reservePort());
   const webviewArgs = `--remote-debugging-port=${port} --lang=zh-CN`;
-  const appProcess = spawn(process.execPath, ['scripts/run-tauri-dev.mjs'], {
+  const appProcess = spawn(process.platform === 'win32' ? 'corepack.cmd' : 'corepack', [
+    'pnpm',
+    'dev:shell',
+    '--',
+    '--shell',
+    'tauri',
+  ], {
     cwd: repoRoot,
     env: {
       ...process.env,
@@ -63,16 +69,35 @@ async function main() {
     const retriedState = await captureProtectedState(page);
     assertProtectedState(retriedState, 'Tauri retry');
 
+    const appHostBootstrapResult = await invokeBridge(
+      page,
+      'nimi.app-host.bootstrap',
+      {},
+    );
+    assert.equal(appHostBootstrapResult.ok, true, 'Tauri dev host must bootstrap through Desktop supervision');
+    assert.equal(appHostBootstrapResult.value?.state, 'ready', 'Tauri dev host must report ready');
+    assert.equal(
+      appHostBootstrapResult.value?.trustClass,
+      'local-development',
+      'Tauri dev host must remain in the non-production trust class',
+    );
+    assert.equal(appHostBootstrapResult.value?.appId, 'nimi.parentos', 'Tauri dev host must bind ParentOS app id');
+    assert.equal(
+      typeof appHostBootstrapResult.value?.bootstrapArtifactId,
+      'string',
+      'Tauri dev host must receive a Runtime-owned bootstrap artifact id',
+    );
+
     const artifactResult = await invokeBridge(
       page,
       NIMI_STANDARD_SHELL_COMMANDS['artifacts.readRuntimeBytes'],
-      { payload: { artifactId: 'parentos-acceptance-artifact' } },
+      { payload: { artifactId: appHostBootstrapResult.value.bootstrapArtifactId } },
     );
-    assert.equal(artifactResult.ok, false, 'Tauri artifact read must fail closed without an admitted installed session');
-    assert.match(
-      JSON.stringify(artifactResult.error),
-      /protected-carrier-required|runtime-service-unavailable|installed-app|carrier/iu,
-      `Tauri artifact denial must preserve protected carrier posture: ${JSON.stringify(artifactResult.error)}`,
+    assert.equal(artifactResult.ok, true, 'Tauri dev host must read the admitted Runtime bootstrap artifact');
+    assert.equal(
+      artifactResult.value?.sizeBytes > 0,
+      true,
+      'Tauri dev bootstrap artifact must contain real Runtime bytes',
     );
 
     const directRuntimeResult = await invokeBridge(
@@ -129,6 +154,7 @@ async function main() {
       desktopState,
       retriedState,
       narrowState,
+      appHostBootstrapResult,
       artifactResult,
       directRuntimeResult,
       appDomainResult,

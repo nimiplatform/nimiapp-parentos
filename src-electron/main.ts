@@ -2,16 +2,13 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { app, BrowserWindow, ipcMain, Menu } from 'electron';
-import { NIMI_INSTALLED_NIMI_APP_STANDARD_SHELL_CAPABILITY_SET_ID } from '@nimiplatform/kit/shell/capabilities';
 import {
-  createNimiElectronInstalledHost,
   createNimiElectronStandardApplicationMenuTemplate,
   isAllowedElectronRendererUrl,
-  registerNimiElectronRuntimeBridge,
+  registerNimiElectronAppBridge,
 } from '@nimiplatform/kit/shell/electron/main';
 
 const PARENTOS_APP_ID = 'nimi.parentos';
-const PARENTOS_RENDERER_DEV_PORT = 1426;
 
 const currentFilePath = fileURLToPath(import.meta.url);
 const currentDir = path.dirname(currentFilePath);
@@ -19,8 +16,7 @@ const appRoot = resolveAppRoot(currentDir);
 const preloadPath = path.join(currentDir, 'preload.cjs');
 const rendererDistIndex = path.join(appRoot, 'dist', 'index.html');
 const rendererDistUrl = pathToFileURL(rendererDistIndex).toString();
-const rendererDevUrl = `http://127.0.0.1:${PARENTOS_RENDERER_DEV_PORT}`;
-const runtimeEndpoint = '127.0.0.1:46371';
+const rendererUrl = readDevelopmentRendererUrl() || rendererDistUrl;
 
 bootLog('module-loaded');
 
@@ -34,16 +30,10 @@ async function bootstrapElectron(): Promise<void> {
   const storageRoots = resolveParentOSStorageRoots();
   bootLog(`bootstrap:storage:${storageRoots.projectionRef}`);
 
-  registerNimiElectronRuntimeBridge({
+  registerNimiElectronAppBridge({
     appId: PARENTOS_APP_ID,
-    runtimeEndpoint,
-    allowedOrigins: allowedRendererOrigins(),
-    allowedRendererUrls: allowedRendererUrls(),
+    allowedRendererUrls: [rendererUrl],
     ipcMain,
-    standardShellHost: {
-      capabilitySetRef: NIMI_INSTALLED_NIMI_APP_STANDARD_SHELL_CAPABILITY_SET_ID,
-      installedHost: createNimiElectronInstalledHost(),
-    },
   });
 
   await createMainWindow();
@@ -118,12 +108,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
 }
 
 async function loadRenderer(window: BrowserWindow): Promise<void> {
-  const rendererUrl = resolveRendererUrl();
-  if (rendererUrl !== rendererDistUrl) {
-    await window.loadURL(rendererUrl);
-    return;
-  }
-  await window.loadURL(rendererDistUrl);
+  await window.loadURL(rendererUrl);
 }
 
 function hardenParentOSWindowChrome(window: BrowserWindow): void {
@@ -140,17 +125,8 @@ function secureParentOSWindow(window: BrowserWindow): void {
   });
 }
 
-function allowedRendererOrigins(): string[] {
-  return [...new Set(allowedRendererUrls().map(originForRendererUrl))];
-}
-
-function originForRendererUrl(url: string): string {
-  const parsed = new URL(url);
-  return parsed.protocol === 'file:' ? 'file://' : parsed.origin;
-}
-
 function allowedRendererUrls(): string[] {
-  return [resolveRendererUrl()];
+  return [rendererUrl];
 }
 
 function isParentOSRendererUrl(url: string): boolean {
@@ -180,13 +156,27 @@ function resolveParentOSStorageRoots(): ParentOSStorageRoots {
   };
 }
 
-function resolveRendererUrl(): string {
-  if (app.isPackaged) {
-    return rendererDistUrl;
+function readDevelopmentRendererUrl(): string {
+  const prefix = '--nimi-dev-renderer-url=';
+  const values = process.argv.filter((value) => value.startsWith(prefix));
+  if (values.length === 0) return '';
+  if (values.length !== 1) throw new Error('Nimi development renderer URL must be singular.');
+  const selected = values[0];
+  if (!selected) throw new Error('Nimi development renderer URL is missing.');
+  const parsed = new URL(selected.slice(prefix.length));
+  if (
+    parsed.protocol !== 'http:'
+    || !['127.0.0.1', 'localhost', '[::1]', '::1'].includes(parsed.hostname.toLowerCase())
+    || !parsed.port
+    || parsed.username
+    || parsed.password
+    || (parsed.pathname !== '/' && parsed.pathname !== '')
+    || parsed.search
+    || parsed.hash
+  ) {
+    throw new Error('Nimi development renderer URL must be exact loopback.');
   }
-  return normalizeText(process.env.NIMI_PARENTOS_ELECTRON_RENDERER_URL) === rendererDevUrl
-    ? rendererDevUrl
-    : rendererDistUrl;
+  return parsed.origin;
 }
 
 function normalizeText(value: unknown): string {

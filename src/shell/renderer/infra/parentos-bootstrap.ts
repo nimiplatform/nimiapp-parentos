@@ -83,7 +83,19 @@ async function doRunParentOSBootstrap(): Promise<void> {
 
   try {
     const standardShell = createInstalledNimiAppStandardShellSurface();
-    createInstalledNimiAppBootstrap({ standardShell });
+    const bootstrap = createInstalledNimiAppBootstrap({ standardShell });
+    const status = await bootstrap.appHost.bootstrap();
+    if (status.trustClass === 'local-development') {
+      if (!status.bootstrapArtifactId) {
+        throw createNimiError({
+          message: 'The local-development bootstrap artifact is missing.',
+          reasonCode: 'runtime-service-untrusted',
+          actionHint: 'restart_verified_app_host',
+          source: 'sdk',
+        });
+      }
+      await bootstrap.artifacts.readRuntimeBytes(status.bootstrapArtifactId);
+    }
 
     throw createNimiError({
       message: 'The protected ParentOS operation set is not admitted.',

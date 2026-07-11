@@ -10,9 +10,7 @@ describe('ParentOS installed app authority hardcut', () => {
   const bootstrapSource = read('src/shell/renderer/infra/parentos-bootstrap.ts');
   const settingsSource = read('src/shell/renderer/features/settings/settings-page.tsx');
   const electronMainSource = read('src-electron/main.ts');
-  const electronDevRunnerSource = read('scripts/run-electron-dev.mjs');
   const tauriMainSource = read('src-tauri/src/main.rs');
-  const tauriDevRunnerSource = read('scripts/run-tauri-dev.mjs');
 
   it('keeps the canonical submitted app identity', () => {
     const manifestPath = join(root, 'nimi.app.yaml');
@@ -34,8 +32,8 @@ describe('ParentOS installed app authority hardcut', () => {
   });
 
   it('uses native installed hosts without portable authority inputs', () => {
-    expect(electronMainSource).toContain('createNimiElectronInstalledHost');
-    expect(electronMainSource).toContain('NIMI_INSTALLED_NIMI_APP_STANDARD_SHELL_CAPABILITY_SET_ID');
+    expect(electronMainSource).toContain('registerNimiElectronAppBridge');
+    expect(electronMainSource).toContain('--nimi-dev-renderer-url=');
     expect(electronMainSource).toContain("app.getPath('appData')");
     expect(electronMainSource).not.toMatch(/trustedRuntimeMetadataProvider|additionalArguments|installed-app-launch-binding/);
     expect(electronMainSource).not.toMatch(/commandHandlers\s*:|createElectronShellFileProtocolHost/);
@@ -43,7 +41,7 @@ describe('ParentOS installed app authority hardcut', () => {
     expect(existsSync(join(root, 'src-electron/runtime-auth.ts'))).toBe(false);
     expect(existsSync(join(root, 'src-electron/parentos-command-policy.ts'))).toBe(false);
 
-    expect(tauriMainSource).toContain('RuntimeBridgeInstalledHost::platform_default()');
+    expect(tauriMainSource).toContain('RuntimeBridgeAppHost::platform_default()');
     expect(tauriMainSource).toContain('nimi_shell_tauri_installed_app_standard_shell_handler![]');
     expect(tauriMainSource).toContain('app.path().app_data_dir()');
     expect(tauriMainSource).not.toMatch(/installed_app_launch|append_invoke_initialization_script/);
@@ -51,11 +49,9 @@ describe('ParentOS installed app authority hardcut', () => {
     expect(tauriMainSource).not.toMatch(/sqlite::|allow_data_root_in_asset_scope/);
   });
 
-  it('keeps development launchers free of identity and storage projections', () => {
-    for (const source of [electronDevRunnerSource, tauriDevRunnerSource]) {
-      expect(source).not.toMatch(/randomUUID|LAUNCH_NONCE|DURABLE_DATA_ROOT|CACHE_ROOT|TEMP_ROOT/);
-      expect(source).not.toMatch(/NIMI_RUNTIME_GRPC_ADDR|RUNTIME_ENDPOINT/);
-    }
+  it('removes app-owned development launchers', () => {
+    expect(existsSync(join(root, 'scripts/run-electron-dev.mjs'))).toBe(false);
+    expect(existsSync(join(root, 'scripts/run-tauri-dev.mjs'))).toBe(false);
   });
 
   it('does not expose app-owned account control or daemon configuration', () => {

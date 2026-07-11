@@ -10,13 +10,14 @@ async function readProjectFile(relativePath) {
   return readFile(path.join(root, relativePath), 'utf8');
 }
 
-test('ParentOS Electron uses the installed native carrier without portable authority', async () => {
+test('ParentOS Electron uses the fixed app host without portable authority', async () => {
   const main = await readProjectFile('src-electron/main.ts');
   const preload = await readProjectFile('src-electron/preload.cts');
 
-  assert.match(main, /\bregisterNimiElectronRuntimeBridge\b/u);
-  assert.match(main, /\bcreateNimiElectronInstalledHost\b/u);
-  assert.match(main, /\bNIMI_INSTALLED_NIMI_APP_STANDARD_SHELL_CAPABILITY_SET_ID\b/u);
+  assert.match(main, /\bregisterNimiElectronAppBridge\b/u);
+  assert.match(main, /--nimi-dev-renderer-url=/u);
+  assert.doesNotMatch(main, /\bcreateNimiElectronInstalledHost\b/u);
+  assert.doesNotMatch(main, /\bNIMI_INSTALLED_NIMI_APP_STANDARD_SHELL_CAPABILITY_SET_ID\b/u);
   assert.doesNotMatch(main, /\bcommandHandlers\s*:|createParentOSElectronCommandHandlers/u);
   assert.match(main, /app\.getPath\(\s*['"]appData['"]\s*\)/u);
   assert.doesNotMatch(main, /trustedRuntimeMetadataProvider|createParentOSElectronTrustedRuntimeMetadataProvider/u);
@@ -40,7 +41,7 @@ test('ParentOS Electron uses the installed native carrier without portable autho
 test('ParentOS Tauri exposes only the installed artifact carrier before operation admission', async () => {
   const main = await readProjectFile('src-tauri/src/main.rs');
 
-  assert.match(main, /RuntimeBridgeInstalledHost::platform_default\(\)/u);
+  assert.match(main, /RuntimeBridgeAppHost::platform_default\(\)/u);
   assert.match(main, /nimi_shell_tauri_installed_app_standard_shell_handler!\[\]/u);
   assert.match(main, /app\.path\(\)\.app_data_dir\(\)/u);
   assert.doesNotMatch(main, /installed_app_launch|append_invoke_initialization_script/u);
