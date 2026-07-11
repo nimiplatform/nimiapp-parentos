@@ -1,18 +1,9 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  resolveParentOSDevStorageRoots,
-  resolveParentOSRuntimeEndpoint,
-} from './runtime-app-storage-projection.mjs';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(currentDir, '..');
-const runtimeEndpoint = resolveParentOSRuntimeEndpoint(
-  'NIMI_RUNTIME_GRPC_ADDR',
-  'NIMI_PARENTOS_TAURI_RUNTIME_ENDPOINT',
-);
 const tauriBin = path.join(appRoot, 'node_modules', '.bin', process.platform === 'win32' ? 'tauri.cmd' : 'tauri');
 const children = new Set();
 const SIGNAL_EXIT_CODES = new Map([
@@ -26,26 +17,9 @@ for (const signal of SIGNAL_EXIT_CODES.keys()) {
 
 try {
   ensureRendererPortAvailable();
-  const storageRoots = resolveParentOSDevStorageRoots({
-    sessionKind: 'tauri-dev',
-  });
-  const launchNonce = process.env.NIMI_APP_LAUNCH_NONCE
-    || process.env.NIMI_PARENTOS_TAURI_LAUNCH_NONCE
-    || randomUUID();
   const tauri = spawnTracked(tauriBin, ['dev', '--config', 'src-tauri/tauri.conf.json'], {
     stdio: 'inherit',
-    env: {
-      ...process.env,
-      NIMI_RUNTIME_GRPC_ADDR: runtimeEndpoint,
-      NIMI_APP_LAUNCH_NONCE: launchNonce,
-      NIMI_APP_DURABLE_DATA_ROOT: storageRoots.dataRoot,
-      NIMI_APP_CACHE_ROOT: storageRoots.cacheRoot,
-      NIMI_APP_TEMP_ROOT: storageRoots.tempRoot,
-      NIMI_PARENTOS_TAURI_LAUNCH_NONCE: launchNonce,
-      NIMI_PARENTOS_TAURI_DURABLE_DATA_ROOT: storageRoots.dataRoot,
-      NIMI_PARENTOS_TAURI_CACHE_ROOT: storageRoots.cacheRoot,
-      NIMI_PARENTOS_TAURI_TEMP_ROOT: storageRoots.tempRoot,
-    },
+    env: process.env,
   });
   const exitCode = await waitForExit(tauri);
   await requestAllChildrenShutdown('SIGTERM');

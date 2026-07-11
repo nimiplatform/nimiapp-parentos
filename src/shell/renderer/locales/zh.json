@@ -45,7 +45,42 @@
     "selectWalletHint": "选择钱包进行连接",
     "desktopLogoHint": "授权失败。点击 logo 重试。",
     "desktopAuthOpen": "已打开浏览器，请在网页完成授权登录。",
-    "desktopAuthSuccess": "网页登录授权成功，已登录。"
+    "desktopAuthSuccess": "网页登录授权成功，已登录。",
+    "protectedSession": {
+      "eyebrow": "Nimi 受保护会话",
+      "localDataLocked": "ParentOS 本地数据仍处于锁定状态",
+      "reasonCode": "原因代码",
+      "nextStep": "下一步",
+      "localDataButton": "本地数据已锁定",
+      "retry": "重新检查",
+      "states": {
+        "login-required": {
+          "title": "请先在 Nimi Desktop 登录",
+          "description": "Runtime 将这个已安装应用绑定到已登录的 Nimi 账户之前，ParentOS 不会打开家庭数据。",
+          "action": "打开 Nimi Desktop，登录或切换到目标账户，然后返回此处重新检查。"
+        },
+        "runtime-unavailable": {
+          "title": "Nimi Runtime 暂不可用",
+          "description": "受保护的 Runtime 服务未能建立经过验证的已安装应用会话。",
+          "action": "启动 Nimi Desktop 及其经过验证的 Runtime 服务，然后重新检查。"
+        },
+        "permission-denied": {
+          "title": "ParentOS 访问被拒绝",
+          "description": "Runtime 拒绝了当前应用、版本、进程或账户绑定；任何本地家庭数据都没有被打开。",
+          "action": "在 Nimi Desktop 中检查 ParentOS 权限，或重新安装获准的 ParentOS 版本。"
+        },
+        "repair-required": {
+          "title": "Nimi 安装需要修复",
+          "description": "Runtime 或已安装的 ParentOS 版本未通过系统原生信任验证。",
+          "action": "使用可信安装程序修复 Nimi Desktop 和 ParentOS，然后再试。"
+        },
+        "capability-unavailable": {
+          "title": "ParentOS 受保护访问尚未开放",
+          "description": "当前版本还没有获准的 ParentOS 受保护操作集。应用会保持关闭，而不会通过普通 Runtime 桥接打开数据。",
+          "action": "等待受保护操作集开放后，从 Nimi Desktop 启动已获准的 ParentOS 版本。"
+        }
+      }
+    }
   },
   "Shell": {
     "navigation": {
@@ -88,7 +123,8 @@
       "unnamedUser": "未命名用户",
       "logout": "退出登录",
       "loggingOut": "退出中...",
-      "logoutFailed": "退出登录失败"
+      "logoutFailed": "退出登录失败",
+      "managedByDesktop": "登录和账户切换由 Nimi Desktop 统一管理。"
     },
     "language": {
       "title": "界面语言",

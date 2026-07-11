@@ -24,48 +24,31 @@ Governing fact sources:
 
 ## PO-SHELL-001 Bootstrap Order
 
-ParentOS is a desktop-launched installed Nimi app submitted through `nimi.app.yaml`. The desktop shell bootstrap MUST construct its platform client through the active SDK installed-app projection: a host-owned installed app launch binding, a host-owned standard shell surface, `createInstalledNimiAppBootstrap`, and then `createNimiClient` wrapped around the SDK Runtime surface. Tauri and Electron desktop shells implement this admitted SDK path through trusted host providers; the renderer consumes only the installed app launch binding, the standard shell surface, and the SDK Runtime transport. App session metadata and protected access metadata are produced by the host provider and are not returned to renderer code. This path must type-reject app-owned access tokens, refresh tokens, subject providers, and session stores; RuntimeAccountService is the sole owner of account custody, login broker, app session, and scoped/protected access metadata projection.
+ParentOS is the installed Nimi app identified only as `nimi.parentos`. The renderer MUST NOT construct or receive caller identity, app instance, device, launch host, release descriptor, nonce, Runtime endpoint, Realm URL, account projection, protected metadata, or any token/session material. Environment variables, argv, renderer configuration, and a generic Runtime bridge are not admitted sources for those values.
 
-Caller identity for runtime-account RPCs:
+Electron and Tauri MUST bind the shared Kit installed host to the platform-native protected carrier. The renderer may construct `createInstalledNimiAppBootstrap` only from the artifact-only installed standard-shell surface. Runtime owns the opaque installed session and verifies the app, release, peer process, account generation, and Runtime epoch outside the renderer. Each platform is admitted independently; a platform without a verified native carrier remains fail-closed and MUST NOT fall back to localhost gRPC or a same-user daemon.
 
-| Field | Value |
-|---|---|
-| `mode` | `ACCOUNT_CALLER_MODE_DESKTOP_LAUNCHED_NIMI_APP` |
-| `appId` | `nimi.parentos` |
-| `appInstanceId` | `nimi.parentos.desktop-installed` unless the installed app host projects a concrete instance id |
-| `deviceId` | `desktop-installed-app` unless the installed app host projects a concrete device id |
-| `launchHostId` | `desktop-electron-installed-app-host` |
-| `releaseDescriptorRef` | `nimi.parentos.bundled-with-nimi` unless the installed app host projects a concrete release descriptor |
+The complete ParentOS protected operation set is not yet admitted. Until it is admitted, bootstrap MUST:
 
-`nimi.parentos` is the single canonical Nimi App id across Runtime, SDK, AIConfig, app storage, submitted app identity, and the Tauri bundle identifier. Pre-cutover app-prefixed and OS-bundle-prefixed identifiers are not admitted and must not be used as caller ids, storage app ids, Tauri identifiers, AIConfig scope owners, or any other app identity.
+1. construct the typed artifact-only installed standard-shell projection;
+2. refuse to create a generic `Runtime`, `NimiClient`, Realm client, account caller, AI client, or app-owned session;
+3. report `parentos-protected-operation-set-not-admitted` as a typed capability-unavailable state;
+4. keep SQLite, media, app settings, account-scoped state, and product routes unopened.
 
-`ACCOUNT_CALLER_MODE_LOCAL_DEVELOPER_APP` and `ACCOUNT_CALLER_MODE_DESKTOP_LAUNCHED_AVATAR` are not admitted for ParentOS after the installed-app hard cut. Local development uses the same installed-app binding shape with dev-projected storage roots and launch nonce; it must not reintroduce developer-registration account semantics.
+ParentOS-owned SQLite and media remain durable app data, but their OS paths are location truth only, not admission or account truth. Each host derives fixed roots from its OS application-data API; env, argv, and user configuration cannot select those roots. After the protected ParentOS operation set is admitted, Runtime's opaque installed session and account generation MUST authorize local hydration before the host exposes app-domain data commands. No anonymous local fallback is admitted.
 
-ParentOS must not mutate Runtime developer-registration config from app bootstrap. Installed app metadata uses the submitted app identity and `developerRegistration=false`; local development remains a host launch-mode concern expressed through host-projected installed app binding inputs, not app-owned Runtime policy.
-
-The desktop shell bootstrap path must execute in this order:
-
-1. resolve the host-projected installed app launch binding, including realm base URL, app instance, device, launch host, nonce, and release descriptor
-2. construct the installed app Runtime projection through `createInstalledNimiAppBootstrap` and the host-owned standard shell surface, then wrap the resulting Runtime in `createNimiClient` (Runtime owns login custody and protected access metadata projection; host providers inject app session and protected access metadata without returning token material to ParentOS renderer code)
-3. prepare ParentOS Nimi Data storage from the host-bound installed app standard data root projection for `nimi.parentos` and grant the returned durable data root to the Tauri asset scope
-4. resolve the current local storage scope from `runtime.account.getAccountSessionStatus().accountProjection.accountId` when authenticated; use the anonymous local scope when runtime returns `ANONYMOUS` / `UNAVAILABLE`
-5. initialize the SQLite-backed local storage for that scope under `tables/local-storage.yaml#storage_layout`
-6. load family, child, and app-setting rows from the scoped local storage
-7. derive the active child from persisted local state or the first available child
-8. render shell routes after local prerequisites are ready
-
-Bootstrap is local-first but not app-storage-optional. ParentOS must not require cloud hydration before local family and child data become usable, but the installed app launch binding and the host-bound standard data root projection for `nimi.parentos` are hard prerequisites because local SQLite and user-generated media roots are governed by `tables/local-storage.yaml#storage_layout`. Authenticated sessions must switch into that subject's dedicated local database before shell data is hydrated. Runtime account states `anonymous` and `unavailable` must NOT cause bootstrap failure after the storage projection is available — ParentOS opens against the anonymous local scope and waits for a successful runtime broker login before switching scope. Installed app launch binding failure, app-storage projection failure, or SQLite initialization failure MUST fail bootstrap rather than render a shell backed by an unowned path or missing local store.
+The exact future positive sequence is: native carrier session → Runtime-installed app/account binding → ParentOS operation-set admission → account-scoped local hydration → route render. The current artifact-only carrier and typed unavailable screen are transitional fail-closed surfaces, not evidence that the full ParentOS session is complete.
 
 ## PO-SHELL-008 Account Material Custody Boundary
 
-ParentOS MUST NOT persist, project, or transit access tokens or refresh tokens at any layer (renderer, Tauri host, SQLite, OS keychain, or any other store). Runtime owns refresh-token custody (spec K-ACCSVC-008 / R-OAUTH-008). Concretely:
+ParentOS MUST NOT persist, project, or transit access tokens or refresh tokens at any layer (renderer, Tauri host, SQLite, OS keychain, or any other store). Runtime owns account and credential custody (spec K-ACCSVC-008 / R-OAUTH-008). Concretely:
 
 - The desktop shell must not call `applyToken(accessToken, refreshToken)` or any equivalent that takes refresh-token material.
 - The Tauri shared desktop auth-session bridge (`auth_session_load`/`save`/`clear`) must not be invoked from ParentOS bootstrap or login paths.
-- The platform client's `refreshTokenProvider`, `accessTokenProvider`, `accessToken`, `subjectUserIdProvider`, and `sessionStore` inputs are forbidden. The admitted installed-app SDK projection path exposes no such ParentOS inputs.
+- The platform client's `refreshTokenProvider`, `accessTokenProvider`, `accessToken`, `subjectUserIdProvider`, and `sessionStore` inputs are forbidden. The installed-app SDK projection exposes no such ParentOS inputs.
 - ParentOS does not construct a Realm client until a Realm-owned product feature is explicitly admitted. When direct Realm calls are later admitted, access tokens must be projected from Runtime account custody (short-lived, never persisted, never returned to ParentOS surfaces) and consumed through SDK Realm typed services / adapters.
 
-ParentOS does not own embedded login, logout, OAuth browser brokering, loopback listeners, or account-control RPCs. Account login, logout, and switching are first-party Desktop / Runtime account-surface responsibilities. ParentOS may read the current account projection through the installed app Runtime caller after bootstrap; when no authenticated projection is available, it opens the anonymous local scope.
+ParentOS does not own embedded login, logout, OAuth browser brokering, loopback listeners, account projection, or account-control RPCs. Account login, logout, and switching are first-party Desktop / Runtime responsibilities. ParentOS receives only the scoped outcome of a future admitted installed session; it never opens an anonymous account scope.
 
 ## PO-SHELL-002 Route Registration
 
@@ -102,11 +85,12 @@ Nurture mode settings are child-scoped and must round-trip through the `children
 
 ## PO-SHELL-005 Family and Child Selection
 
-The shell must support a single local family with multiple children inside each account-scoped local database.
+After protected operation admission, the shell must support a single local family with multiple children inside each Runtime-authorized account-scoped local database.
 
 - child create, edit, and delete flows operate on the local SQLite store
-- authenticated account switches must clear in-memory family and child state, switch to the new subject-scoped SQLite database, and then reload that account's local rows
+- authenticated account switches must revoke the prior installed session, clear in-memory family and child state, bind the new Runtime-authorized account generation, and only then reload that account's local rows
 - one authenticated subject must not see another subject's local family, children, or app settings through shell state reuse
+- while the protected ParentOS operation set is unadmitted, the app must not initialize SQLite or render these flows
 - switching the active child refreshes profile, timeline, journal, advisor, and reports views from that child's local records
 - deleting a child must rely on storage-layer cascade behavior for dependent rows
 
@@ -126,6 +110,10 @@ Settings state must round-trip through `children` or `app_settings`. The shell m
 
 The shell must fail closed when spec-governed prerequisites are invalid.
 
+- protected bootstrap failures must map to `login-required`, `runtime-unavailable`, `permission-denied`, `repair-required`, or `capability-unavailable`
+- every protected failure state must keep local data locked and expose an actionable retry or Desktop/repair instruction
+- renderer metadata, env, argv, app id, or a direct gRPC connection must not turn a failure into a positive session
+- absence of the complete ParentOS protected operation set is `capability-unavailable`, not a production-ready carrier claim
 - missing compiled knowledge-base artifacts is a startup failure
 - route drift against `routes.yaml` is a verification failure, not a runtime fallback case
 - malformed typed bridge payloads must raise an error instead of returning placeholder success objects

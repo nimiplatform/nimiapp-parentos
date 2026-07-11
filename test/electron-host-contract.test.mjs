@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -9,48 +10,52 @@ async function readProjectFile(relativePath) {
   return readFile(path.join(root, relativePath), 'utf8');
 }
 
-test('ParentOS Electron main registers the standard kit shell host without raw Node renderer access', async () => {
+test('ParentOS Electron uses the installed native carrier without portable authority', async () => {
   const main = await readProjectFile('src-electron/main.ts');
   const preload = await readProjectFile('src-electron/preload.cts');
-  const runtimeAuth = await readProjectFile('src-electron/runtime-auth.ts');
 
   assert.match(main, /\bregisterNimiElectronRuntimeBridge\b/u);
-  assert.match(main, /\bstandardShellHost\s*:/u);
-  assert.match(main, /\bcommandHandlers\s*:\s*createParentOSElectronCommandHandlers\b/u);
-  assert.match(main, /\bcommandPolicy\s*:\s*parentosElectronHostCommandPolicy\b/u);
-  assert.match(main, /\bcreateParentOSElectronTrustedRuntimeMetadataProvider\b/u);
-  assert.match(main, /\bopenFileDialog\s*:/u);
-  assert.match(main, /\brevealInOs\s*:/u);
-  assert.match(main, /\bexportDirectory\s*:/u);
-  assert.match(main, /capabilitySetRef:\s*'installed-nimi-app-standard-shell-v1'/u);
+  assert.match(main, /\bcreateNimiElectronInstalledHost\b/u);
+  assert.match(main, /\bNIMI_INSTALLED_NIMI_APP_STANDARD_SHELL_CAPABILITY_SET_ID\b/u);
+  assert.doesNotMatch(main, /\bcommandHandlers\s*:|createParentOSElectronCommandHandlers/u);
+  assert.match(main, /app\.getPath\(\s*['"]appData['"]\s*\)/u);
+  assert.doesNotMatch(main, /trustedRuntimeMetadataProvider|createParentOSElectronTrustedRuntimeMetadataProvider/u);
+  assert.doesNotMatch(main, /additionalArguments|installed-app-launch-binding|LAUNCH_NONCE|releaseDescriptorRef/u);
+  assert.doesNotMatch(main, /NIMI_APP_DURABLE_DATA_ROOT|NIMI_PARENTOS_ELECTRON_(?:DURABLE_DATA_ROOT|STANDARD_DATA_ROOT)/u);
+  assert.doesNotMatch(main, /bundled-with-nimi/u);
+  assert.doesNotMatch(main, /createNimiElectronFileAIConfigStore|standardDataRootBinding/u);
+  assert.doesNotMatch(main, /commandPolicy\s*:/u);
+  assert.doesNotMatch(main, /createElectronShellFileProtocolHost|localAssetProtocolHost|localAssetRoots/u);
   assert.match(main, /\bcontextIsolation\s*:\s*true\b/u);
   assert.match(main, /\bnodeIntegration\s*:\s*false\b/u);
   assert.match(main, /\bsandbox\s*:\s*true\b/u);
-  assert.match(main, /\bautoHideMenuBar\s*:\s*true\b/u);
   assert.match(main, /\bsetWindowOpenHandler\b/u);
   assert.match(main, /\bwill-navigate\b/u);
 
   assert.match(preload, /\binstallNimiElectronRuntimeBridge\b/u);
-  assert.match(preload, /\bcontextBridge\b/u);
-  assert.match(preload, /\bipcRenderer\b/u);
-
-  assert.match(runtimeAuth, /\bcreateNimiElectronInstalledAppRuntimeAccountTrustedMetadataProvider\b/u);
-  assert.doesNotMatch(runtimeAuth, /\bACCOUNT_CALLER_MODE_LOCAL_DEVELOPER_APP\b/u);
-  assert.doesNotMatch(main, /developerRegistration\s*:\s*true/u, 'Electron main must not hardcode developerRegistration=true');
-  assert.doesNotMatch(runtimeAuth, /developerRegistration\s*:\s*true/u, 'trusted metadata provider must take developerRegistration from host input');
-  assert.match(runtimeAuth, /developerRegistration:\s*false/u, 'installed app Runtime account metadata must not use developer registration');
+  assert.equal(existsSync(path.join(root, 'src-electron/runtime-auth.ts')), false);
+  assert.equal(existsSync(path.join(root, 'src-electron/parentos-command-policy.ts')), false);
 });
 
-test('Electron acceptance records the resolved sidecar path, pid, and init handshake', async () => {
-  const hostClient = await readProjectFile('src-electron/parentos-host-client.ts');
-  const acceptance = await readProjectFile('scripts/acceptance-electron.mjs');
+test('ParentOS Tauri exposes only the installed artifact carrier before operation admission', async () => {
+  const main = await readProjectFile('src-tauri/src/main.rs');
 
-  assert.match(hostClient, /NIMI_PARENTOS_ELECTRON_SIDECAR_LOG/u);
+  assert.match(main, /RuntimeBridgeInstalledHost::platform_default\(\)/u);
+  assert.match(main, /nimi_shell_tauri_installed_app_standard_shell_handler!\[\]/u);
+  assert.match(main, /app\.path\(\)\.app_data_dir\(\)/u);
+  assert.doesNotMatch(main, /installed_app_launch|append_invoke_initialization_script/u);
+  assert.doesNotMatch(main, /load_dotenv_files|NIMI_APP_LAUNCH_NONCE|bundled-with-nimi/u);
+  assert.doesNotMatch(main, /runtime_bridge_(?:unary|stream_open|stream_close)|ai_config_(?:get|set)/u);
+  assert.doesNotMatch(main, /data_path_resolve|storage_(?:read_json|write_json|remove_json)/u);
+  assert.doesNotMatch(main, /sqlite::|journal_audio::|report_export::/u);
+  assert.doesNotMatch(main, /allow_data_root_in_asset_scope/u);
+});
+
+test('Electron sidecar remains dormant until app-domain admission while preserving observability', async () => {
+  const hostClient = await readProjectFile('src-electron/parentos-host-client.ts');
+  const main = await readProjectFile('src-electron/main.ts');
+  assert.doesNotMatch(main, /createParentOSHostClient|parentos-host-client/u);
   assert.match(hostClient, /sidecar-start/u);
   assert.match(hostClient, /sidecar-ready/u);
-  assert.match(hostClient, /\bhostBin\b/u);
-  assert.match(hostClient, /\bpid\b/u);
   assert.match(hostClient, /\bresourcesPath\b/u);
-  assert.match(acceptance, /NIMI_PARENTOS_ELECTRON_SIDECAR_LOG/u);
-  assert.match(acceptance, /sidecarEvents/u);
 });

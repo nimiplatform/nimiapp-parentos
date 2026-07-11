@@ -8,10 +8,8 @@ export {
   hasElectronRuntime,
   hasNimiShellRuntime,
   hasTauriRuntime,
-  readInstalledNimiAppLaunchBinding,
 } from '@nimiplatform/kit/shell/renderer/bridge';
 export type {
-  InstalledNimiAppLaunchBinding,
   InstalledNimiAppStandardShellSurface,
   InstalledNimiAppStorageRemoveJsonResult,
   JsonValue,

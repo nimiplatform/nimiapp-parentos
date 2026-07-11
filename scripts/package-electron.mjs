@@ -18,6 +18,7 @@ const packagedSidecar = path.join(appRoot, 'dist-electron', 'win-unpacked', 'res
 const packagedAsar = path.join(appRoot, 'dist-electron', 'win-unpacked', 'resources', 'app.asar');
 const rootNodeModules = path.join(appRoot, 'node_modules');
 const rootPnpmStore = path.join(rootNodeModules, '.pnpm');
+const nimiWorkspacePnpmStore = path.join(path.dirname(kitSource), 'node_modules', '.pnpm');
 const electronRuntimePackages = [
   '@nimiplatform/kit',
   '@nimiplatform/sdk',
@@ -37,8 +38,27 @@ const electronRuntimePackages = [
   'lodash.camelcase',
   'long',
   'protobufjs',
+  'sharp',
+  '@img/colour',
+  '@img/sharp-win32-x64',
+  'detect-libc',
+  'semver',
 ];
-const evidenceDir = path.join(appRoot, '.nimi', 'local', 'acceptance', '20260707-tauri-electron-shell-refactory');
+const electronRuntimePackageVersions = {
+  'sharp': '0.35.3',
+  '@img/colour': '1.1.0',
+  '@img/sharp-win32-x64': '0.35.3',
+  'detect-libc': '2.1.2',
+  'semver': '7.8.5',
+};
+const evidenceDir = path.join(
+  appRoot,
+  '.nimi',
+  'local',
+  'acceptance',
+  '2026-07-10-third-party-installed-app-reference-hardcut',
+  'parentos-electron-package',
+);
 const evidencePath = path.join(evidenceDir, 'package-electron.json');
 const builderLogPath = path.join(evidenceDir, 'electron-builder.log');
 
@@ -132,6 +152,8 @@ assertAsarEntry(packagedAsar, '/node_modules/@nimiplatform/sdk/dist/index.js');
 assertAsarEntry(packagedAsar, '/node_modules/@nimiplatform/sdk/dist/runtime/index.js');
 assertAsarEntry(packagedAsar, '/node_modules/@nimiplatform/kit/dist/shell/electron/main/index.js');
 assertAsarEntry(packagedAsar, '/node_modules/@nimiplatform/kit/dist/shell/capabilities/index.js');
+assertAsarEntry(packagedAsar, '/node_modules/sharp/dist/index.mjs');
+assertAsarEntry(packagedAsar, '/node_modules/@img/sharp-win32-x64/index.cjs');
 
 await writeFile(evidencePath, `${JSON.stringify({
   generatedAt: new Date().toISOString(),
@@ -251,29 +273,35 @@ async function extractPackedPackage(tarballName, packageName) {
 }
 
 async function copyRootPnpmPackage(packageName) {
-  const source = await findRootPnpmPackagePath(packageName);
+  const source = await findRuntimePnpmPackagePath(
+    packageName,
+    electronRuntimePackageVersions[packageName],
+  );
   const destination = packageInstallPath(packageName);
   await mkdir(path.dirname(destination), { recursive: true });
   await removeTree(destination);
   await cp(source, destination, { recursive: true });
 }
 
-async function findRootPnpmPackagePath(packageName) {
+async function findRuntimePnpmPackagePath(packageName, version) {
   const encodedName = packageName.replace('/', '+');
-  const entries = await readdir(rootPnpmStore).catch((error) => {
-    throw new Error(`root pnpm store is unavailable at ${rootPnpmStore}: ${error instanceof Error ? error.message : String(error)}`);
-  });
-  const matches = entries
-    .filter((entry) => entry.startsWith(`${encodedName}@`))
-    .sort();
-  for (const match of matches) {
-    const candidate = path.join(rootPnpmStore, match, 'node_modules', ...packageName.split('/'));
-    const manifest = path.join(candidate, 'package.json');
-    if (await stat(manifest).then((info) => info.isFile()).catch(() => false)) {
-      return candidate;
+  const entryPrefix = `${encodedName}@${version || ''}`;
+  for (const store of [rootPnpmStore, nimiWorkspacePnpmStore]) {
+    const entries = await readdir(store).catch(() => []);
+    const matches = entries
+      .filter((entry) => entry.startsWith(entryPrefix))
+      .sort();
+    for (const match of matches) {
+      const candidate = path.join(store, match, 'node_modules', ...packageName.split('/'));
+      const manifest = path.join(candidate, 'package.json');
+      if (await stat(manifest).then((info) => info.isFile()).catch(() => false)) {
+        return candidate;
+      }
     }
   }
-  throw new Error(`${packageName} is missing from root pnpm store; run pnpm install at the app root before packaging.`);
+  throw new Error(
+    `${packageName}${version ? `@${version}` : ''} is missing from the app and Nimi workspace pnpm stores.`,
+  );
 }
 
 function packageInstallPath(packageName) {

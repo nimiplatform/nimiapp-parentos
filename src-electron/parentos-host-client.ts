@@ -387,7 +387,7 @@ function parseSidecarResponse(line: string): SidecarResponse {
 
 export async function resolveParentOSHostBinaryPath(appRoot: string): Promise<string> {
   const override = normalizeText(process.env.NIMI_PARENTOS_HOST_BIN);
-  if (override) {
+  if (!app.isPackaged && override) {
     return requireExecutablePath(path.resolve(override), 'NIMI_PARENTOS_HOST_BIN');
   }
   const binaryName = process.platform === 'win32' ? 'parentos_host.exe' : 'parentos_host';

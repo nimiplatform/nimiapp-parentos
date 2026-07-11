@@ -4,20 +4,6 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 const repoRoot = process.cwd();
-const STANDARD_TAURI_COMMANDS = new Set([
-  'confirm_dialog',
-  'start_window_drag',
-  'focus_main_window',
-  'data_path_resolve',
-  'storage_read_json',
-  'storage_write_json',
-  'storage_remove_json',
-  'runtime_bridge_unary',
-  'runtime_bridge_stream_open',
-  'runtime_bridge_stream_close',
-  'ai_config_get',
-  'ai_config_set',
-]);
 const ELECTRON_NATIVE_APP_COMMANDS = new Set([
   'pick_image_files_as_base64',
   'report_export_create_save_grant',
@@ -44,14 +30,13 @@ function extractRustImplementedCommands(source) {
 }
 
 function extractTauriRegisteredCommands(source) {
-  const match = source.match(/tauri::generate_handler!\[([\s\S]*?)\]\)/u);
-  assert.ok(match, 'Tauri main must use a literal generate_handler command list');
+  const match = source.match(/nimi_shell_tauri_installed_app_standard_shell_handler!\[([\s\S]*?)\]\s*,?\s*\)/u);
+  assert.ok(match, 'Tauri main must use the installed standard-shell macro with a literal app-domain command list');
   return match[1]
     .split('\n')
     .map((line) => line.replace(/\/\/[^\n\r]*/u, '').trim().replace(/,$/u, ''))
     .filter(Boolean)
     .map((path) => path.split('::').at(-1))
-    .filter((command) => !STANDARD_TAURI_COMMANDS.has(command))
     .sort();
 }
 
@@ -59,8 +44,9 @@ function assertSameSet(actual, expected, label) {
   assert.deepEqual([...new Set(actual)].sort(), [...new Set(expected)].sort(), label);
 }
 
-test('Electron app-domain registry has full Tauri parity while keeping native-dialog commands host-owned', () => {
+test('app-domain implementations stay complete but unregistered before protected admission', () => {
   const electronHandlers = readRepoFile('src-electron/parentos-command-handlers.ts');
+  const electronMain = readRepoFile('src-electron/main.ts');
   const rustSidecar = readRepoFile('src-tauri/src/sidecar_commands.rs');
   const tauriMain = readRepoFile('src-tauri/src/main.rs');
 
@@ -68,22 +54,32 @@ test('Electron app-domain registry has full Tauri parity while keeping native-di
   const directElectronSidecar = extractTsCommandList(electronHandlers);
   const rustImplemented = extractRustImplementedCommands(rustSidecar);
   const rustImplementedSet = new Set(rustImplemented);
-  const directExpected = tauriAppDomain.filter((command) => !ELECTRON_NATIVE_APP_COMMANDS.has(command));
-
-  assertSameSet(directElectronSidecar, directExpected, 'Electron direct sidecar registry must cover every non-native Tauri app-domain command');
+  assert.deepEqual(tauriAppDomain, [], 'Tauri must not register app-domain commands before ParentOS operation admission');
+  assert.doesNotMatch(
+    electronMain,
+    /commandHandlers\s*:|createParentOSElectronCommandHandlers/u,
+    'Electron must not register the dormant app-domain handlers before admission',
+  );
   assert.deepEqual(
     directElectronSidecar.filter((command) => !rustImplementedSet.has(command)),
     [],
-    'Electron must not expose app-domain commands that the Rust sidecar cannot dispatch',
+    'dormant Electron app-domain implementations must still exist in the Rust sidecar',
   );
 
   for (const command of ELECTRON_NATIVE_APP_COMMANDS) {
     assert.match(electronHandlers, new RegExp(`${command}\\s*:`), `Electron must implement native command ${command}`);
-    assert.ok(tauriAppDomain.includes(command), `native command ${command} must remain registered in Tauri`);
+    assert.ok(!tauriAppDomain.includes(command), `native command ${command} must remain unregistered before admission`);
     assert.ok(!directElectronSidecar.includes(command), `native command ${command} must not be direct sidecar passthrough`);
   }
   for (const internal of INTERNAL_SIDECAR_COMMANDS) {
     assert.ok(rustImplementedSet.has(internal), `Rust sidecar must implement internal command ${internal}`);
     assert.ok(!directElectronSidecar.includes(internal), `internal command ${internal} must not be renderer-exposed`);
   }
+
+  const expectedRustRendererCommands = rustImplemented.filter((command) => !INTERNAL_SIDECAR_COMMANDS.has(command));
+  assertSameSet(
+    directElectronSidecar,
+    expectedRustRendererCommands,
+    'dormant Electron and Rust sidecar app-domain implementations must not drift',
+  );
 });

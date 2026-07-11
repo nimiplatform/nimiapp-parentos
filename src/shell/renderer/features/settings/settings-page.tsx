@@ -17,9 +17,7 @@ import {
 } from 'lucide-react';
 import { Surface, SegmentedControl, buttonVariants, cn } from '@nimiplatform/kit/ui';
 import { useAppStore } from '../../app-shell/app-store.js';
-import { logoutParentOSRuntimeAccount } from '../auth/parentos-auth-adapter.js';
 import { seedMockData, type SeedProgress } from '../../infra/mock-seed.js';
-import { syncParentOSLocalDataScope } from '../../infra/parentos-bootstrap.js';
 import {
   APP_LANGUAGE_LABELS,
   APP_LANGUAGES,
@@ -84,9 +82,6 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const authUser = useAppStore((s) => s.auth.user);
   const authStatus = useAppStore((s) => s.auth.status);
-  const clearAuth = useAppStore((s) => s.clearAuthSession);
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [logoutError, setLogoutError] = useState<string | null>(null);
   const [languageSaving, setLanguageSaving] = useState(false);
   const [languageError, setLanguageError] = useState<string | null>(null);
   const [seedStatus, setSeedStatus] = useState<'idle' | 'seeding' | 'done' | 'error'>('idle');
@@ -126,22 +121,6 @@ export default function SettingsPage() {
     setSeedResult(result.summary);
   };
 
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    // PO-SHELL-008: revoke through Runtime account custody (single source of
-    // truth). Local auth projection is cleared only after Runtime accepts logout.
-    setLogoutError(null);
-    try {
-      await logoutParentOSRuntimeAccount();
-      clearAuth();
-      void syncParentOSLocalDataScope(null);
-    } catch (error) {
-      setLogoutError(error instanceof Error ? error.message : String(error || t('Settings.account.logoutFailed')));
-    } finally {
-      setLoggingOut(false);
-    }
-  };
-
   return (
     <div className="h-full overflow-y-auto bg-transparent">
       <div className="mx-auto max-w-3xl px-6 pb-8 pt-[72px]">
@@ -159,21 +138,10 @@ export default function SettingsPage() {
               {authUser.email ? (
                 <p className="mt-0.5 truncate text-[13px] text-[var(--nimi-text-muted)]">{authUser.email}</p>
               ) : null}
-              {logoutError ? (
-                <p className="mt-2 text-[13px] leading-snug text-[var(--nimi-status-danger)]">{logoutError}</p>
-              ) : null}
+              <p className="mt-1 text-[13px] leading-snug text-[var(--nimi-text-muted)]">
+                {t('Settings.account.managedByDesktop')}
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className={cn(
-                buttonVariants({ tone: 'ghost', size: 'sm' }),
-                'shrink-0 border border-[color-mix(in_srgb,var(--nimi-status-danger)_40%,var(--nimi-border-subtle))] text-[var(--nimi-status-danger)] disabled:opacity-50',
-              )}
-            >
-              {loggingOut ? t('Settings.account.loggingOut') : t('Settings.account.logout')}
-            </button>
           </Surface>
         ) : null}
 

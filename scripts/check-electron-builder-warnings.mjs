@@ -5,7 +5,8 @@ const builderLogPath = path.join(
   '.nimi',
   'local',
   'acceptance',
-  '20260707-tauri-electron-shell-refactory',
+  '2026-07-10-third-party-installed-app-reference-hardcut',
+  'parentos-electron-package',
   'electron-builder.log',
 );
 

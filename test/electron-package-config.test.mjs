@@ -14,28 +14,23 @@ test('Electron package metadata and staging-relative paths are configured', asyn
   assert.equal(builderConfig.extraResources[0].from, '../../build/electron-extra-resources/bin/parentos_host.exe');
 });
 
-test('Electron package evidence is written to the shell refactor acceptance root', async () => {
+test('Electron package includes Kit native image runtime and writes hardcut evidence locally', async () => {
   const packageScript = await readFile('scripts/package-electron.mjs', 'utf8');
   const warningGate = await readFile('scripts/check-electron-builder-warnings.mjs', 'utf8');
 
   assert.match(
     packageScript,
-    /['"]\.nimi['"][\s\S]*['"]local['"][\s\S]*['"]acceptance['"][\s\S]*['"]20260707-tauri-electron-shell-refactory['"]/u,
-    'package-electron must write package-electron.json beside the shell refactor acceptance evidence',
+    /['"]\.nimi['"][\s\S]*['"]local['"][\s\S]*['"]acceptance['"][\s\S]*['"]2026-07-10-third-party-installed-app-reference-hardcut['"]/u,
+    'package-electron must keep hardcut package evidence local-only',
   );
   assert.match(
     warningGate,
-    /['"]\.nimi['"][\s\S]*['"]local['"][\s\S]*['"]acceptance['"][\s\S]*['"]20260707-tauri-electron-shell-refactory['"]/u,
-    'builder warning gate must read the same shell refactor acceptance log',
+    /['"]\.nimi['"][\s\S]*['"]local['"][\s\S]*['"]acceptance['"][\s\S]*['"]2026-07-10-third-party-installed-app-reference-hardcut['"]/u,
+    'builder warning gate must read the same hardcut acceptance log',
   );
-  assert.doesNotMatch(
-    packageScript,
-    /20260708-build-warning-cleanup/u,
-    'package evidence must not be stranded under the old build-warning cleanup root',
-  );
-  assert.doesNotMatch(
-    warningGate,
-    /20260708-build-warning-cleanup/u,
-    'builder warning evidence must not be stranded under the old build-warning cleanup root',
-  );
+  for (const runtimePackage of ['sharp', '@img/colour', '@img/sharp-win32-x64', 'detect-libc', 'semver']) {
+    assert.match(packageScript, new RegExp(`['"]${runtimePackage.replace('/', '\\/')}['"]`, 'u'));
+  }
+  assert.match(packageScript, /node_modules\/sharp\/dist\/index\.mjs/u);
+  assert.match(packageScript, /node_modules\/@img\/sharp-win32-x64\/index\.cjs/u);
 });

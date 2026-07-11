@@ -45,7 +45,42 @@
     "selectWalletHint": "Select a wallet to connect",
     "desktopLogoHint": "Authorization failed. Click the logo to retry.",
     "desktopAuthOpen": "Browser opened. Complete authorization on the web page.",
-    "desktopAuthSuccess": "Web authorization succeeded. Signed in."
+    "desktopAuthSuccess": "Web authorization succeeded. Signed in.",
+    "protectedSession": {
+      "eyebrow": "Protected Nimi session",
+      "localDataLocked": "ParentOS local data remains locked",
+      "reasonCode": "Reason",
+      "nextStep": "Next step",
+      "localDataButton": "Local data locked",
+      "retry": "Check again",
+      "states": {
+        "login-required": {
+          "title": "Sign in from Nimi Desktop",
+          "description": "ParentOS cannot open family data until Runtime binds this installed app to an authenticated Nimi account.",
+          "action": "Open Nimi Desktop, sign in or switch to the intended account, then return here and check again."
+        },
+        "runtime-unavailable": {
+          "title": "Nimi Runtime is unavailable",
+          "description": "The protected Runtime service could not establish a verified installed-app session.",
+          "action": "Start Nimi Desktop and its verified Runtime service, then check again."
+        },
+        "permission-denied": {
+          "title": "ParentOS access was denied",
+          "description": "Runtime rejected this app, release, process, or account binding. No local family data was opened.",
+          "action": "Review ParentOS permissions in Nimi Desktop or reinstall an approved ParentOS release."
+        },
+        "repair-required": {
+          "title": "Nimi installation needs repair",
+          "description": "Runtime or the installed ParentOS release could not pass native trust verification.",
+          "action": "Repair Nimi Desktop and ParentOS from a trusted installer before trying again."
+        },
+        "capability-unavailable": {
+          "title": "ParentOS protected access is not available yet",
+          "description": "This build has no admitted protected ParentOS operation set. It stays fail-closed instead of opening data through a generic Runtime bridge.",
+          "action": "Use an admitted ParentOS release launched by Nimi Desktop after the protected operation set is enabled."
+        }
+      }
+    }
   },
   "Shell": {
     "navigation": {
@@ -88,7 +123,8 @@
       "unnamedUser": "Unnamed user",
       "logout": "Log out",
       "loggingOut": "Logging out...",
-      "logoutFailed": "Log out failed"
+      "logoutFailed": "Log out failed",
+      "managedByDesktop": "Sign-in and account switching are managed by Nimi Desktop."
     },
     "language": {
       "title": "Interface language",
