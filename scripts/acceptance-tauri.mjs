@@ -14,7 +14,7 @@ const evidenceRoot = path.join(
   '.nimi',
   'local',
   'acceptance',
-  '2026-07-10-third-party-installed-app-reference-hardcut',
+  '2026-07-18-app-launch-migration-wave',
   'parentos-tauri',
 );
 const bridgeKey = '__NIMI_TAURI_RUNTIME__';
@@ -26,10 +26,9 @@ async function main() {
 
   const port = Number(process.env.NIMI_PARENTOS_TAURI_ACCEPTANCE_CDP_PORT || await reservePort());
   const webviewArgs = `--remote-debugging-port=${port} --lang=zh-CN`;
-  const appProcess = spawn(process.platform === 'win32' ? 'corepack.cmd' : 'corepack', [
-    'pnpm',
-    'dev:shell',
-    '--',
+  const appProcess = spawn(process.execPath, [
+    path.join(repoRoot, 'node_modules', '@nimiplatform', 'app-tools', 'bin', 'nimi-app.mjs'),
+    'dev',
     '--shell',
     'tauri',
   ], {
@@ -69,36 +68,24 @@ async function main() {
     const retriedState = await captureProtectedState(page);
     assertProtectedState(retriedState, 'Tauri retry');
 
-    const appHostBootstrapResult = await invokeBridge(
+    const sessionStatusResult = await invokeBridge(
       page,
-      'nimi.app-host.bootstrap',
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.sessionStatus'],
       {},
     );
-    assert.equal(appHostBootstrapResult.ok, true, 'Tauri dev host must bootstrap through Desktop supervision');
-    assert.equal(appHostBootstrapResult.value?.state, 'ready', 'Tauri dev host must report ready');
-    assert.equal(
-      appHostBootstrapResult.value?.trustClass,
-      'local-development',
-      'Tauri dev host must remain in the non-production trust class',
-    );
-    assert.equal(appHostBootstrapResult.value?.appId, 'nimi.parentos', 'Tauri dev host must bind ParentOS app id');
-    assert.equal(
-      typeof appHostBootstrapResult.value?.bootstrapArtifactId,
-      'string',
-      'Tauri dev host must receive a Runtime-owned bootstrap artifact id',
+    assert.equal(sessionStatusResult.ok, true, 'Tauri dev host must bind through Desktop supervision');
+    assert.match(
+      String(sessionStatusResult.value?.state || ''),
+      /zero-grant|ready/u,
+      `Tauri local-app session must be bound: ${JSON.stringify(sessionStatusResult)}`,
     );
 
     const artifactResult = await invokeBridge(
       page,
-      NIMI_STANDARD_SHELL_COMMANDS['artifacts.readRuntimeBytes'],
-      { payload: { artifactId: appHostBootstrapResult.value.bootstrapArtifactId } },
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.artifactsReadRuntimeBytes'],
+      { payload: { artifactId: 'parentos-tauri-acceptance-artifact' } },
     );
-    assert.equal(artifactResult.ok, true, 'Tauri dev host must read the admitted Runtime bootstrap artifact');
-    assert.equal(
-      artifactResult.value?.sizeBytes > 0,
-      true,
-      'Tauri dev bootstrap artifact must contain real Runtime bytes',
-    );
+    assert.equal(artifactResult.ok, false, 'Tauri artifact read must fail closed without an exact grant');
 
     const directRuntimeResult = await invokeBridge(
       page,
@@ -154,7 +141,7 @@ async function main() {
       desktopState,
       retriedState,
       narrowState,
-      appHostBootstrapResult,
+      sessionStatusResult,
       artifactResult,
       directRuntimeResult,
       appDomainResult,

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { access, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, utimes, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,30 +14,75 @@ const evidenceRoot = path.join(
   '.nimi',
   'local',
   'acceptance',
-  '2026-07-10-third-party-installed-app-reference-hardcut',
+  '2026-07-18-app-launch-migration-wave',
   'parentos-electron',
 );
-const appExe = path.join(
-  repoRoot,
-  'dist-electron',
-  'win-unpacked',
-  process.platform === 'win32' ? 'ParentOS.exe' : 'ParentOS',
-);
 const bridgeKey = '__NIMI_ELECTRON_RUNTIME__';
+const permissionOperationId = 'app_storage.json.write';
+const permissionRunId = new Date().toISOString().replace(/[^0-9A-Za-z]/gu, '-');
+const permissionRelativePath = `acceptance/parentos-permission-${permissionRunId}.json`;
+const permissionResourceRef = `storage:${permissionRelativePath}`;
+const plainNegative = process.argv.includes('--plain-negative');
 
 async function main() {
-  await access(appExe);
   const evidenceDir = path.join(evidenceRoot, new Date().toISOString().replace(/[:.]/gu, '-'));
   const screenshotDir = path.join(evidenceDir, 'screenshots');
   await mkdir(screenshotDir, { recursive: true });
 
-  const port = Number(process.env.NIMI_PARENTOS_ELECTRON_ACCEPTANCE_CDP_PORT || await reservePort());
-  const appProcess = spawn(appExe, [
-    `--remote-debugging-port=${port}`,
-    '--lang=zh-CN',
-  ], {
+  const configuredSupervisorPort = String(
+    process.env.NIMI_PARENTOS_ELECTRON_ACCEPTANCE_CDP_PORT
+    || process.env.NIMI_LOCAL_AGENT_PRODUCT_ZHIYU_CDP_PORT
+    || '',
+  ).trim();
+  if (!plainNegative && !configuredSupervisorPort) {
+    throw new Error(
+      'Desktop-supervised Electron acceptance requires the checkpoint CDP port used when Desktop was started.',
+    );
+  }
+  const port = Number(configuredSupervisorPort || await reservePort());
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) {
+    throw new Error('Electron acceptance CDP port is invalid.');
+  }
+  let rendererProcess = null;
+  let launcherCommand;
+  let launcherArgs;
+  let launcherEnv = process.env;
+  if (plainNegative) {
+    rendererProcess = spawn(process.execPath, [
+      path.join(repoRoot, 'node_modules', 'vite', 'bin', 'vite.js'),
+      '--host', '127.0.0.1', '--port', '1426', '--strictPort',
+    ], {
+      cwd: repoRoot,
+      env: process.env,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    await waitForHttp('http://127.0.0.1:1426', rendererProcess);
+    launcherCommand = path.join(
+      repoRoot,
+      'dist-electron',
+      'win-unpacked',
+      process.platform === 'win32' ? 'ParentOS.exe' : 'ParentOS',
+    );
+    launcherArgs = [
+      `--remote-debugging-port=${port}`,
+      '--lang=zh-CN',
+      '--nimi-dev-renderer-url=http://127.0.0.1:1426',
+    ];
+    launcherEnv = {
+      ...process.env,
+      NIMI_PARENTOS_ELECTRON_REMOTE_DEBUGGING_PORT: String(port),
+    };
+  } else {
+    launcherCommand = process.execPath;
+    launcherArgs = [
+      path.join(repoRoot, 'node_modules', '@nimiplatform', 'app-tools', 'bin', 'nimi-app.mjs'),
+      'dev', '--shell', 'electron',
+    ];
+  }
+  const appProcess = spawn(launcherCommand, launcherArgs, {
     cwd: repoRoot,
-    env: process.env,
+    env: launcherEnv,
     windowsHide: true,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -63,22 +108,44 @@ async function main() {
     const desktopOverflow = await assertNoVisibleOverflow(page, 'electron-desktop');
     const desktopScreenshot = path.join(screenshotDir, 'desktop.png');
     await page.screenshot({ path: desktopScreenshot, fullPage: true });
+    const hmrResult = await verifyRendererHmr(page, consoleEvents);
 
     await page.getByTestId('parentos-protected-session-retry').click();
     await waitForProtectedFailure(page);
     const retriedState = await captureProtectedState(page);
     assertProtectedState(retriedState, 'Electron retry');
 
+    const sessionStatusResult = await invokeBridge(
+      page,
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.sessionStatus'],
+      {},
+    );
+    if (plainNegative) {
+      assert.equal(sessionStatusResult.ok, false, 'unsupervised Electron must not acquire a local-app session');
+      assert.match(
+        JSON.stringify(sessionStatusResult.error),
+        /protected-carrier-required|runtime-service-unavailable|local-development|supervisor/iu,
+        `unsupervised Electron denial must name the protected carrier: ${JSON.stringify(sessionStatusResult)}`,
+      );
+    } else {
+      assert.equal(sessionStatusResult.ok, true, 'Electron must bind a real Desktop-supervised local-app session');
+      assert.match(
+        String(sessionStatusResult.value?.state || ''),
+        /zero-grant|ready/u,
+        `Electron local-app session must be bound: ${JSON.stringify(sessionStatusResult)}`,
+      );
+    }
+
     const artifactResult = await invokeBridge(
       page,
-      NIMI_STANDARD_SHELL_COMMANDS['artifacts.readRuntimeBytes'],
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.artifactsReadRuntimeBytes'],
       { payload: { artifactId: 'parentos-acceptance-artifact' } },
     );
-    assert.equal(artifactResult.ok, false, 'Electron artifact read must fail closed without an admitted installed session');
+    assert.equal(artifactResult.ok, false, 'Electron artifact read must fail closed without an exact grant');
     assert.match(
       JSON.stringify(artifactResult.error),
-      /protected-carrier-required|runtime-service-unavailable|installed-app|carrier/iu,
-      `Electron artifact denial must preserve protected carrier posture: ${JSON.stringify(artifactResult.error)}`,
+      /protected-carrier-required|runtime-service-unavailable|runtime-permission-denied|no-grant|not-found|grant/iu,
+      `Electron artifact denial must preserve local-app grant posture: ${JSON.stringify(artifactResult.error)}`,
     );
 
     const directRuntimeResult = await invokeBridge(
@@ -95,7 +162,7 @@ async function main() {
         },
       },
     );
-    assert.equal(directRuntimeResult.ok, false, 'Electron direct Runtime must be denied by the installed capability set');
+    assert.equal(directRuntimeResult.ok, false, 'Electron direct Runtime must be denied by the local-app capability set');
 
     const appDomainResult = await invokeBridge(page, 'get_family', {});
     assert.equal(appDomainResult.ok, false, 'Electron app-domain data must remain unregistered before protected admission');
@@ -111,6 +178,8 @@ async function main() {
       assert.equal(result.ok, false, `${command} must fail closed in ParentOS Electron`);
       accountControlResults[command] = result;
     }
+
+    const permissionRegression = plainNegative ? null : await runPermissionRegression(page);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const narrowState = await captureProtectedState(page);
@@ -130,16 +199,20 @@ async function main() {
     const evidencePath = path.join(evidenceDir, 'evidence.json');
     await writeFile(evidencePath, JSON.stringify({
       shell: 'electron',
-      appExe,
+      mode: plainNegative ? 'plain-negative' : 'desktop-supervised',
+      launcher: { command: launcherCommand, args: launcherArgs },
       cdpEndpoint,
       desktopState,
       retriedState,
       narrowState,
+      sessionStatusResult,
       artifactResult,
       directRuntimeResult,
       appDomainResult,
       accountControlResults,
+      permissionRegression,
       overflowScan: { desktop: desktopOverflow, narrow: narrowOverflow },
+      hmrResult,
       consoleEvents,
       pageErrors,
       diagnostics: diagnostics(),
@@ -159,20 +232,136 @@ async function main() {
   } finally {
     await browser?.close().catch(() => undefined);
     await terminateProcessTree(appProcess);
+    if (rendererProcess) await terminateProcessTree(rendererProcess);
   }
+}
+
+async function verifyRendererHmr(page, consoleEvents) {
+  const baseline = consoleEvents.length;
+  const probePath = path.join(repoRoot, 'src', 'shell', 'renderer', 'App.tsx');
+  const now = new Date();
+  await utimes(probePath, now, now);
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    const event = consoleEvents.slice(baseline).find((entry) => /hot updated|hmr update/iu.test(entry.text));
+    if (event) {
+      await waitForProtectedFailure(page);
+      return { probePath, event };
+    }
+    await delay(100);
+  }
+  throw new Error(`Renderer HMR did not emit an update for ${probePath}`);
+}
+
+async function runPermissionRegression(page) {
+  const permissionInput = {
+    operationId: permissionOperationId,
+    resourceRef: permissionResourceRef,
+  };
+  const before = await invokeBridge(
+    page,
+    NIMI_STANDARD_SHELL_COMMANDS['local-app.permissionPosture'],
+    { payload: permissionInput },
+  );
+  assert.equal(before.ok, true, 'permission posture must be readable from a bound zero-grant session');
+  assert.equal(before.value?.state, 'zero-grant', `permission must start zero-grant: ${JSON.stringify(before)}`);
+
+  const deniedBeforeGrant = await invokeBridge(
+    page,
+    NIMI_STANDARD_SHELL_COMMANDS['storage.writeJson'],
+    { payload: { relativePath: permissionRelativePath, value: { phase: 'before-grant' } } },
+  );
+  assert.equal(deniedBeforeGrant.ok, false, 'zero-grant storage write must be denied');
+
+  const request = await invokeBridge(
+    page,
+    NIMI_STANDARD_SHELL_COMMANDS['local-app.permissionRequest'],
+    {
+      payload: {
+        ...permissionInput,
+        purpose: 'Verify ParentOS local-development permission approval and revocation.',
+      },
+    },
+  );
+  assert.equal(request.ok, true, `permission request must reach Desktop: ${JSON.stringify(request)}`);
+  assert.equal(request.value?.state, 'pending', `permission request must remain pending for a real decision: ${JSON.stringify(request)}`);
+  process.stdout.write(`ParentOS permission approval required in Desktop for ${permissionResourceRef}\n`);
+
+  const granted = await waitForPermissionPosture(page, permissionInput, ['granted'], 240_000);
+  const grantedWrite = await invokeBridge(
+    page,
+    NIMI_STANDARD_SHELL_COMMANDS['storage.writeJson'],
+    { payload: { relativePath: permissionRelativePath, value: { phase: 'granted', shell: 'electron' } } },
+  );
+  assert.equal(grantedWrite.ok, true, `exact granted storage write must succeed: ${JSON.stringify(grantedWrite)}`);
+  process.stdout.write(`ParentOS permission revoke required in Desktop for ${permissionResourceRef}\n`);
+
+  const revoked = await waitForPermissionPosture(
+    page,
+    permissionInput,
+    ['revoked', 'zero-grant', 'denied'],
+    240_000,
+  );
+  const deniedAfterRevoke = await invokeBridge(
+    page,
+    NIMI_STANDARD_SHELL_COMMANDS['storage.writeJson'],
+    { payload: { relativePath: permissionRelativePath, value: { phase: 'after-revoke' } } },
+  );
+  assert.equal(deniedAfterRevoke.ok, false, 'revoked storage write must be denied');
+
+  return {
+    operationId: permissionOperationId,
+    resourceRef: permissionResourceRef,
+    before,
+    deniedBeforeGrant,
+    request,
+    granted,
+    grantedWrite,
+    revoked,
+    deniedAfterRevoke,
+  };
+}
+
+async function waitForPermissionPosture(page, input, acceptedStates, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  let latest = null;
+  while (Date.now() < deadline) {
+    latest = await invokeBridge(
+      page,
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.permissionPosture'],
+      { payload: input },
+    );
+    if (latest.ok && acceptedStates.includes(latest.value?.state)) {
+      return latest;
+    }
+    await delay(750);
+  }
+  throw new Error(`Timed out waiting for permission posture ${acceptedStates.join('|')}: ${JSON.stringify(latest)}`);
 }
 
 function assertProtectedState(state, label) {
   assert.equal(state.loading, false, `${label} must leave bootstrap loading`);
-  assert.equal(state.protectedState, 'capability-unavailable', `${label} must expose the transitional capability state`);
+  assert.equal(
+    state.protectedState,
+    plainNegative ? 'runtime-unavailable' : 'capability-unavailable',
+    `${label} must expose the expected typed protected state`,
+  );
   assert.equal(state.localDataDisabled, true, `${label} must keep local data disabled`);
   assert.equal(state.retryEnabled, true, `${label} retry must remain usable`);
   assert.equal(state.routed, false, `${label} must not render product routes`);
   assert.equal(state.launch, false, `${label} must not render the old launch screen`);
   assert.equal(state.alertRole, 'alert', `${label} protected failure must be announced accessibly`);
-  assert.match(state.bodyText, /ParentOS 受保护访问尚未开放/u, `${label} must render readable Chinese failure copy`);
+  assert.match(
+    state.bodyText,
+    plainNegative ? /Nimi Runtime 暂不可用/u : /ParentOS 受保护访问尚未开放/u,
+    `${label} must render readable Chinese failure copy`,
+  );
   assert.match(state.bodyText, /本地数据已锁定/u, `${label} must render the locked-data action`);
-  assert.match(state.alertText, /parentos-protected-operation-set-not-admitted/u, `${label} must expose the exact denial reason`);
+  assert.match(
+    state.alertText,
+    plainNegative ? /runtime-service-unavailable/u : /parentos-protected-operation-set-not-admitted/u,
+    `${label} must expose the exact denial reason`,
+  );
   assert.doesNotMatch(state.bodyText, /�/u, `${label} must not contain replacement-glyph text`);
 }
 
@@ -302,6 +491,21 @@ async function waitForCdpEndpoint(port, appProcess, diagnostics) {
     await delay(250);
   }
   throw new Error(`Timed out waiting for Electron CDP ${endpoint}: ${JSON.stringify(diagnostics())}`);
+}
+
+async function waitForHttp(origin, child) {
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) throw new Error(`renderer exited before readiness (${child.exitCode})`);
+    try {
+      const response = await fetch(origin);
+      if (response.status < 500) return;
+    } catch {
+      // The renderer is still starting.
+    }
+    await delay(250);
+  }
+  throw new Error(`Timed out waiting for renderer ${origin}`);
 }
 
 async function waitForAppPage(browser) {

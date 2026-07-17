@@ -1,3 +1,4 @@
+schema_version: 1
 app_id: nimi.parentos
 display_name: ParentOS
 profile: workspace-app
@@ -5,6 +6,10 @@ manifest_role: submitted-input
 summary: >-
   ParentOS is an installed Nimi app for parent-owned child growth records,
   reminders, journaling, reports, and runtime-mediated AI assistance.
+local_development:
+  electron:
+    renderer_origin: http://127.0.0.1:1426
+    execution_profile_ref: opaque:windows-native-electron-development-v1
 permissions:
   declared_nimi_api_scopes:
     - scope: ai.spend.meter

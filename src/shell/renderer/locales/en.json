@@ -61,7 +61,7 @@
         },
         "runtime-unavailable": {
           "title": "Nimi Runtime is unavailable",
-          "description": "The protected Runtime service could not establish a verified installed-app session.",
+          "description": "The protected Runtime service could not establish a Nimi Desktop-supervised local-development session.",
           "action": "Start Nimi Desktop and its verified Runtime service, then check again."
         },
         "permission-denied": {

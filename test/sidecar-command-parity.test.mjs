@@ -30,8 +30,8 @@ function extractRustImplementedCommands(source) {
 }
 
 function extractTauriRegisteredCommands(source) {
-  const match = source.match(/nimi_shell_tauri_installed_app_standard_shell_handler!\[([\s\S]*?)\]\s*,?\s*\)/u);
-  assert.ok(match, 'Tauri main must use the installed standard-shell macro with a literal app-domain command list');
+  const match = source.match(/nimi_shell_tauri_local_app_standard_shell_handler!\[([\s\S]*?)\]\s*,?\s*\)/u);
+  assert.ok(match, 'Tauri main must use the local-app standard-shell macro with a literal app-domain command list');
   return match[1]
     .split('\n')
     .map((line) => line.replace(/\/\/[^\n\r]*/u, '').trim().replace(/,$/u, ''))

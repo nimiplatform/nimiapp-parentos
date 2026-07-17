@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const root = process.cwd();
 const read = (relativePath: string) => readFileSync(join(root, relativePath), 'utf8');
 
-describe('ParentOS installed app authority hardcut', () => {
+describe('ParentOS local-app authority hardcut', () => {
   const bridgeSource = read('src/shell/renderer/bridge/index.ts');
   const bootstrapSource = read('src/shell/renderer/infra/parentos-bootstrap.ts');
   const settingsSource = read('src/shell/renderer/features/settings/settings-page.tsx');
@@ -21,17 +21,18 @@ describe('ParentOS installed app authority hardcut', () => {
     expect(manifest).toContain('declared_nimi_api_scopes');
   });
 
-  it('constructs only the artifact installed bootstrap in renderer code', () => {
-    expect(bridgeSource).toContain('createInstalledNimiAppStandardShellSurface');
+  it('constructs only the bounded local-app client in renderer code', () => {
+    expect(bridgeSource).toContain('createNimiLocalAppStandardShellSurface');
     expect(bridgeSource).not.toContain('readInstalledNimiAppLaunchBinding');
     expect(bridgeSource).not.toContain('InstalledNimiAppLaunchBinding');
-    expect(bootstrapSource).toContain('createInstalledNimiAppBootstrap({ standardShell })');
+    expect(bootstrapSource).toContain('createNimiAppRuntimePlatformClient({');
+    expect(bootstrapSource).toContain('platformClient.auth.status()');
     expect(bootstrapSource).toContain('parentos-protected-operation-set-not-admitted');
-    expect(bootstrapSource).not.toMatch(/\bcreateNimiClient\b|\bnew Runtime\b|readInstalledNimiAppLaunchBinding/);
+    expect(bootstrapSource).not.toMatch(/\bcreateNimiClient\b|\bnew Runtime\b|readInstalledNimiAppLaunchBinding|createInstalledNimiAppBootstrap/);
     expect(bootstrapSource).not.toMatch(/getAccountSessionStatus|accountCaller|realmBaseUrl|releaseDescriptorRef/);
   });
 
-  it('uses native installed hosts without portable authority inputs', () => {
+  it('uses native local-app hosts without portable authority inputs', () => {
     expect(electronMainSource).toContain('registerNimiElectronAppBridge');
     expect(electronMainSource).toContain('--nimi-dev-renderer-url=');
     expect(electronMainSource).toContain("app.getPath('appData')");
@@ -41,8 +42,8 @@ describe('ParentOS installed app authority hardcut', () => {
     expect(existsSync(join(root, 'src-electron/runtime-auth.ts'))).toBe(false);
     expect(existsSync(join(root, 'src-electron/parentos-command-policy.ts'))).toBe(false);
 
-    expect(tauriMainSource).toContain('RuntimeBridgeAppHost::platform_default()');
-    expect(tauriMainSource).toContain('nimi_shell_tauri_installed_app_standard_shell_handler![]');
+    expect(tauriMainSource).toContain('RuntimeBridgeLocalAppHost::platform_default()');
+    expect(tauriMainSource).toContain('nimi_shell_tauri_local_app_standard_shell_handler![]');
     expect(tauriMainSource).toContain('app.path().app_data_dir()');
     expect(tauriMainSource).not.toMatch(/installed_app_launch|append_invoke_initialization_script/);
     expect(tauriMainSource).not.toMatch(/runtime_bridge_(?:unary|stream_open|stream_close)|ai_config_(?:get|set)/);

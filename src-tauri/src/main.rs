@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use nimi_shell_tauri::capabilities::{runtime::RuntimeBridgeAppHost, session_logging};
+use nimi_shell_tauri::capabilities::{runtime::RuntimeBridgeLocalAppHost, session_logging};
 use nimiplatform_parentos::app_storage;
 use tauri::Manager;
 
@@ -17,7 +17,7 @@ fn setup_parentos_app_host(app: &mut tauri::App) -> Result<(), Box<dyn std::erro
         temp_root.display().to_string(),
     )
     .map_err(std::io::Error::other)?;
-    app.manage(RuntimeBridgeAppHost::platform_default());
+    app.manage(RuntimeBridgeLocalAppHost::platform_default());
     Ok(())
 }
 
@@ -28,7 +28,7 @@ fn main() {
 
     tauri::Builder::default()
         .setup(setup_parentos_app_host)
-        .invoke_handler(nimi_shell_tauri::nimi_shell_tauri_installed_app_standard_shell_handler![])
+        .invoke_handler(nimi_shell_tauri::nimi_shell_tauri_local_app_standard_shell_handler![])
         .run(tauri::generate_context!())
         .expect("error running parentos");
 }

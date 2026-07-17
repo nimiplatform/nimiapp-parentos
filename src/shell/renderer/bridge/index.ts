@@ -3,15 +3,15 @@
 // raw runtime defaults are kept out of this renderer bridge.
 export {
   BridgeError,
-  createInstalledNimiAppStandardShellSurface,
+  createNimiLocalAppStandardShellSurface,
   focusMainWindow,
   hasElectronRuntime,
   hasNimiShellRuntime,
   hasTauriRuntime,
 } from '@nimiplatform/kit/shell/renderer/bridge';
 export type {
-  InstalledNimiAppStandardShellSurface,
-  InstalledNimiAppStorageRemoveJsonResult,
+  NimiLocalAppStandardShellSurface,
+  NimiLocalAppStorageRemoveResult,
   JsonValue,
   JsonObject,
   JsonPrimitive,

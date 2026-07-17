@@ -61,7 +61,7 @@
         },
         "runtime-unavailable": {
           "title": "Nimi Runtime 暂不可用",
-          "description": "受保护的 Runtime 服务未能建立经过验证的已安装应用会话。",
+          "description": "受保护的 Runtime 服务未能建立由 Nimi Desktop 监督的本地开发会话。",
           "action": "启动 Nimi Desktop 及其经过验证的 Runtime 服务，然后重新检查。"
         },
         "permission-denied": {

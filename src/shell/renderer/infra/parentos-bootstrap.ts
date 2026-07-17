@@ -1,12 +1,8 @@
-import {
-  createInstalledNimiAppBootstrap,
-  createNimiError,
-} from '@nimiplatform/sdk';
+import { createNimiError } from '@nimiplatform/sdk';
+import { createNimiAppRuntimePlatformClient } from '@nimiplatform/sdk/app';
 import { useAppStore } from '../app-shell/app-store.js';
 import { classifyParentOSProtectedSessionFailure } from '../app-shell/protected-session-state.js';
-import {
-  createInstalledNimiAppStandardShellSurface,
-} from '../bridge/index.js';
+import { createNimiLocalAppStandardShellSurface } from '../bridge/index.js';
 import {
   dbInit,
   getAppSetting,
@@ -21,9 +17,9 @@ import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
 import { setParentOSNimiClient } from './parentos-nimi-client.js';
 
 // ParentOS has no renderer-owned app identity, release, endpoint, account
-// caller, or session authority. The only admitted installed projection today
-// is the typed protected artifact carrier. Product data stays locked until the
-// complete ParentOS operation set is admitted by Runtime.
+// caller, or session authority. The SDK local-app client projects only the
+// bounded carrier status. Product data stays locked until the complete
+// ParentOS operation set is admitted by Runtime.
 export const PARENTOS_RUNTIME_APP_ID = 'nimi.parentos';
 
 const PARENTOS_OPERATION_SET_REASON = 'parentos-protected-operation-set-not-admitted';
@@ -82,19 +78,17 @@ async function doRunParentOSBootstrap(): Promise<void> {
   setParentOSNimiClient(null);
 
   try {
-    const standardShell = createInstalledNimiAppStandardShellSurface();
-    const bootstrap = createInstalledNimiAppBootstrap({ standardShell });
-    const status = await bootstrap.appHost.bootstrap();
-    if (status.trustClass === 'local-development') {
-      if (!status.bootstrapArtifactId) {
-        throw createNimiError({
-          message: 'The local-development bootstrap artifact is missing.',
-          reasonCode: 'runtime-service-untrusted',
-          actionHint: 'restart_verified_app_host',
-          source: 'sdk',
-        });
-      }
-      await bootstrap.artifacts.readRuntimeBytes(status.bootstrapArtifactId);
+    const platformClient = createNimiAppRuntimePlatformClient({
+      standardShell: createNimiLocalAppStandardShellSurface(),
+    });
+    const status = await platformClient.auth.status();
+    if (!status.sessionBound) {
+      throw createNimiError({
+        message: `The ParentOS local-development session is ${status.state}.`,
+        reasonCode: status.reasonCode,
+        actionHint: status.actionHint,
+        source: 'sdk',
+      });
     }
 
     throw createNimiError({

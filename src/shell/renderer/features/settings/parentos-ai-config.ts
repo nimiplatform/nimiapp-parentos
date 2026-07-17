@@ -4,12 +4,9 @@ import type {
   NimiAIProfileOriginRef,
   NimiAIScopeRef,
 } from '@nimiplatform/sdk/ai';
-import { createEmptyNimiAIConfig, encodeNimiAIScopeRef, validateNimiAIConfig } from '@nimiplatform/sdk/ai';
+import { createNimiError } from '@nimiplatform/sdk';
+import { createEmptyNimiAIConfig, validateNimiAIConfig } from '@nimiplatform/sdk/ai';
 import type { NimiJsonValue } from '@nimiplatform/sdk/contracts';
-import {
-  createInstalledNimiAppStandardShellSurface,
-  type JsonObject,
-} from '../../bridge/index.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -272,23 +269,7 @@ export function parsePersistedParentosAIConfig(value: unknown): NimiAIConfig | n
 }
 
 export async function loadPersistedParentosAIConfig(): Promise<NimiAIConfig | null> {
-  try {
-    const standardShell = createInstalledNimiAppStandardShellSurface();
-    const raw = await standardShell.aiConfig.get(encodeNimiAIScopeRef(PARENTOS_AI_SCOPE_REF));
-    if (raw == null) {
-      return null;
-    }
-    const parsed = parsePersistedParentosAIConfig(raw);
-    if (parsed) {
-      return parsed;
-    }
-    throw new Error('Persisted ParentOS AI config is invalid');
-  } catch (error) {
-    if (isStandardShellAIConfigNotFound(error)) {
-      return null;
-    }
-    throw error;
-  }
+  throw createParentosAIConfigAdmissionError();
 }
 
 export async function savePersistedParentosAIConfig(config: NimiAIConfig): Promise<NimiAIConfig> {
@@ -296,34 +277,14 @@ export async function savePersistedParentosAIConfig(config: NimiAIConfig): Promi
   if (!normalized) {
     throw new Error('ParentOS AI config is invalid');
   }
-  const standardShell = createInstalledNimiAppStandardShellSurface();
-  const saved = await standardShell.aiConfig.set(encodeNimiAIScopeRef(PARENTOS_AI_SCOPE_REF), toJsonObject(normalized));
-  const parsed = parsePersistedParentosAIConfig(saved);
-  if (!parsed) {
-    throw new Error('ParentOS AI config persisted by standard shell is invalid');
-  }
-  return parsed;
+  throw createParentosAIConfigAdmissionError();
 }
 
-function toJsonObject(value: NimiAIConfig): JsonObject {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('ParentOS AI config must be a JSON object');
-  }
-  return value as unknown as JsonObject;
-}
-
-function isStandardShellAIConfigNotFound(error: unknown): boolean {
-  const record = error as {
-    readonly code?: unknown;
-    readonly reasonCode?: unknown;
-    readonly message?: unknown;
-  };
-  const text = [
-    record.code,
-    record.reasonCode,
-    record.message,
-  ].map((value) => String(value || '').toLowerCase()).join(' ');
-  return text.includes('ai-config-scope-not-found')
-    || text.includes('scope-not-found')
-    || text.includes('not-found');
+function createParentosAIConfigAdmissionError(): Error {
+  return createNimiError({
+    message: 'The protected ParentOS AI configuration operation is not admitted.',
+    reasonCode: 'parentos-protected-operation-set-not-admitted',
+    actionHint: 'wait_for_parentos_protected_operation_admission',
+    source: 'sdk',
+  });
 }

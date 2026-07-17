@@ -12,9 +12,10 @@
     "pnpm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "nimi-app dev --shell tauri",
+    "dev": "nimi-app dev --shell electron",
     "dev:renderer": "vite --host 127.0.0.1 --port 1426 --strictPort",
     "dev:electron": "nimi-app dev --shell electron",
+    "dev:tauri": "nimi-app dev --shell tauri",
     "dev:shell": "nimi-app dev",
     "tauri": "tauri",
     "build:renderer": "vite build",

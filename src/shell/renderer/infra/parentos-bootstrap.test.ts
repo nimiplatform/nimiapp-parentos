@@ -1,17 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const createInstalledNimiAppBootstrapMock = vi.fn();
-const createInstalledNimiAppStandardShellSurfaceMock = vi.fn();
+const createNimiAppRuntimePlatformClientMock = vi.fn();
+const createNimiLocalAppStandardShellSurfaceMock = vi.fn();
 const dbInitMock = vi.fn();
 const getAppSettingMock = vi.fn();
 const getChildMock = vi.fn();
 const getFamilyMock = vi.fn();
 const getChildrenMock = vi.fn();
-const appHostBootstrapMock = vi.fn();
-const readRuntimeBytesMock = vi.fn();
+const authStatusMock = vi.fn();
 
 vi.mock('@nimiplatform/sdk', () => ({
-  createInstalledNimiAppBootstrap: createInstalledNimiAppBootstrapMock,
   createNimiError: (input: {
     message: string;
     reasonCode: string;
@@ -20,8 +18,12 @@ vi.mock('@nimiplatform/sdk', () => ({
   }) => Object.assign(new Error(input.message), input),
 }));
 
+vi.mock('@nimiplatform/sdk/app', () => ({
+  createNimiAppRuntimePlatformClient: createNimiAppRuntimePlatformClientMock,
+}));
+
 vi.mock('../bridge/index.js', () => ({
-  createInstalledNimiAppStandardShellSurface: createInstalledNimiAppStandardShellSurfaceMock,
+  createNimiLocalAppStandardShellSurface: createNimiLocalAppStandardShellSurfaceMock,
 }));
 
 vi.mock('../bridge/sqlite-bridge.js', () => ({
@@ -44,35 +46,31 @@ let useAppStore: typeof import('../app-shell/app-store.js').useAppStore;
 let runParentOSBootstrap: typeof import('./parentos-bootstrap.js').runParentOSBootstrap;
 let ensureParentOSRuntimeClientReady: typeof import('./parentos-bootstrap.js').ensureParentOSRuntimeClientReady;
 
-describe('ParentOS installed-app bootstrap hardcut', () => {
+describe('ParentOS local-app bootstrap hardcut', () => {
   beforeEach(async () => {
     vi.resetModules();
-    createInstalledNimiAppBootstrapMock.mockReset();
-    createInstalledNimiAppStandardShellSurfaceMock.mockReset();
+    createNimiAppRuntimePlatformClientMock.mockReset();
+    createNimiLocalAppStandardShellSurfaceMock.mockReset();
     dbInitMock.mockReset();
     getAppSettingMock.mockReset();
     getChildMock.mockReset();
     getFamilyMock.mockReset();
     getChildrenMock.mockReset();
-    appHostBootstrapMock.mockReset();
-    readRuntimeBytesMock.mockReset();
+    authStatusMock.mockReset();
 
-    const standardShell = {
-      appHost: { bootstrap: appHostBootstrapMock },
-      artifacts: { readRuntimeBytes: readRuntimeBytesMock },
-    };
-    appHostBootstrapMock.mockResolvedValue({
-      state: 'ready',
-      trustClass: 'local-development',
-      appId: 'nimi.parentos',
-      bootstrapArtifactId: 'parentos-bootstrap-artifact',
-      expiresAtUnixMs: Date.now() + 30_000,
+    const standardShell = { session: { status: vi.fn() } };
+    authStatusMock.mockResolvedValue({
+      mode: 'local-app',
+      state: 'session-bound-zero-grant',
+      sessionBound: true,
+      operationAllowed: false,
+      reasonCode: 'local-app-zero-grant',
+      actionHint: 'request_local_app_grant',
+      retryable: false,
     });
-    readRuntimeBytesMock.mockResolvedValue({ bytes: new Uint8Array([1]), mimeType: 'application/json' });
-    createInstalledNimiAppStandardShellSurfaceMock.mockReturnValue(standardShell);
-    createInstalledNimiAppBootstrapMock.mockReturnValue({
-      appHost: standardShell.appHost,
-      artifacts: standardShell.artifacts,
+    createNimiLocalAppStandardShellSurfaceMock.mockReturnValue(standardShell);
+    createNimiAppRuntimePlatformClientMock.mockReturnValue({
+      auth: { status: authStatusMock },
     });
 
     ({ useAppStore } = await import('../app-shell/app-store.js'));
@@ -90,15 +88,14 @@ describe('ParentOS installed-app bootstrap hardcut', () => {
     });
   });
 
-  it('constructs only the artifact standard-shell bootstrap and then fails closed', async () => {
+  it('constructs only the bounded local-app client and then fails closed', async () => {
     await runParentOSBootstrap();
 
-    expect(createInstalledNimiAppStandardShellSurfaceMock).toHaveBeenCalledTimes(1);
-    expect(createInstalledNimiAppBootstrapMock).toHaveBeenCalledWith({
-      standardShell: expect.objectContaining({ artifacts: expect.any(Object) }),
+    expect(createNimiLocalAppStandardShellSurfaceMock).toHaveBeenCalledTimes(1);
+    expect(createNimiAppRuntimePlatformClientMock).toHaveBeenCalledWith({
+      standardShell: expect.objectContaining({ session: expect.any(Object) }),
     });
-    expect(appHostBootstrapMock).toHaveBeenCalledTimes(1);
-    expect(readRuntimeBytesMock).toHaveBeenCalledWith('parentos-bootstrap-artifact');
+    expect(authStatusMock).toHaveBeenCalledTimes(1);
     expect(useAppStore.getState().bootstrapReady).toBe(false);
     expect(useAppStore.getState().bootstrapFailure).toMatchObject({
       state: 'capability-unavailable',
@@ -108,12 +105,16 @@ describe('ParentOS installed-app bootstrap hardcut', () => {
     expect(dbInitMock).not.toHaveBeenCalled();
   });
 
-  it('preserves protected carrier failures as typed unavailable states', async () => {
-    const error = Object.assign(new Error('Runtime service unavailable'), {
+  it('preserves unbound local-development status as a typed unavailable state', async () => {
+    authStatusMock.mockResolvedValueOnce({
+      mode: 'local-app',
+      state: 'unavailable',
+      sessionBound: false,
+      operationAllowed: false,
       reasonCode: 'runtime-service-unavailable',
       actionHint: 'start_verified_runtime_service',
+      retryable: true,
     });
-    appHostBootstrapMock.mockRejectedValueOnce(error);
 
     await runParentOSBootstrap({ force: true });
 
@@ -121,7 +122,7 @@ describe('ParentOS installed-app bootstrap hardcut', () => {
       state: 'runtime-unavailable',
       reasonCode: 'runtime-service-unavailable',
       actionHint: 'start_verified_runtime_service',
-      message: 'Runtime service unavailable',
+      message: 'The ParentOS local-development session is unavailable.',
     });
     expect(dbInitMock).not.toHaveBeenCalled();
   });
