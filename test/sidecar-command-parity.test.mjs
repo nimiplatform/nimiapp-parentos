@@ -44,7 +44,7 @@ function assertSameSet(actual, expected, label) {
   assert.deepEqual([...new Set(actual)].sort(), [...new Set(expected)].sort(), label);
 }
 
-test('app-domain implementations stay complete but unregistered before protected admission', () => {
+test('Electron and Tauri register the same exact app-owned command surface', () => {
   const electronHandlers = readRepoFile('src-electron/parentos-command-handlers.ts');
   const electronMain = readRepoFile('src-electron/main.ts');
   const rustSidecar = readRepoFile('src-tauri/src/sidecar_commands.rs');
@@ -54,21 +54,20 @@ test('app-domain implementations stay complete but unregistered before protected
   const directElectronSidecar = extractTsCommandList(electronHandlers);
   const rustImplemented = extractRustImplementedCommands(rustSidecar);
   const rustImplementedSet = new Set(rustImplemented);
-  assert.deepEqual(tauriAppDomain, [], 'Tauri must not register app-domain commands before ParentOS operation admission');
-  assert.doesNotMatch(
+  assert.match(
     electronMain,
-    /commandHandlers\s*:|createParentOSElectronCommandHandlers/u,
-    'Electron must not register the dormant app-domain handlers before admission',
+    /appCommandHandlers\s*:\s*createParentOSElectronCommandHandlers/u,
+    'Electron must register the exact app-owned command map',
   );
   assert.deepEqual(
     directElectronSidecar.filter((command) => !rustImplementedSet.has(command)),
     [],
-    'dormant Electron app-domain implementations must still exist in the Rust sidecar',
+    'Electron app-domain passthrough commands must exist in the Rust sidecar',
   );
 
   for (const command of ELECTRON_NATIVE_APP_COMMANDS) {
     assert.match(electronHandlers, new RegExp(`${command}\\s*:`), `Electron must implement native command ${command}`);
-    assert.ok(!tauriAppDomain.includes(command), `native command ${command} must remain unregistered before admission`);
+    assert.ok(tauriAppDomain.includes(command), `Tauri must register its native command ${command}`);
     assert.ok(!directElectronSidecar.includes(command), `native command ${command} must not be direct sidecar passthrough`);
   }
   for (const internal of INTERNAL_SIDECAR_COMMANDS) {
@@ -80,6 +79,11 @@ test('app-domain implementations stay complete but unregistered before protected
   assertSameSet(
     directElectronSidecar,
     expectedRustRendererCommands,
-    'dormant Electron and Rust sidecar app-domain implementations must not drift',
+    'Electron and Rust sidecar app-domain implementations must not drift',
+  );
+  assertSameSet(
+    tauriAppDomain,
+    [...directElectronSidecar, ...ELECTRON_NATIVE_APP_COMMANDS],
+    'Tauri and Electron renderer-visible app-owned commands must not drift',
   );
 });

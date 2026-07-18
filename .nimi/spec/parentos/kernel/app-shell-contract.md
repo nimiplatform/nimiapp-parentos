@@ -26,18 +26,19 @@ Governing fact sources:
 
 ParentOS is the installed Nimi app identified only as `nimi.parentos`. The renderer MUST NOT construct or receive caller identity, app instance, device, launch host, release descriptor, nonce, Runtime endpoint, Realm URL, account projection, protected metadata, or any token/session material. Environment variables, argv, renderer configuration, and a generic Runtime bridge are not admitted sources for those values.
 
-Electron and Tauri MUST bind the shared Kit installed host to the platform-native protected carrier. The renderer may construct `createInstalledNimiAppBootstrap` only from the artifact-only installed standard-shell surface. Runtime owns the opaque installed session and verifies the app, release, peer process, account generation, and Runtime epoch outside the renderer. Each platform is admitted independently; a platform without a verified native carrier remains fail-closed and MUST NOT fall back to localhost gRPC or a same-user daemon.
+Electron and Tauri MUST bind the shared Kit local-app host to the platform-native protected carrier for Nimi-owned operations. Runtime owns that opaque carrier session and verifies the app, release, peer process, account generation, and Runtime epoch outside the renderer. Each platform is admitted independently; a platform without a verified native carrier MUST keep protected Nimi features unavailable and MUST NOT fall back to localhost gRPC or a same-user daemon.
 
-The complete ParentOS protected operation set is not yet admitted. Until it is admitted, bootstrap MUST:
+ParentOS SQLite, media, settings, routes, and exact native product commands are `app_owned_authority`, not a ParentOS-wide Nimi permission gate. Their availability MUST NOT create a manifest permission, user prompt, grant row, synthetic scope, or Runtime admission decision. The native host derives fixed roots from its OS application-data API; env, argv, renderer input, and user configuration cannot select those roots. Canonical-path, escape, symlink, quota, schema, and exact renderer-origin checks remain mandatory app-host enforcement.
 
-1. construct the typed artifact-only installed standard-shell projection;
-2. refuse to create a generic `Runtime`, `NimiClient`, Realm client, account caller, AI client, or app-owned session;
-3. report `parentos-protected-operation-set-not-admitted` as a typed capability-unavailable state;
-4. keep SQLite, media, app settings, account-scoped state, and product routes unopened.
+The local product bootstrap sequence is:
 
-ParentOS-owned SQLite and media remain durable app data, but their OS paths are location truth only, not admission or account truth. Each host derives fixed roots from its OS application-data API; env, argv, and user configuration cannot select those roots. After the protected ParentOS operation set is admitted, Runtime's opaque installed session and account generation MUST authorize local hydration before the host exposes app-domain data commands. No anonymous local fallback is admitted.
+1. bind the exact Electron or Tauri app host and fixed OS app-data roots;
+2. register only the enumerated ParentOS-owned native commands alongside Kit's bounded local-app carrier;
+3. initialize the device-local ParentOS SQLite database, media roots, and app settings;
+4. hydrate family/child state and render the spec-registered product routes;
+5. when a feature crosses into Runtime, Realm, Agent, Cognition, another app, or an external file, evaluate that feature's canonical permission, one-shot consent, or service entitlement independently.
 
-The exact future positive sequence is: native carrier session → Runtime-installed app/account binding → ParentOS operation-set admission → account-scoped local hydration → route render. The current artifact-only carrier and typed unavailable screen are transitional fail-closed surfaces, not evidence that the full ParentOS session is complete.
+ParentOS MUST refuse to create a generic `Runtime`, `NimiClient`, Realm client, account caller, AI client, or renderer-owned session merely to open app-owned data. Runtime or permission unavailability disables only the affected protected feature; it does not lock SQLite or product routes. A failure of the fixed native data host, canonical root, SQLite schema, or migration may lock local data because those are actual prerequisites of the app-owned store.
 
 ## PO-SHELL-008 Account Material Custody Boundary
 
@@ -48,7 +49,7 @@ ParentOS MUST NOT persist, project, or transit access tokens or refresh tokens a
 - The platform client's `refreshTokenProvider`, `accessTokenProvider`, `accessToken`, `subjectUserIdProvider`, and `sessionStore` inputs are forbidden. The installed-app SDK projection exposes no such ParentOS inputs.
 - ParentOS does not construct a Realm client until a Realm-owned product feature is explicitly admitted. When direct Realm calls are later admitted, access tokens must be projected from Runtime account custody (short-lived, never persisted, never returned to ParentOS surfaces) and consumed through SDK Realm typed services / adapters.
 
-ParentOS does not own embedded login, logout, OAuth browser brokering, loopback listeners, account projection, or account-control RPCs. Account login, logout, and switching are first-party Desktop / Runtime responsibilities. ParentOS receives only the scoped outcome of a future admitted installed session; it never opens an anonymous account scope.
+ParentOS does not own Nimi embedded login, logout, OAuth browser brokering, loopback listeners, account projection, or account-control RPCs. Nimi account login, logout, and switching are first-party Desktop / Runtime responsibilities and affect only Nimi-owned features. The current ParentOS product opens its device-local app-owned data without a Nimi account. Any future account-partitioned local store must be an explicit ParentOS product partition or an opaque host-projected base entitlement; it must not be inferred from renderer-supplied Nimi identity material.
 
 ## PO-SHELL-002 Route Registration
 
@@ -85,12 +86,12 @@ Nurture mode settings are child-scoped and must round-trip through the `children
 
 ## PO-SHELL-005 Family and Child Selection
 
-After protected operation admission, the shell must support a single local family with multiple children inside each Runtime-authorized account-scoped local database.
+The shell supports a single local family with multiple children inside the active ParentOS-owned local database.
 
 - child create, edit, and delete flows operate on the local SQLite store
-- authenticated account switches must revoke the prior installed session, clear in-memory family and child state, bind the new Runtime-authorized account generation, and only then reload that account's local rows
-- one authenticated subject must not see another subject's local family, children, or app settings through shell state reuse
-- while the protected ParentOS operation set is unadmitted, the app must not initialize SQLite or render these flows
+- current bootstrap uses the device-local partition and requires no Nimi permission or Nimi account
+- a future ParentOS-owned account partition switch must clear in-memory family and child state, bind the exact new app partition, and only then load its rows
+- a Nimi account switch invalidates protected Nimi feature state but MUST NOT silently select, merge, expose, or delete ParentOS local partitions
 - switching the active child refreshes profile, timeline, journal, advisor, and reports views from that child's local records
 - deleting a child must rely on storage-layer cascade behavior for dependent rows
 
@@ -110,10 +111,10 @@ Settings state must round-trip through `children` or `app_settings`. The shell m
 
 The shell must fail closed when spec-governed prerequisites are invalid.
 
-- protected bootstrap failures must map to `login-required`, `runtime-unavailable`, `permission-denied`, `repair-required`, or `capability-unavailable`
-- every protected failure state must keep local data locked and expose an actionable retry or Desktop/repair instruction
-- renderer metadata, env, argv, app id, or a direct gRPC connection must not turn a failure into a positive session
-- absence of the complete ParentOS protected operation set is `capability-unavailable`, not a production-ready carrier claim
+- app-data bootstrap failures map to `app-data-unavailable` or `app-data-repair-required`, keep the app-owned store closed, and expose an actionable retry or repair instruction
+- a protected Nimi feature failure remains local to that feature and MUST NOT clear, lock, or relabel app-owned family data as permission-denied
+- renderer metadata, env, argv, display app id, or a direct gRPC connection must not turn a protected feature failure into a positive Nimi session
+- a missing public permission or service entitlement is typed unavailable/denied for the affected feature, not a ParentOS-wide capability gate
 - missing compiled knowledge-base artifacts is a startup failure
 - route drift against `routes.yaml` is a verification failure, not a runtime fallback case
 - malformed typed bridge payloads must raise an error instead of returning placeholder success objects

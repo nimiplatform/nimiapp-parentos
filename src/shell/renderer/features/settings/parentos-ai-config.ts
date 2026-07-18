@@ -4,11 +4,12 @@ import type {
   NimiAIProfileOriginRef,
   NimiAIScopeRef,
 } from '@nimiplatform/sdk/ai';
-import { createNimiError } from '@nimiplatform/sdk';
 import { createEmptyNimiAIConfig, validateNimiAIConfig } from '@nimiplatform/sdk/ai';
 import type { NimiJsonValue } from '@nimiplatform/sdk/contracts';
+import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
 import { i18nText } from '../../i18n/index.js';
 
+const PARENTOS_AI_CONFIG_SETTING_KEY = 'parentos:ai-config:v1';
 
 export const PARENTOS_AI_SCOPE_REF: NimiAIScopeRef = {
   kind: 'app',
@@ -269,7 +270,15 @@ export function parsePersistedParentosAIConfig(value: unknown): NimiAIConfig | n
 }
 
 export async function loadPersistedParentosAIConfig(): Promise<NimiAIConfig | null> {
-  throw createParentosAIConfigAdmissionError();
+  const raw = await getAppSetting(PARENTOS_AI_CONFIG_SETTING_KEY);
+  if (raw == null || !String(raw).trim()) {
+    return null;
+  }
+  const parsed = parsePersistedParentosAIConfig(raw);
+  if (!parsed) {
+    throw new Error('Persisted ParentOS AI config is invalid');
+  }
+  return parsed;
 }
 
 export async function savePersistedParentosAIConfig(config: NimiAIConfig): Promise<NimiAIConfig> {
@@ -277,14 +286,10 @@ export async function savePersistedParentosAIConfig(config: NimiAIConfig): Promi
   if (!normalized) {
     throw new Error('ParentOS AI config is invalid');
   }
-  throw createParentosAIConfigAdmissionError();
-}
-
-function createParentosAIConfigAdmissionError(): Error {
-  return createNimiError({
-    message: 'The protected ParentOS AI configuration operation is not admitted.',
-    reasonCode: 'parentos-protected-operation-set-not-admitted',
-    actionHint: 'wait_for_parentos_protected_operation_admission',
-    source: 'sdk',
-  });
+  await setAppSetting(
+    PARENTOS_AI_CONFIG_SETTING_KEY,
+    JSON.stringify(normalized),
+    new Date().toISOString(),
+  );
+  return normalized;
 }

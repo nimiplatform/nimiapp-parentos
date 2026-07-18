@@ -7,6 +7,8 @@ import {
   isAllowedElectronRendererUrl,
   registerNimiElectronAppBridge,
 } from '@nimiplatform/kit/shell/electron/main';
+import { createParentOSElectronCommandHandlers } from './parentos-command-handlers.js';
+import { createParentOSHostClient } from './parentos-host-client.js';
 
 const PARENTOS_APP_ID = 'nimi.parentos';
 
@@ -17,6 +19,7 @@ const preloadPath = path.join(currentDir, 'preload.cjs');
 const rendererDistIndex = path.join(appRoot, 'dist', 'index.html');
 const rendererDistUrl = pathToFileURL(rendererDistIndex).toString();
 const rendererUrl = readDevelopmentRendererUrl() || rendererDistUrl;
+let mainWindow: BrowserWindow | undefined;
 
 bootLog('module-loaded');
 
@@ -29,11 +32,17 @@ void app.whenReady().then(bootstrapElectron).catch(handleElectronStartupFailure)
 async function bootstrapElectron(): Promise<void> {
   const storageRoots = resolveParentOSStorageRoots();
   bootLog(`bootstrap:storage:${storageRoots.projectionRef}`);
+  const hostClient = createParentOSHostClient({ appRoot, storageRoots });
+  app.once('before-quit', () => hostClient.close());
 
   registerNimiElectronAppBridge({
     appId: PARENTOS_APP_ID,
     allowedRendererUrls: [rendererUrl],
     ipcMain,
+    appCommandHandlers: createParentOSElectronCommandHandlers({
+      hostClient,
+      getMainWindow: () => mainWindow,
+    }),
   });
 
   await createMainWindow();
@@ -100,6 +109,12 @@ async function createMainWindow(): Promise<BrowserWindow> {
     },
   });
   bootLog('create-window:constructed');
+  mainWindow = window;
+  window.on('closed', () => {
+    if (mainWindow === window) {
+      mainWindow = undefined;
+    }
+  });
   hardenParentOSWindowChrome(window);
   secureParentOSWindow(window);
   await loadRenderer(window);

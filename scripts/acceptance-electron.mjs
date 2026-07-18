@@ -18,10 +18,9 @@ const evidenceRoot = path.join(
   'parentos-electron',
 );
 const bridgeKey = '__NIMI_ELECTRON_RUNTIME__';
-const permissionOperationId = 'app_storage.json.write';
-const permissionRunId = new Date().toISOString().replace(/[^0-9A-Za-z]/gu, '-');
-const permissionRelativePath = `acceptance/parentos-permission-${permissionRunId}.json`;
-const permissionResourceRef = `storage:${permissionRelativePath}`;
+const reservedPermissionId = 'agents.interact';
+const storageRunId = new Date().toISOString().replace(/[^0-9A-Za-z]/gu, '-');
+const storageRelativePath = `acceptance/parentos-base-entitlement-${storageRunId}.json`;
 const plainNegative = process.argv.includes('--plain-negative');
 
 async function main() {
@@ -100,20 +99,18 @@ async function main() {
 
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
     await page.waitForFunction((key) => Boolean(window[key]?.invoke), bridgeKey, { timeout: 30_000 });
-    await waitForProtectedFailure(page);
-
-    const desktopState = await captureProtectedState(page);
-    assertProtectedState(desktopState, 'Electron');
     await page.setViewportSize({ width: 1365, height: 900 });
+    await waitForProductLaunch(page);
+    const launchState = await captureLaunchState(page);
+    assertLaunchState(launchState, 'Electron');
+    await page.getByTestId('parentos-launch-trigger').click();
+    await waitForProductRoute(page);
+    const desktopState = await captureProductState(page);
+    assertProductState(desktopState, 'Electron');
     const desktopOverflow = await assertNoVisibleOverflow(page, 'electron-desktop');
     const desktopScreenshot = path.join(screenshotDir, 'desktop.png');
     await page.screenshot({ path: desktopScreenshot, fullPage: true });
     const hmrResult = await verifyRendererHmr(page, consoleEvents);
-
-    await page.getByTestId('parentos-protected-session-retry').click();
-    await waitForProtectedFailure(page);
-    const retriedState = await captureProtectedState(page);
-    assertProtectedState(retriedState, 'Electron retry');
 
     const sessionStatusResult = await invokeBridge(
       page,
@@ -131,22 +128,30 @@ async function main() {
       assert.equal(sessionStatusResult.ok, true, 'Electron must bind a real Desktop-supervised local-app session');
       assert.match(
         String(sessionStatusResult.value?.state || ''),
-        /zero-grant|ready/u,
+        /ready/u,
         `Electron local-app session must be bound: ${JSON.stringify(sessionStatusResult)}`,
       );
     }
 
-    const artifactResult = await invokeBridge(
+    const permissionStatusResult = await invokeBridge(
       page,
-      NIMI_STANDARD_SHELL_COMMANDS['local-app.artifactsReadRuntimeBytes'],
-      { payload: { artifactId: 'parentos-acceptance-artifact' } },
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.permissionStatus'],
+      { payload: { permissionId: reservedPermissionId } },
     );
-    assert.equal(artifactResult.ok, false, 'Electron artifact read must fail closed without an exact grant');
-    assert.match(
-      JSON.stringify(artifactResult.error),
-      /protected-carrier-required|runtime-service-unavailable|runtime-permission-denied|no-grant|not-found|grant/iu,
-      `Electron artifact denial must preserve local-app grant posture: ${JSON.stringify(artifactResult.error)}`,
+    const baseEntitlementWriteResult = await invokeBridge(
+      page,
+      NIMI_STANDARD_SHELL_COMMANDS['storage.writeJson'],
+      { payload: { relativePath: storageRelativePath, value: { shell: 'electron', class: 'base_entitlement' } } },
     );
+    if (plainNegative) {
+      assert.equal(permissionStatusResult.ok, false, 'unsupervised Electron must not read protected permission posture');
+      assert.equal(baseEntitlementWriteResult.ok, false, 'unsupervised Electron must not acquire the Runtime private-storage base entitlement');
+    } else {
+      assert.equal(permissionStatusResult.ok, true, `reserved permission posture must be readable: ${JSON.stringify(permissionStatusResult)}`);
+      assert.equal(permissionStatusResult.value?.state, 'unavailable', 'reserved permission must remain unavailable');
+      assert.equal(permissionStatusResult.value?.canRequest, false, 'reserved permission must not be requestable');
+      assert.equal(baseEntitlementWriteResult.ok, true, `app-private JSON must use its base entitlement without a prompt: ${JSON.stringify(baseEntitlementWriteResult)}`);
+    }
 
     const directRuntimeResult = await invokeBridge(
       page,
@@ -165,7 +170,7 @@ async function main() {
     assert.equal(directRuntimeResult.ok, false, 'Electron direct Runtime must be denied by the local-app capability set');
 
     const appDomainResult = await invokeBridge(page, 'get_family', {});
-    assert.equal(appDomainResult.ok, false, 'Electron app-domain data must remain unregistered before protected admission');
+    assert.equal(appDomainResult.ok, true, `Electron app-owned SQLite command must remain available independently: ${JSON.stringify(appDomainResult)}`);
 
     const accountControlResults = {};
     for (const command of [
@@ -179,11 +184,9 @@ async function main() {
       accountControlResults[command] = result;
     }
 
-    const permissionRegression = plainNegative ? null : await runPermissionRegression(page);
-
     await page.setViewportSize({ width: 390, height: 844 });
-    const narrowState = await captureProtectedState(page);
-    assertProtectedState(narrowState, 'Electron narrow');
+    const narrowState = await captureProductState(page);
+    assertProductState(narrowState, 'Electron narrow');
     const narrowOverflow = await assertNoVisibleOverflow(page, 'electron-narrow');
     const narrowScreenshot = path.join(screenshotDir, 'narrow.png');
     await page.screenshot({ path: narrowScreenshot, fullPage: true });
@@ -202,15 +205,15 @@ async function main() {
       mode: plainNegative ? 'plain-negative' : 'desktop-supervised',
       launcher: { command: launcherCommand, args: launcherArgs },
       cdpEndpoint,
+      launchState,
       desktopState,
-      retriedState,
       narrowState,
       sessionStatusResult,
-      artifactResult,
+      permissionStatusResult,
+      baseEntitlementWriteResult,
       directRuntimeResult,
       appDomainResult,
       accountControlResults,
-      permissionRegression,
       overflowScan: { desktop: desktopOverflow, narrow: narrowOverflow },
       hmrResult,
       consoleEvents,
@@ -218,7 +221,7 @@ async function main() {
       diagnostics: diagnostics(),
       screenshots: { desktop: desktopScreenshot, narrow: narrowScreenshot },
     }, null, 2), 'utf8');
-    process.stdout.write(`Electron protected-state acceptance: ${evidencePath}\n`);
+    process.stdout.write(`Electron app-owned authority acceptance: ${evidencePath}\n`);
   } catch (error) {
     await writeFailureEvidence({
       evidenceDir,
@@ -245,7 +248,7 @@ async function verifyRendererHmr(page, consoleEvents) {
   while (Date.now() < deadline) {
     const event = consoleEvents.slice(baseline).find((entry) => /hot updated|hmr update/iu.test(entry.text));
     if (event) {
-      await waitForProtectedFailure(page);
+      await waitForProductRoute(page);
       return { probePath, event };
     }
     await delay(100);
@@ -253,146 +256,67 @@ async function verifyRendererHmr(page, consoleEvents) {
   throw new Error(`Renderer HMR did not emit an update for ${probePath}`);
 }
 
-async function runPermissionRegression(page) {
-  const permissionInput = {
-    operationId: permissionOperationId,
-    resourceRef: permissionResourceRef,
-  };
-  const before = await invokeBridge(
-    page,
-    NIMI_STANDARD_SHELL_COMMANDS['local-app.permissionPosture'],
-    { payload: permissionInput },
-  );
-  assert.equal(before.ok, true, 'permission posture must be readable from a bound zero-grant session');
-  assert.equal(before.value?.state, 'zero-grant', `permission must start zero-grant: ${JSON.stringify(before)}`);
-
-  const deniedBeforeGrant = await invokeBridge(
-    page,
-    NIMI_STANDARD_SHELL_COMMANDS['storage.writeJson'],
-    { payload: { relativePath: permissionRelativePath, value: { phase: 'before-grant' } } },
-  );
-  assert.equal(deniedBeforeGrant.ok, false, 'zero-grant storage write must be denied');
-
-  const request = await invokeBridge(
-    page,
-    NIMI_STANDARD_SHELL_COMMANDS['local-app.permissionRequest'],
-    {
-      payload: {
-        ...permissionInput,
-        purpose: 'Verify ParentOS local-development permission approval and revocation.',
-      },
-    },
-  );
-  assert.equal(request.ok, true, `permission request must reach Desktop: ${JSON.stringify(request)}`);
-  assert.equal(request.value?.state, 'pending', `permission request must remain pending for a real decision: ${JSON.stringify(request)}`);
-  process.stdout.write(`ParentOS permission approval required in Desktop for ${permissionResourceRef}\n`);
-
-  const granted = await waitForPermissionPosture(page, permissionInput, ['granted'], 240_000);
-  const grantedWrite = await invokeBridge(
-    page,
-    NIMI_STANDARD_SHELL_COMMANDS['storage.writeJson'],
-    { payload: { relativePath: permissionRelativePath, value: { phase: 'granted', shell: 'electron' } } },
-  );
-  assert.equal(grantedWrite.ok, true, `exact granted storage write must succeed: ${JSON.stringify(grantedWrite)}`);
-  process.stdout.write(`ParentOS permission revoke required in Desktop for ${permissionResourceRef}\n`);
-
-  const revoked = await waitForPermissionPosture(
-    page,
-    permissionInput,
-    ['revoked', 'zero-grant', 'denied'],
-    240_000,
-  );
-  const deniedAfterRevoke = await invokeBridge(
-    page,
-    NIMI_STANDARD_SHELL_COMMANDS['storage.writeJson'],
-    { payload: { relativePath: permissionRelativePath, value: { phase: 'after-revoke' } } },
-  );
-  assert.equal(deniedAfterRevoke.ok, false, 'revoked storage write must be denied');
-
-  return {
-    operationId: permissionOperationId,
-    resourceRef: permissionResourceRef,
-    before,
-    deniedBeforeGrant,
-    request,
-    granted,
-    grantedWrite,
-    revoked,
-    deniedAfterRevoke,
-  };
-}
-
-async function waitForPermissionPosture(page, input, acceptedStates, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  let latest = null;
-  while (Date.now() < deadline) {
-    latest = await invokeBridge(
-      page,
-      NIMI_STANDARD_SHELL_COMMANDS['local-app.permissionPosture'],
-      { payload: input },
-    );
-    if (latest.ok && acceptedStates.includes(latest.value?.state)) {
-      return latest;
-    }
-    await delay(750);
-  }
-  throw new Error(`Timed out waiting for permission posture ${acceptedStates.join('|')}: ${JSON.stringify(latest)}`);
-}
-
-function assertProtectedState(state, label) {
+function assertLaunchState(state, label) {
   assert.equal(state.loading, false, `${label} must leave bootstrap loading`);
-  assert.equal(
-    state.protectedState,
-    plainNegative ? 'runtime-unavailable' : 'capability-unavailable',
-    `${label} must expose the expected typed protected state`,
-  );
-  assert.equal(state.localDataDisabled, true, `${label} must keep local data disabled`);
-  assert.equal(state.retryEnabled, true, `${label} retry must remain usable`);
-  assert.equal(state.routed, false, `${label} must not render product routes`);
-  assert.equal(state.launch, false, `${label} must not render the old launch screen`);
-  assert.equal(state.alertRole, 'alert', `${label} protected failure must be announced accessibly`);
-  assert.match(
-    state.bodyText,
-    plainNegative ? /Nimi Runtime 暂不可用/u : /ParentOS 受保护访问尚未开放/u,
-    `${label} must render readable Chinese failure copy`,
-  );
-  assert.match(state.bodyText, /本地数据已锁定/u, `${label} must render the locked-data action`);
-  assert.match(
-    state.alertText,
-    plainNegative ? /runtime-service-unavailable/u : /parentos-protected-operation-set-not-admitted/u,
-    `${label} must expose the exact denial reason`,
-  );
+  assert.equal(state.failure, false, `${label} must not show an app-data failure`);
+  assert.equal(state.launch, true, `${label} must render the ParentOS launch surface`);
+  assert.equal(state.routed, false, `${label} must wait for explicit launch interaction`);
+  assert.ok(state.launchLabel.length > 0, `${label} launch control must have an accessible name`);
   assert.doesNotMatch(state.bodyText, /�/u, `${label} must not contain replacement-glyph text`);
 }
 
-async function waitForProtectedFailure(page) {
+function assertProductState(state, label) {
+  assert.equal(state.loading, false, `${label} must leave bootstrap loading`);
+  assert.equal(state.failure, false, `${label} must not show an app-data failure`);
+  assert.equal(state.routed, true, `${label} must render ParentOS product routes`);
+  assert.equal(state.launch, false, `${label} must leave the launch surface after interaction`);
+  assert.ok(state.bodyText.trim().length > 0, `${label} must render readable product content`);
+  assert.doesNotMatch(state.bodyText, /�/u, `${label} must not contain replacement-glyph text`);
+}
+
+async function waitForProductLaunch(page) {
   await page.waitForFunction(() => {
-    const failure = document.querySelector('[data-testid="parentos-protected-session-failure"]');
+    const launch = document.querySelector('[data-testid="parentos-launch-page"]');
     const loading = document.querySelector('[data-testid="parentos-bootstrap-loading"]');
-    return Boolean(failure) && !loading;
+    const failure = document.querySelector('[data-testid="parentos-bootstrap-failure"]');
+    return Boolean(launch) && !loading && !failure;
   }, null, { timeout: 30_000 });
 }
 
-async function captureProtectedState(page) {
+async function waitForProductRoute(page) {
+  await page.waitForFunction(() => (
+    Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]'))
+    && !document.querySelector('[data-testid="parentos-bootstrap-loading"]')
+    && !document.querySelector('[data-testid="parentos-bootstrap-failure"]')
+  ), null, { timeout: 30_000 });
+}
+
+async function captureLaunchState(page) {
   return page.evaluate(() => {
-    const failure = document.querySelector('[data-testid="parentos-protected-session-failure"]');
-    const localData = document.querySelector('[data-testid="parentos-local-data-locked"]');
-    const retry = document.querySelector('[data-testid="parentos-protected-session-retry"]');
-    const alert = document.querySelector('[role="alert"]');
+    const trigger = document.querySelector('[data-testid="parentos-launch-trigger"]');
     return {
       title: document.title,
       bodyText: document.body?.innerText ?? '',
       loading: Boolean(document.querySelector('[data-testid="parentos-bootstrap-loading"]')),
-      protectedState: failure?.getAttribute('data-protected-state') ?? '',
-      localDataDisabled: localData instanceof HTMLButtonElement && localData.disabled,
-      retryEnabled: retry instanceof HTMLButtonElement && !retry.disabled,
-      alertRole: alert?.getAttribute('role') ?? '',
-      alertText: alert?.textContent?.trim() ?? '',
+      failure: Boolean(document.querySelector('[data-testid="parentos-bootstrap-failure"]')),
       routed: Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]')),
       launch: Boolean(document.querySelector('[data-testid="parentos-launch-page"]')),
+      launchLabel: trigger?.getAttribute('aria-label')?.trim() ?? '',
       viewport: { width: window.innerWidth, height: window.innerHeight },
     };
   });
+}
+
+async function captureProductState(page) {
+  return page.evaluate(() => ({
+    title: document.title,
+    bodyText: document.body?.innerText ?? '',
+    loading: Boolean(document.querySelector('[data-testid="parentos-bootstrap-loading"]')),
+    failure: Boolean(document.querySelector('[data-testid="parentos-bootstrap-failure"]')),
+    routed: Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]')),
+    launch: Boolean(document.querySelector('[data-testid="parentos-launch-page"]')),
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+  }));
 }
 
 async function invokeBridge(page, command, payload) {
@@ -421,7 +345,7 @@ async function invokeBridge(page, command, payload) {
 async function assertNoVisibleOverflow(page, label) {
   const result = await page.evaluate((scanLabel) => {
     const viewportWidth = window.innerWidth;
-    const root = document.querySelector('[data-testid="parentos-protected-session-failure"]');
+    const root = document.querySelector('[data-testid="parentos-app-routed-surface"]');
     const issues = [];
     for (const element of Array.from(root?.querySelectorAll('*') ?? [])) {
       if (!(element instanceof HTMLElement)) continue;
@@ -461,7 +385,7 @@ async function writeFailureEvidence(input) {
   const failurePath = path.join(input.evidenceDir, 'failure.json');
   let state;
   try {
-    state = input.page ? await captureProtectedState(input.page) : null;
+    state = input.page ? await captureProductState(input.page) : null;
     if (input.page) await input.page.screenshot({ path: path.join(input.evidenceDir, 'failure.png'), fullPage: true });
   } catch (snapshotError) {
     state = { snapshotError: snapshotError instanceof Error ? snapshotError.message : String(snapshotError) };

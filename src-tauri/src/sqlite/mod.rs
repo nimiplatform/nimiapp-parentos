@@ -13,7 +13,7 @@ static DB_SCOPE: std::sync::OnceLock<Mutex<String>> = std::sync::OnceLock::new()
 static DB_OPERATION_BARRIER: std::sync::OnceLock<Mutex<()>> = std::sync::OnceLock::new();
 static DB_CONNECTION_HANDLE: DbConnectionHandle = DbConnectionHandle;
 
-const ANONYMOUS_DB_SCOPE: &str = "anonymous";
+const DEVICE_LOCAL_DB_SCOPE: &str = "device-local";
 
 pub struct DbConnectionHandle;
 
@@ -53,32 +53,32 @@ impl DbConnectionHandle {
 }
 
 fn db_scope_lock() -> &'static Mutex<String> {
-    DB_SCOPE.get_or_init(|| Mutex::new(ANONYMOUS_DB_SCOPE.to_string()))
+    DB_SCOPE.get_or_init(|| Mutex::new(DEVICE_LOCAL_DB_SCOPE.to_string()))
 }
 
 fn db_operation_barrier() -> &'static Mutex<()> {
     DB_OPERATION_BARRIER.get_or_init(|| Mutex::new(()))
 }
 
-fn hash_subject_user_id(subject_user_id: &str) -> u64 {
+fn hash_app_account_id(app_account_id: &str) -> u64 {
     const FNV_OFFSET: u64 = 0xcbf29ce484222325;
     const FNV_PRIME: u64 = 0x100000001b3;
 
     let mut hash = FNV_OFFSET;
-    for byte in subject_user_id.as_bytes() {
+    for byte in app_account_id.as_bytes() {
         hash ^= u64::from(*byte);
         hash = hash.wrapping_mul(FNV_PRIME);
     }
     hash
 }
 
-fn normalize_db_scope(subject_user_id: Option<&str>) -> String {
-    let normalized_subject = subject_user_id
+fn normalize_db_scope(app_account_id: Option<&str>) -> String {
+    let normalized_account = app_account_id
         .map(str::trim)
         .filter(|value| !value.is_empty());
-    match normalized_subject {
-        Some(subject_user_id) => format!("user-{:016x}", hash_subject_user_id(subject_user_id)),
-        None => ANONYMOUS_DB_SCOPE.to_string(),
+    match normalized_account {
+        Some(app_account_id) => format!("account-{:016x}", hash_app_account_id(app_account_id)),
+        None => DEVICE_LOCAL_DB_SCOPE.to_string(),
     }
 }
 
@@ -90,8 +90,8 @@ fn resolve_db_path_for_scope(scope: &str) -> Result<PathBuf, String> {
             sqlite_dir.display()
         )
     })?;
-    if scope == ANONYMOUS_DB_SCOPE {
-        return Ok(sqlite_dir.join("anonymous.db"));
+    if scope == DEVICE_LOCAL_DB_SCOPE {
+        return Ok(sqlite_dir.join("local.db"));
     }
 
     let accounts_dir = sqlite_dir.join("accounts");
@@ -147,11 +147,11 @@ pub fn get_conn() -> Result<&'static DbConnectionHandle, String> {
 }
 
 #[tauri::command]
-pub fn db_init(subject_user_id: Option<String>) -> Result<String, String> {
+pub fn db_init(app_account_id: Option<String>) -> Result<String, String> {
     let _operation_guard = db_operation_barrier()
         .lock()
         .map_err(|error| error.to_string())?;
-    let requested_scope = normalize_db_scope(subject_user_id.as_deref());
+    let requested_scope = normalize_db_scope(app_account_id.as_deref());
     let mut current_scope = db_scope_lock().lock().map_err(|error| error.to_string())?;
 
     if let Some(conn_mutex) = DB_CONN.get() {
@@ -202,27 +202,27 @@ mod tests {
         data_root
     }
 
-    fn is_anonymous_sqlite_path(path: impl AsRef<Path>) -> bool {
+    fn is_device_local_sqlite_path(path: impl AsRef<Path>) -> bool {
         path.as_ref()
-            .ends_with(Path::new("sqlite").join("anonymous.db"))
+            .ends_with(Path::new("sqlite").join("local.db"))
     }
 
     #[test]
-    fn db_init_uses_anonymous_app_storage_path() {
+    fn db_init_uses_device_local_app_storage_path() {
         let _guard = TEST_MUTEX
             .get_or_init(|| Mutex::new(()))
             .lock()
             .expect("lock sqlite test mutex");
-        install_test_storage("anonymous");
+        install_test_storage("device-local");
 
-        let db_path = db_init(None).expect("init anonymous db");
+        let db_path = db_init(None).expect("init device-local db");
         assert!(
-            is_anonymous_sqlite_path(&db_path),
+            is_device_local_sqlite_path(&db_path),
             "unexpected path: {db_path}"
         );
         assert!(resolve_db_path()
             .expect("resolve current db path")
-            .ends_with(Path::new("sqlite").join("anonymous.db")));
+            .ends_with(Path::new("sqlite").join("local.db")));
     }
 
     #[test]
@@ -233,11 +233,11 @@ mod tests {
             .expect("lock sqlite test mutex");
         install_test_storage("account");
 
-        let anonymous_path = db_init(None).expect("init anonymous db");
+        let device_local_path = db_init(None).expect("init device-local db");
         let account_path = db_init(Some("user-123".to_string())).expect("init scoped db");
 
-        assert!(is_anonymous_sqlite_path(&anonymous_path));
-        assert_ne!(anonymous_path, account_path);
+        assert!(is_device_local_sqlite_path(&device_local_path));
+        assert_ne!(device_local_path, account_path);
         let account_path_buf = PathBuf::from(&account_path);
         assert!(
             account_path_buf
@@ -247,7 +247,7 @@ mod tests {
                     .file_name()
                     .and_then(|file_name| file_name.to_str())
                     .is_some_and(
-                        |file_name| file_name.starts_with("user-") && file_name.ends_with(".db")
+                        |file_name| file_name.starts_with("account-") && file_name.ends_with(".db")
                     ),
             "unexpected scoped path: {account_path}"
         );

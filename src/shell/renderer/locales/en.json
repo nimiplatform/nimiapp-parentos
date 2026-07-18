@@ -46,38 +46,23 @@
     "desktopLogoHint": "Authorization failed. Click the logo to retry.",
     "desktopAuthOpen": "Browser opened. Complete authorization on the web page.",
     "desktopAuthSuccess": "Web authorization succeeded. Signed in.",
-    "protectedSession": {
-      "eyebrow": "Protected Nimi session",
-      "localDataLocked": "ParentOS local data remains locked",
+    "bootstrapFailure": {
+      "eyebrow": "ParentOS local data",
+      "localDataLocked": "The app-owned local database could not be opened",
       "reasonCode": "Reason",
       "nextStep": "Next step",
-      "localDataButton": "Local data locked",
-      "retry": "Check again",
+      "localDataButton": "Local data unavailable",
+      "retry": "Try again",
       "states": {
-        "login-required": {
-          "title": "Sign in from Nimi Desktop",
-          "description": "ParentOS cannot open family data until Runtime binds this installed app to an authenticated Nimi account.",
-          "action": "Open Nimi Desktop, sign in or switch to the intended account, then return here and check again."
+        "app-data-unavailable": {
+          "title": "ParentOS local data is unavailable",
+          "description": "The native ParentOS host could not open its fixed OS app-data directory. This is an app-host failure, not a Nimi permission decision.",
+          "action": "Restart ParentOS. In development, build the ParentOS host sidecar before trying again."
         },
-        "runtime-unavailable": {
-          "title": "Nimi Runtime is unavailable",
-          "description": "The protected Runtime service could not establish a Nimi Desktop-supervised local-development session.",
-          "action": "Start Nimi Desktop and its verified Runtime service, then check again."
-        },
-        "permission-denied": {
-          "title": "ParentOS access was denied",
-          "description": "Runtime rejected this app, release, process, or account binding. No local family data was opened.",
-          "action": "Review ParentOS permissions in Nimi Desktop or reinstall an approved ParentOS release."
-        },
-        "repair-required": {
-          "title": "Nimi installation needs repair",
-          "description": "Runtime or the installed ParentOS release could not pass native trust verification.",
-          "action": "Repair Nimi Desktop and ParentOS from a trusted installer before trying again."
-        },
-        "capability-unavailable": {
-          "title": "ParentOS protected access is not available yet",
-          "description": "This build has no admitted protected ParentOS operation set. It stays fail-closed instead of opening data through a generic Runtime bridge.",
-          "action": "Use an admitted ParentOS release launched by Nimi Desktop after the protected operation set is enabled."
+        "app-data-repair-required": {
+          "title": "ParentOS local data needs repair",
+          "description": "The app-owned SQLite store or its schema could not be initialized safely.",
+          "action": "Keep the database closed and repair the ParentOS installation or local data before trying again."
         }
       }
     }

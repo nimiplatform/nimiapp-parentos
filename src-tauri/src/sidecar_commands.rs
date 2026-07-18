@@ -1402,7 +1402,7 @@ struct ClearVisionFollowupSettingsArgs {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct DbInitArgs {
-    subject_user_id: Option<String>,
+    app_account_id: Option<String>,
 }
 
 pub fn initialize_parentos_sidecar(
@@ -2742,7 +2742,7 @@ pub fn dispatch_parentos_sidecar_command(
         }
         "db_init" => {
             let args: DbInitArgs = parse_args(command, payload)?;
-            serialize_result(command, sqlite::db_init(args.subject_user_id))
+            serialize_result(command, sqlite::db_init(args.app_account_id))
         }
         "report_export_register_save_grant" => {
             let args: ReportExportRegisterSaveGrantArgs = parse_args(command, payload)?;
@@ -2859,7 +2859,7 @@ mod tests {
         let _temp_dir = install_test_roots();
         let now = "2026-07-08T12:00:00.000Z";
 
-        dispatch_parentos_sidecar_command("db_init", serde_json::json!({"subjectUserId": null}))
+        dispatch_parentos_sidecar_command("db_init", serde_json::json!({"appAccountId": null}))
             .expect("db_init");
         dispatch_parentos_sidecar_command(
             "create_family",

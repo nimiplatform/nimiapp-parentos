@@ -9,17 +9,17 @@ allowed_references: [.nimi/spec/parentos/kernel/*.md, .nimi/spec/parentos/kernel
 forbidden_fields: [done, covered, coverage_status, audit_date, evidence_report, current, proposed, backlog_status, migration_status, mapping_status, run_id, ledger_ref]
 required_top_level_fields: [schema_version, storage_layout, health_record_unification, tables]
 invariants:
-  - The host-bound installed app standard data root projection for nimi.parentos owns every durable app data root.
+  - ParentOS owns every durable product data root under the host-bound OS app-data root for nimi.parentos; no Nimi permission or grant is involved.
   - SQLite schema rows in this table stay bidirectionally aligned with src-tauri migrations.
   - health_record_events and health_record_values are the canonical measurement-shaped health fact storage.
 storage_layout:
   app_id: nimi.parentos
-  authority: installed app host standard data root projection for nimi.parentos
+  authority: app_owned_authority under the fixed OS app-data root for nimi.parentos
   durable_data_root_binding: parentosAppDataRoot = hostBoundStandardDataRoot(nimi.parentos).durableDataRoot
   storage_policy_ref: nimi-data-app-roots
   sqlite:
-    anonymous_database: "${parentosAppDataRoot}/sqlite/anonymous.db"
-    account_database: "${parentosAppDataRoot}/sqlite/accounts/user-{fnv64SubjectUserId}.db"
+    device_local_database: "${parentosAppDataRoot}/sqlite/local.db"
+    optional_app_account_database: "${parentosAppDataRoot}/sqlite/accounts/account-{fnv64AppAccountId}.db"
   files:
     attachments: "${parentosAppDataRoot}/attachments/{childId}/{attachmentId}.{ext}"
     orthodontic_photos: "${parentosAppDataRoot}/orthodontic/photos/{childId}/{sessionId}/{angle}.jpg"
@@ -27,7 +27,9 @@ storage_layout:
     journal_audio: "${parentosAppDataRoot}/journal/audio/{childId}/{entryId}.{ext}"
     child_avatars: "${parentosAppDataRoot}/children/avatars/{childId}.{ext}"
   constraints:
-    - "ParentOS MUST receive durable data, cache, and temp roots through the installed app host standard data root binding for nimi.parentos; app code MUST NOT call Runtime.GetAppStorage directly, concatenate <nimi_data>/apps/nimi.parentos, or write directly under the selected nimi_data root."
+    - "ParentOS MUST receive durable data, cache, and temp roots from the native host's fixed OS app-data binding for nimi.parentos; app code MUST NOT call Runtime.GetAppStorage directly, concatenate <nimi_data>/apps/nimi.parentos, or write directly under a user-selected root."
+    - "SQLite, media, settings, routes, and ParentOS product commands are app_owned_authority and MUST NOT create Nimi manifest permissions, prompts, grant rows, or product-wide admission gates."
+    - "The current product opens device_local_database without a Nimi account. Any optional app-account partition key is ParentOS product identity, not renderer-supplied Nimi account material."
     - "All SQLite database files and user-generated media files MUST live under parentosAppDataRoot and must be rejected when path canonicalization escapes the host-projected root."
     - "Deleting a child profile MUST purge every child-scoped on-disk media root: attachments/{childId}, orthodontic/photos/{childId}, journal/photos/{childId}, journal/audio/{childId}, and children/avatars/{childId}.*."
     - "Because ParentOS is pre-launch, this storage layout is hard-cut; direct writes under the selected nimi_data root are not admitted storage roots."
@@ -101,7 +103,7 @@ growth_measurement_canonical_migration:
 
 tables:
   - name: families
-    description: "Single local family profile per account-scoped ParentOS database."
+    description: "Single local family profile per active ParentOS-owned database partition."
     columns:
       - { name: familyId, type: TEXT, pk: true, description: "ULID" }
       - { name: displayName, type: TEXT, nullable: false }
@@ -111,7 +113,7 @@ tables:
       - { columns: [familyId], unique: true }
 
   - name: children
-    description: "Child profiles stored under one local family within the account-scoped database."
+    description: "Child profiles stored under one local family within the active ParentOS-owned database partition."
     columns:
       - { name: childId, type: TEXT, pk: true, description: "ULID" }
       - { name: familyId, type: TEXT, nullable: false, fk: "families.familyId" }
@@ -708,7 +710,7 @@ tables:
       - { name: updatedAt, type: TEXT, nullable: false, description: "ISO 8601 datetime" }
 
 constraints:
-  - "ParentOS local storage is account-scoped: each authenticated subject resolves a dedicated SQLite database file, and rows from one subject must not be read from another subject's database."
+  - "The current ParentOS local store is device-local under the fixed OS app-data root. A future ParentOS-owned app-account partition must select one exact database before hydration and must not use renderer-supplied Nimi account material."
   - "All ULID fields use ULID identifiers."
   - "All datetime fields use ISO 8601 strings."
   - "JSON payloads are stored as TEXT and must remain valid JSON on read/write."

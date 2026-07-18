@@ -6,9 +6,19 @@ import {
   getParentosAIConfigService,
 } from './parentos-ai-config-service.js';
 
+const { setAppSettingMock } = vi.hoisted(() => ({
+  setAppSettingMock: vi.fn(),
+}));
+
+vi.mock('../../bridge/sqlite-bridge.js', () => ({
+  getAppSetting: vi.fn().mockResolvedValue(null),
+  setAppSetting: setAppSettingMock,
+}));
+
 describe('parentos-ai-config-service', () => {
   beforeEach(() => {
     useAppStore.setState({ aiConfig: null });
+    setAppSettingMock.mockReset().mockResolvedValue(undefined);
   });
 
   it('returns an empty ParentOS profile catalog without app-owned profile authority', async () => {
@@ -32,7 +42,7 @@ describe('parentos-ai-config-service', () => {
     expect(useAppStore.getState().aiConfig).toBe(null);
   });
 
-  it('does not mutate or notify when AI config persistence is not admitted', async () => {
+  it('persists, publishes, and stores app-owned AI preferences', async () => {
     const subscriber = vi.fn();
     const next = {
       scopeRef: PARENTOS_AI_SCOPE_REF,
@@ -50,11 +60,9 @@ describe('parentos-ai-config-service', () => {
     } as const;
 
     getParentosAIConfigService().aiConfig.subscribe(PARENTOS_AI_SCOPE_REF, subscriber);
-    await expect(commitParentosAIConfig(next)).rejects.toMatchObject({
-      reasonCode: 'parentos-protected-operation-set-not-admitted',
-      actionHint: 'wait_for_parentos_protected_operation_admission',
-    });
-    expect(useAppStore.getState().aiConfig).toBe(null);
-    expect(subscriber).not.toHaveBeenCalled();
+    await expect(commitParentosAIConfig(next)).resolves.toEqual(next);
+    expect(setAppSettingMock).toHaveBeenCalledOnce();
+    expect(useAppStore.getState().aiConfig).toEqual(next);
+    expect(subscriber).toHaveBeenCalledWith(next);
   });
 });

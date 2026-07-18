@@ -18,36 +18,40 @@ describe('ParentOS local-app authority hardcut', () => {
     const manifest = readFileSync(manifestPath, 'utf8');
     expect(manifest).toContain('app_id: nimi.parentos');
     expect(manifest).toContain('manifest_role: submitted-input');
-    expect(manifest).toContain('declared_nimi_api_scopes');
+    expect(manifest).toMatch(/permissions:\s*\[\]/u);
+    expect(manifest).not.toContain('declared_nimi_api_scopes');
   });
 
-  it('constructs only the bounded local-app client in renderer code', () => {
+  it('hydrates app-owned data without constructing a protected Runtime client', () => {
     expect(bridgeSource).toContain('createNimiLocalAppStandardShellSurface');
     expect(bridgeSource).not.toContain('readInstalledNimiAppLaunchBinding');
     expect(bridgeSource).not.toContain('InstalledNimiAppLaunchBinding');
-    expect(bootstrapSource).toContain('createNimiAppRuntimePlatformClient({');
-    expect(bootstrapSource).toContain('platformClient.auth.status()');
-    expect(bootstrapSource).toContain('parentos-protected-operation-set-not-admitted');
+    expect(bootstrapSource).toContain('await dbInit(null)');
+    expect(bootstrapSource).toContain("authorityClass: 'app_owned_authority'");
     expect(bootstrapSource).not.toMatch(/\bcreateNimiClient\b|\bnew Runtime\b|readInstalledNimiAppLaunchBinding|createInstalledNimiAppBootstrap/);
-    expect(bootstrapSource).not.toMatch(/getAccountSessionStatus|accountCaller|realmBaseUrl|releaseDescriptorRef/);
+    expect(bootstrapSource).not.toMatch(/createNimiAppRuntimePlatformClient|getAccountSessionStatus|accountCaller|realmBaseUrl|releaseDescriptorRef/);
   });
 
-  it('uses native local-app hosts without portable authority inputs', () => {
+  it('registers exact app-owned commands beside native local-app carriers', () => {
     expect(electronMainSource).toContain('registerNimiElectronAppBridge');
+    expect(electronMainSource).toContain('appCommandHandlers: createParentOSElectronCommandHandlers');
+    expect(electronMainSource).toContain('createParentOSHostClient');
     expect(electronMainSource).toContain('--nimi-dev-renderer-url=');
     expect(electronMainSource).toContain("app.getPath('appData')");
     expect(electronMainSource).not.toMatch(/trustedRuntimeMetadataProvider|additionalArguments|installed-app-launch-binding/);
-    expect(electronMainSource).not.toMatch(/commandHandlers\s*:|createElectronShellFileProtocolHost/);
+    expect(electronMainSource).not.toMatch(/createElectronShellFileProtocolHost|runtimeEndpoint/);
     expect(electronMainSource).not.toMatch(/NIMI_APP_(?:LAUNCH_NONCE|DURABLE_DATA_ROOT|CACHE_ROOT|TEMP_ROOT)/);
     expect(existsSync(join(root, 'src-electron/runtime-auth.ts'))).toBe(false);
     expect(existsSync(join(root, 'src-electron/parentos-command-policy.ts'))).toBe(false);
 
     expect(tauriMainSource).toContain('RuntimeBridgeLocalAppHost::platform_default()');
-    expect(tauriMainSource).toContain('nimi_shell_tauri_local_app_standard_shell_handler![]');
+    expect(tauriMainSource).toContain('nimi_shell_tauri_local_app_standard_shell_handler![');
+    expect(tauriMainSource).toContain('sqlite::db_init');
+    expect(tauriMainSource).toContain('sqlite::queries::create_family');
     expect(tauriMainSource).toContain('app.path().app_data_dir()');
     expect(tauriMainSource).not.toMatch(/installed_app_launch|append_invoke_initialization_script/);
     expect(tauriMainSource).not.toMatch(/runtime_bridge_(?:unary|stream_open|stream_close)|ai_config_(?:get|set)/);
-    expect(tauriMainSource).not.toMatch(/sqlite::|allow_data_root_in_asset_scope/);
+    expect(tauriMainSource).not.toMatch(/allow_data_root_in_asset_scope/);
   });
 
   it('removes app-owned development launchers', () => {

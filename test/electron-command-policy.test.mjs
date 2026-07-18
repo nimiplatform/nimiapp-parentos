@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 
-test('ParentOS delegates fixed app-host command admission to Kit', () => {
+test('ParentOS delegates carrier admission to Kit and registers only exact app-owned commands', () => {
   const main = readFileSync(path.join(root, 'src-electron/main.ts'), 'utf8');
 
   assert.equal(existsSync(path.join(root, 'src-electron/parentos-command-policy.ts')), false);
@@ -14,5 +14,7 @@ test('ParentOS delegates fixed app-host command admission to Kit', () => {
   assert.doesNotMatch(main, /NIMI_STANDARD_SHELL_COMMANDS/u);
   assert.doesNotMatch(main, /commandPolicy\s*:/u);
   assert.doesNotMatch(main, /runtime\.unary|runtime\.streamOpen|runtime\.streamClose|ai-config\.(?:get|set)/u);
-  assert.doesNotMatch(main, /commandHandlers\s*:|createParentOSElectronCommandHandlers/u);
+  assert.match(main, /appCommandHandlers\s*:\s*createParentOSElectronCommandHandlers/u);
+  assert.match(main, /createParentOSHostClient/u);
+  assert.doesNotMatch(main, /\bcommandHandlers\s*:/u);
 });

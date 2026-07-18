@@ -1,8 +1,5 @@
-import { createNimiError } from '@nimiplatform/sdk';
-import { createNimiAppRuntimePlatformClient } from '@nimiplatform/sdk/app';
 import { useAppStore } from '../app-shell/app-store.js';
-import { classifyParentOSProtectedSessionFailure } from '../app-shell/protected-session-state.js';
-import { createNimiLocalAppStandardShellSurface } from '../bridge/index.js';
+import { classifyParentOSBootstrapFailure } from '../app-shell/bootstrap-failure.js';
 import {
   dbInit,
   getAppSetting,
@@ -16,18 +13,12 @@ import { loadAndApplyPersistedAppLanguage } from '../i18n/app-language.js';
 import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
 import { setParentOSNimiClient } from './parentos-nimi-client.js';
 
-// ParentOS has no renderer-owned app identity, release, endpoint, account
-// caller, or session authority. The SDK local-app client projects only the
-// bounded carrier status. Product data stays locked until the complete
-// ParentOS operation set is admitted by Runtime.
-export const PARENTOS_RUNTIME_APP_ID = 'nimi.parentos';
-
-const PARENTOS_OPERATION_SET_REASON = 'parentos-protected-operation-set-not-admitted';
-const PARENTOS_OPERATION_SET_ACTION = 'wait_for_parentos_protected_operation_admission';
+// ParentOS owns its SQLite, media, settings, and product commands. The native
+// host binds those surfaces to fixed OS app-data roots and the exact renderer;
+// no Nimi permission or generic Runtime client participates in local hydration.
 const ACTIVE_CHILD_SETTING_KEYS = ['activeChildId', 'inspection:last-active-child-id'] as const;
 
 let bootstrapPromise: Promise<void> | null = null;
-let localDataSyncPromise: Promise<void> = Promise.resolve();
 
 export async function runParentOSBootstrap(options: { force?: boolean } = {}): Promise<void> {
   if (bootstrapPromise && !options.force) {
@@ -53,18 +44,9 @@ export async function ensureParentOSBootstrapReady(): Promise<void> {
     throw new Error(
       state.bootstrapFailure?.message
       || state.bootstrapError
-      || 'The protected ParentOS operation set is unavailable.',
+      || 'ParentOS app-owned local data is unavailable.',
     );
   }
-}
-
-export async function ensureParentOSRuntimeClientReady(): Promise<void> {
-  await runParentOSBootstrap({ force: true });
-  const failure = useAppStore.getState().bootstrapFailure;
-  throw new Error(
-    failure?.message
-    || 'The protected ParentOS operation set is not admitted; generic Runtime access is forbidden.',
-  );
 }
 
 async function doRunParentOSBootstrap(): Promise<void> {
@@ -78,31 +60,24 @@ async function doRunParentOSBootstrap(): Promise<void> {
   setParentOSNimiClient(null);
 
   try {
-    const platformClient = createNimiAppRuntimePlatformClient({
-      standardShell: createNimiLocalAppStandardShellSurface(),
-    });
-    const status = await platformClient.auth.status();
-    if (!status.sessionBound) {
-      throw createNimiError({
-        message: `The ParentOS local-development session is ${status.state}.`,
-        reasonCode: status.reasonCode,
-        actionHint: status.actionHint,
-        source: 'sdk',
-      });
-    }
-
-    throw createNimiError({
-      message: 'The protected ParentOS operation set is not admitted.',
-      reasonCode: PARENTOS_OPERATION_SET_REASON,
-      actionHint: PARENTOS_OPERATION_SET_ACTION,
-      source: 'sdk',
+    await loadLocalData();
+    store.setBootstrapReady(true);
+    logRendererEvent({
+      level: 'info',
+      area: 'bootstrap.app-data',
+      message: 'action:app-owned-data-ready',
+      flowId,
+      details: {
+        authorityClass: 'app_owned_authority',
+        databaseScope: 'device-local',
+      },
     });
   } catch (error) {
-    const failure = classifyParentOSProtectedSessionFailure(error);
+    const failure = classifyParentOSBootstrapFailure(error);
     logRendererEvent({
-      level: 'warn',
-      area: 'bootstrap.protected-session',
-      message: 'action:protected-session-unavailable',
+      level: 'error',
+      area: 'bootstrap.app-data',
+      message: 'action:app-owned-data-unavailable',
       flowId,
       details: {
         error: describeError(error),
@@ -127,11 +102,13 @@ async function loadPersistedActiveChildId(): Promise<string | null> {
   return null;
 }
 
-async function loadScopedLocalData(subjectUserId?: string | null): Promise<void> {
+async function loadLocalData(): Promise<void> {
   const store = useAppStore.getState();
   store.clearLocalData();
 
-  await dbInit(subjectUserId);
+  // The current ParentOS product is local-first. Its database is scoped to the
+  // OS app-data root, not to a Nimi account or permission decision.
+  await dbInit(null);
   await loadAndApplyPersistedAppLanguage();
 
   const persistedAIConfig = await loadPersistedParentosAIConfig();
@@ -159,16 +136,4 @@ async function loadScopedLocalData(subjectUserId?: string | null): Promise<void>
       ?? children[0]!.childId;
     useAppStore.getState().setActiveChildId(resolvedActiveChildId);
   }
-}
-
-// This is retained for the future admitted protected-session transition. It is
-// deliberately not called by bootstrap while the ParentOS operation set is
-// unadmitted, so neither SQLite nor AIConfig can become a parallel admission
-// truth.
-export function syncParentOSLocalDataScope(subjectUserId?: string | null): Promise<void> {
-  const normalizedSubjectUserId = String(subjectUserId || '').trim() || null;
-  localDataSyncPromise = localDataSyncPromise
-    .catch(() => undefined)
-    .then(() => loadScopedLocalData(normalizedSubjectUserId));
-  return localDataSyncPromise;
 }

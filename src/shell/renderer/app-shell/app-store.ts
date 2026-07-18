@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { NimiAIConfig } from '@nimiplatform/sdk/ai';
 import { i18nText } from '../i18n/index.js';
-import type { ParentOSProtectedSessionFailure } from './protected-session-state.js';
+import type { ParentOSBootstrapFailure } from './bootstrap-failure.js';
 
 export type NurtureMode = 'relaxed' | 'balanced' | 'advanced';
 
@@ -44,13 +44,13 @@ interface AppState {
   };
   bootstrapReady: boolean;
   bootstrapError: string | null;
-  bootstrapFailure: ParentOSProtectedSessionFailure | null;
+  bootstrapFailure: ParentOSBootstrapFailure | null;
 
   setAuthSession: (user: AuthUser) => void;
   clearAuthSession: () => void;
   setBootstrapReady: (ready: boolean) => void;
   setBootstrapError: (error: string | null) => void;
-  setBootstrapFailure: (failure: ParentOSProtectedSessionFailure | null) => void;
+  setBootstrapFailure: (failure: ParentOSBootstrapFailure | null) => void;
   clearLocalData: () => void;
 
   activeChildId: string | null;

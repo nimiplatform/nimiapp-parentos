@@ -1,5 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NimiAIConfig } from '@nimiplatform/sdk/ai';
+
+const { getAppSettingMock, setAppSettingMock } = vi.hoisted(() => ({
+  getAppSettingMock: vi.fn(),
+  setAppSettingMock: vi.fn(),
+}));
+
+vi.mock('../../bridge/sqlite-bridge.js', () => ({
+  getAppSetting: getAppSettingMock,
+  setAppSetting: setAppSettingMock,
+}));
 
 import {
   PARENTOS_AI_SCOPE_REF,
@@ -8,7 +18,12 @@ import {
   savePersistedParentosAIConfig,
 } from './parentos-ai-config.js';
 
-describe('parentos-ai-config admission boundary', () => {
+describe('ParentOS app-owned AI configuration', () => {
+  beforeEach(() => {
+    getAppSettingMock.mockReset().mockResolvedValue(null);
+    setAppSettingMock.mockReset().mockResolvedValue(undefined);
+  });
+
   it('normalizes a persisted ParentOS AI config payload', () => {
     const parsed = parsePersistedParentosAIConfig(JSON.stringify({
       scopeRef: PARENTOS_AI_SCOPE_REF,
@@ -114,14 +129,22 @@ describe('parentos-ai-config admission boundary', () => {
     });
   });
 
-  it('fails closed when AI config load is not admitted', async () => {
-    await expect(loadPersistedParentosAIConfig()).rejects.toMatchObject({
-      reasonCode: 'parentos-protected-operation-set-not-admitted',
-      actionHint: 'wait_for_parentos_protected_operation_admission',
+  it('loads app-owned AI preferences without a Nimi permission decision', async () => {
+    getAppSettingMock.mockResolvedValue(JSON.stringify({
+      scopeRef: PARENTOS_AI_SCOPE_REF,
+      capabilities: { targetRefs: {}, selectedParams: {} },
+      profileOrigin: null,
+    }));
+
+    await expect(loadPersistedParentosAIConfig()).resolves.toEqual({
+      scopeRef: PARENTOS_AI_SCOPE_REF,
+      capabilities: { targetRefs: {}, selectedParams: {} },
+      profileOrigin: null,
     });
+    expect(getAppSettingMock).toHaveBeenCalledWith('parentos:ai-config:v1');
   });
 
-  it('validates config shape before failing closed on the unadmitted write', async () => {
+  it('validates and persists AI preferences in ParentOS SQLite', async () => {
     const input = {
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
@@ -137,10 +160,12 @@ describe('parentos-ai-config admission boundary', () => {
       profileOrigin: null,
     } satisfies NimiAIConfig;
 
-    await expect(savePersistedParentosAIConfig(input)).rejects.toMatchObject({
-      reasonCode: 'parentos-protected-operation-set-not-admitted',
-      actionHint: 'wait_for_parentos_protected_operation_admission',
-    });
+    await expect(savePersistedParentosAIConfig(input)).resolves.toEqual(input);
+    expect(setAppSettingMock).toHaveBeenCalledWith(
+      'parentos:ai-config:v1',
+      JSON.stringify(input),
+      expect.any(String),
+    );
     await expect(savePersistedParentosAIConfig({} as NimiAIConfig))
       .rejects.toThrow('ParentOS AI config is invalid');
   });

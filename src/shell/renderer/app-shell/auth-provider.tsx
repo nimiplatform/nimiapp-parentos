@@ -23,14 +23,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (bootstrapFailure) {
-    const titleKey = `Auth.protectedSession.states.${bootstrapFailure.state}.title`;
-    const descriptionKey = `Auth.protectedSession.states.${bootstrapFailure.state}.description`;
+    const titleKey = `Auth.bootstrapFailure.states.${bootstrapFailure.state}.title`;
+    const descriptionKey = `Auth.bootstrapFailure.states.${bootstrapFailure.state}.description`;
     return (
       <AmbientBackground variant="mesh" className="min-h-dvh w-full overflow-y-auto px-4 py-8 sm:px-6">
         <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-xl items-center justify-center">
           <Surface
-            data-testid="parentos-protected-session-failure"
-            data-protected-state={bootstrapFailure.state}
+            data-testid="parentos-bootstrap-failure"
+            data-bootstrap-state={bootstrapFailure.state}
             tone="card"
             material="glass-regular"
             elevation="floating"
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[length:var(--nimi-type-body-sm-size)] font-semibold uppercase tracking-[0.12em] text-[var(--nimi-text-muted)]">
-                    {i18nText('Auth.protectedSession.eyebrow')}
+                    {i18nText('Auth.bootstrapFailure.eyebrow')}
                   </p>
                   <h1 className="mt-1 text-balance text-2xl font-semibold leading-tight text-[var(--nimi-text-primary)]">
                     {i18nText(titleKey)}
@@ -57,40 +57,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
               <InlineAlert role="alert" tone="warning" icon={<LockKeyhole size={17} aria-hidden="true" />}>
                 <div className="min-w-0 space-y-1">
-                  <p className="font-semibold">{i18nText('Auth.protectedSession.localDataLocked')}</p>
+                  <p className="font-semibold">{i18nText('Auth.bootstrapFailure.localDataLocked')}</p>
                   <p className="break-words text-xs opacity-80">
-                    {i18nText('Auth.protectedSession.reasonCode')}: {bootstrapFailure.reasonCode}
+                    {i18nText('Auth.bootstrapFailure.reasonCode')}: {bootstrapFailure.reasonCode}
                   </p>
                 </div>
               </InlineAlert>
 
               <div className="rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
-                  {i18nText('Auth.protectedSession.nextStep')}
+                  {i18nText('Auth.bootstrapFailure.nextStep')}
                 </p>
                 <p className="mt-1 break-words text-sm leading-6 text-[var(--nimi-text-secondary)]">
-                  {i18nText(`Auth.protectedSession.states.${bootstrapFailure.state}.action`)}
+                  {i18nText(`Auth.bootstrapFailure.states.${bootstrapFailure.state}.action`)}
                 </p>
               </div>
 
               <div className="flex min-w-0 flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <Button
-                  data-testid="parentos-local-data-locked"
+                  data-testid="parentos-app-data-locked"
                   disabled
                   tone="secondary"
                   className="w-full sm:w-auto"
                   leadingIcon={<LockKeyhole size={16} aria-hidden="true" />}
                 >
-                  {i18nText('Auth.protectedSession.localDataButton')}
+                  {i18nText('Auth.bootstrapFailure.localDataButton')}
                 </Button>
                 <Button
-                  data-testid="parentos-protected-session-retry"
+                  data-testid="parentos-bootstrap-retry"
                   tone="primary"
                   className="w-full sm:w-auto"
                   leadingIcon={<RefreshCw size={16} aria-hidden="true" />}
                   onClick={() => void runParentOSBootstrap({ force: true })}
                 >
-                  {i18nText('Auth.protectedSession.retry')}
+                  {i18nText('Auth.bootstrapFailure.retry')}
                 </Button>
               </div>
             </div>

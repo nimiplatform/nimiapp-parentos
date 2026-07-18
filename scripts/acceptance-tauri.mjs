@@ -18,6 +18,9 @@ const evidenceRoot = path.join(
   'parentos-tauri',
 );
 const bridgeKey = '__NIMI_TAURI_RUNTIME__';
+const reservedPermissionId = 'agents.interact';
+const storageRunId = new Date().toISOString().replace(/[^0-9A-Za-z]/gu, '-');
+const storageRelativePath = `acceptance/parentos-base-entitlement-${storageRunId}.json`;
 
 async function main() {
   const evidenceDir = path.join(evidenceRoot, new Date().toISOString().replace(/[:.]/gu, '-'));
@@ -54,19 +57,17 @@ async function main() {
 
     await page.waitForLoadState('domcontentloaded', { timeout: 60_000 });
     await page.waitForFunction((key) => Boolean(window[key]?.invoke), bridgeKey, { timeout: 60_000 });
-    await waitForProtectedFailure(page);
-
-    const desktopState = await captureProtectedState(page);
-    assertProtectedState(desktopState, 'Tauri');
     await page.setViewportSize({ width: 1365, height: 900 });
+    await waitForProductLaunch(page);
+    const launchState = await captureLaunchState(page);
+    assertLaunchState(launchState, 'Tauri');
+    await page.getByTestId('parentos-launch-trigger').click();
+    await waitForProductRoute(page);
+    const desktopState = await captureProductState(page);
+    assertProductState(desktopState, 'Tauri');
     const desktopOverflow = await assertNoVisibleOverflow(page, 'tauri-desktop');
     const desktopScreenshot = path.join(screenshotDir, 'desktop.png');
     await page.screenshot({ path: desktopScreenshot, fullPage: true });
-
-    await page.getByTestId('parentos-protected-session-retry').click();
-    await waitForProtectedFailure(page);
-    const retriedState = await captureProtectedState(page);
-    assertProtectedState(retriedState, 'Tauri retry');
 
     const sessionStatusResult = await invokeBridge(
       page,
@@ -76,16 +77,25 @@ async function main() {
     assert.equal(sessionStatusResult.ok, true, 'Tauri dev host must bind through Desktop supervision');
     assert.match(
       String(sessionStatusResult.value?.state || ''),
-      /zero-grant|ready/u,
+      /ready/u,
       `Tauri local-app session must be bound: ${JSON.stringify(sessionStatusResult)}`,
     );
 
-    const artifactResult = await invokeBridge(
+    const permissionStatusResult = await invokeBridge(
       page,
-      NIMI_STANDARD_SHELL_COMMANDS['local-app.artifactsReadRuntimeBytes'],
-      { payload: { artifactId: 'parentos-tauri-acceptance-artifact' } },
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.permissionStatus'],
+      { payload: { permissionId: reservedPermissionId } },
     );
-    assert.equal(artifactResult.ok, false, 'Tauri artifact read must fail closed without an exact grant');
+    assert.equal(permissionStatusResult.ok, true, `Tauri reserved permission posture must be readable: ${JSON.stringify(permissionStatusResult)}`);
+    assert.equal(permissionStatusResult.value?.state, 'unavailable', 'reserved permission must remain unavailable');
+    assert.equal(permissionStatusResult.value?.canRequest, false, 'reserved permission must not be requestable');
+
+    const baseEntitlementWriteResult = await invokeBridge(
+      page,
+      NIMI_STANDARD_SHELL_COMMANDS['storage.writeJson'],
+      { payload: { relativePath: storageRelativePath, value: { shell: 'tauri', class: 'base_entitlement' } } },
+    );
+    assert.equal(baseEntitlementWriteResult.ok, true, `Tauri app-private JSON must use its base entitlement without a prompt: ${JSON.stringify(baseEntitlementWriteResult)}`);
 
     const directRuntimeResult = await invokeBridge(
       page,
@@ -104,7 +114,7 @@ async function main() {
     assert.equal(directRuntimeResult.ok, false, 'Tauri direct Runtime command must not be registered');
 
     const appDomainResult = await invokeBridge(page, 'get_family', {});
-    assert.equal(appDomainResult.ok, false, 'Tauri app-domain data must remain unregistered before protected admission');
+    assert.equal(appDomainResult.ok, true, `Tauri app-owned SQLite command must remain available independently: ${JSON.stringify(appDomainResult)}`);
 
     const accountControlResults = {};
     for (const command of [
@@ -119,8 +129,8 @@ async function main() {
     }
 
     await page.setViewportSize({ width: 390, height: 844 });
-    const narrowState = await captureProtectedState(page);
-    assertProtectedState(narrowState, 'Tauri narrow');
+    const narrowState = await captureProductState(page);
+    assertProductState(narrowState, 'Tauri narrow');
     const narrowOverflow = await assertNoVisibleOverflow(page, 'tauri-narrow');
     const narrowScreenshot = path.join(screenshotDir, 'narrow.png');
     await page.screenshot({ path: narrowScreenshot, fullPage: true });
@@ -138,11 +148,12 @@ async function main() {
       shell: 'tauri',
       cdpEndpoint,
       webviewArgs,
+      launchState,
       desktopState,
-      retriedState,
       narrowState,
       sessionStatusResult,
-      artifactResult,
+      permissionStatusResult,
+      baseEntitlementWriteResult,
       directRuntimeResult,
       appDomainResult,
       accountControlResults,
@@ -152,7 +163,7 @@ async function main() {
       diagnostics: diagnostics(),
       screenshots: { desktop: desktopScreenshot, narrow: narrowScreenshot },
     }, null, 2), 'utf8');
-    process.stdout.write(`Tauri protected-state acceptance: ${evidencePath}\n`);
+    process.stdout.write(`Tauri app-owned authority acceptance: ${evidencePath}\n`);
   } catch (error) {
     await writeFailureEvidence({
       evidenceDir,
@@ -169,48 +180,67 @@ async function main() {
   }
 }
 
-function assertProtectedState(state, label) {
+function assertLaunchState(state, label) {
   assert.equal(state.loading, false, `${label} must leave bootstrap loading`);
-  assert.equal(state.protectedState, 'capability-unavailable', `${label} must expose the transitional capability state`);
-  assert.equal(state.localDataDisabled, true, `${label} must keep local data disabled`);
-  assert.equal(state.retryEnabled, true, `${label} retry must remain usable`);
-  assert.equal(state.routed, false, `${label} must not render product routes`);
-  assert.equal(state.launch, false, `${label} must not render the old launch screen`);
-  assert.equal(state.alertRole, 'alert', `${label} protected failure must be announced accessibly`);
-  assert.match(state.bodyText, /ParentOS 受保护访问尚未开放/u, `${label} must render readable Chinese failure copy`);
-  assert.match(state.bodyText, /本地数据已锁定/u, `${label} must render the locked-data action`);
-  assert.match(state.alertText, /parentos-protected-operation-set-not-admitted/u, `${label} must expose the exact denial reason`);
+  assert.equal(state.failure, false, `${label} must not show an app-data failure`);
+  assert.equal(state.launch, true, `${label} must render the ParentOS launch surface`);
+  assert.equal(state.routed, false, `${label} must wait for explicit launch interaction`);
+  assert.ok(state.launchLabel.length > 0, `${label} launch control must have an accessible name`);
   assert.doesNotMatch(state.bodyText, /�/u, `${label} must not contain replacement-glyph text`);
 }
 
-async function waitForProtectedFailure(page) {
+function assertProductState(state, label) {
+  assert.equal(state.loading, false, `${label} must leave bootstrap loading`);
+  assert.equal(state.failure, false, `${label} must not show an app-data failure`);
+  assert.equal(state.routed, true, `${label} must render ParentOS product routes`);
+  assert.equal(state.launch, false, `${label} must leave the launch surface after interaction`);
+  assert.ok(state.bodyText.trim().length > 0, `${label} must render readable product content`);
+  assert.doesNotMatch(state.bodyText, /�/u, `${label} must not contain replacement-glyph text`);
+}
+
+async function waitForProductLaunch(page) {
   await page.waitForFunction(() => {
-    const failure = document.querySelector('[data-testid="parentos-protected-session-failure"]');
+    const launch = document.querySelector('[data-testid="parentos-launch-page"]');
     const loading = document.querySelector('[data-testid="parentos-bootstrap-loading"]');
-    return Boolean(failure) && !loading;
+    const failure = document.querySelector('[data-testid="parentos-bootstrap-failure"]');
+    return Boolean(launch) && !loading && !failure;
   }, null, { timeout: 60_000 });
 }
 
-async function captureProtectedState(page) {
+async function waitForProductRoute(page) {
+  await page.waitForFunction(() => (
+    Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]'))
+    && !document.querySelector('[data-testid="parentos-bootstrap-loading"]')
+    && !document.querySelector('[data-testid="parentos-bootstrap-failure"]')
+  ), null, { timeout: 60_000 });
+}
+
+async function captureLaunchState(page) {
   return page.evaluate(() => {
-    const failure = document.querySelector('[data-testid="parentos-protected-session-failure"]');
-    const localData = document.querySelector('[data-testid="parentos-local-data-locked"]');
-    const retry = document.querySelector('[data-testid="parentos-protected-session-retry"]');
-    const alert = document.querySelector('[role="alert"]');
+    const trigger = document.querySelector('[data-testid="parentos-launch-trigger"]');
     return {
       title: document.title,
       bodyText: document.body?.innerText ?? '',
       loading: Boolean(document.querySelector('[data-testid="parentos-bootstrap-loading"]')),
-      protectedState: failure?.getAttribute('data-protected-state') ?? '',
-      localDataDisabled: localData instanceof HTMLButtonElement && localData.disabled,
-      retryEnabled: retry instanceof HTMLButtonElement && !retry.disabled,
-      alertRole: alert?.getAttribute('role') ?? '',
-      alertText: alert?.textContent?.trim() ?? '',
+      failure: Boolean(document.querySelector('[data-testid="parentos-bootstrap-failure"]')),
       routed: Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]')),
       launch: Boolean(document.querySelector('[data-testid="parentos-launch-page"]')),
+      launchLabel: trigger?.getAttribute('aria-label')?.trim() ?? '',
       viewport: { width: window.innerWidth, height: window.innerHeight },
     };
   });
+}
+
+async function captureProductState(page) {
+  return page.evaluate(() => ({
+    title: document.title,
+    bodyText: document.body?.innerText ?? '',
+    loading: Boolean(document.querySelector('[data-testid="parentos-bootstrap-loading"]')),
+    failure: Boolean(document.querySelector('[data-testid="parentos-bootstrap-failure"]')),
+    routed: Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]')),
+    launch: Boolean(document.querySelector('[data-testid="parentos-launch-page"]')),
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+  }));
 }
 
 async function invokeBridge(page, command, payload) {
@@ -239,7 +269,7 @@ async function invokeBridge(page, command, payload) {
 async function assertNoVisibleOverflow(page, label) {
   const result = await page.evaluate((scanLabel) => {
     const viewportWidth = window.innerWidth;
-    const root = document.querySelector('[data-testid="parentos-protected-session-failure"]');
+    const root = document.querySelector('[data-testid="parentos-app-routed-surface"]');
     const issues = [];
     for (const element of Array.from(root?.querySelectorAll('*') ?? [])) {
       if (!(element instanceof HTMLElement)) continue;
@@ -279,7 +309,7 @@ async function writeFailureEvidence(input) {
   const failurePath = path.join(input.evidenceDir, 'failure.json');
   let state;
   try {
-    state = input.page ? await captureProtectedState(input.page) : null;
+    state = input.page ? await captureProductState(input.page) : null;
     if (input.page) await input.page.screenshot({ path: path.join(input.evidenceDir, 'failure.png'), fullPage: true });
   } catch (snapshotError) {
     state = { snapshotError: snapshotError instanceof Error ? snapshotError.message : String(snapshotError) };

@@ -20,7 +20,7 @@ vi.mock('../features/auth/parentos-login-page.js', () => ({
 
 import { AuthProvider } from './auth-provider.js';
 
-describe('AuthProvider protected installed state', () => {
+describe('AuthProvider app-owned data bootstrap', () => {
   beforeEach(() => {
     runParentOSBootstrapMock.mockClear();
     useAppStore.setState({
@@ -43,11 +43,8 @@ describe('AuthProvider protected installed state', () => {
   });
 
   it.each([
-    'login-required',
-    'runtime-unavailable',
-    'permission-denied',
-    'repair-required',
-    'capability-unavailable',
+    'app-data-unavailable',
+    'app-data-repair-required',
   ] as const)('renders the %s state without opening local product data', (state) => {
     useAppStore.setState({
       auth: { status: 'unauthenticated', user: null },
@@ -62,36 +59,36 @@ describe('AuthProvider protected installed state', () => {
 
     render(<AuthProvider><div>APP_CONTENT</div></AuthProvider>);
 
-    const failure = screen.getByTestId('parentos-protected-session-failure');
-    expect(failure.getAttribute('data-protected-state')).toBe(state);
+    const failure = screen.getByTestId('parentos-bootstrap-failure');
+    expect(failure.getAttribute('data-bootstrap-state')).toBe(state);
     expect(screen.getByRole('alert').textContent).toContain(`test-${state}`);
-    expect((screen.getByTestId('parentos-local-data-locked') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId('parentos-app-data-locked') as HTMLButtonElement).disabled).toBe(true);
     expect(screen.queryByText('APP_CONTENT')).toBeNull();
   });
 
-  it('retries the protected bootstrap without changing local state', () => {
+  it('retries app-data bootstrap without claiming success', () => {
     useAppStore.setState({
       auth: { status: 'unauthenticated', user: null },
       bootstrapFailure: {
-        state: 'runtime-unavailable',
-        reasonCode: 'runtime-service-unavailable',
-        actionHint: 'start_verified_runtime_service',
-        message: 'Runtime service unavailable',
+        state: 'app-data-unavailable',
+        reasonCode: 'parentos-electron-sidecar-binary-unavailable',
+        actionHint: 'build_parentos_host_sidecar_before_launching_electron',
+        message: 'ParentOS app data unavailable',
       },
-      bootstrapError: 'Runtime service unavailable',
+      bootstrapError: 'ParentOS app data unavailable',
     });
 
     render(<AuthProvider><div>APP_CONTENT</div></AuthProvider>);
-    fireEvent.click(screen.getByTestId('parentos-protected-session-retry'));
+    fireEvent.click(screen.getByTestId('parentos-bootstrap-retry'));
 
     expect(runParentOSBootstrapMock).toHaveBeenLastCalledWith({ force: true });
   });
 
-  it('keeps the launch screen for a future admitted protected session', () => {
+  it('opens the launch screen after app-owned local data is ready without Nimi login', () => {
     useAppStore.setState({
       bootstrapReady: true,
       bootstrapFailure: null,
-      auth: { status: 'authenticated', user: { id: 'parent-1', displayName: 'Parent' } },
+      auth: { status: 'unauthenticated', user: null },
     });
 
     render(<AuthProvider><div>APP_CONTENT</div></AuthProvider>);
