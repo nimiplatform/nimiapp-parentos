@@ -1,6 +1,6 @@
 # nimiapp-parentos
 
-成长底稿 (ParentOS) — AI-driven child growth operating system, packaged as a standalone Tauri 2 + React 19 + SQLite desktop app.
+成长底稿 (ParentOS) — AI-driven child growth operating system with Electron and Tauri 2 desktop shells, React 19, and SQLite.
 
 > Migrated from the `apps/parentos` workspace in the `nimi-realm` monorepo. The
 > nimi-realm copy remains in place; this project is the canonical standalone
@@ -10,7 +10,7 @@
 
 | Layer | Technology | Location |
 |-------|-----------|----------|
-| Desktop shell | Tauri 2 | `src-tauri/` |
+| Desktop shells | Electron + Tauri 2 | `src-electron/`, `src-tauri/` |
 | Frontend | React 19 + Vite 7 + Tailwind 4 | `src/shell/renderer/` |
 | Local storage | SQLite (rusqlite, bundled) | `src-tauri/src/sqlite/` |
 | AI | nimi runtime (`runtime.ai.text.generate`) | via `@nimiplatform/sdk` |
@@ -48,10 +48,12 @@ All runtime dependencies resolve from npm (`@nimiplatform/kit`,
 ## Development
 
 ```bash
-# Desktop-supervised Tauri
+# Desktop-supervised Electron (default proven path)
 pnpm dev
 
 # Explicit Desktop-supervised shell selection
+pnpm dev:electron
+pnpm dev:tauri
 pnpm dev:shell -- --shell electron
 pnpm dev:shell -- --shell tauri
 

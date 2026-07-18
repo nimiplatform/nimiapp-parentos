@@ -3,10 +3,6 @@ import type { NimiAIConfig } from '@nimiplatform/sdk/ai';
 import { i18nText } from '../i18n/index.js';
 import type { ParentOSProtectedSessionFailure } from './protected-session-state.js';
 
-type RuntimeDefaults = {
-  readonly webBaseUrl: string;
-};
-
 export type NurtureMode = 'relaxed' | 'balanced' | 'advanced';
 
 export type AuthUser = {
@@ -49,14 +45,12 @@ interface AppState {
   bootstrapReady: boolean;
   bootstrapError: string | null;
   bootstrapFailure: ParentOSProtectedSessionFailure | null;
-  runtimeDefaults: RuntimeDefaults | null;
 
   setAuthSession: (user: AuthUser) => void;
   clearAuthSession: () => void;
   setBootstrapReady: (ready: boolean) => void;
   setBootstrapError: (error: string | null) => void;
   setBootstrapFailure: (failure: ParentOSProtectedSessionFailure | null) => void;
-  setRuntimeDefaults: (defaults: RuntimeDefaults) => void;
   clearLocalData: () => void;
 
   activeChildId: string | null;
@@ -80,7 +74,6 @@ export const useAppStore = create<AppState>((set) => ({
   bootstrapReady: false,
   bootstrapError: null,
   bootstrapFailure: null,
-  runtimeDefaults: null,
 
   setAuthSession(user) {
     set({
@@ -99,7 +92,6 @@ export const useAppStore = create<AppState>((set) => ({
   setBootstrapReady: (ready) => set({ bootstrapReady: ready }),
   setBootstrapError: (error) => set({ bootstrapError: error }),
   setBootstrapFailure: (failure) => set({ bootstrapFailure: failure }),
-  setRuntimeDefaults: (defaults) => set({ runtimeDefaults: defaults }),
   clearLocalData: () => set({
     familyId: null,
     children: [],

@@ -80,7 +80,6 @@ describe('ParentOS local-app bootstrap hardcut', () => {
       bootstrapReady: false,
       bootstrapError: null,
       bootstrapFailure: null,
-      runtimeDefaults: null,
       familyId: null,
       children: [],
       activeChildId: null,

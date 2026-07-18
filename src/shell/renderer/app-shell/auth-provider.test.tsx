@@ -28,7 +28,6 @@ describe('AuthProvider protected installed state', () => {
       bootstrapReady: false,
       bootstrapError: null,
       bootstrapFailure: null,
-      runtimeDefaults: null,
       familyId: null,
       children: [],
       activeChildId: null,

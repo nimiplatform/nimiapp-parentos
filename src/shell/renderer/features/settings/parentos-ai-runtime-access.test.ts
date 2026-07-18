@@ -31,7 +31,6 @@ describe('parentos-ai-runtime access helpers', () => {
   beforeEach(() => {
     useAppStore.setState({
       aiConfig: null,
-      runtimeDefaults: null,
     });
   });
 

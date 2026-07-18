@@ -2,22 +2,12 @@ import { loadParentosRuntimeRouteOptions } from '../../infra/parentos-runtime-ro
 import { describeError, logRendererEvent } from '../../infra/telemetry/renderer-log.js';
 import { i18nText } from '../../i18n/index.js';
 
-export type ParentosAISettingsRuntimeStatus = {
-  readonly running: boolean;
-  readonly managed: false;
-  readonly launchMode: 'INSTALLED_APP';
-  readonly grpcAddr: '';
-  readonly lastError?: string;
-};
-
 export type ParentosAISettingsAvailability =
   | {
     kind: 'ready';
-    status: ParentosAISettingsRuntimeStatus;
   }
   | {
     kind: 'route-options-failed';
-    status: ParentosAISettingsRuntimeStatus;
     detail: string;
   };
 
@@ -28,22 +18,11 @@ function errorMessage(error: unknown): string {
   return String(error || 'unknown error');
 }
 
-function runtimeStatus(input?: { readonly lastError?: string }): ParentosAISettingsRuntimeStatus {
-  return {
-    running: !input?.lastError,
-    managed: false,
-    launchMode: 'INSTALLED_APP',
-    grpcAddr: '',
-    ...(input?.lastError ? { lastError: input.lastError } : {}),
-  };
-}
-
 export async function probeParentosAISettingsAvailability(): Promise<ParentosAISettingsAvailability> {
   try {
     await loadParentosRuntimeRouteOptions('text.generate');
     return {
       kind: 'ready',
-      status: runtimeStatus(),
     };
   } catch (error) {
     const detail = errorMessage(error);
@@ -57,7 +36,6 @@ export async function probeParentosAISettingsAvailability(): Promise<ParentosAIS
     });
     return {
       kind: 'route-options-failed',
-      status: runtimeStatus({ lastError: detail }),
       detail,
     };
   }

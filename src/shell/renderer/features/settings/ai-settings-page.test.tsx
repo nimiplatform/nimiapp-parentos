@@ -13,12 +13,6 @@ import AiSettingsPage from './ai-settings-page.js';
 vi.mock('./parentos-ai-settings-availability.js', () => ({
   probeParentosAISettingsAvailability: vi.fn(async () => ({
     kind: 'ready',
-    status: {
-      running: true,
-      managed: true,
-      launchMode: 'RUNTIME',
-      grpcAddr: '127.0.0.1:46371',
-    },
   })),
   parentosAISettingsAvailabilityLabel: () => '运行时已连接',
   parentosAISettingsAvailabilityBannerCopy: () => null,

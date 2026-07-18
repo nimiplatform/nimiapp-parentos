@@ -37,13 +37,6 @@ describe('parentos-ai-settings-availability', () => {
 
     expect(availability).toEqual({
       kind: 'route-options-failed',
-      status: {
-        running: false,
-        managed: false,
-        launchMode: 'INSTALLED_APP',
-        grpcAddr: '',
-        lastError: 'snapshot failed',
-      },
       detail: 'snapshot failed',
     });
     expect(logRendererEventMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -66,25 +59,12 @@ describe('parentos-ai-settings-availability', () => {
 
     expect(availability).toEqual({
       kind: 'ready',
-      status: {
-        running: true,
-        managed: false,
-        launchMode: 'INSTALLED_APP',
-        grpcAddr: '',
-      },
     });
   });
 
   it('labels route failures through route snapshot copy instead of daemon lifecycle copy', () => {
     const availability = {
       kind: 'route-options-failed' as const,
-      status: {
-        running: false,
-        managed: false,
-        launchMode: 'INSTALLED_APP' as const,
-        grpcAddr: '',
-        lastError: 'snapshot failed',
-      },
       detail: 'snapshot failed',
     } satisfies ParentosAISettingsAvailability;
 
