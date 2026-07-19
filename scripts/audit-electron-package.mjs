@@ -53,6 +53,9 @@ if (violations.length > 0) {
 }
 
 const required = [
+  '/dist-electron/main.js',
+  '/dist-electron/main-wrapper.cjs',
+  '/dist-electron/preload.cjs',
   '/node_modules/@nimiplatform/sdk/dist/index.js',
   '/node_modules/@nimiplatform/sdk/dist/runtime/index.js',
   '/node_modules/@nimiplatform/sdk/dist/runtime/wire-types/index.js',

@@ -105,6 +105,7 @@ async function main() {
     assertLaunchState(launchState, 'Electron');
     await page.getByTestId('parentos-launch-trigger').click();
     await waitForProductRoute(page);
+    await dismissWelcomeIntro(page);
     const desktopState = await captureProductState(page);
     assertProductState(desktopState, 'Electron');
     const desktopOverflow = await assertNoVisibleOverflow(page, 'electron-desktop');
@@ -291,6 +292,13 @@ async function waitForProductRoute(page) {
   ), null, { timeout: 30_000 });
 }
 
+async function dismissWelcomeIntro(page) {
+  const skip = page.getByTestId('parentos-welcome-intro-skip');
+  await skip.waitFor({ state: 'visible', timeout: 5_000 });
+  await skip.click();
+  await page.waitForSelector('[data-testid="parentos-welcome-intro"]', { state: 'detached' });
+}
+
 async function captureLaunchState(page) {
   return page.evaluate(() => {
     const trigger = document.querySelector('[data-testid="parentos-launch-trigger"]');
@@ -347,17 +355,38 @@ async function assertNoVisibleOverflow(page, label) {
     const viewportWidth = window.innerWidth;
     const root = document.querySelector('[data-testid="parentos-app-routed-surface"]');
     const issues = [];
+    const isClippedByAncestor = (element) => {
+      let ancestor = element.parentElement;
+      while (ancestor && ancestor !== root?.parentElement) {
+        const overflowX = window.getComputedStyle(ancestor).overflowX;
+        if (overflowX === 'hidden' || overflowX === 'clip') return true;
+        ancestor = ancestor.parentElement;
+      }
+      return false;
+    };
     for (const element of Array.from(root?.querySelectorAll('*') ?? [])) {
       if (!(element instanceof HTMLElement)) continue;
       const rect = element.getBoundingClientRect();
       const style = window.getComputedStyle(element);
       if (rect.width === 0 || rect.height === 0 || style.visibility === 'hidden' || style.display === 'none') continue;
-      if (rect.left < -2 || rect.right > viewportWidth + 2) {
-        issues.push({ tag: element.tagName, text: element.innerText.slice(0, 80), left: rect.left, right: rect.right });
+      if ((rect.left < -2 || rect.right > viewportWidth + 2) && !isClippedByAncestor(element)) {
+        issues.push({
+          tag: element.tagName,
+          className: element.className,
+          text: element.innerText.slice(0, 80),
+          left: rect.left,
+          right: rect.right,
+        });
       }
     }
-    return { label: scanLabel, viewport: { width: window.innerWidth, height: window.innerHeight }, issues };
+    return {
+      label: scanLabel,
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      issues,
+    };
   }, label);
+  assert.ok(result.documentOverflow <= 2, `${label} document overflows horizontally: ${JSON.stringify(result)}`);
   assert.deepEqual(result.issues, [], `${label} has horizontal overflow: ${JSON.stringify(result.issues)}`);
   return result;
 }

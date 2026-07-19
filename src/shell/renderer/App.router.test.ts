@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldUseParentOSHashRouter } from './App.js';
+import { shouldUseParentOSHashRouter } from './app-router-mode.js';
 
 describe('ParentOS router mode', () => {
   it('uses hash routing only for packaged Electron file renderers', () => {

@@ -16,6 +16,9 @@ test('Electron package metadata and staging-relative paths are configured', asyn
 
 test('Electron package includes Kit native image runtime and writes hardcut evidence locally', async () => {
   const packageScript = await readFile('scripts/package-electron.mjs', 'utf8');
+  const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
+  const mainBundle = await readFile('scripts/bundle-electron-main.mjs', 'utf8');
+  const packageAudit = await readFile('scripts/audit-electron-package.mjs', 'utf8');
   const warningGate = await readFile('scripts/check-electron-builder-warnings.mjs', 'utf8');
 
   assert.match(
@@ -33,4 +36,12 @@ test('Electron package includes Kit native image runtime and writes hardcut evid
   }
   assert.match(packageScript, /node_modules\/sharp\/dist\/index\.mjs/u);
   assert.match(packageScript, /node_modules\/@img\/sharp-win32-x64\/index\.cjs/u);
+  assert.match(packageJson.scripts['build:electron'], /bundle-electron-main\.mjs/u);
+  assert.match(packageJson.scripts['check:electron-package-audit'], /acceptance-electron\.mjs --plain-negative/u);
+  assert.match(mainBundle, /entryPoints: \[path\.join\(appRoot, ['"]src-electron\/main\.ts['"]\)\]/u);
+  assert.match(mainBundle, /bundle: true/u);
+  assert.match(mainBundle, /packages: ['"]external['"]/u);
+  for (const entry of ['main.js', 'main-wrapper.cjs', 'preload.cjs']) {
+    assert.match(packageAudit, new RegExp(`/dist-electron/${entry.replace('.', '\\.')}`, 'u'));
+  }
 });

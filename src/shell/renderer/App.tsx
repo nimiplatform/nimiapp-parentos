@@ -7,23 +7,13 @@ import { i18n } from './i18n/index.js';
 import { AppRoutes } from './app-shell/routes.js';
 import { ShellLayout } from './app-shell/shell-layout.js';
 import { AuthProvider } from './app-shell/auth-provider.js';
-import { hasElectronRuntime } from './bridge/index.js';
+import { shouldUseParentOSHashRouter } from './app-router-mode.js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, staleTime: 5 * 60 * 1000 },
   },
 });
-
-export function shouldUseParentOSHashRouter(input: {
-  readonly electronRuntime: boolean;
-  readonly locationProtocol: string;
-} = {
-  electronRuntime: hasElectronRuntime(),
-  locationProtocol: globalThis.location?.protocol ?? '',
-}): boolean {
-  return input.electronRuntime && input.locationProtocol === 'file:';
-}
 
 function ParentOSRouter({ children }: PropsWithChildren) {
   const Router = shouldUseParentOSHashRouter() ? HashRouter : BrowserRouter;
