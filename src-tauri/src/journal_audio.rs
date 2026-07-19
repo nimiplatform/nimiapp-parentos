@@ -1,10 +1,9 @@
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use base64::Engine;
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::app_storage;
+use crate::media_storage::{decode_bounded_base64, write_media_file, MAX_AUDIO_OBJECT_BYTES};
 
 const JOURNAL_AUDIO_DIR: &str = "journal/audio";
 
@@ -93,12 +92,8 @@ pub fn save_journal_voice_audio(
     let child_id = sanitize_segment(&child_id, "child_id")?;
     let entry_id = sanitize_segment(&entry_id, "entry_id")?;
     let extension = extension_for_mime_type(&mime_type)?;
-    let audio_bytes = BASE64_STANDARD
-        .decode(audio_base64.trim())
-        .map_err(|error| format!("invalid journal voice base64 payload: {error}"))?;
-    if audio_bytes.is_empty() {
-        return Err("journal voice payload must not be empty".to_string());
-    }
+    let audio_bytes =
+        decode_bounded_base64(&audio_base64, "journal voice", MAX_AUDIO_OBJECT_BYTES)?;
 
     let child_dir = resolve_audio_root()?.join(&child_id);
     fs::create_dir_all(&child_dir).map_err(|error| {
@@ -109,12 +104,13 @@ pub fn save_journal_voice_audio(
     })?;
 
     let file_path = child_dir.join(format!("{entry_id}.{extension}"));
-    fs::write(&file_path, audio_bytes).map_err(|error| {
-        format!(
-            "failed to write journal voice audio ({}): {error}",
-            file_path.display()
-        )
-    })?;
+    write_media_file(
+        &app_storage::data_root()?,
+        &file_path,
+        &audio_bytes,
+        "journal voice audio",
+        MAX_AUDIO_OBJECT_BYTES,
+    )?;
 
     Ok(SavedJournalVoiceAudio {
         path: file_path.display().to_string(),

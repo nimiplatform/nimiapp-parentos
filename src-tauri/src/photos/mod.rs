@@ -34,6 +34,7 @@ use image::imageops::FilterType;
 use image::{GenericImageView, ImageReader, Rgb, RgbImage};
 
 use crate::app_storage;
+use crate::media_storage::{write_media_file, MAX_IMAGE_OBJECT_BYTES};
 
 const PHOTOS_DIR: &str = "orthodontic/photos";
 const MAX_LONGEST_EDGE: u32 = 1600;
@@ -192,6 +193,17 @@ pub fn write_jpeg(
     angle: &str,
     jpeg_bytes: &[u8],
 ) -> Result<PathBuf, String> {
+    write_jpeg_in_partition(root, root, child_id, session_id, angle, jpeg_bytes)
+}
+
+fn write_jpeg_in_partition(
+    partition_root: &Path,
+    root: &Path,
+    child_id: &str,
+    session_id: &str,
+    angle: &str,
+    jpeg_bytes: &[u8],
+) -> Result<PathBuf, String> {
     if !is_admitted_angle(angle) {
         return Err(format!(
             "unsupported photo angle \"{angle}\" (admitted: front | side)"
@@ -199,8 +211,13 @@ pub fn write_jpeg(
     }
     let session_dir = resolve_session_dir_at(root, child_id, session_id)?;
     let dest = session_dir.join(format!("{angle}.jpg"));
-    fs::write(&dest, jpeg_bytes)
-        .map_err(|e| format!("failed to write photo ({}): {e}", dest.display()))?;
+    write_media_file(
+        partition_root,
+        &dest,
+        jpeg_bytes,
+        "orthodontic photo",
+        MAX_IMAGE_OBJECT_BYTES,
+    )?;
     Ok(dest)
 }
 
@@ -286,7 +303,14 @@ pub fn save_session_jpeg(
     jpeg_bytes: &[u8],
 ) -> Result<PathBuf, String> {
     let root = resolve_photos_root()?;
-    write_jpeg(&root, child_id, session_id, angle, jpeg_bytes)
+    write_jpeg_in_partition(
+        &app_storage::data_root()?,
+        &root,
+        child_id,
+        session_id,
+        angle,
+        jpeg_bytes,
+    )
 }
 
 pub fn delete_session_dir(child_id: &str, session_id: &str) -> Result<(), String> {

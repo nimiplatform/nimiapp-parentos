@@ -56,6 +56,31 @@ test('ParentOS Tauri exposes the local-app carrier and exact app-owned commands'
   assert.doesNotMatch(main, /allow_data_root_in_asset_scope/u);
 });
 
+test('all renderer-to-native media writes share bounded partition enforcement', async () => {
+  const boundedPayloadModules = [
+    'src-tauri/src/journal_audio.rs',
+    'src-tauri/src/journal_photo.rs',
+    'src-tauri/src/child_avatar.rs',
+    'src-tauri/src/attachment_store.rs',
+    'src-tauri/src/orthodontic_photos.rs',
+  ];
+  for (const modulePath of boundedPayloadModules) {
+    const source = await readProjectFile(modulePath);
+    assert.match(source, /decode_bounded_base64/u, `${modulePath} must bound payloads before decode`);
+  }
+  for (const modulePath of boundedPayloadModules.slice(0, 4)) {
+    const source = await readProjectFile(modulePath);
+    assert.match(source, /write_media_file/u, `${modulePath} must enforce the aggregate partition quota`);
+  }
+  const photos = await readProjectFile('src-tauri/src/photos/mod.rs');
+  assert.match(photos, /write_media_file/u);
+
+  const boundary = await readProjectFile('src-tauri/src/media_storage.rs');
+  assert.match(boundary, /MAX_MEDIA_PARTITION_BYTES/u);
+  assert.match(boundary, /NamedTempFile::new_in/u);
+  assert.match(boundary, /file_type\(\)\.is_symlink\(\)/u);
+});
+
 test('ParentOS manifest opts into the admitted Electron local-development profile', async () => {
   const manifest = await readProjectFile('nimi.app.yaml');
   assert.match(manifest, /local_development:\s+electron:/u);

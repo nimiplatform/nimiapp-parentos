@@ -1,10 +1,9 @@
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use base64::Engine;
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::app_storage;
+use crate::media_storage::{decode_bounded_base64, write_media_file, MAX_IMAGE_OBJECT_BYTES};
 
 const JOURNAL_PHOTO_DIR: &str = "journal/photos";
 
@@ -94,12 +93,8 @@ pub fn save_journal_photo(
     let child_id = sanitize_segment(&child_id, "child_id")?;
     let entry_id = sanitize_segment(&entry_id, "entry_id")?;
     let extension = extension_for_mime_type(&mime_type)?;
-    let image_bytes = BASE64_STANDARD
-        .decode(image_base64.trim())
-        .map_err(|error| format!("invalid journal photo base64 payload: {error}"))?;
-    if image_bytes.is_empty() {
-        return Err("journal photo payload must not be empty".to_string());
-    }
+    let image_bytes =
+        decode_bounded_base64(&image_base64, "journal photo", MAX_IMAGE_OBJECT_BYTES)?;
 
     let child_dir = resolve_photo_root()?.join(&child_id);
     fs::create_dir_all(&child_dir).map_err(|error| {
@@ -110,12 +105,13 @@ pub fn save_journal_photo(
     })?;
 
     let file_path = child_dir.join(format!("{entry_id}_{index}.{extension}"));
-    fs::write(&file_path, &image_bytes).map_err(|error| {
-        format!(
-            "failed to write journal photo ({}): {error}",
-            file_path.display()
-        )
-    })?;
+    write_media_file(
+        &app_storage::data_root()?,
+        &file_path,
+        &image_bytes,
+        "journal photo",
+        MAX_IMAGE_OBJECT_BYTES,
+    )?;
 
     Ok(SavedJournalPhoto {
         path: file_path.display().to_string(),

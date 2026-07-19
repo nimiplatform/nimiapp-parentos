@@ -1,11 +1,10 @@
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use base64::Engine;
 use rusqlite::params;
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::app_storage;
+use crate::media_storage::{decode_bounded_base64, write_media_file, MAX_IMAGE_OBJECT_BYTES};
 use crate::sqlite::get_conn;
 
 const ATTACHMENTS_DIR: &str = "attachments";
@@ -140,12 +139,7 @@ pub fn save_attachment(
     let safe_attachment_id = sanitize_segment(&attachment_id, "attachment_id")?;
     let ext = extension_for_mime_type(&mime_type)?;
 
-    let image_bytes = BASE64_STANDARD
-        .decode(image_base64.trim())
-        .map_err(|e| format!("invalid attachment base64 payload: {e}"))?;
-    if image_bytes.is_empty() {
-        return Err("attachment payload must not be empty".to_string());
-    }
+    let image_bytes = decode_bounded_base64(&image_base64, "attachment", MAX_IMAGE_OBJECT_BYTES)?;
 
     // Write file to disk
     let child_dir = resolve_attachments_root()?.join(&safe_child_id);
@@ -157,8 +151,13 @@ pub fn save_attachment(
     })?;
 
     let file_path = child_dir.join(format!("{safe_attachment_id}.{ext}"));
-    fs::write(&file_path, &image_bytes)
-        .map_err(|e| format!("failed to write attachment ({}): {e}", file_path.display()))?;
+    write_media_file(
+        &app_storage::data_root()?,
+        &file_path,
+        &image_bytes,
+        "attachment",
+        MAX_IMAGE_OBJECT_BYTES,
+    )?;
 
     let file_path_str = file_path.display().to_string();
 

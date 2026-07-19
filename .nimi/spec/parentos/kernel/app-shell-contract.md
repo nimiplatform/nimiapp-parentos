@@ -30,6 +30,8 @@ Electron and Tauri MUST bind the shared Kit local-app host to the platform-nativ
 
 ParentOS SQLite, media, settings, routes, and exact native product commands are `app_owned_authority`, not a ParentOS-wide Nimi permission gate. Their availability MUST NOT create a manifest permission, user prompt, grant row, synthetic scope, or Runtime admission decision. The native host derives fixed roots from its OS application-data API; env, argv, renderer input, and user configuration cannot select those roots. Canonical-path, escape, symlink, quota, schema, and exact renderer-origin checks remain mandatory app-host enforcement.
 
+Renderer-to-native media writes MUST reject encoded payloads before decode when their maximum decoded size cannot fit, then re-check the decoded object size. Images are limited to 25 MiB per object, journal audio to 64 MiB per object, and the complete durable ParentOS data partition to 2 GiB when admitting a media write. All media entry points share one native quota lock, reject symbolic-link or non-regular partition entries, account for replacement size, and persist through a same-directory temporary file plus atomic replacement so rejection or write failure leaves no partial target.
+
 The local product bootstrap sequence is:
 
 1. bind the exact Electron or Tauri app host and fixed OS app-data roots;

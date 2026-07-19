@@ -4,6 +4,7 @@ pub mod child_avatar;
 pub mod dropped_file;
 pub mod journal_audio;
 pub mod journal_photo;
+pub mod media_storage;
 pub mod orthodontic_photos;
 pub mod photos;
 pub mod report_export;

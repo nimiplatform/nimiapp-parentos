@@ -18,6 +18,7 @@ use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
 use std::path::Path;
 
+use crate::media_storage::{decode_bounded_base64, MAX_IMAGE_OBJECT_BYTES};
 use crate::photos;
 use crate::sqlite::queries::{
     delete_orthodontic_photo_session_collecting_paths, delete_photo_attachment_collecting_path,
@@ -65,9 +66,8 @@ pub fn attach_orthodontic_photo(
         ));
     }
 
-    let src_bytes = BASE64_STANDARD
-        .decode(image_base64.trim())
-        .map_err(|e| format!("photo payload base64 decode failed: {e}"))?;
+    let src_bytes =
+        decode_bounded_base64(&image_base64, "orthodontic photo", MAX_IMAGE_OBJECT_BYTES)?;
     let jpeg_bytes = photos::compress_to_jpeg(&src_bytes, &mime_type)?;
 
     let dest = photos::save_session_jpeg(&child_id, &session_id, &angle, &jpeg_bytes)?;

@@ -173,6 +173,19 @@ async function main() {
     const appDomainResult = await invokeBridge(page, 'get_family', {});
     assert.equal(appDomainResult.ok, true, `Electron app-owned SQLite command must remain available independently: ${JSON.stringify(appDomainResult)}`);
 
+    const mediaWriteResult = await invokeBridge(page, 'save_journal_photo', {
+      childId: 'acceptance-child',
+      entryId: 'acceptance-entry',
+      index: 0,
+      mimeType: 'image/png',
+      imageBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    });
+    assert.equal(mediaWriteResult.ok, true, `Electron bounded media write must succeed: ${JSON.stringify(mediaWriteResult)}`);
+    const mediaDeleteResult = await invokeBridge(page, 'delete_journal_photo', {
+      path: mediaWriteResult.value?.path,
+    });
+    assert.equal(mediaDeleteResult.ok, true, `Electron bounded media cleanup must succeed: ${JSON.stringify(mediaDeleteResult)}`);
+
     const accountControlResults = {};
     for (const command of [
       'nimi.shell.auth.session.load',
@@ -214,6 +227,8 @@ async function main() {
       baseEntitlementWriteResult,
       directRuntimeResult,
       appDomainResult,
+      mediaWriteResult,
+      mediaDeleteResult,
       accountControlResults,
       overflowScan: { desktop: desktopOverflow, narrow: narrowOverflow },
       hmrResult,
