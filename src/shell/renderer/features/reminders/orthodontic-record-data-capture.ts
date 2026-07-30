@@ -4,10 +4,10 @@
  *
  * Orthodontic record_data rules (PO-ORTHO-EXPANDER-ACTIVATION,
  * PO-ORTHO-ALIGNER-CHANGE, PO-ORTHO-UNWEAR-OPEN) deliberately do NOT live in
- * `reminder-capture-targets.yaml` — their capture surface is the per-appliance
- * orthodontic modal stack (see `orthodontic-protocols.yaml` constraint
+ * `data/structured/parentos/reminder-capture-targets.yaml` — their capture surface is the per-appliance
+ * orthodontic modal stack (see `data/structured/parentos/orthodontic-protocols.yaml` constraint
  * "Orthodontic protocol actionType=record_data rules are governed by
- * orthodontic-protocols.yaml checkinType bindings and must not be duplicated
+ * data/structured/parentos/orthodontic-protocols.yaml checkinType bindings and must not be duplicated
  * here.").
  *
  * The reminder_state row's `notes` column carries the appliance binding in the

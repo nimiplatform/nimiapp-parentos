@@ -17,7 +17,7 @@ import { readKnowledgeAssetData } from './knowledge-json-asset.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const TABLES = resolve(ROOT, '.nimi/spec/parentos/kernel/tables');
+const TABLES = resolve(ROOT, 'data/structured/parentos');
 const DATA_KNOWLEDGE = resolve(ROOT, 'data/knowledge');
 const SRC = resolve(ROOT, 'src/shell/renderer');
 

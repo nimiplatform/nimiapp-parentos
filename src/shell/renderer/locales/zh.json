@@ -2856,7 +2856,7 @@
     "error": {
       "unknownRuleTitle": "提醒目录不完整",
       "unknownRuleIds": "发现未登记的 ruleId：{{ruleIds}}",
-      "unknownRuleBody": "提醒流按 PO-TIME-007 fail-close。重启 ParentOS 即可触发 schema v17 自动清理这些游离记录；如果重启后仍有未登记的 ruleId，请修复 reminder-rules.yaml 或 orthodontic-protocols.yaml。",
+      "unknownRuleBody": "提醒流按 PO-TIME-007 fail-close。重启 ParentOS 即可触发 schema v17 自动清理这些游离记录；如果重启后仍有未登记的 ruleId，请修复 data/structured/parentos/reminder-rules.yaml 或 data/structured/parentos/orthodontic-protocols.yaml。",
       "unknownCaptureProtocol": "未识别的 captureProtocolId: {{captureProtocolId}}",
       "missingBoundAppliance": "找不到提醒绑定的矫治器（applianceId={{applianceId}}）"
     },

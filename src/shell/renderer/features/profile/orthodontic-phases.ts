@@ -30,7 +30,7 @@ export interface AppliancePhase {
 
 /**
  * Ordered per-appliance-type treatment-phase sequences. TS mirror of
- * `orthodontic-protocols.yaml#appliancePhases`; the YAML is the sole authority
+ * `data/structured/parentos/orthodontic-protocols.yaml#appliancePhases`; the YAML is the sole authority
  * and `orthodontic-protocol-catalog.test.ts` pins this against it.
  */
 export const APPLIANCE_PHASES: Record<OrthodonticApplianceType, AppliancePhase[]> = {

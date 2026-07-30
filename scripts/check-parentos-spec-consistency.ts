@@ -1,13 +1,12 @@
 /**
- * check-parentos-spec-consistency.ts
- * Validates:
- * - app-local kernel authority landing exists
- * - routes.yaml ↔ routes.tsx ↔ shell-layout.tsx stay bidirectionally aligned
- * - local-storage.yaml ↔ sqlite migration DDL stay aligned
+ * Validates ParentOS's current v2 authority consumers:
+ * - canonical authority landing exists
+ * - data/structured routes ↔ routes.tsx ↔ shell-layout.tsx stay bidirectionally aligned
+ * - data/structured local storage ↔ SQLite migration DDL stay aligned
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
@@ -53,12 +52,14 @@ export function findRouteConsistencyErrors(input: {
   routes: SpecRoute[];
   routerSource: string;
   navSource: string;
-  kernelIndexExists: boolean;
+  canonicalAuthorityExists: boolean;
 }) {
   const errors: string[] = [];
 
-  if (!input.kernelIndexExists) {
-    errors.push('.nimi/spec/parentos/kernel/index.md is missing — domain authority landing is incomplete');
+  if (!input.canonicalAuthorityExists) {
+    errors.push(
+      '.nimi/spec/parentos/canonical/project.authority.yaml is missing — v2 authority landing is incomplete',
+    );
   }
 
   const specPaths = uniqueSorted(input.routes.map((route) => route.path));
@@ -70,25 +71,33 @@ export function findRouteConsistencyErrors(input: {
 
   for (const path of specPaths) {
     if (!routerPaths.includes(path)) {
-      errors.push(`Route ${path} defined in routes.yaml but missing from routes.tsx`);
+      errors.push(
+        `Route ${path} defined in data/structured/parentos/routes.yaml but missing from routes.tsx`,
+      );
     }
   }
 
   for (const path of routerPaths) {
     if (!specPaths.includes(path)) {
-      errors.push(`Route ${path} is registered in routes.tsx but missing from routes.yaml`);
+      errors.push(
+        `Route ${path} is registered in routes.tsx but missing from data/structured/parentos/routes.yaml`,
+      );
     }
   }
 
   for (const path of specNavPaths) {
     if (!navPaths.includes(path)) {
-      errors.push(`Nav route ${path} defined in routes.yaml but missing from shell-layout.tsx`);
+      errors.push(
+        `Nav route ${path} defined in data/structured/parentos/routes.yaml but missing from shell-layout.tsx`,
+      );
     }
   }
 
   for (const path of navPaths) {
     if (!specNavPaths.includes(path)) {
-      errors.push(`Nav route ${path} is exposed in shell-layout.tsx but missing nav: true authority in routes.yaml`);
+      errors.push(
+        `Nav route ${path} is exposed in shell-layout.tsx but missing nav: true authority in data/structured/parentos/routes.yaml`,
+      );
     }
   }
 
@@ -100,7 +109,9 @@ export function findRouteTableConstraintErrors(routes: SpecRoute[]) {
   const defaultRoutes = routes.filter((route) => route.isDefault === true);
 
   if (defaultRoutes.length !== 1) {
-    errors.push(`routes.yaml must declare exactly one isDefault route, found ${defaultRoutes.length}`);
+    errors.push(
+      `data/structured/parentos/routes.yaml must declare exactly one isDefault route, found ${defaultRoutes.length}`,
+    );
   }
 
   const routeByPath = new Map(routes.map((route) => [route.path, route]));
@@ -130,7 +141,10 @@ export function findStorageConsistencyErrors(input: {
   const errors: string[] = [];
 
   for (const table of input.storageTables) {
-    const tableRegex = new RegExp(`CREATE TABLE IF NOT EXISTS ${table.name}\\s*\\(([^;]+?)\\);`, 's');
+    const tableRegex = new RegExp(
+      `CREATE TABLE IF NOT EXISTS ${table.name}\\s*\\(([^;]+?)\\);`,
+      's',
+    );
     const match = input.migrationsSqlSources.match(tableRegex);
 
     if (!match) {
@@ -140,7 +154,10 @@ export function findStorageConsistencyErrors(input: {
 
     const ddl = match[1];
     for (const column of table.columns) {
-      const addColumnRegex = new RegExp(`ALTER TABLE ${table.name} ADD COLUMN ${column.name}\\b`, 'i');
+      const addColumnRegex = new RegExp(
+        `ALTER TABLE ${table.name} ADD COLUMN ${column.name}\\b`,
+        'i',
+      );
       if (!ddl.includes(column.name) && !addColumnRegex.test(input.migrationsSqlSources)) {
         errors.push(`Column '${table.name}.${column.name}' missing from sqlite migrations`);
       }
@@ -175,21 +192,28 @@ export function findGrowthReportTypeConsistencyErrors(input: {
   const errors: string[] = [];
 
   const growthReportsTable = input.storageTables.find((table) => table.name === 'growth_reports');
-  const reportTypeColumn = growthReportsTable?.columns.find((column) => column.name === 'reportType');
+  const reportTypeColumn = growthReportsTable?.columns.find(
+    (column) => column.name === 'reportType',
+  );
   if (!reportTypeColumn?.description) {
-    return ['growth_reports.reportType description is missing from local-storage.yaml'];
+    return [
+      'growth_reports.reportType description is missing from data/structured/parentos/local-storage.yaml',
+    ];
   }
 
   const specAllowedSet = parsePipeSeparatedAllowedSet(reportTypeColumn.description);
-
-  const tsMatch = input.structuredReportSource.match(/const GROWTH_REPORT_TYPES = \[(.*?)\] as const/s);
+  const tsMatch = input.structuredReportSource.match(
+    /const GROWTH_REPORT_TYPES = \[(.*?)\] as const/s,
+  );
   if (!tsMatch) {
     errors.push('structured-report.ts is missing GROWTH_REPORT_TYPES');
     return errors;
   }
   const tsAllowedSet = extractQuotedStringValues(tsMatch[1] ?? '');
 
-  const rustMatch = input.rustGrowthReportSource.match(/matches!\(\s*report_type,\s*([^)]+)\)/s);
+  const rustMatch = input.rustGrowthReportSource.match(
+    /matches!\(\s*report_type,\s*([^)]+)\)/s,
+  );
   if (!rustMatch) {
     errors.push('health_measurements.rs is missing is_supported_growth_report_type matches! helper');
     return errors;
@@ -201,27 +225,23 @@ export function findGrowthReportTypeConsistencyErrors(input: {
   const rustKey = rustAllowedSet.join(', ');
 
   if (specKey !== tsKey) {
-    errors.push(`growth_reports.reportType mismatch between local-storage.yaml and structured-report.ts: spec=[${specKey}] ts=[${tsKey}]`);
+    errors.push(
+      `growth_reports.reportType mismatch between data/structured/parentos/local-storage.yaml and structured-report.ts: spec=[${specKey}] ts=[${tsKey}]`,
+    );
   }
 
   if (specKey !== rustKey) {
-    errors.push(`growth_reports.reportType mismatch between local-storage.yaml and health_measurements.rs: spec=[${specKey}] rust=[${rustKey}]`);
+    errors.push(
+      `growth_reports.reportType mismatch between data/structured/parentos/local-storage.yaml and health_measurements.rs: spec=[${specKey}] rust=[${rustKey}]`,
+    );
   }
 
   return errors;
 }
 
-function pass(message: string) {
-  console.log(`  PASS: ${message}`);
-}
-
-function fail(message: string) {
-  console.error(`  FAIL: ${message}`);
-}
-
 export function runSpecConsistencyCheck() {
   const routesYaml = parseYaml(
-    readFileSync(resolve(ROOT, '.nimi/spec/parentos/kernel/tables/routes.yaml'), 'utf-8'),
+    readFileSync(resolve(ROOT, 'data/structured/parentos/routes.yaml'), 'utf-8'),
   ) as { routes: SpecRoute[] };
 
   const routerSource = readFileSync(
@@ -232,7 +252,9 @@ export function runSpecConsistencyCheck() {
     resolve(ROOT, 'src/shell/renderer/app-shell/shell-layout.tsx'),
     'utf-8',
   );
-  const kernelIndexExists = existsSync(resolve(ROOT, '.nimi/spec/parentos/kernel/index.md'));
+  const canonicalAuthorityExists = existsSync(
+    resolve(ROOT, '.nimi/spec/parentos/canonical/project.authority.yaml'),
+  );
 
   const routeErrors = [
     ...findRouteTableConstraintErrors(routesYaml.routes),
@@ -240,17 +262,19 @@ export function runSpecConsistencyCheck() {
       routes: routesYaml.routes,
       routerSource,
       navSource,
-      kernelIndexExists,
+      canonicalAuthorityExists,
     }),
   ];
 
   const storageYaml = parseYaml(
-    readFileSync(resolve(ROOT, '.nimi/spec/parentos/kernel/tables/local-storage.yaml'), 'utf-8'),
+    readFileSync(resolve(ROOT, 'data/structured/parentos/local-storage.yaml'), 'utf-8'),
   ) as { tables: StorageTable[] };
 
   const sqliteDir = resolve(ROOT, 'src-tauri/src/sqlite');
   const migrationsSqlSources = readdirSync(sqliteDir)
-    .filter((entry) => entry === 'migrations.rs' || /^migrations(?:_schema|_v\d+)\.rs$/.test(entry))
+    .filter(
+      (entry) => entry === 'migrations.rs' || /^migrations(?:_schema|_v\d+)\.rs$/.test(entry),
+    )
     .map((entry) => resolve(sqliteDir, entry))
     .map((path) => readFileSync(path, 'utf-8'))
     .join('\n');
@@ -275,6 +299,14 @@ export function runSpecConsistencyCheck() {
   return { routeErrors, storageErrors, reportTypeErrors };
 }
 
+function pass(message: string) {
+  console.log(`  PASS: ${message}`);
+}
+
+function fail(message: string) {
+  console.error(`  FAIL: ${message}`);
+}
+
 function isMainModule() {
   return Boolean(process.argv[1]) && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 }
@@ -284,21 +316,23 @@ if (isMainModule()) {
   const { routeErrors, storageErrors, reportTypeErrors } = runSpecConsistencyCheck();
 
   if (routeErrors.length === 0) {
-    pass('routes.yaml, routes.tsx, shell-layout.tsx, and kernel/index.md are aligned');
+    pass(
+      'canonical authority, data/structured routes, routes.tsx, and shell-layout.tsx are aligned',
+    );
   } else {
     for (const message of routeErrors) fail(message);
   }
 
   console.log('\n=== Local Storage ↔ Migrations ===\n');
   if (storageErrors.length === 0) {
-    pass('local-storage.yaml and sqlite migrations are aligned');
+    pass('data/structured local storage and sqlite migrations are aligned');
   } else {
     for (const message of storageErrors) fail(message);
   }
 
   console.log('\n=== Growth Report Allowed Set ===\n');
   if (reportTypeErrors.length === 0) {
-    pass('growth_reports.reportType stays aligned across spec, TS, and Rust');
+    pass('growth_reports.reportType stays aligned across structured data, TS, and Rust');
   } else {
     for (const message of reportTypeErrors) fail(message);
   }

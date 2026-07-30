@@ -4,7 +4,7 @@ use rusqlite::Connection;
 
 /// Schema v15: cut over from the legacy `wear-daily` / `retention-wear` daily
 /// checkin model to the new wear-gap interval stream defined by
-/// `orthodontic-contract.md#PO-ORTHO-005a`.
+/// `rule.parentos.ortho.r005a`.
 ///
 /// Three independent steps, each idempotent:
 ///

@@ -6,7 +6,7 @@
 // contract.md PO-CAPT-006). The body is byte-equivalent to the post-wave-0b
 // state of GrowthAddRecordContent (commit 29b797559) — calls
 // saveHealthRecordCapture (canonical-API) per
-// .nimi/spec/parentos/kernel/tables/local-storage.yaml#growth_measurement_canonical_migration.
+// data/structured/parentos/local-storage.yaml#growth_measurement_canonical_migration.
 import { useState } from 'react';
 import { Button, cn, DatePicker, TextField, TextareaField } from '@nimiplatform/kit/ui';
 import { computeAgeMonthsAt } from '../../app-shell/app-store.js';

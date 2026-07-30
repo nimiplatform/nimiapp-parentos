@@ -19,7 +19,7 @@ import {
 import type { OrthodonticApplianceType } from '../bridge/sqlite-bridge.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const YAML_PATH = resolve(__dirname, '../../../../.nimi/spec/parentos/kernel/tables/orthodontic-protocols.yaml');
+const YAML_PATH = resolve(__dirname, '../../../../data/structured/parentos/orthodontic-protocols.yaml');
 
 interface OrthoProtocolsYamlRule {
   ruleId: string;
@@ -116,7 +116,7 @@ describe('orthodontic protocol catalog coverage', () => {
    * this test covers the frontend side against the same YAML authority so
    * any unilateral drift on TS trips here, not silently at runtime.
    */
-  it('defaultReviewIntervalDays (TS) matches orthodontic-protocols.yaml for every applianceType', () => {
+  it('defaultReviewIntervalDays (TS) matches data/structured/parentos/orthodontic-protocols.yaml for every applianceType', () => {
     const yaml = loadProtocolsYaml();
     const reviewRuleIds = new Set([
       'PO-ORTHO-REVIEW-ALIGNER',
@@ -163,7 +163,7 @@ describe('orthodontic protocol catalog coverage', () => {
    * orthodontic-derive.ts#APPLIANCE_PHASES (PO-ORTHO-013). The Rust mirror is
    * guarded separately by `protocol_catalog_drift_guard::appliance_phases_match_yaml`.
    */
-  it('APPLIANCE_PHASES (TS) matches orthodontic-protocols.yaml#appliancePhases for every applianceType', () => {
+  it('APPLIANCE_PHASES (TS) matches data/structured/parentos/orthodontic-protocols.yaml#appliancePhases for every applianceType', () => {
     const yaml = loadProtocolsYaml();
     const admittedTypes: OrthodonticApplianceType[] = [
       'twin-block', 'expander', 'activator',

@@ -1,7 +1,7 @@
 /**
  * generate-knowledge-base.ts — YAML → TypeScript constant generation
  *
- * Reads .nimi/spec/parentos/kernel/tables/*.yaml and produces typed TS constants
+ * Reads data/structured/parentos/*.yaml and produces typed TS constants
  * in src/shell/renderer/knowledge-base/gen/.
  *
  * @generated — run via `pnpm generate:knowledge-base`
@@ -21,7 +21,7 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const TABLES = resolve(ROOT, '.nimi/spec/parentos/kernel/tables');
+const TABLES = resolve(ROOT, 'data/structured/parentos');
 const DATA_KNOWLEDGE = resolve(ROOT, 'data/knowledge');
 const OUT = resolve(ROOT, 'src/shell/renderer/knowledge-base/gen');
 const RUST_OUT = resolve(ROOT, 'src-tauri/src/sqlite/queries');
@@ -88,7 +88,7 @@ function generateReminderRules() {
   for (const rule of merged) {
     if (seen.has(rule.ruleId)) {
       throw new Error(
-        `generate-knowledge-base: duplicate ruleId "${rule.ruleId}" detected while unioning reminder-rules.yaml with orthodontic-protocols.yaml`,
+        `generate-knowledge-base: duplicate ruleId "${rule.ruleId}" detected while unioning data/structured/parentos/reminder-rules.yaml with data/structured/parentos/orthodontic-protocols.yaml`,
       );
     }
     seen.add(rule.ruleId);
@@ -695,7 +695,7 @@ function generateGrowthMilestoneRules() {
     rules: Array<{ ruleId: string; kind: string }>;
   };
   if (!Array.isArray(data.rules) || data.rules.length === 0) {
-    throw new Error('growth-milestone-rules.yaml must declare a non-empty rules array');
+    throw new Error('data/structured/parentos/growth-milestone-rules.yaml must declare a non-empty rules array');
   }
   const rules = data.rules;
   const ruleIds = rules.map((rule) => rule.ruleId);

@@ -112,7 +112,7 @@ interface RouteAuthorityRow {
 }
 
 const routeAuthority = parseYaml(
-  readFileSync('.nimi/spec/parentos/kernel/tables/routes.yaml', 'utf-8'),
+  readFileSync('data/structured/parentos/routes.yaml', 'utf-8'),
 ) as { routes: RouteAuthorityRow[] };
 
 const routeMarkers: Record<string, string> = {

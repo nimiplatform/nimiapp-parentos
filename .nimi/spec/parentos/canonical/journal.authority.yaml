@@ -1,0 +1,108 @@
+format: nimicoding.authority/v2
+owner: team.parentos
+scope: parentos.journal
+units:
+  - id: definition.parentos.journal.contract
+    kind: definition
+    title: Journal contract
+    meaning: The Journal contract defines the ParentOS behaviors, data shapes, ownership boundaries, and failure semantics governed by its explicit rules.
+  - id: rule.parentos.jour.r001
+    kind: rule
+    title: Journal Entry Shape
+    modality: must
+    statement: "Journal entries must round-trip the typed SQLite shape: | Field | Type | | entryId | string | | childId | string | | contentType | text \\| voice \\| photo \\| mixed | | textContent | string \\| null | | voicePath | string \\| null | | photoPaths | string[] \\| null | | recordedAt | ISO 8601 datetime string | | ageMonths | integer | | observationMode | quick-capture \\| focused-observation \\| daily-reflection \\| five-minute \\| null | | dimensionId | string \\| null | | selectedTags | string[] \\| null | | guidedAnswers | Record<string, string> \\| null | | observationDuration | integer \\| null | | keepsake | 0 \\| 1 | | keepsakeTitle | string \\| null | | keepsakeReason | commemorative \\| first-time \\| achievement \\| persistence \\| character \\| family-moment \\| other \\| null | | recorderId | string \\| null | JSON-backed arrays and objects must be serialized as TEXT and decoded through typed bridge helpers."
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-JOUR-001.
+    failure: Fail closed and report PO-JOUR-001 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.journal.contract
+  - id: rule.parentos.jour.r002
+    kind: rule
+    title: Observation Framework Binding
+    modality: must
+    statement: When dimensionId is present, it must exist in the admitted observation-framework data asset. selectedTags must come from the dimension's quick-tag catalog guidedAnswers keys must correspond to the selected observation prompts observationMode must remain within the spec-defined enum Journal guidance is structured and table-backed. It must not expand into free-form observation theory.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-JOUR-002.
+    failure: Fail closed and report PO-JOUR-002 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.journal.contract
+  - id: rule.parentos.jour.r003
+    kind: rule
+    title: Recorder and Keepsake Semantics
+    modality: must
+    statement: recorderId, keepsake, and keepsake metadata are first-class fields. recorderId may be null when no recorder profile is selected non-null recorderId must match one of the child's recorderProfiles when profiles exist keepsake = 1 marks a journal entry for keepsake-focused filtering only; it does not create a separate storage path keepsakeTitle is an optional short title for keepsake recall and may be null keepsakeReason is optional and, when present, must be one of commemorative | first-time | achievement | persistence | character | family-moment | other
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-JOUR-003.
+    failure: Fail closed and report PO-JOUR-003 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.journal.contract
+  - id: rule.parentos.jour.r004
+    kind: rule
+    title: Content-Type Integrity
+    modality: must
+    statement: contentType must describe the actual stored payload. text requires textContent voice requires voicePath photo requires photoPaths mixed requires at least two populated content channels The journal layer must not report success for entries that violate this typed shape.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-JOUR-004.
+    failure: Fail closed and report PO-JOUR-004 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.journal.contract
+  - id: rule.parentos.jour.r005
+    kind: rule
+    title: Tag Records
+    modality: must
+    statement: journal_tags are optional secondary annotations. each tag row must reference an existing entryId domain must align with a known ParentOS knowledge domain source is manual or ai Journal save must not require AI tag generation to succeed.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-JOUR-005.
+    failure: Fail closed and report PO-JOUR-005 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.journal.contract
+  - id: rule.parentos.jour.r006
+    kind: rule
+    title: Voice Observation Input
+    modality: must
+    statement: "Voice observation is a typed journal extension, not a separate storage path. Inputs are: a current-child journal draft the same observation form fields used by text entries one local audio file captured by the app shell an optional typed transcript produced by the runtime STT path Voice observation must obey these invariants: local audio stays app-local and must not be uploaded to arbitrary third-party endpoints STT may produce transcript text and optional runtime artifact metadata only STT must not append diagnosis, explanation, domain interpretation, or tag suggestions contentType = voice when a saved entry has voicePath and no persisted textContent contentType = mixed when a saved entry has voicePath plus persisted textContent a transcript derived from voice must not be saved as contentType = text"
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-JOUR-006.
+    failure: Fail closed and report PO-JOUR-006 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.journal.contract
+  - id: rule.parentos.jour.r007
+    kind: rule
+    title: Voice Observation Save Flow
+    modality: must
+    statement: "Voice observation save is a two-stage typed flow: capture a local audio draft optionally request typed STT let the parent confirm the transcript persist the final journal entry as voice or mixed The app must not: auto-save a background journal row before the parent confirms the draft backfill transcript text into an already-saved voice row as a hidden follow-up mutation silently convert a failed STT attempt into a fake transcript When runtime STT is unavailable or fails, the parent may still save a voice entry with the audio file only."
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-JOUR-007.
+    failure: Fail closed and report PO-JOUR-007 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.journal.contract
+  - id: rule.parentos.jour.r008
+    kind: rule
+    title: Fail-Close Behavior
+    modality: must
+    statement: "The journal layer must fail closed when: a dimensionId has no matching observation-framework record stored JSON fields are malformed a content payload does not match contentType a recorder reference cannot be projected into the typed entry shape a voice transcript request returns missing or malformed typed speechTranscribe output runtime STT reports success without stable transcript text for a transcript-save path a journal AI tag suggestion returns malformed JSON a journal AI tag suggestion returns an unknown dimensionId a journal AI tag suggestion returns tags outside the selected dimension's quick-tag vocabulary"
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-JOUR-008.
+    failure: Fail closed and report PO-JOUR-008 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.journal.contract
+  - id: rule.parentos.jour.r009
+    kind: rule
+    title: Closed-Set AI Tag Suggestion
+    modality: must
+    statement: "PO-FEAT-021 is a narrow extraction surface, not free-form observation analysis. Inputs are: the current unsaved text draft or a parent-confirmed voice transcript one or more candidate observation dimensions from the admitted observation-framework data asset the current child context already available inside the journal surface Outputs are limited to typed structured data: dimensionId: string | null tags: string[] The AI tagging path must obey these invariants: runtime route must remain local output must be JSON-only and match the typed shape above dimensionId must be chosen from the provided candidate dimensions tags must be a subset of that dimension's quickTags domain is fixed to observation for persistence and must not be inferred dynamically the tagging path must not emit diagnosis, theory explanation, parenting advice, or open-vocabulary labels"
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-JOUR-009.
+    failure: Fail closed and report PO-JOUR-009 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.journal.contract
+  - id: rule.parentos.jour.r010
+    kind: rule
+    title: Parent Confirmation and Persistence
+    modality: must
+    statement: "AI tag suggestions remain advisory until the parent confirms save. the journal UI may auto-trigger tag suggestion after an unsaved draft stabilizes the UI may apply the suggested dimension and tags into the current draft for review the final persisted selectedTags payload must reflect the parent's current confirmed tag selection confirmed AI tags may also be persisted into journal_tags with domain = observation and source = ai AI tag rows must be written in the same typed save path as the journal entry when they are present the app must not mutate an already-saved journal row later to backfill AI tags Exclusions The following remain outside this contract: free-form theory synthesis from observation while that domain remains needs-review any open-vocabulary domain classification or open-ended tag generation any observation narrative expansion, pattern analysis, or diagnostic summarization beyond the closed-set output defined in PO-JOUR-009"
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-JOUR-010.
+    failure: Fail closed and report PO-JOUR-010 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.journal.contract

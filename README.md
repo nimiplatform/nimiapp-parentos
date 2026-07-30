@@ -19,14 +19,9 @@
 
 ## Spec Authority
 
-Normative product authority lives under `.nimi/spec/parentos/kernel/**` (markdown contracts + typed YAML tables). Guides:
+Normative product authority lives only in the Nimi Coding v2 containers under `.nimi/spec/parentos/canonical/*.authority.yaml`. Detailed catalogs and schemas live under `data/structured/parentos/**` as specialized artifacts bound by canonical authority; they are not a parallel authority root.
 
-- `.nimi/spec/INDEX.md` — domain index
-- `.nimi/spec/parentos/index.md` — ParentOS domain guide
-- `.nimi/spec/parentos/parentos.md` — product overview / non-goals / known defects
-- `.nimi/spec/parentos/kernel/index.md` — kernel authority map
-
-`.nimi/{config,contracts,methodology}/**` are projections from `@nimiplatform/nimi-coding`; they are managed by `pnpm nimicoding sync` and must not be hand-edited.
+`@nimiplatform/nimi-coding` manages `.nimi/methodology/authority-authoring.yaml` plus marked blocks in `AGENTS.md` and `CLAUDE.md`. Other `.nimi/config/**`, `.nimi/contracts/**`, and `.nimi/methodology/**` files are host-owned governance and do not override product authority.
 
 ## Prerequisites
 
@@ -68,6 +63,8 @@ pnpm build                              # typecheck + vite build + cargo check
 pnpm test                               # vitest run
 
 # Spec consistency layer (matches the AGENTS.md sync rules)
+pnpm spec:authority:check
+pnpm spec:authority:compile
 pnpm generate:knowledge-base
 pnpm check:spec-consistency
 pnpm check:knowledge-base
@@ -86,13 +83,13 @@ This project consumes `@nimiplatform/nimi-coding` as a devDependency. Project-lo
 | Surface | Role |
 |---------|------|
 | `.nimi/spec/**` | Host-authored product authority (this repo) |
-| `.nimi/methodology/**` | Package-canonical projection (do not hand-edit) |
-| `.nimi/contracts/**` | Package-canonical projection (do not hand-edit) |
-| `.nimi/config/**` | Package-canonical projection (do not hand-edit) |
+| `.nimi/methodology/authority-authoring.yaml` | Package-canonical authoring guide |
+| `.nimi/config/**`, `.nimi/contracts/**`, other `.nimi/methodology/**` | Host-owned governance; never product authority |
+| `data/structured/parentos/**` | Specialized structured artifacts bound by canonical authority |
 | `.nimi/local/**` | Local-only operational/projection output (gitignored) |
 | `.nimi/cache/**` | Local cache (gitignored) |
 
-Bump `@nimiplatform/nimi-coding`, then run `pnpm nimicoding sync --apply` to refresh the projections.
+Bump `@nimiplatform/nimi-coding`, then run `pnpm exec nimicoding sync --apply` to refresh package-managed surfaces.
 
 ## CI
 

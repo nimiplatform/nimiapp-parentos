@@ -7,7 +7,7 @@ fn add_days_iso_strict(iso_date: &str, days: i64) -> Result<String, String> {
         .ok_or_else(|| format!("date overflow when adding {days} day(s) to {iso_date}"))?;
     Ok(next.format("%Y-%m-%d").to_string())
 }
-/// Dental follow-up rule metadata (mirrors orthodontic-protocols.yaml#dentalFollowUpRules).
+/// Dental follow-up rule metadata (mirrors data/structured/parentos/orthodontic-protocols.yaml#dentalFollowUpRules).
 pub(crate) fn dental_followup_rule_for(event_type: &str) -> Option<(&'static str, i64)> {
     // (admitted ruleId, month interval)
     match event_type {

@@ -1,0 +1,48 @@
+format: nimicoding.authority/v2
+owner: team.parentos
+scope: parentos.project
+units:
+  - id: definition.parentos.project.authority-boundary
+    kind: definition
+    title: ParentOS authority boundary
+    meaning: ParentOS product authority consists only of admitted *.authority.yaml and *.authority.md inputs under .nimi/spec; specialized structured artifacts are bound by explicit canonical rules.
+  - id: rule.parentos.project.spec.r001
+    kind: rule
+    title: Canonical product authority routing
+    modality: must
+    statement: ParentOS product behavior authority is authored only as canonical authority under .nimi/spec, while specialized structured datasets remain outside the canonical root and are admitted through explicit binding rules.
+    condition: Whenever ParentOS product authority or a specialized structured dataset is authored or consumed.
+    failure: Reject a parallel authority root, a non-canonical entry under .nimi/spec, or an unbound specialized dataset.
+    relations:
+      - type: applies_to
+        target: definition.parentos.project.authority-boundary
+  - id: rule.parentos.project.spec.r002
+    kind: rule
+    lifecycle: removed
+    title: Legacy domain admission gate
+    reason: Removed by the Nimi Coding 0.4.0 hard cut because canonical authority admission no longer uses the legacy domain-admission projection.
+  - id: rule.parentos.project.spec.r003
+    kind: rule
+    lifecycle: removed
+    title: Legacy table family gate
+    reason: Removed by the Nimi Coding 0.4.0 hard cut because specialized structured artifacts are bound by canonical rules instead of the legacy table-family gate.
+  - id: rule.parentos.project.spec.r004
+    kind: rule
+    title: Managed projection boundary
+    modality: must
+    statement: Package-managed methodology and managed instruction blocks provide authoring and validation mechanics without overriding ParentOS product authority.
+    condition: Whenever Nimi Coding projections or managed instruction blocks are installed, synchronized, or interpreted.
+    failure: Reject any package projection or managed instruction that claims ParentOS product meaning.
+    relations:
+      - type: applies_to
+        target: definition.parentos.project.authority-boundary
+  - id: rule.parentos.project.spec.r005
+    kind: rule
+    title: Local state boundary
+    modality: must_not
+    statement: Local evidence, audit output, execution state, or planning context promotes itself to ParentOS semantic authority without an admitted canonical authority change.
+    condition: Whenever local-only material is read or produced.
+    failure: Reject the authority claim and keep the material local-only.
+    relations:
+      - type: applies_to
+        target: definition.parentos.project.authority-boundary

@@ -4,7 +4,7 @@ mod protocol_catalog_drift_guard {
     //!
     //! The Rust catalog embedded above (`protocols_for_appliance`,
     //! `dental_followup_rule_for`, `APPLIANCE_TYPE_OPTIONS` style min-ages) is
-    //! a performance mirror of `spec/kernel/tables/orthodontic-protocols.yaml`.
+    //! a performance mirror of `data/structured/parentos/orthodontic-protocols.yaml`.
     //! The YAML remains the sole authority. This test parses the YAML at
     //! compile/test time and asserts the embedded catalog agrees. Any new
     //! protocol rule, renamed ruleId, changed applianceType-binding, or
@@ -56,9 +56,9 @@ mod protocol_catalog_drift_guard {
     struct TriggeredBy {
         dental_event_type: String,
     }
-    const YAML: &str = include_str!("../../../../.nimi/spec/parentos/kernel/tables/orthodontic-protocols.yaml");
+    const YAML: &str = include_str!("../../../../data/structured/parentos/orthodontic-protocols.yaml");
     fn parse_spec() -> Spec {
-        serde_yaml::from_str(YAML).expect("parse orthodontic-protocols.yaml")
+        serde_yaml::from_str(YAML).expect("parse data/structured/parentos/orthodontic-protocols.yaml")
     }
     /// Event-driven protocol rules: NOT seeded at appliance creation, so they
     /// MUST be excluded from the appliance-time `protocols_for_appliance`
@@ -101,7 +101,7 @@ mod protocol_catalog_drift_guard {
             for p in protocols_for_appliance(appliance_type) {
                 assert!(
                     yaml_all.contains(p.rule_id),
-                    "Rust catalog references ruleId \"{}\" not in orthodontic-protocols.yaml#rules",
+                    "Rust catalog references ruleId \"{}\" not in data/structured/parentos/orthodontic-protocols.yaml#rules",
                     p.rule_id,
                 );
             }
@@ -112,7 +112,7 @@ mod protocol_catalog_drift_guard {
         for rule_id in EVENT_DRIVEN_RULE_IDS {
             assert!(
                 yaml_all.contains(*rule_id),
-                "EVENT_DRIVEN_RULE_IDS includes \"{rule_id}\" but it is missing from orthodontic-protocols.yaml#rules",
+                "EVENT_DRIVEN_RULE_IDS includes \"{rule_id}\" but it is missing from data/structured/parentos/orthodontic-protocols.yaml#rules",
             );
         }
     }
@@ -237,7 +237,7 @@ mod protocol_catalog_drift_guard {
     #[test]
     fn appliance_phases_match_yaml() {
         // PO-ORTHO-013: the Rust `appliance_phase_sequence` mirror must match
-        // the ordered phaseId list in `orthodontic-protocols.yaml#appliancePhases`
+        // the ordered phaseId list in `data/structured/parentos/orthodontic-protocols.yaml#appliancePhases`
         // for every applianceType, in order.
         let spec = parse_spec();
         const ALL_APPLIANCE_TYPES: &[&str] = &[
@@ -257,7 +257,7 @@ mod protocol_catalog_drift_guard {
                 .appliance_phases
                 .get(*appliance_type)
                 .unwrap_or_else(|| {
-                    panic!("orthodontic-protocols.yaml#appliancePhases is missing applianceType \"{appliance_type}\"")
+                    panic!("data/structured/parentos/orthodontic-protocols.yaml#appliancePhases is missing applianceType \"{appliance_type}\"")
                 })
                 .iter()
                 .map(|p| p.phase_id.as_str())
@@ -273,7 +273,7 @@ mod protocol_catalog_drift_guard {
         for appliance_type in spec.appliance_phases.keys() {
             assert!(
                 ALL_APPLIANCE_TYPES.contains(&appliance_type.as_str()),
-                "orthodontic-protocols.yaml#appliancePhases declares unknown applianceType \"{appliance_type}\"",
+                "data/structured/parentos/orthodontic-protocols.yaml#appliancePhases declares unknown applianceType \"{appliance_type}\"",
             );
         }
     }

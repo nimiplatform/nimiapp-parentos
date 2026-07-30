@@ -238,8 +238,8 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
     setCaptureError(null);
     // Orthodontic protocol reminders route to per-appliance modals instead of
     // the generic HealthCaptureModal — their capture surface is governed by
-    // orthodontic-protocols.yaml checkinType bindings, not
-    // reminder-capture-targets.yaml.
+    // data/structured/parentos/orthodontic-protocols.yaml checkinType bindings, not
+    // data/structured/parentos/reminder-capture-targets.yaml.
     let orthoBinding: ReturnType<typeof parseOrthodonticReminderBinding>;
     try {
       orthoBinding = parseOrthodonticReminderBinding(reminder);

@@ -13,7 +13,7 @@ Evidence Ref:
 - `cargo check` in `src-tauri`
 - `pnpm check:agents-freshness`
 
-This file is tracking-only. It is not product authority. ParentOS authority remains under `.nimi/spec/parentos/kernel/*.md` and `.nimi/spec/parentos/kernel/tables/**`.
+This file is tracking-only. It is not product authority. ParentOS authority remains under `.nimi/spec/parentos/canonical/*.authority.yaml` and `data/structured/parentos/**`.
 
 ## Deferred Findings
 
@@ -59,7 +59,7 @@ Do not reopen merely to restate current findings. Reopen only if:
 
 Closed by defer after:
 
-- app-local authority landing was formalized under `.nimi/spec/parentos/kernel/**`
+- app-local authority landing was formalized under `.nimi/spec/parentos/canonical/**`
 - profile-local AI summaries and medical-event AI adjuncts were admitted into spec authority
 - `PO-FEAT-022` was realigned to the actual `runtime.ai.text.generate` implementation path
 - spec consistency and AI boundary checks were expanded and verified green

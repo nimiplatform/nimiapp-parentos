@@ -1,11 +1,11 @@
 use super::super::get_conn;
 use rusqlite::{params, Connection};
 use serde::Serialize;
-// ── Protocol delivery catalog (mirrors orthodontic-protocols.yaml) ─────────
+// ── Protocol delivery catalog (mirrors data/structured/parentos/orthodontic-protocols.yaml) ─────────
 //
 // Embedded in Rust so reminder_state seeding can happen synchronously at
 // command time without reparsing YAML. Drift between this table and
-// `.nimi/spec/parentos/kernel/tables/orthodontic-protocols.yaml` is a spec
+// `data/structured/parentos/orthodontic-protocols.yaml` is a spec
 // violation; `check:spec-consistency` should catch it if a future drift check
 // is added.
 pub(crate) struct AppliedProtocol {
@@ -17,7 +17,7 @@ pub(crate) struct AppliedProtocol {
 pub(crate) fn protocols_for_appliance(appliance_type: &str) -> &'static [AppliedProtocol] {
     // PO-ORTHO-UNWEAR-OPEN is event-driven (seeded by `insert_unwear_interval`),
     // not seeded at appliance creation, so it does NOT appear here despite
-    // being listed in `orthodontic-protocols.yaml#rules.applianceTypes`. The
+    // being listed in `data/structured/parentos/orthodontic-protocols.yaml#rules.applianceTypes`. The
     // drift guard accounts for it explicitly.
     match appliance_type {
         "clear-aligner" => &[
@@ -65,7 +65,7 @@ pub(crate) fn appliance_supports_wear_gap(appliance_type: &str) -> bool {
     )
 }
 /// Maps applianceType → the admitted review-cycle protocol ruleId.
-/// Mirrors `orthodontic-protocols.yaml#rules` where `applianceTypes` crosses
+/// Mirrors `data/structured/parentos/orthodontic-protocols.yaml#rules` where `applianceTypes` crosses
 /// into the rule (e.g. `PO-ORTHO-REVIEW-ALIGNER` applies to `clear-aligner`).
 /// Drift is caught by `protocol_catalog_drift_guard::review_rule_mapping_matches_yaml`.
 pub(crate) fn review_rule_id_for_appliance(appliance_type: &str) -> Option<&'static str> {
@@ -79,7 +79,7 @@ pub(crate) fn review_rule_id_for_appliance(appliance_type: &str) -> Option<&'sta
 }
 /// Default days between review visits per protocol rule (used when appliance
 /// doesn't override). Mirrors `defaultIntervalDays` in
-/// `orthodontic-protocols.yaml#rules`. Drift-guarded.
+/// `data/structured/parentos/orthodontic-protocols.yaml#rules`. Drift-guarded.
 pub(crate) fn default_review_interval_days_for_rule(rule_id: &str) -> Option<i64> {
     match rule_id {
         "PO-ORTHO-REVIEW-ALIGNER" => Some(56),
@@ -90,7 +90,7 @@ pub(crate) fn default_review_interval_days_for_rule(rule_id: &str) -> Option<i64
     }
 }
 /// Ordered per-appliance treatment-phase sequence (PO-ORTHO-013). Mirror of
-/// `orthodontic-protocols.yaml#appliancePhases` — only the ordered `phaseId`
+/// `data/structured/parentos/orthodontic-protocols.yaml#appliancePhases` — only the ordered `phaseId`
 /// list is needed Rust-side (labels / expectedMonths are renderer-only).
 /// Drift is caught by `protocol_catalog_drift_guard::appliance_phases_match_yaml`.
 /// An unknown appliance type yields an empty slice; callers fail-close.
@@ -146,7 +146,7 @@ fn is_admitted_checkin_type(t: &str) -> bool {
     matches!(t, "aligner-change" | "expander-activation")
 }
 /// Minimum child age (months) for each applianceType.
-/// Mirrors orthodontic-protocols.yaml#applianceMinAge — kept in sync by
+/// Mirrors data/structured/parentos/orthodontic-protocols.yaml#applianceMinAge — kept in sync by
 /// PO-ORTHO-009. Drift between this table and the YAML is caught by the
 /// spec-consistency check.
 fn min_age_months_for_appliance(appliance_type: &str) -> i32 {
@@ -364,7 +364,7 @@ pub struct OrthodonticAppliance {
     pub total_aligners: Option<i32>,
     pub days_per_aligner: Option<i32>,
     /// PO-ORTHO-013: per-appliance treatment phase; a `phaseId` admitted for this
-    /// `applianceType` in `orthodontic-protocols.yaml#appliancePhases`, or NULL
+    /// `applianceType` in `data/structured/parentos/orthodontic-protocols.yaml#appliancePhases`, or NULL
     /// ("not yet set").
     pub current_phase: Option<String>,
     /// PO-ORTHO-013: ISO 8601 date `current_phase` was entered. NULL iff

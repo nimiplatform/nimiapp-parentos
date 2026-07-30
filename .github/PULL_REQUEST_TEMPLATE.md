@@ -3,8 +3,8 @@ Thanks for contributing to ParentOS.
 
 Before submitting, please confirm:
 
-- [ ] Spec authority lives under `.nimi/spec/parentos/kernel/**`. If you
-      changed a kernel contract or table, you also ran the affected
+- [ ] Spec authority lives under `.nimi/spec/parentos/canonical/**`. If you
+      changed a canonical unit or bound specialized artifact, you also ran the affected
       `pnpm check:*` script.
 - [ ] No legacy/compat shims, no fallback that hides typed contract failures
       (see AGENTS.md "Hard Boundaries").
@@ -18,14 +18,16 @@ Before submitting, please confirm:
 
 ## Spec / Authority changes
 
-<!-- If you touched anything under .nimi/spec/parentos/**, name the kernel
-     contract and/or table. Otherwise write "None". -->
+<!-- Name each changed canonical unit and any bound data/structured/parentos
+     artifact. Otherwise write "None". -->
 
 ## Verification
 
 <!-- Tick the ones you ran locally. -->
 
 - [ ] `pnpm nimicoding:doctor`
+- [ ] `pnpm spec:authority:check`
+- [ ] `pnpm spec:authority:compile`
 - [ ] `pnpm generate:knowledge-base`
 - [ ] `pnpm check:spec-consistency`
 - [ ] `pnpm check:knowledge-base`

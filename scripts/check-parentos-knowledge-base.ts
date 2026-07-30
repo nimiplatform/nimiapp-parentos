@@ -32,7 +32,7 @@ import { collectKnowledgeAssetGovernanceErrors } from './check-knowledge-asset-g
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const REPO_ROOT = ROOT;
-const TABLES = resolve(ROOT, '.nimi/spec/parentos/kernel/tables');
+const TABLES = resolve(ROOT, 'data/structured/parentos');
 const DATA_KNOWLEDGE = resolve(ROOT, 'data/knowledge');
 const GEN = resolve(ROOT, 'src/shell/renderer/knowledge-base/gen');
 const RUST_GEN = resolve(ROOT, 'src-tauri/src/sqlite/queries');
@@ -144,7 +144,7 @@ if (obsData.dimensions) {
 
 // ── Generated File Freshness ────────────────────────────────
 
-console.log('\n--- reminder-rules.yaml constraints ---');
+console.log('\n--- data/structured/parentos/reminder-rules.yaml constraints ---');
 const reminderData = parseYaml(
   readFileSync(resolve(TABLES, 'reminder-rules.yaml'), 'utf-8'),
 ) as {
@@ -235,7 +235,7 @@ const healthEvaluationData = parseYaml(
 const healthMetricIds = new Set<string>();
 for (const metric of healthMetricData.metrics ?? []) {
   if (!metric.metricId) {
-    fail('health-metric-registry.yaml metric is missing metricId');
+    fail('data/structured/parentos/health-metric-registry.yaml metric is missing metricId');
     continue;
   }
   if (healthMetricIds.has(metric.metricId)) {
@@ -247,7 +247,7 @@ for (const metric of healthMetricData.metrics ?? []) {
 const healthProtocolById = new Map<string, HealthCaptureProtocol>();
 for (const protocol of healthProtocolData.protocols ?? []) {
   if (!protocol.protocolId) {
-    fail('health-capture-protocols.yaml protocol is missing protocolId');
+    fail('data/structured/parentos/health-capture-protocols.yaml protocol is missing protocolId');
     continue;
   }
   if (healthProtocolById.has(protocol.protocolId)) {
@@ -262,18 +262,18 @@ for (const protocol of healthProtocolData.protocols ?? []) {
   ];
   for (const metricId of referencedMetricIds) {
     if (!healthMetricIds.has(metricId)) {
-      fail(`health-capture-protocols.yaml protocol ${protocol.protocolId} references unknown metricId ${metricId}`);
+      fail(`data/structured/parentos/health-capture-protocols.yaml protocol ${protocol.protocolId} references unknown metricId ${metricId}`);
     }
   }
   if (protocol.storageTarget !== 'health_record_event' && protocol.storageTarget !== 'retained_table') {
-    fail(`health-capture-protocols.yaml protocol ${protocol.protocolId} has invalid storageTarget ${protocol.storageTarget}`);
+    fail(`data/structured/parentos/health-capture-protocols.yaml protocol ${protocol.protocolId} has invalid storageTarget ${protocol.storageTarget}`);
   }
 }
 
 for (const metric of healthMetricData.metrics ?? []) {
   for (const protocolId of metric.captureProtocolIds ?? []) {
     if (!healthProtocolById.has(protocolId)) {
-      fail(`health-metric-registry.yaml metric ${metric.metricId} references unknown captureProtocolId ${protocolId}`);
+      fail(`data/structured/parentos/health-metric-registry.yaml metric ${metric.metricId} references unknown captureProtocolId ${protocolId}`);
     }
   }
 }
@@ -282,7 +282,7 @@ const healthEvaluationPolicyIds = new Set<string>();
 const healthEvaluationStatuses = new Set((healthEvaluationData.status_taxonomy ?? []).map((row) => row.status).filter(Boolean));
 for (const policy of healthEvaluationData.policies ?? []) {
   if (!policy.policyId) {
-    fail('health-evaluation-rules.yaml policy is missing policyId');
+    fail('data/structured/parentos/health-evaluation-rules.yaml policy is missing policyId');
     continue;
   }
   if (healthEvaluationPolicyIds.has(policy.policyId)) {
@@ -291,50 +291,50 @@ for (const policy of healthEvaluationData.policies ?? []) {
   healthEvaluationPolicyIds.add(policy.policyId);
   for (const metricId of policy.appliesTo ?? []) {
     if (!healthMetricIds.has(metricId)) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} references unknown metricId ${metricId}`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} references unknown metricId ${metricId}`);
     }
   }
   const trendThresholdIds = new Set<string>();
   for (const threshold of policy.trendThresholds ?? []) {
     if (!threshold.thresholdId) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} trendThreshold is missing thresholdId`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} trendThreshold is missing thresholdId`);
       continue;
     }
     if (trendThresholdIds.has(threshold.thresholdId)) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} duplicate trendThresholdId ${threshold.thresholdId}`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} duplicate trendThresholdId ${threshold.thresholdId}`);
     }
     trendThresholdIds.add(threshold.thresholdId);
     if (!Array.isArray(threshold.metricIds) || threshold.metricIds.length === 0) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} must name metricIds`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} must name metricIds`);
     }
     for (const metricId of threshold.metricIds ?? []) {
       if (!healthMetricIds.has(metricId)) {
-        fail(`health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} references unknown metricId ${metricId}`);
+        fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} references unknown metricId ${metricId}`);
       }
       if (!(policy.appliesTo ?? []).includes(metricId)) {
-        fail(`health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} metricId ${metricId} is outside policy appliesTo`);
+        fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} metricId ${metricId} is outside policy appliesTo`);
       }
     }
     if (typeof threshold.windowMonths !== 'number' || threshold.windowMonths <= 0) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} windowMonths must be a positive number`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} windowMonths must be a positive number`);
     }
     if (!['>=', '>', '<=', '<'].includes(threshold.operator ?? '')) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} operator must be one of >=, >, <=, <`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} operator must be one of >=, >, <=, <`);
     }
     if (typeof threshold.value !== 'number' || !Number.isFinite(threshold.value)) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} value must be a finite number`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} value must be a finite number`);
     }
     if (!threshold.unit) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} unit is required`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} unit is required`);
     }
     if (!threshold.status || !healthEvaluationStatuses.has(threshold.status)) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} status must resolve in status_taxonomy`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} status must resolve in status_taxonomy`);
     }
     if (!threshold.reasonCode) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} reasonCode is required`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} reasonCode is required`);
     }
     if (!threshold.boundary) {
-      fail(`health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} boundary is required`);
+      fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} threshold ${threshold.thresholdId} boundary is required`);
     }
   }
   for (const outputRule of policy.outputRules ?? []) {
@@ -342,9 +342,9 @@ for (const policy of healthEvaluationData.policies ?? []) {
     if (/\bdelta\b/iu.test(when)) {
       const match = when.match(/trendThresholds\.thresholdId=([a-z0-9.-]+)/u);
       if (!match) {
-        fail(`health-evaluation-rules.yaml policy ${policy.policyId} trend output rule must reference trendThresholds.thresholdId`);
+        fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} trend output rule must reference trendThresholds.thresholdId`);
       } else if (!trendThresholdIds.has(match[1])) {
-        fail(`health-evaluation-rules.yaml policy ${policy.policyId} trend output rule references unknown threshold ${match[1]}`);
+        fail(`data/structured/parentos/health-evaluation-rules.yaml policy ${policy.policyId} trend output rule references unknown threshold ${match[1]}`);
       }
     }
   }
@@ -352,7 +352,7 @@ for (const policy of healthEvaluationData.policies ?? []) {
 
 for (const metric of healthMetricData.metrics ?? []) {
   if (metric.evaluationPolicyRef && !healthEvaluationPolicyIds.has(metric.evaluationPolicyRef)) {
-    fail(`health-metric-registry.yaml metric ${metric.metricId} references unknown evaluationPolicyRef ${metric.evaluationPolicyRef}`);
+    fail(`data/structured/parentos/health-metric-registry.yaml metric ${metric.metricId} references unknown evaluationPolicyRef ${metric.evaluationPolicyRef}`);
   }
 }
 
@@ -366,27 +366,27 @@ for (const rule of [...(reminderData.rules ?? []), ...(reminderExtendedData.rule
 const targetCountByRuleId = new Map<string, number>();
 for (const target of reminderTargetData.targets ?? []) {
   if (!target.ruleId) {
-    fail('reminder-capture-targets.yaml target is missing ruleId');
+    fail('data/structured/parentos/reminder-capture-targets.yaml target is missing ruleId');
     continue;
   }
   targetCountByRuleId.set(target.ruleId, (targetCountByRuleId.get(target.ruleId) ?? 0) + 1);
   const rule = recordDataRules.get(target.ruleId);
   if (!rule) {
-    fail(`reminder-capture-targets.yaml target ${target.ruleId} does not resolve to an actionType=record_data reminder rule shard`);
+    fail(`data/structured/parentos/reminder-capture-targets.yaml target ${target.ruleId} does not resolve to an actionType=record_data reminder rule shard`);
   }
   if (target.actionType !== 'record_data') {
-    fail(`reminder-capture-targets.yaml target ${target.ruleId} must declare actionType=record_data`);
+    fail(`data/structured/parentos/reminder-capture-targets.yaml target ${target.ruleId} must declare actionType=record_data`);
   }
   const protocol = healthProtocolById.get(target.captureProtocolId);
   if (!protocol) {
-    fail(`reminder-capture-targets.yaml target ${target.ruleId} references unknown captureProtocolId ${target.captureProtocolId}`);
+    fail(`data/structured/parentos/reminder-capture-targets.yaml target ${target.ruleId} references unknown captureProtocolId ${target.captureProtocolId}`);
   }
   for (const metricId of target.targetMetricIds ?? []) {
     if (!healthMetricIds.has(metricId)) {
-      fail(`reminder-capture-targets.yaml target ${target.ruleId} references unknown metricId ${metricId}`);
+      fail(`data/structured/parentos/reminder-capture-targets.yaml target ${target.ruleId} references unknown metricId ${metricId}`);
     }
     if (protocol && !(protocol.metricIds ?? []).includes(metricId)) {
-      fail(`reminder-capture-targets.yaml target ${target.ruleId} metricId ${metricId} is not admitted by protocol ${target.captureProtocolId}`);
+      fail(`data/structured/parentos/reminder-capture-targets.yaml target ${target.ruleId} metricId ${metricId} is not admitted by protocol ${target.captureProtocolId}`);
     }
   }
 }
@@ -398,7 +398,7 @@ for (const ruleId of recordDataRules.keys()) {
 }
 pass(`Validated ${healthMetricIds.size} health metrics, ${healthProtocolById.size} capture protocols, ${healthEvaluationPolicyIds.size} evaluation policies, and ${recordDataRules.size} record_data reminder targets`);
 
-console.log('\n--- growth-milestone-rules.yaml constraints ---');
+console.log('\n--- data/structured/parentos/growth-milestone-rules.yaml constraints ---');
 
 interface GrowthMilestoneRuleRow {
   ruleId: string;
@@ -417,16 +417,16 @@ const GROWTH_MILESTONE_EVIDENCE_WINDOW_MONTHS_MAX = 24;
 const growthMilestoneRuleIds = new Set<string>();
 
 if (!Array.isArray(growthMilestoneData.rules) || growthMilestoneData.rules.length === 0) {
-  fail('growth-milestone-rules.yaml must declare a non-empty rules array');
+  fail('data/structured/parentos/growth-milestone-rules.yaml must declare a non-empty rules array');
 }
 
 for (const rule of growthMilestoneData.rules ?? []) {
   if (!rule.ruleId) {
-    fail('growth-milestone-rules.yaml rule is missing ruleId');
+    fail('data/structured/parentos/growth-milestone-rules.yaml rule is missing ruleId');
     continue;
   }
   if (!GROWTH_MILESTONE_RULE_ID_PATTERN.test(rule.ruleId)) {
-    fail(`growth-milestone-rules.yaml ruleId ${rule.ruleId} does not match ${GROWTH_MILESTONE_RULE_ID_PATTERN}`);
+    fail(`data/structured/parentos/growth-milestone-rules.yaml ruleId ${rule.ruleId} does not match ${GROWTH_MILESTONE_RULE_ID_PATTERN}`);
   }
   if (growthMilestoneRuleIds.has(rule.ruleId)) {
     fail(`Duplicate growth-milestone ruleId: ${rule.ruleId}`);
@@ -434,24 +434,24 @@ for (const rule of growthMilestoneData.rules ?? []) {
   growthMilestoneRuleIds.add(rule.ruleId);
   for (const metricId of rule.appliesToMetricIds ?? []) {
     if (!healthMetricIds.has(metricId)) {
-      fail(`growth-milestone-rules.yaml rule ${rule.ruleId} references unknown metricId ${metricId}`);
+      fail(`data/structured/parentos/growth-milestone-rules.yaml rule ${rule.ruleId} references unknown metricId ${metricId}`);
     }
   }
   const evidenceWindowMonths = rule.triggerCondition?.evidenceWindowMonths;
   if (typeof evidenceWindowMonths !== 'number') {
-    fail(`growth-milestone-rules.yaml rule ${rule.ruleId} triggerCondition.evidenceWindowMonths must be a number`);
+    fail(`data/structured/parentos/growth-milestone-rules.yaml rule ${rule.ruleId} triggerCondition.evidenceWindowMonths must be a number`);
   } else if (
     evidenceWindowMonths < GROWTH_MILESTONE_EVIDENCE_WINDOW_MONTHS_MIN ||
     evidenceWindowMonths > GROWTH_MILESTONE_EVIDENCE_WINDOW_MONTHS_MAX
   ) {
     fail(
-      `growth-milestone-rules.yaml rule ${rule.ruleId} triggerCondition.evidenceWindowMonths ${evidenceWindowMonths} is outside admitted range [${GROWTH_MILESTONE_EVIDENCE_WINDOW_MONTHS_MIN}, ${GROWTH_MILESTONE_EVIDENCE_WINDOW_MONTHS_MAX}]`,
+      `data/structured/parentos/growth-milestone-rules.yaml rule ${rule.ruleId} triggerCondition.evidenceWindowMonths ${evidenceWindowMonths} is outside admitted range [${GROWTH_MILESTONE_EVIDENCE_WINDOW_MONTHS_MIN}, ${GROWTH_MILESTONE_EVIDENCE_WINDOW_MONTHS_MAX}]`,
     );
   }
 }
 pass(`Validated growth-milestone-rules constraints for ${growthMilestoneData.rules?.length ?? 0} rules`);
 
-console.log('\n--- reference-data-assets.yaml constraints ---');
+console.log('\n--- data/structured/parentos/reference-data-assets.yaml constraints ---');
 const referenceAssetData = readTableYaml('reference-data-assets.yaml') as {
   assets?: Array<{
     assetId: string;
@@ -467,7 +467,7 @@ const referenceAssetIds = new Set<string>();
 const knowledgeAssetsById = new Map<string, ReturnType<typeof loadKnowledgeAsset>>();
 for (const asset of referenceAssetData.assets ?? []) {
   if (!asset.assetId) {
-    fail('reference-data-assets.yaml asset is missing assetId');
+    fail('data/structured/parentos/reference-data-assets.yaml asset is missing assetId');
     continue;
   }
   if (referenceAssetIds.has(asset.assetId)) {
@@ -475,20 +475,20 @@ for (const asset of referenceAssetData.assets ?? []) {
   }
   referenceAssetIds.add(asset.assetId);
   if (asset.format !== 'json') {
-    fail(`reference-data-assets.yaml asset ${asset.assetId} must use format=json`);
+    fail(`data/structured/parentos/reference-data-assets.yaml asset ${asset.assetId} must use format=json`);
   }
   if (asset.storageModel !== 'directory_backed_asset') {
-    fail(`reference-data-assets.yaml asset ${asset.assetId} must use storageModel=directory_backed_asset`);
+    fail(`data/structured/parentos/reference-data-assets.yaml asset ${asset.assetId} must use storageModel=directory_backed_asset`);
   }
   if (asset.authorityClass === 'design_asset' && asset.generatedModule && !asset.runtimeProjectionAdmission) {
-    fail(`reference-data-assets.yaml design_asset ${asset.assetId} must not declare generatedModule without runtimeProjectionAdmission`);
+    fail(`data/structured/parentos/reference-data-assets.yaml design_asset ${asset.assetId} must not declare generatedModule without runtimeProjectionAdmission`);
   }
   if (asset.path !== `data/knowledge/assets/${asset.assetId}/asset.json`) {
-    fail(`reference-data-assets.yaml asset ${asset.assetId} path must be directory-backed asset.json`);
+    fail(`data/structured/parentos/reference-data-assets.yaml asset ${asset.assetId} path must be directory-backed asset.json`);
   }
   const manifestPath = resolve(REPO_ROOT, asset.path);
   if (!existsSync(manifestPath)) {
-    fail(`reference-data-assets.yaml asset ${asset.assetId} path does not exist: ${asset.path}`);
+    fail(`data/structured/parentos/reference-data-assets.yaml asset ${asset.assetId} path does not exist: ${asset.path}`);
     continue;
   }
   try {
@@ -502,14 +502,14 @@ for (const asset of referenceAssetData.assets ?? []) {
     assertValidKnowledgeAsset(knowledgeAsset, { requireContractManifest: true });
     assertNoOrphanShards(knowledgeAsset);
   } catch (error) {
-    fail(`reference-data-assets.yaml asset ${asset.assetId} failed asset-kernel validation: ${error instanceof Error ? error.message : String(error)}`);
+    fail(`data/structured/parentos/reference-data-assets.yaml asset ${asset.assetId} failed asset-kernel validation: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 for (const [assetId, knowledgeAsset] of knowledgeAssetsById) {
   try {
     assertCrossReferenceIntegrity(knowledgeAsset, knowledgeAssetsById);
   } catch (error) {
-    fail(`reference-data-assets.yaml asset ${assetId} failed asset cross-reference validation: ${error instanceof Error ? error.message : String(error)}`);
+    fail(`data/structured/parentos/reference-data-assets.yaml asset ${assetId} failed asset cross-reference validation: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 for (const expected of [
@@ -525,7 +525,7 @@ for (const expected of [
   'smart-alert-rules',
 ]) {
   if (!referenceAssetIds.has(expected)) {
-    fail(`reference-data-assets.yaml is missing required asset ${expected}`);
+    fail(`data/structured/parentos/reference-data-assets.yaml is missing required asset ${expected}`);
   }
 }
 pass(`Validated ${referenceAssetIds.size} reference data assets`);
@@ -569,7 +569,7 @@ for (const period of periodData.periods ?? []) {
 }
 pass(`Validated sensitive period ordering for ${periodData.periods?.length ?? 0} periods`);
 
-console.log('\n--- knowledge-source-readiness.yaml constraints ---');
+console.log('\n--- data/structured/parentos/knowledge-source-readiness.yaml constraints ---');
 const readinessData = parseYaml(
   readFileSync(resolve(TABLES, 'knowledge-source-readiness.yaml'), 'utf-8'),
 ) as {
@@ -642,7 +642,7 @@ for (const row of advisorClassifierData.domainKeywords ?? []) {
   }
   advisorDomains.add(row.domain);
   if (!readinessDomains.has(row.domain)) {
-    fail(`advisor-classifier asset domain ${row.domain} does not resolve in knowledge-source-readiness.yaml`);
+    fail(`advisor-classifier asset domain ${row.domain} does not resolve in data/structured/parentos/knowledge-source-readiness.yaml`);
   }
   if (!Array.isArray(row.keywords) || row.keywords.length === 0) {
     fail(`advisor-classifier asset domain ${row.domain} must declare at least one keyword`);

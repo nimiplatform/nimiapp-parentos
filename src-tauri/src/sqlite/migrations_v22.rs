@@ -1,7 +1,7 @@
 use rusqlite::Connection;
 
 /// Schema v22: admit the `posture_assessments` retained-stateful table
-/// (`profile-contract.md#PO-PROF-019`).
+/// (`rule.parentos.prof.r019`).
 ///
 /// Posture / body-alignment review is admitted as an independent
 /// retained-owner stateful domain. Its records are discrete dated

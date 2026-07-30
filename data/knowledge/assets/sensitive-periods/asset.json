@@ -5,7 +5,7 @@
   "contentVersion": "2026-05-03.1",
   "schema": "schema.json",
   "authorityClass": "curated_knowledge_asset",
-  "ownerContract": "timeline-contract.md#PO-TIME-006",
+  "ownerContract": "rule.parentos.time.r006",
   "generatedModule": "sensitive-periods.gen.ts",
   "review": {
     "status": "reviewed",

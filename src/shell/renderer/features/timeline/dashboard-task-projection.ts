@@ -1,5 +1,5 @@
 // Dashboard Task Projection — pure, deterministic implementation of
-// `.nimi/spec/parentos/kernel/timeline-contract.md#PO-TIME-010`.
+// `.nimi/spec/parentos/canonical/timeline.authority.yaml#rule.parentos.time.r010`.
 //
 // Functions in this module map 1:1 to the named spec functions:
 //   rankDashboardTasks      → PO-TIME-010.a Ranking Function
@@ -10,7 +10,7 @@
 //
 // The module MUST stay pure: no React imports, no IO, no `Date.now()`,
 // no randomness, no provider/model identifiers. The caller injects
-// `today` and all inputs. See timeline-contract.md for the authority.
+// `today` and all inputs. See definition.parentos.timeline.contract for the authority.
 
 import type { CustomTodoRow } from '../../bridge/sqlite-bridge.js';
 import type {
@@ -300,7 +300,7 @@ function rankingTierForCatalog(family: DashboardTaskFamily): DashboardTaskRankin
   return 4;
 }
 
-/** Identifies orthodontic protocol rule ids per `orthodontic-protocols.yaml#rules`. */
+/** Identifies orthodontic protocol rule ids per `data/structured/parentos/orthodontic-protocols.yaml#rules`. */
 function isOrthodonticProtocolRule(ruleId: string): boolean {
   return ruleId.startsWith('PO-ORTHO-') || ruleId.startsWith('PO-DEN-FOLLOWUP-');
 }
@@ -334,7 +334,7 @@ export function rankDashboardTasks(entries: RankableEntry[]): DashboardTaskEntry
  * consult `Date.now()`, locale, randomness, or any provider/model identifier.
  *
  * P0 invariant: PO-TIME-003 P0 delivery is restated verbatim in
- * `timeline-contract.md#PO-TIME-010.a` and enforced here. A P0 must-do
+ * `rule.parentos.time.r010a` and enforced here. A P0 must-do
  * reminder always lands in `mainList` regardless of catalog row count,
  * dispersion, mutual exclusion, decay, or snooze.
  */

@@ -1,7 +1,7 @@
 /**
  * ReminderExplainDrawer — per-kind reminder disclosure surface.
  *
- * Authoritative contract: reminder-interaction-contract.md#PO-REMI-011
+ * Authoritative contract: rule.parentos.remi.r011
  *
  * Consumed by both the timeline panel (W5b) and the /reminders page (W5c).
  * Props are fully controlled: the parent owns open/close state and dispatches

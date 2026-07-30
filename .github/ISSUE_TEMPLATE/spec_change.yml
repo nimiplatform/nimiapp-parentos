@@ -6,7 +6,7 @@ body:
     id: surface
     attributes:
       label: Affected kernel surface
-      description: e.g. `.nimi/spec/parentos/kernel/timeline-contract.md#PO-TIME-010` or `.nimi/spec/parentos/kernel/tables/reminder-rules.yaml`
+      description: e.g. `.nimi/spec/parentos/canonical/timeline.authority.yaml#rule.parentos.time.r010` or `data/structured/parentos/reminder-rules.yaml`
     validations:
       required: true
   - type: textarea

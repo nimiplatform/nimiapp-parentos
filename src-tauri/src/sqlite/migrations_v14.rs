@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use rusqlite::Connection;
 
 /// Schema v14: extend `orthodontic_appliances` with clear-aligner per-tray
-/// schedule fields admitted by `orthodontic-contract.md#PO-ORTHO-003`.
+/// schedule fields admitted by `rule.parentos.ortho.r003`.
 ///
 /// Adds two nullable columns:
 ///
@@ -19,7 +19,7 @@ use rusqlite::Connection;
 ///
 /// Literal ALTER strings are kept here rather than constructed at runtime so
 /// that the spec-consistency check can scan this source file and confirm every
-/// local-storage.yaml column has a matching migration.
+/// data/structured/parentos/local-storage.yaml column has a matching migration.
 pub(super) fn apply_v14(conn: &Connection) -> Result<(), String> {
     // `orthodontic_appliances` is created by migration v9. On a broken-install
     // repair path the stamped schema version can jump over v9, so the table

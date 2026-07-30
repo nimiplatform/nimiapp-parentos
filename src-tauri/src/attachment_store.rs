@@ -87,7 +87,7 @@ fn ensure_path_is_owned(path: &Path) -> Result<(), String> {
 }
 
 fn is_supported_owner_table(t: &str) -> bool {
-    // Authority source: local-storage.yaml#attachments.ownerTable description.
+    // Authority source: data/structured/parentos/local-storage.yaml#attachments.ownerTable description.
     // Keep this list synchronized with the YAML enum AND with the equivalent
     // bridge-side guard. Reviewed by Wave A audit follow-up (W2): added
     // `orthodontic_unwear_intervals` (pre-existing gap) and

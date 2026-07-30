@@ -25,10 +25,10 @@ import { i18nText } from '../../i18n/index.js';
 // growth-next-check-modal.tsx — PO-GROWTH-DETAIL-006 next-check reschedule
 // modal. The milestone timeline's change CTA opens this modal against the
 // child's age-active growth record_data reminder. It adjusts two things, both
-// through mechanisms owned by reminder-interaction-contract.md:
+// through mechanisms owned by definition.parentos.reminder.interaction.contract:
 //   - the next occurrence date — PO-REMI-005 `schedule` action (scheduledDate)
 //   - the cadence            — PO-REMI-015 per-(child,rule) frequency override
-// It never marks the reminder complete and never writes reminder-rules.yaml.
+// It never marks the reminder complete and never writes data/structured/parentos/reminder-rules.yaml.
 
 export interface GrowthNextCheckModalChild {
   childId: string;

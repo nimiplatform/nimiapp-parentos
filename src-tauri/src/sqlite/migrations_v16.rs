@@ -19,7 +19,7 @@ use rusqlite::Connection;
 /// This is admissible only because the project is pre-launch and there are no
 /// production rows that depend on a particular non-winner being live; it is
 /// the single migration permitted to set a case to `completed` without a
-/// parent action (see orthodontic-contract.md#PO-ORTHO-002b).
+/// parent action (see rule.parentos.ortho.r002b).
 ///
 /// Idempotency: replays on already-deduplicated data are no-ops because the
 /// per-child non-completed group will have at most one row. Writes are

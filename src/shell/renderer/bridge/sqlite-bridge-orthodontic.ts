@@ -1,6 +1,6 @@
 /**
  * Typed Tauri bridge for orthodontic case/appliance/checkin surfaces.
- * Authority: orthodontic-contract.md and orthodontic-protocols.yaml.
+ * Authority: definition.parentos.orthodontic.contract and data/structured/parentos/orthodontic-protocols.yaml.
  *
  * Admitted enums here MUST match the Rust command validators in
  * src-tauri/src/sqlite/queries/orthodontic.rs. Drift = fail-close at the
@@ -86,7 +86,7 @@ export interface OrthodonticApplianceRow {
   /** Clear-aligner only. Prescribed wear days per tray before switching (PO-ORTHO-003). */
   daysPerAligner: number | null;
   /** Per-appliance treatment phase: a `phaseId` admitted for this `applianceType`
-   * in `orthodontic-protocols.yaml#appliancePhases`, or NULL ("not yet set"). PO-ORTHO-013. */
+   * in `data/structured/parentos/orthodontic-protocols.yaml#appliancePhases`, or NULL ("not yet set"). PO-ORTHO-013. */
   currentPhase: string | null;
   /** ISO 8601 date `currentPhase` was entered. NULL iff `currentPhase` is NULL. PO-ORTHO-013. */
   phaseStartedAt: string | null;

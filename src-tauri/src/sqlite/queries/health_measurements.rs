@@ -65,7 +65,7 @@ fn measurement_alias_metric_ids() -> Result<Vec<&'static str>, String> {
         };
         if !authority.metrics_by_id.contains_key(metric_id) {
             return Err(format!(
-                "measurement facade alias \"{alias}\" maps to metric \"{metric_id}\" that does not resolve in health-metric-registry.yaml"
+                "measurement facade alias \"{alias}\" maps to metric \"{metric_id}\" that does not resolve in data/structured/parentos/health-metric-registry.yaml"
             ));
         }
         metric_ids.push(metric_id);
@@ -116,7 +116,7 @@ fn measurement_protocol_and_group(
     let metric = authority
         .metrics_by_id
         .get(metric_id)
-        .ok_or_else(|| format!("measurement facade metric id \"{metric_id}\" does not resolve in health-metric-registry.yaml"))?;
+        .ok_or_else(|| format!("measurement facade metric id \"{metric_id}\" does not resolve in data/structured/parentos/health-metric-registry.yaml"))?;
 
     let protocol_preference: &[&str] = match metric_id {
         "growth.height" | "growth.weight" if age_months <= 36 => &[
@@ -169,7 +169,7 @@ fn measurement_metric_unit(metric_id: &str) -> Result<Option<String>, String> {
     Ok(health_record_authority()?
         .metrics_by_id
         .get(metric_id)
-        .ok_or_else(|| format!("measurement facade metric id \"{metric_id}\" does not resolve in health-metric-registry.yaml"))?
+        .ok_or_else(|| format!("measurement facade metric id \"{metric_id}\" does not resolve in data/structured/parentos/health-metric-registry.yaml"))?
         .unit
         .clone())
 }

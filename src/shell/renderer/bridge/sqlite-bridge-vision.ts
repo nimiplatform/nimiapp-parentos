@@ -4,7 +4,7 @@ import { invoke } from './shell-command.js';
  * Per-child vision follow-up cadence configuration.
  *
  * Mirrors the `vision_followup_settings` row defined in
- * `spec/kernel/tables/local-storage.yaml`. Absence of a row is meaningful:
+ * `data/structured/parentos/local-storage.yaml`. Absence of a row is meaningful:
  * `getVisionFollowupSettings` returns null, the renderer interprets that as
  * "use the system-recommended default cadence".
  */

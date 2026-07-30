@@ -15,7 +15,7 @@ use rusqlite::Connection;
 /// so repair replays do not fail on pre-stamped databases.
 ///
 /// Literal ALTER strings are kept here rather than constructed at runtime so that the
-/// spec-consistency check can scan this source file and confirm every local-storage.yaml
+/// spec-consistency check can scan this source file and confirm every data/structured/parentos/local-storage.yaml
 /// column has a matching migration.
 pub(super) fn apply_v11(conn: &Connection) -> Result<(), String> {
     // `custom_todos` is created by migration v6. On a broken-install repair path the

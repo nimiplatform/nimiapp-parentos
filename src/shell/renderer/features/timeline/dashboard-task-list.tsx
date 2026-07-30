@@ -1,5 +1,5 @@
 // Dashboard Task List surface — implementation of
-// `.nimi/spec/parentos/kernel/timeline-contract.md#PO-TIME-010`
+// `.nimi/spec/parentos/canonical/timeline.authority.yaml#rule.parentos.time.r010`
 // (UI proof; deterministic local projection authored in
 // `dashboard-task-projection.ts`).
 //

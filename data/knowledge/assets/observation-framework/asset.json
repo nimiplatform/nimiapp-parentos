@@ -5,7 +5,7 @@
   "contentVersion": "2026-05-03.1",
   "schema": "schema.json",
   "authorityClass": "curated_knowledge_asset",
-  "ownerContract": "journal-contract.md#PO-JOUR-006",
+  "ownerContract": "rule.parentos.jour.r006",
   "generatedModule": "observation-framework.gen.ts",
   "review": {
     "status": "reviewed",

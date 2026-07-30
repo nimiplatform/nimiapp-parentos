@@ -14,7 +14,7 @@ export type GenericMetricDetailShellProps = {
 
 /**
  * Generic fallback shell for read-only metric detail pages (typed by
- * routes.yaml as the generic fallback surface). Distinct from
+ * data/structured/parentos/routes.yaml as the generic fallback surface). Distinct from
  * `ProfileDetailShell` by design — uses pill ArrowLeft back + max-w-5xl
  * + tight top padding to visually signal "you are on a generic fallback
  * page" rather than a domain detail page.

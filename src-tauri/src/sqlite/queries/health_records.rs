@@ -179,13 +179,13 @@ pub(crate) fn health_record_authority() -> Result<&'static HealthRecordAuthority
 
 fn load_health_record_authority() -> Result<HealthRecordAuthority, String> {
     let metrics_yaml: HealthMetricRegistryYaml = serde_yaml::from_str(include_str!(
-        "../../../../.nimi/spec/parentos/kernel/tables/health-metric-registry.yaml"
+        "../../../../data/structured/parentos/health-metric-registry.yaml"
     ))
-    .map_err(|e| format!("parse health-metric-registry.yaml: {e}"))?;
+    .map_err(|e| format!("parse data/structured/parentos/health-metric-registry.yaml: {e}"))?;
     let protocols_yaml: HealthCaptureProtocolsYaml = serde_yaml::from_str(include_str!(
-        "../../../../.nimi/spec/parentos/kernel/tables/health-capture-protocols.yaml"
+        "../../../../data/structured/parentos/health-capture-protocols.yaml"
     ))
-    .map_err(|e| format!("parse health-capture-protocols.yaml: {e}"))?;
+    .map_err(|e| format!("parse data/structured/parentos/health-capture-protocols.yaml: {e}"))?;
 
     let metrics_by_id = metrics_yaml
         .metrics

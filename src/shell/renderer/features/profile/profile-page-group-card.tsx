@@ -47,7 +47,7 @@ function isSportActivityMetric(metric: HealthMetricSnapshot['metric']): boolean 
 
 // Detail surfaces whose page carries an internal metric/chart tab. For these
 // the card deep-links the clicked metric via ?metric=<metricId> so the page
-// opens on that metric's tab instead of its default. routes.yaml admits the
+// opens on that metric's tab instead of its default. data/structured/parentos/routes.yaml admits the
 // query param for both /profile/growth and /profile/vision.
 const METRIC_DEEP_LINK_ROUTES = new Set(['/profile/growth', '/profile/vision']);
 

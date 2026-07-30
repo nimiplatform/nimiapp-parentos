@@ -11,61 +11,61 @@ export interface KnowledgeAssetProjectionFingerprint {
 
 export const KNOWLEDGE_ASSET_PROJECTION_FINGERPRINTS: Record<string, KnowledgeAssetProjectionFingerprint> = {
   "growth-standards": {
-    "projectionFingerprint": "13092599eab94cd7982dbf0ce895152889c6b1dc86f41a146addf3ca6814cb2f",
+    "projectionFingerprint": "6ca3c929878e36c6f616667948f50a2c05c6d6f3b2950a509295fa4d074f1385",
     "schemaVersion": 2,
     "contentVersion": "2026-05-07.2",
     "authorityClass": "reference_dataset"
   },
   "milestone-catalog": {
-    "projectionFingerprint": "a5648ff437c86ffac1deffa870acfa7c4815a3fadcd3f9ebda1e1b12d1e6c094",
+    "projectionFingerprint": "03b48db5c049e116696ff568284d0a7f187eb0dee4e344eb31dfa4d55bd8a020",
     "schemaVersion": 1,
     "contentVersion": "2026-05-03.1",
     "authorityClass": "curated_knowledge_asset"
   },
   "sensitive-periods": {
-    "projectionFingerprint": "33b56d64bf5c3b638831aa81781cc062690ee210df47aa5e898d43ecdcb5da94",
+    "projectionFingerprint": "9880dbd987e7e06da68bb84bafc1b2e5f356ed1cb6219d0fa9fef4441b7e0f42",
     "schemaVersion": 1,
     "contentVersion": "2026-05-03.1",
     "authorityClass": "curated_knowledge_asset"
   },
   "observation-framework": {
-    "projectionFingerprint": "f6b8b9ea2a7a2edf4544b55e61dd54efc3797cb637788bf9cb1fe5bba5e96c6b",
+    "projectionFingerprint": "eab6f2175646c46077bad2082cb52a43f8122ced488664b013da7afee097e900",
     "schemaVersion": 1,
     "contentVersion": "2026-05-03.1",
     "authorityClass": "curated_knowledge_asset"
   },
   "ability-model": {
-    "projectionFingerprint": "550a053eeffd847ea4380cf30c67dd9ab39c851b843e0691241f69ae136f4e6a",
+    "projectionFingerprint": "5720f25dc1e47babbb0c8e3df62314076d757a58a1d36ce11e7290176201cab7",
     "schemaVersion": 2,
     "contentVersion": "2026-05-07.2",
     "authorityClass": "design_asset"
   },
   "ai-boundary-rules": {
-    "projectionFingerprint": "e57ad80500abaf6787c186ddb95716b6be6074006380eb5e8671697a1f943e02",
+    "projectionFingerprint": "6059cfc422a6216e8b014fea219144147eac9c7b7552d78dd39cad4e58ac402b",
     "schemaVersion": 1,
     "contentVersion": "2026-06-17.1",
     "authorityClass": "curated_knowledge_asset"
   },
   "advisor-classifier": {
-    "projectionFingerprint": "a91a749bfa8b006618fd6dacb89604a9669505b15fa5bf06a3c25b30b5511b7d",
+    "projectionFingerprint": "afb1bb6820aef5c0b97d0bff898fa890a2689fe80fd4ed8cd25e7c9d3dcd2720",
     "schemaVersion": 1,
     "contentVersion": "2026-06-17.1",
     "authorityClass": "curated_knowledge_asset"
   },
   "pediatric-drug-catalog": {
-    "projectionFingerprint": "c0a3d233a232122eda0670494db5f420c12611aaad573e8b3f464828e6b44bd5",
+    "projectionFingerprint": "ce89ffda09c7963ec9a916b275105606da5d628c24545c1070c48bb7d0911b86",
     "schemaVersion": 1,
     "contentVersion": "2026-06-17.1",
     "authorityClass": "curated_knowledge_asset"
   },
   "journal-guidance-catalog": {
-    "projectionFingerprint": "8106fa55f557cfbaf89034546583756c1bb294f7254a28894dc973c74a254859",
+    "projectionFingerprint": "4c9aee5c85659e3a1c4666e07cbf365d68c24ed49d9a0b2a4a1f588f913454a0",
     "schemaVersion": 1,
     "contentVersion": "2026-06-17.1",
     "authorityClass": "curated_knowledge_asset"
   },
   "smart-alert-rules": {
-    "projectionFingerprint": "c6374b3d5c8148255a4bff31492614743ceee350848dd918474c7965a535e606",
+    "projectionFingerprint": "1ec333150d1eac602c9198eb5a948bfb2d1034251b7032453e526304823bc578",
     "schemaVersion": 1,
     "contentVersion": "2026-06-17.1",
     "authorityClass": "curated_knowledge_asset"

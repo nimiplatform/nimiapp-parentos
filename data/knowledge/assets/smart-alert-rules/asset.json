@@ -5,7 +5,7 @@
   "contentVersion": "2026-06-17.1",
   "schema": "schema.json",
   "authorityClass": "curated_knowledge_asset",
-  "ownerContract": "timeline-contract.md",
+  "ownerContract": "definition.parentos.timeline.contract",
   "generatedModule": "smart-alert-rules.gen.ts",
   "review": {
     "status": "reviewed",

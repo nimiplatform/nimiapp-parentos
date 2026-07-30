@@ -9,7 +9,7 @@ import { i18nText } from '../../i18n/index.js';
 
 /**
  * Posture console card. Posture is a retained-owner stateful domain
- * (profile-contract.md#PO-PROF-019): its records live in `posture_assessments`,
+ * (rule.parentos.prof.r019): its records live in `posture_assessments`,
  * not the PO-HREC `health_record_events` snapshot, so it is rendered as its
  * own card rather than a `HEALTH_METRIC_GROUPS` snapshot group.
  */

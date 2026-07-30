@@ -1,0 +1,98 @@
+format: nimicoding.authority/v2
+owner: team.parentos
+scope: parentos.capture
+units:
+  - id: definition.parentos.capture.contract
+    kind: definition
+    title: Capture contract
+    meaning: The Capture contract defines the ParentOS behaviors, data shapes, ownership boundaries, and failure semantics governed by its explicit rules.
+  - id: rule.parentos.capt.r001
+    kind: rule
+    title: Capture Intent
+    modality: must
+    statement: "Every capture entry point creates a typed CaptureIntent. CaptureIntent { intentId origin: profile_add_icon | metric_row | reminder | detail_page | ocr_confirm | dashboard_task childId groupId captureProtocolId: null | string metricIds recordedAtDefault source: manual | ocr | imported | reminder linkedReminder: null | { childId, stateId, ruleId, repeatIndex } dashboardTaskId: null | string prefillValues postSaveBehavior } Entry points MUST NOT invent a canonical protocol id. captureProtocolId is populated only when the entry point is backed by an admitted catalog binding (data/structured/parentos/reminder-capture-targets.yaml or data/structured/parentos/dashboard-task-catalog.yaml) or after the orchestrator selects the protocol from groupId, metricIds, mode, source, and child age. The orchestrator must reject an intent whose explicit protocol, group, or metric ids do not resolve in canonical tables, or whose explicit protocol does not admit the requested metric set. See also rule.parentos.growth.detail.r004 for how the /profile/growth Add CTA threads initialGroupId and initialMetricId into HealthCaptureModal; the orchestrator's internal intent construction at protocol-selection time is unchanged and the origin enum is not modified."
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-CAPT-001.
+    failure: Fail closed and report PO-CAPT-001 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.capture.contract
+  - id: rule.parentos.capt.r002
+    kind: rule
+    title: Modes
+    modality: must
+    statement: "The modal supports exactly these modes: | Mode | Origin | | manual | independent profile add-data icon | | prefilled | metric row or detail page | | guided | multi-metric protocol selected by parent | | reminder | record_data reminder with a capture target | | ocr_confirm | OCR candidates requiring parent confirmation | | dashboard_task | dashboard task surface row from data/structured/parentos/dashboard-task-catalog.yaml | A flat mega-dropdown is not an admitted capture model. Selection must be group-to-protocol or group-to-metric-set."
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-CAPT-002.
+    failure: Fail closed and report PO-CAPT-002 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.capture.contract
+  - id: rule.parentos.capt.r003
+    kind: rule
+    title: Protocol Binding
+    modality: must
+    statement: data/structured/parentos/health-capture-protocols.yaml defines required fields, optional fields, metric ids, value types, validation, and completion semantics for every protocol. The UI may render fields from the protocol. It must not invent fields or save values outside the protocol.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-CAPT-003.
+    failure: Fail closed and report PO-CAPT-003 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.capture.contract
+  - id: rule.parentos.capt.r004
+    kind: rule
+    title: Save Transaction
+    modality: must
+    statement: "A save is successful only when all required writes complete in one logical transaction: Validate child, protocol, metric ids, units, value types, side semantics, and recorded date. Resolve the protocol storageTarget. For storageTarget=health_record_event, persist one health_record_events row and all required health_record_values rows. For storageTarget=retained_table, persist exactly one owner-contract row in the retained table named by the protocol/domain and do not also write a parallel health record event. Compute required derived metrics such as BMI from admitted source values. Persist derived values through the same transaction or a deterministic post-save rebuild named by the protocol. Rebuild or invalidate the health record console snapshot. If linked to a record_data reminder, complete the reminder only after the saved record satisfies the reminder target. Validation or persistence failure must surface as failure. It must not create a placeholder row or mark a reminder complete."
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-CAPT-004.
+    failure: Fail closed and report PO-CAPT-004 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.capture.contract
+  - id: rule.parentos.capt.r005
+    kind: rule
+    title: Reminder-Linked Completion
+    modality: must
+    statement: When origin=reminder, the intent must include linkedReminder. The orchestrator must load the reminder target from data/structured/parentos/reminder-capture-targets.yaml. It must not infer required metrics from button copy, route path, or reminder prose. completedAt can be written only after the persisted event satisfies the target's completion policy.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-CAPT-005.
+    failure: Fail closed and report PO-CAPT-005 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.capture.contract
+  - id: rule.parentos.capt.r005a
+    kind: rule
+    title: Dashboard-Task Capture
+    modality: must
+    statement: "When origin=dashboard_task, the intent must include dashboardTaskId referencing a data/structured/parentos/dashboard-task-catalog.yaml#taskId row. The orchestrator must resolve the catalog row and use its captureProtocolIdRef to drive protocol selection. Local invention of fields, metrics, or storage targets is forbidden (PO-CAPT-003, PO-CAPT-008 extended). Additional invariants for the dashboard_task origin: childId, dashboardTaskId, and metricIds are required. captureProtocolId is required only after the dashboard catalog row has resolved; before that, the orchestrator must resolve it from data/structured/parentos/dashboard-task-catalog.yaml#captureProtocolIdRef, not from local UI copy. prefillValues may carry values previously persisted for the same metric. linkedReminder is optional. When the dashboard task is reminder-backed (typically family=maintain rows whose catalog binding mirrors a record_data reminder), linkedReminder must point at the underlying reminder so PO-CAPT-005 reminder-linked completion still governs the reminder writeback. A dashboard_task origin without a reminder backing must not write completedAt on any reminder row. Completion of the dashboard task itself is owned by the state owner declared by data/structured/parentos/dashboard-task-catalog.yaml#ownerContract. dashboard_task origin does not create a new save path. The PO-CAPT-004 save transaction rules apply unchanged."
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-CAPT-005a.
+    failure: Fail closed and report PO-CAPT-005a when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.capture.contract
+  - id: rule.parentos.capt.r006
+    kind: rule
+    title: Detail Page Interaction
+    modality: must
+    statement: Detail pages may open the orchestrator with prefilled mode. Detail pages must not keep independent add-data save paths after PO-CAPT admission.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-CAPT-006.
+    failure: Fail closed and report PO-CAPT-006 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.capture.contract
+  - id: rule.parentos.capt.r007
+    kind: rule
+    title: OCR Confirmation
+    modality: must
+    statement: OCR intake is extraction-only until the parent confirms values. OCR candidates must map to canonical metric ids and capture protocols. Unsupported candidates must be rejected or shown as non-importable.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-CAPT-007.
+    failure: Fail closed and report PO-CAPT-007 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.capture.contract
+  - id: rule.parentos.capt.r008
+    kind: rule
+    title: Fail-Close Behaviors
+    modality: must
+    statement: "The orchestrator must fail closed when: an intent lacks a valid child id a protocol id is not present in data/structured/parentos/health-capture-protocols.yaml a metric id is not present in data/structured/parentos/health-metric-registry.yaml a required field is missing a value cannot be coerced to the protocol's declared value type a protocol lacks a storage target, or its retained-table target has no owner contract a left/right pair protocol receives only one side when both are required a reminder-linked save does not satisfy the reminder target an OCR candidate attempts to auto-save without parent confirmation a detail page bypasses the orchestrator a dashboard_task origin intent lacks dashboardTaskId, or dashboardTaskId does not resolve to a data/structured/parentos/dashboard-task-catalog.yaml row a dashboard_task origin synthesizes fields, metric ids, or storage targets outside the catalog row's declared protocol"
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-CAPT-008.
+    failure: Fail closed and report PO-CAPT-008 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.capture.contract

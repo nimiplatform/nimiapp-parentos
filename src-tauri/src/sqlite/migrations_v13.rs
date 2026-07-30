@@ -1,7 +1,7 @@
 use rusqlite::Connection;
 
 /// Schema v13: introduce the canonical PO-HREC health record event/value
-/// storage pair admitted by `local-storage.yaml`.
+/// storage pair admitted by `data/structured/parentos/local-storage.yaml`.
 ///
 /// ParentOS is pre-alpha and the current storage baseline has no admitted
 /// pre-cutover data migration path. This migration creates only canonical

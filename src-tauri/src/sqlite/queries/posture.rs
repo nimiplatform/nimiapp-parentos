@@ -3,7 +3,7 @@ use serde::Serialize;
 
 use super::super::get_conn;
 
-// ── Posture Assessments (retained-owner domain, profile-contract.md#PO-PROF-019) ──
+// ── Posture Assessments (retained-owner domain, rule.parentos.prof.r019) ──
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]

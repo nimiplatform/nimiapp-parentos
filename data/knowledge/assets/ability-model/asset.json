@@ -5,7 +5,7 @@
   "contentVersion": "2026-05-07.2",
   "schema": "schema.json",
   "authorityClass": "design_asset",
-  "ownerContract": "app-shell-contract.md#PO-SHELL-011",
+  "ownerContract": "definition.parentos.app.shell.contract",
   "review": {
     "status": "needs_review",
     "owner": "parentos",
@@ -66,7 +66,7 @@
           "toAsset": "observation-framework",
           "toSection": "dimensions",
           "toField": "dimensionId",
-          "ownerContract": ".nimi/spec/parentos/kernel/journal-contract.md#PO-JOUR-002"
+          "ownerContract": ".nimi/spec/parentos/canonical/journal.authority.yaml#rule.parentos.jour.r002"
         }
       ]
     }

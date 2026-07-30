@@ -5,7 +5,7 @@ use super::super::get_conn;
 
 /// Per-child vision follow-up cadence configuration.
 ///
-/// Mirrors `vision_followup_settings` in `spec/kernel/tables/local-storage.yaml`.
+/// Mirrors `vision_followup_settings` in `data/structured/parentos/local-storage.yaml`.
 /// Returned to the renderer as camelCase JSON.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -30,7 +30,7 @@ pub(super) const V1_SCHEMA_SQL: &str = r#"
         CREATE INDEX IF NOT EXISTS idx_children_birth ON children (birthDate);
 
         -- Growth Measurements: RETIRED at v21 per
-        -- .nimi/spec/parentos/kernel/tables/local-storage.yaml#growth_measurement_canonical_migration.retirement_plan
+        -- data/structured/parentos/local-storage.yaml#growth_measurement_canonical_migration.retirement_plan
         -- (topic 2026-05-19-parentos-growth-canonical-write-migration wave-0c).
         -- Storage moved to canonical health_record_events + health_record_values
         -- (PO-HREC-004) at v13. Fresh installs never create this retired table.
@@ -300,7 +300,7 @@ pub(super) const V1_SCHEMA_SQL: &str = r#"
         CREATE INDEX IF NOT EXISTS idx_fitness_child_date ON fitness_assessments (childId, assessedAt);
 
         -- Attachments
-        -- ownerTable values admitted by `local-storage.yaml#attachments`.
+        -- ownerTable values admitted by `data/structured/parentos/local-storage.yaml#attachments`.
         -- v18 ALTERs this table to add `metadataJson TEXT` and admit
         -- `orthodontic_photo_sessions` as an owner (PO-ORTHO-012); the
         -- v1 baseline here is the original 8-column shape that pre-launch

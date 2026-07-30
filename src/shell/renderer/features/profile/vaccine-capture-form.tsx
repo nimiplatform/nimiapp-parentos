@@ -34,7 +34,7 @@ export type VaccineCaptureProps = {
 
 /**
  * Rule-backed vaccine capture form. Vaccines are a retained-owner stateful
- * domain (health-record-console-contract.md#PO-HREC-007): actual vaccination
+ * domain (rule.parentos.hrec.r007): actual vaccination
  * records land in `vaccine_records`, not `health_record_events`.
  */
 export function VaccineCaptureContent({ child, onSaved, onClose }: VaccineCaptureProps) {

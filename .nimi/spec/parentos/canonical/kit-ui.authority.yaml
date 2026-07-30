@@ -1,0 +1,58 @@
+format: nimicoding.authority/v2
+owner: team.parentos
+scope: parentos.kit-ui
+units:
+  - id: definition.parentos.kit.ui.contract
+    kind: definition
+    title: Kit Ui contract
+    meaning: The Kit Ui contract defines the ParentOS behaviors, data shapes, ownership boundaries, and failure semantics governed by its explicit rules.
+  - id: rule.parentos.kitui.r001
+    kind: rule
+    title: Local Consumption Authority
+    modality: must
+    statement: ParentOS kit consumption inventory lives in data/structured/parentos/nimi-kit-adoption.yaml. ParentOS retained visual/domain compositions live in data/structured/parentos/nimi-kit-compositions.yaml. ParentOS domain-geometry inline style allowances live in data/structured/parentos/nimi-kit-allowlists.yaml and must not admit color, background, border, shadow, filter, or glass material authority. Platform design tables must not contain ParentOS module inventories or ParentOS-owned component rows.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-KITUI-001.
+    failure: Fail closed and report PO-KITUI-001 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.kit.ui.contract
+  - id: rule.parentos.kitui.r002
+    kind: rule
+    title: Theme Entry
+    modality: must
+    statement: ParentOS renderer must import @nimiplatform/kit/ui/styles.css, light.css, dark.css, and exactly one accent pack. ParentOS uses nimi-accent unless this app-local contract explicitly admits a different ParentOS-owned accent pack. ParentOS root rendering must use NimiThemeProvider from @nimiplatform/kit/ui.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-KITUI-002.
+    failure: Fail closed and report PO-KITUI-002 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.kit.ui.contract
+  - id: rule.parentos.kitui.r003
+    kind: rule
+    title: No App-Local Shared Visual Truth
+    modality: must
+    statement: ParentOS renderer code must not use app-shell/page-style or the S visual facade for shared-family visuals. ParentOS renderer CSS must not define a root --color-* token registry. ParentOS glass/material surfaces must use kit material primitives and must not inline backdropFilter or CSS backdrop-filter. Shared-family actions, fields, overlays, surfaces, sidebars, scroll areas, toggles, status treatments, and avatar shells must use kit primitives or app-local manifest-registered compositions that do not redefine primitive authority.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-KITUI-003.
+    failure: Fail closed and report PO-KITUI-003 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.kit.ui.contract
+  - id: rule.parentos.kitui.r004
+    kind: rule
+    title: Domain Composition Boundary
+    modality: must
+    statement: ParentOS may retain domain-specific compositions for child health, journal, reports, orthodontics, and growth visualization when they are registered in data/structured/parentos/nimi-kit-compositions.yaml. Registered domain compositions may own information architecture, data visualization geometry, copy structure, and domain interaction flow. Registered domain compositions must not define a parallel visual contract for kit primitive families.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-KITUI-004.
+    failure: Fail closed and report PO-KITUI-004 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.kit.ui.contract
+  - id: rule.parentos.kitui.r005
+    kind: rule
+    title: Overlay Registry Authority
+    modality: must
+    statement: Governed ParentOS dialog and drawer surfaces must be registered in data/structured/parentos/renderer-design-overlays.yaml. Registered overlay rows must name the owning module, overlay kind, surface tone, elevation, z-index token, testability posture, reduced-motion posture, current provider, target provider, migration wave, and exception posture. ParentOS overlay rows inherit P-DESIGN-013 and must converge on OverlayShell unless a row is admitted as a narrow P-DESIGN-021 controlled exception with an explicit sunset wave. Local overlay shells, inline fixed inset-0 backdrops, and local portal wrappers are not new primitive authority. They are legacy implementation providers tracked by the overlay registry until migration removes them. New ParentOS overlay surfaces must not enter renderer code without both a data/structured/parentos/nimi-kit-adoption.yaml row declaring the overlay family and a data/structured/parentos/renderer-design-overlays.yaml row. Fact Sources data/structured/parentos/nimi-kit-adoption.yaml data/structured/parentos/nimi-kit-compositions.yaml data/structured/parentos/nimi-kit-allowlists.yaml data/structured/parentos/renderer-design-overlays.yaml
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-KITUI-005.
+    failure: Fail closed and report PO-KITUI-005 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.kit.ui.contract

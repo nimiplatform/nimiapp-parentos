@@ -6,7 +6,7 @@ use super::super::get_conn;
 // ── Reminder States ────────────────────────────────────────
 //
 // Per-kind progression columns added in schema v10 per
-// reminder-interaction-contract.md#PO-REMI-004:
+// rule.parentos.remi.r004:
 //   acknowledgedAt / reflectedAt                        (guide)
 //   practiceStartedAt / practiceLastAt / practiceCount / practiceHabituatedAt (practice)
 //   consultedAt / consultationConversationId             (consult, written by advisor)

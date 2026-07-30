@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use rusqlite::Connection;
 
 /// Schema v10: introduce per-kind progression timestamp columns on
-/// `reminder_states` per `reminder-interaction-contract.md#PO-REMI-004`.
+/// `reminder_states` per `rule.parentos.remi.r004`.
 ///
 /// Adds 8 new columns scoped by reminder `kind`:
 ///
@@ -25,7 +25,7 @@ use rusqlite::Connection;
 ///
 /// Literal ALTER strings are kept here rather than constructed at runtime so that the
 /// spec-consistency check (scripts/check-parentos-spec-consistency.ts) can scan this
-/// source file and confirm every local-storage.yaml column has a matching migration.
+/// source file and confirm every data/structured/parentos/local-storage.yaml column has a matching migration.
 pub(super) fn apply_v10(conn: &Connection) -> Result<(), String> {
     add_progression_columns(conn)?;
     create_consultation_index(conn)?;

@@ -5,7 +5,7 @@
   "contentVersion": "2026-06-17.1",
   "schema": "schema.json",
   "authorityClass": "curated_knowledge_asset",
-  "ownerContract": "advisor-contract.md#PO-ADVS-002",
+  "ownerContract": "rule.parentos.advs.r002",
   "generatedModule": "advisor-classifier.gen.ts",
   "review": {
     "status": "reviewed",

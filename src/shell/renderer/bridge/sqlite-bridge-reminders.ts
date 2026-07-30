@@ -19,7 +19,7 @@ export interface ReminderStateRow {
   lastSurfacedAt: string | null;
   surfaceCount: number;
   notes: string | null;
-  // v10 per-kind progression columns (reminder-interaction-contract.md#PO-REMI-004)
+  // v10 per-kind progression columns (rule.parentos.remi.r004)
   acknowledgedAt: string | null;
   reflectedAt: string | null;
   practiceStartedAt: string | null;

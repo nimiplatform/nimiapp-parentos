@@ -1147,7 +1147,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "growth.head_circumference"
     ],
     "sourceRefs": [
-      "reference-data-assets.yaml#growth-standards"
+      "data/structured/parentos/reference-data-assets.yaml#growth-standards"
     ],
     "outputRules": [
       {
@@ -1174,7 +1174,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "growth.bmi"
     ],
     "sourceRefs": [
-      "reference-data-assets.yaml#growth-standards"
+      "data/structured/parentos/reference-data-assets.yaml#growth-standards"
     ],
     "outputRules": [
       {
@@ -1202,7 +1202,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "vision.right_visual_acuity"
     ],
     "sourceRefs": [
-      "reference-data-assets.yaml#growth-standards.referenceRanges.vision"
+      "data/structured/parentos/reference-data-assets.yaml#growth-standards.referenceRanges.vision"
     ],
     "outputRules": [
       {
@@ -1226,7 +1226,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "vision.right_axial_length"
     ],
     "sourceRefs": [
-      "reference-data-assets.yaml#growth-standards.referenceRanges.axialLength"
+      "data/structured/parentos/reference-data-assets.yaml#growth-standards.referenceRanges.axialLength"
     ],
     "trendThresholds": [
       {
@@ -1270,7 +1270,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "vision.right_iop"
     ],
     "sourceRefs": [
-      "reference-data-assets.yaml#growth-standards"
+      "data/structured/parentos/reference-data-assets.yaml#growth-standards"
     ],
     "outputRules": [
       {
@@ -1323,7 +1323,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "development.tanner_pubic_hair_stage"
     ],
     "sourceRefs": [
-      "profile-contract.md#PO-PROF-012"
+      "rule.parentos.prof.r012"
     ],
     "trendThresholds": [
       {
@@ -1371,7 +1371,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "sleep.duration_minutes"
     ],
     "sourceRefs": [
-      "profile-contract.md#PO-PROF-010"
+      "rule.parentos.prof.r010"
     ],
     "outputRules": [
       {
@@ -1394,7 +1394,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "outdoor.weekly_goal_minutes"
     ],
     "sourceRefs": [
-      "reminder-rules.yaml#PO-REM-OUTD-001"
+      "data/structured/parentos/reminder-rules.yaml#PO-REM-OUTD-001"
     ],
     "outputRules": [
       {
@@ -1413,7 +1413,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "outdoor.activity_minutes"
     ],
     "sourceRefs": [
-      "reminder-rules.yaml#PO-REM-OUTD-002"
+      "data/structured/parentos/reminder-rules.yaml#PO-REM-OUTD-002"
     ],
     "outputRules": [
       {
@@ -1436,7 +1436,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "vaccine.administration"
     ],
     "sourceRefs": [
-      "reminder-rules.yaml"
+      "data/structured/parentos/reminder-rules.yaml"
     ],
     "outputRules": [
       {
@@ -1459,7 +1459,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "dental.event"
     ],
     "sourceRefs": [
-      "profile-contract.md#PO-PROF-008"
+      "rule.parentos.prof.r008"
     ],
     "outputRules": [
       {
@@ -1486,7 +1486,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "medical.event"
     ],
     "sourceRefs": [
-      "profile-contract.md#PO-PROF-011"
+      "rule.parentos.prof.r011"
     ],
     "outputRules": [
       {
@@ -1513,7 +1513,7 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
       "development.milestone"
     ],
     "sourceRefs": [
-      "reference-data-assets.yaml#milestone-catalog"
+      "data/structured/parentos/reference-data-assets.yaml#milestone-catalog"
     ],
     "outputRules": [
       {

@@ -45,7 +45,7 @@ interface HealthCaptureModalProps {
    * Set when the modal is opened from a record_data reminder. Per-group forms
    * thread these IDs into the underlying insert so health_record_events rows
    * land with linkedReminderStateId/linkedReminderRuleId (capture-orchestrator-
-   * contract.md, local-storage.yaml).
+   * contract.md, data/structured/parentos/local-storage.yaml).
    */
   linkedReminder?: LinkedHealthRecordReminder | null;
   /**
@@ -110,7 +110,7 @@ const SIDEBAR_GROUP_ORDER: readonly string[] = [
 /**
  * Sidebar entries that are not spec-derived `HEALTH_METRIC_GROUPS` capture
  * options. `vaccine` is a retained-owner stateful domain
- * (health-record-console-contract.md#PO-HREC-007) — it writes to
+ * (rule.parentos.hrec.r007) — it writes to
  * `vaccine_records`, so it has no `health_record_events` capture protocol.
  */
 const VIRTUAL_SIDEBAR_ITEMS: ReadonlyArray<{ id: string; emoji: string; label: string }> = [

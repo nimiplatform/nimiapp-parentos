@@ -69,7 +69,7 @@ describe('DashboardTaskList', () => {
           {
             taskId: 'dashboard-maintain-sleep',
             family: 'maintain',
-            ownerContract: '.nimi/spec/parentos/kernel/timeline-contract.md',
+            ownerContract: '.nimi/spec/parentos/canonical/timeline.authority.yaml',
             cadencePolicy: 'interval',
             biologicalAnchor: 'none',
             slotPreference: 'weekday-evening-light',
@@ -128,7 +128,7 @@ describe('DashboardTaskList', () => {
           {
             taskId: 'dashboard-maintain-expired',
             family: 'maintain',
-            ownerContract: '.nimi/spec/parentos/kernel/timeline-contract.md',
+            ownerContract: '.nimi/spec/parentos/canonical/timeline.authority.yaml',
             cadencePolicy: 'interval',
             biologicalAnchor: 'none',
             slotPreference: 'weekend-heavy',
@@ -163,7 +163,7 @@ describe('DashboardTaskList', () => {
           {
             taskId: 'dashboard-maintain-sleep',
             family: 'maintain',
-            ownerContract: '.nimi/spec/parentos/kernel/timeline-contract.md',
+            ownerContract: '.nimi/spec/parentos/canonical/timeline.authority.yaml',
             cadencePolicy: 'interval',
             biologicalAnchor: 'none',
             slotPreference: 'weekday-evening-light',

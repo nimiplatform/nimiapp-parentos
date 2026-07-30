@@ -103,7 +103,7 @@ fn purge_synthetic_dental_reminder_states(conn: &Connection) -> Result<(), Strin
     // Pre-contract code synthesized ruleIds like "dental-auto-cleaning-2026-04-01".
     // These are not in the compiled reminder catalog and now trip the PO-TIME-007
     // fail-close invariant. Delete them so the UI stays usable; the replacement
-    // admitted rules (PO-DEN-FOLLOWUP-*) are declared in orthodontic-protocols.yaml.
+    // admitted rules (PO-DEN-FOLLOWUP-*) are declared in data/structured/parentos/orthodontic-protocols.yaml.
     conn.execute(
         "DELETE FROM reminder_states WHERE ruleId LIKE 'dental-auto-%'",
         [],
@@ -169,7 +169,7 @@ fn repair_legacy_ortho_start_rows(conn: &Connection) -> Result<(), String> {
 
         // Deterministic legacy caseId so re-running the migration stays idempotent.
         // Admitted exception to the PO-ORTHO-002 ULID guidance (documented in
-        // orthodontic-contract.md under the legacy-stitch note).
+        // definition.parentos.orthodontic.contract under the legacy-stitch note).
         let case_id = format!("legacy-ortho-case-{child_id}");
         let started_at = earliest_event_date;
         conn.execute(

@@ -193,7 +193,7 @@ pnpm exec nimicoding sync --apply
 pnpm nimicoding:doctor
 ```
 
-Commit the updated `.nimi/{config,contracts,methodology}/**` files alongside
+Commit the updated `.nimi/methodology/authority-authoring.yaml` alongside
 the `package.json` bump in the same release.
 
 ## Hotfix

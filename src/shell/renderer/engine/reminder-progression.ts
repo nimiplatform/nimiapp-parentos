@@ -1,8 +1,8 @@
 /**
  * reminder-progression.ts — per-kind progression state machines.
  *
- * Authoritative contract: reminder-interaction-contract.md#PO-REMI-003
- *                         reminder-interaction-contract.md#PO-REMI-005
+ * Authoritative contract: rule.parentos.remi.r003
+ *                         rule.parentos.remi.r005
  *
  * This module is the single source of truth for what transitions are admissible
  * per kind and what partial `reminder_states` row shape each transition produces.

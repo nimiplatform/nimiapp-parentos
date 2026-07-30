@@ -18,9 +18,9 @@ use serde::Deserialize;
 ///
 /// Catalog union (must mirror the `generate-knowledge-base.ts` compile step):
 ///
-///   - `reminder-rules.yaml`           — base catalog
-///   - `reminder-rules-extended.yaml`  — extended catalog
-///   - `orthodontic-protocols.yaml`    — `PO-ORTHO-*` and `PO-DEN-FOLLOWUP-*`
+///   - `data/structured/parentos/reminder-rules.yaml`           — base catalog
+///   - `data/structured/parentos/reminder-rules-extended.yaml`  — extended catalog
+///   - `data/structured/parentos/orthodontic-protocols.yaml`    — `PO-ORTHO-*` and `PO-DEN-FOLLOWUP-*`
 ///
 /// Idempotent: a no-op when `reminder_states` has no orphans, which is the
 /// expected steady state after this migration runs once.
@@ -48,17 +48,17 @@ struct RuleIdRecord {
 
 fn load_admitted_rule_ids() -> Result<HashSet<String>, String> {
     let base: ReminderRulesYaml = serde_yaml::from_str(include_str!(
-        "../../../.nimi/spec/parentos/kernel/tables/reminder-rules.yaml",
+        "../../../data/structured/parentos/reminder-rules.yaml",
     ))
-    .map_err(|e| format!("migration v17 parse reminder-rules.yaml failed: {e}"))?;
+    .map_err(|e| format!("migration v17 parse data/structured/parentos/reminder-rules.yaml failed: {e}"))?;
     let extended: ReminderRulesYaml = serde_yaml::from_str(include_str!(
-        "../../../.nimi/spec/parentos/kernel/tables/reminder-rules-extended.yaml",
+        "../../../data/structured/parentos/reminder-rules-extended.yaml",
     ))
-    .map_err(|e| format!("migration v17 parse reminder-rules-extended.yaml failed: {e}"))?;
+    .map_err(|e| format!("migration v17 parse data/structured/parentos/reminder-rules-extended.yaml failed: {e}"))?;
     let ortho: OrthodonticProtocolsYaml = serde_yaml::from_str(include_str!(
-        "../../../.nimi/spec/parentos/kernel/tables/orthodontic-protocols.yaml",
+        "../../../data/structured/parentos/orthodontic-protocols.yaml",
     ))
-    .map_err(|e| format!("migration v17 parse orthodontic-protocols.yaml failed: {e}"))?;
+    .map_err(|e| format!("migration v17 parse data/structured/parentos/orthodontic-protocols.yaml failed: {e}"))?;
 
     let mut set = HashSet::new();
     for record in base.rules {

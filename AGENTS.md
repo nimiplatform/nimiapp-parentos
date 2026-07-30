@@ -25,54 +25,54 @@
 
 ## Spec Authority & Sync
 
-`.nimi/spec/**` is ParentOS's project-local product authority. Normative product authority belongs only in `.nimi/spec/parentos/kernel/*.md` and `.nimi/spec/parentos/kernel/tables/**`; `.nimi/spec/INDEX.md`, `.nimi/spec/parentos/index.md`, and `.nimi/spec/parentos/parentos.md` are guides. Concrete reference/content data belongs under `data/**` only when admitted by `.nimi/spec/parentos/kernel/tables/reference-data-assets.yaml`.
+`.nimi/spec/**` is ParentOS's project-local product authority. Normative product meaning belongs only in the v2 containers under `.nimi/spec/parentos/canonical/*.authority.yaml`. Detailed catalogs and schemas live under `data/structured/parentos/**` as specialized artifacts; their product roles and exclusive consumer bindings are owned by `.nimi/spec/parentos/canonical/structured-data.authority.yaml`.
 
-During authority realignment, `.nimi/spec/parentos/kernel/*.md` and `.nimi/spec/parentos/kernel/tables/**` remain the semantic authority. When spec and code conflict, first classify the implementation behavior against those authority surfaces. Retained behavior may update spec only through an explicit redesign/admission decision that cites the affected kernel authority; otherwise align the implementation to the existing kernel authority or track the mismatch as a defect. Do not promote bugs, fail-open behavior, placeholder data writes, orphan surfaces, or implementation-only behavior into authority.
+When authority and code conflict, classify the implementation behavior against the exact canonical unit first. Retained behavior may update authority only through an explicit redesign decision that cites the affected unit; otherwise align the implementation or track the mismatch as a defect. Do not promote bugs, fail-open behavior, placeholder data writes, orphan surfaces, specialized artifacts, or implementation-only behavior into parallel authority.
 
 Before making any change:
-1. Read `.nimi/spec/INDEX.md` for the guide path.
-2. Read `.nimi/spec/parentos/kernel/index.md` for the authority map.
-3. Read kernel YAML tables and contracts.
+1. Read `.nimi/methodology/authority-authoring.yaml`.
+2. Use exact-ID query/context against `.nimi/spec` for the affected unit.
+3. Read the bound file under `data/structured/parentos/**` only when the unit concerns a specialized dataset.
 4. Read source code to verify behavior or identify defects.
 
-### Key Tables
+### Key Specialized Artifacts
 
 | Table | Governs |
 |-------|---------|
-| `reminder-rules.yaml` | All age-based reminder rules (vaccines, checkups, vision, dental, bone age, growth, sensitivity, interests, etc.) |
-| `orthodontic-protocols.yaml` | Dynamic orthodontic protocol rules + dental follow-up rules; the only authority home for `PO-ORTHO-*` and `PO-DEN-FOLLOWUP-*` ruleIds |
-| `reference-data-assets.yaml` | Registry for admitted knowledge assets and their current/target storage model |
-| `knowledge-asset-contract.md` | Manifest, provenance, schema, section, projection, and runtime consumption contract for knowledge assets |
+| `data/structured/parentos/reminder-rules.yaml` | All age-based reminder rules (vaccines, checkups, vision, dental, bone age, growth, sensitivity, interests, etc.) |
+| `data/structured/parentos/orthodontic-protocols.yaml` | Dynamic orthodontic protocol rules + dental follow-up rules; the only authority home for `PO-ORTHO-*` and `PO-DEN-FOLLOWUP-*` ruleIds |
+| `data/structured/parentos/reference-data-assets.yaml` | Registry for admitted knowledge assets and their current/target storage model |
+| `.nimi/spec/parentos/canonical/knowledge-asset.authority.yaml` | Manifest, provenance, schema, section, projection, and runtime consumption authority for knowledge assets |
 | `milestone-catalog` | Developmental milestones by domain and age |
 | `sensitive-periods` | Montessori sensitive period definitions |
 | `observation-framework` | 21 observation dimensions from 8 theories + relationship quality |
 | `ability-model` | Ability-interpretation design asset; current layer count/enums are not yet frozen and must not be treated as a stable public contract |
 | `growth-standards` | WHO/reference growth and health reference data |
-| `knowledge-source-readiness.yaml` | Authoritative reviewed / needs-review gate for what may enter Phase 1 AI free-form prompt |
-| `nurture-modes.yaml` | Three nurture mode parameters |
-| `local-storage.yaml` | SQLite schema (19 tables) |
-| `routes.yaml` | Application routes |
-| `feature-matrix.yaml` | Feature phasing (Phase 1-3) |
+| `data/structured/parentos/knowledge-source-readiness.yaml` | Authoritative reviewed / needs-review gate for what may enter Phase 1 AI free-form prompt |
+| `data/structured/parentos/nurture-modes.yaml` | Three nurture mode parameters |
+| `data/structured/parentos/local-storage.yaml` | SQLite schema (19 tables) |
+| `data/structured/parentos/routes.yaml` | Application routes |
+| `data/structured/parentos/feature-matrix.yaml` | Feature phasing (Phase 1-3) |
 
 ### Sync Rules
 
 Any code change that touches spec-governed surfaces must follow:
 
 ```
-Rule → Table → Generate → Check → Evidence
+Authority → Specialized artifact → Generate → Check → Evidence
 ```
 
-1. Modify the YAML table or contract first.
+1. Modify the canonical unit first; modify a bound structured artifact only when its detailed dataset changes.
 2. Regenerate compiled TS constants via `pnpm generate:knowledge-base`.
-3. Run `pnpm check:spec-consistency`.
+3. Run `pnpm spec:authority:check` and `pnpm spec:authority:compile`.
 4. Update code (migrations, routes, types) to match when the code is the item being changed.
 5. Run full test suite.
 
 **Drift = CI failure.** The following mismatches are blocking:
-- `local-storage.yaml` columns ≠ `migrations.rs` SQL
-- `routes.yaml` paths ≠ `routes.tsx` route definitions
-- `reminder-rules.yaml` ruleIds ≠ compiled TS constants
-- `nurture-modes.yaml` parameters ≠ `app-store.ts` types
+- `data/structured/parentos/local-storage.yaml` columns ≠ `migrations.rs` SQL
+- `data/structured/parentos/routes.yaml` paths ≠ `routes.tsx` route definitions
+- `data/structured/parentos/reminder-rules.yaml` ruleIds ≠ compiled TS constants
+- `data/structured/parentos/nurture-modes.yaml` parameters ≠ `app-store.ts` types
 - admitted `observation-framework` dimensionIds ≠ compiled TS constants
 
 ## Development Principles
@@ -102,13 +102,13 @@ Current implementation gaps such as silent error swallowing, typed bridge coerci
 
 Two-layer model (boundary: whether individual data inference is involved):
 
-- **Layer 1 (system does):** Evidence-based standardized reminders — rule-engine-driven timeline pushes from `reminder-rules.yaml` (rigid/stage categories), trend descriptions from recorded data, knowledge organization and explanation with source citation.
+- **Layer 1 (system does):** Evidence-based standardized reminders — rule-engine-driven timeline pushes from `data/structured/parentos/reminder-rules.yaml` (rigid/stage categories), trend descriptions from recorded data, knowledge organization and explanation with source citation.
 - **Layer 2 (system does NOT do, defer to professionals):** Individual diagnosis, treatment recommendations, mental health evaluation, comparative ranking.
 - AI uses: "观察到", "可能", "倾向于".
 - AI never uses: "落后", "异常", "危险", "警告", "发育迟缓", "障碍", "应该吃", "建议用药", "建议服用", "推荐治疗".
 - Data anomaly → describe objective data + "建议咨询专业人士", no causal interpretation.
-- Domains marked `needs-review` in `knowledge-source-readiness.yaml` must not enter Phase 1 free-form prompt.
-- AI boundary authority lives in `.nimi/spec/parentos/kernel/advisor-contract.md` for advisor/reports, `.nimi/spec/parentos/kernel/profile-contract.md` for profile-local AI summaries and OCR-assisted extraction, `.nimi/spec/parentos/kernel/journal-contract.md` for journal AI tagging/STT, and `.nimi/spec/parentos/kernel/tables/knowledge-source-readiness.yaml` for reviewed-domain gates. `.nimi/spec/parentos/parentos.md` is a guide and must not be treated as the full AI boundary source.
+- Domains marked `needs-review` in `data/structured/parentos/knowledge-source-readiness.yaml` must not enter Phase 1 free-form prompt.
+- AI boundary authority lives in `.nimi/spec/parentos/canonical/advisor.authority.yaml` for advisor/reports, `.nimi/spec/parentos/canonical/profile.authority.yaml` for profile-local AI summaries and OCR-assisted extraction, `.nimi/spec/parentos/canonical/journal.authority.yaml` for journal AI tagging/STT, and `data/structured/parentos/knowledge-source-readiness.yaml` for reviewed-domain gates. `definition.parentos.project.authority-boundary` defines the v2 authority boundary; no legacy guide is active authority.
 
 ### Nurture Mode Boundary
 - P0 reminders are ALWAYS `push` in ALL modes. No exceptions.
@@ -120,12 +120,14 @@ Two-layer model (boundary: whether individual data inference is involved):
 - AI conversation `contextSnapshot` freezes at send time — contains only current-session child profile summary.
 - No user data leaves the device. No device ID, location, contacts, or biometrics collected.
 - Child profile deletion cascades to all associated records (growth, vaccine, journal, AI conversations, reminder states).
-- Privacy/storage authority lives in `.nimi/spec/parentos/kernel/tables/local-storage.yaml` for local SQLite storage, child-scoped cascade constraints, and AI conversation/message persistence shape, with surface-specific constraints in the relevant kernel contracts. `.nimi/spec/parentos/parentos.md` is a guide and must not be treated as the full privacy source.
+- Privacy/storage authority lives in the relevant canonical units, with the detailed SQLite structure bound through `data/structured/parentos/local-storage.yaml`.
 
 ## Verification
 
 ```bash
 # Spec layer
+pnpm spec:authority:check
+pnpm spec:authority:compile
 pnpm check:spec-consistency
 pnpm check:knowledge-base
 pnpm check:nurture-mode-safety
@@ -143,6 +145,7 @@ pnpm lint
 
 # Governance layer
 pnpm nimicoding:doctor
+pnpm exec nimicoding sync --check
 ```
 
 ### Knowledge Base Validation
@@ -157,7 +160,7 @@ pnpm nimicoding:doctor
 
 ## Retrieval Defaults
 
-Start with: `.nimi/spec/parentos/kernel/tables/`, `data/knowledge/`, `src/shell/renderer/engine/`, `src/shell/renderer/app-shell/`, `src-tauri/src/sqlite/`.
+Start with: `data/structured/parentos/`, `data/knowledge/`, `src/shell/renderer/engine/`, `src/shell/renderer/app-shell/`, `src-tauri/src/sqlite/`.
 
 Skip: `node_modules/`, `dist/`, `src-tauri/target/`, `src-tauri/gen/`, lockfiles.
 
@@ -173,20 +176,12 @@ Skip: `node_modules/`, `dist/`, `src-tauri/target/`, `src-tauri/gen/`, lockfiles
 <!-- nimicoding:managed:agents:start -->
 # Nimi Coding Managed Block
 
-- Read .nimi/methodology, .nimi/spec, and .nimi/contracts before high-risk changes.
-- Treat .nimi as the primary AI truth surface for this project.
-- Treat `/.nimi/spec/**` as the current repo-wide product authority for this project, and use Git history for retired pre-cutover authority evidence.
-- If .nimi/spec remains bootstrap-only, use .nimi/methodology/spec-reconstruction.yaml and .nimi/config/skills.yaml to drive AI-side truth reconstruction.
-- Treat .nimi/methodology/spec-target-truth-profile.yaml as repo-local support guidance for future governance slices, not as the canonical reconstruction completion target or a guaranteed fresh-bootstrap seed.
-- Treat .nimi/contracts/spec-reconstruction-result.yaml, .nimi/contracts/doc-spec-audit-result.yaml, .nimi/contracts/high-risk-execution-result.yaml, and .nimi/contracts/high-risk-admission.schema.yaml as machine contracts for reconstruction, audit, local-only high-risk closeout summaries, and canonical high-risk admission truth.
-- Treat .nimi/config/skill-manifest.yaml, .nimi/config/host-profile.yaml, .nimi/config/host-adapter.yaml, .nimi/config/external-execution-artifacts.yaml, .nimi/config/skill-installer.yaml, .nimi/methodology/skill-runtime.yaml, .nimi/methodology/skill-installer-result.yaml, .nimi/methodology/skill-handoff.yaml, and admitted package-owned adapter profiles under adapters/**/profile.yaml as the canonical bridge to any external AI/skill execution.
-- Treat standalone nimicoding as boundary-complete for bootstrap, handoff, validation, projection, and explicit admission only; do not assume packaged run-kernel, provider, scheduler, notification, or automation ownership.
-- Treat .nimi/config/installer-evidence.yaml and .nimi/methodology/skill-installer-summary-projection.yaml as the operational-to-semantic installer projection boundary; do not promote concrete evidence artifacts into semantic truth.
-- Treat high-risk external execution closeout, decision, ingest, and review payloads under .nimi/local/** as local-only operational projections; they do not promote semantic truth automatically, even when manager-owned.
-- Use high-risk packetized execution only when authority, ownership, or cross-layer risk justifies it.
-- Keep inline manager-worker as the default methodology posture; do not assume a separate worker runtime is mandatory.
-- Keep code changes AI-context-efficient: favor bounded, cohesive files and split by responsibility during implementation instead of first concentrating unrelated logic into one file.
-- Keep the methodology continuity-agnostic; do not assume daemon, heartbeat, or persistent manager ownership.
-- Treat cutover readiness as preflight evidence only; the authority flip must come from an admitted cutover batch, not from readiness green by itself.
-- Do not treat this managed block as a replacement for project-specific rules outside .nimi.
+- Product authority lives under `.nimi/spec/**`.
+- For canonical authority authoring, read only `.nimi/methodology/authority-authoring.yaml`, the affected authority files or bounded task context, and CLI diagnostics.
+- Use `nimicoding authority context <path> <id> --max-units <n> --max-bytes <n> --json` only for the complete declared outgoing interpretation closure; it is not complete task context, and failure never permits guessed or partial context.
+- Use `nimicoding authority diff` and `authority impact` with explicit `--max-bytes`; impact reports declared review obligations and does not prove implementation, consumers, or tests are synchronized.
+- Under `.nimi/spec/**`, author only closed multi-unit `*.authority.yaml` containers or single-unit `*.authority.md`; historical document formats are unsupported and never inferred.
+- Run `nimicoding authority fmt` on each changed file, then `nimicoding authority check` on the complete authority input set.
+- Never bypass a failure with inferred or fallback semantics; choose repair values only from product/task authority.
+- Keep derived and verification evidence under `.nimi/local/**`; it is never product authority.
 <!-- nimicoding:managed:agents:end -->

@@ -106,7 +106,7 @@ VALUES (?1,?2,?3,?4,NULL,NULL,NULL,NULL,?5,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NUL
 /// (i.e. without the new progression columns) must end up with NULL-able columns
 /// at NULL and practiceCount at its DEFAULT 0 after v10 runs. This proves the
 /// engine's lifecycle mapper can read v9-era rows through a v10 schema without
-/// crashing or synthesizing state. See reminder-interaction-contract.md#PO-REMI-011.
+/// crashing or synthesizing state. See rule.parentos.remi.r011.
 #[test]
 fn reminder_state_v10_nullable_defaults_for_v9_rows() {
     let conn = Connection::open_in_memory().expect("open in-memory db");

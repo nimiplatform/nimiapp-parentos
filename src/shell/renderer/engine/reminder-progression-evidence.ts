@@ -1,7 +1,7 @@
 /**
  * reminder-progression-evidence.ts — kind-aware progression evidence summary.
  *
- * Authoritative contract: reminder-interaction-contract.md#PO-REMI-009
+ * Authoritative contract: rule.parentos.remi.r009
  *
  * Downstream consumers (reports, narrative prompts, journal guided prompts)
  * cite this shape rather than reading raw reminder_states rows, so narrative

@@ -20,7 +20,7 @@ export class UnknownReminderRuleError extends Error {
   constructor(ruleIds: readonly string[]) {
     super(
       `Persisted reminder_states reference unknown ruleId(s): ${ruleIds.join(', ')}. ` +
-        `All ruleIds must map to reminder-rules.yaml (PO-TIME-007).`,
+        `All ruleIds must map to data/structured/parentos/reminder-rules.yaml (PO-TIME-007).`,
     );
     this.name = 'UnknownReminderRuleError';
     this.ruleIds = ruleIds;
@@ -31,7 +31,7 @@ export type ReminderStatus = 'pending' | 'active' | 'completed' | 'dismissed' | 
 
 /**
  * Imported from the generated catalog: 'task' | 'guide' | 'practice' | 'consult'.
- * Per reminder-interaction-contract.md#PO-REMI-001 this is a closed enum and the
+ * Per rule.parentos.remi.r001 this is a closed enum and the
  * engine must read `rule.kind` directly rather than infer from actionType.
  */
 export type ReminderKind = GenReminderKind;
@@ -73,7 +73,7 @@ export interface ReminderState {
   lastSurfacedAt: string | null;
   surfaceCount: number;
   notes: string | null;
-  // v10 per-kind progression (reminder-interaction-contract.md#PO-REMI-004).
+  // v10 per-kind progression (rule.parentos.remi.r004).
   // NULL on rows persisted before v10 migrated into a given schema — kind-aware
   // lifecycle mapping (W4a) must tolerate the NULL-default state.
   acknowledgedAt: string | null;
@@ -375,7 +375,7 @@ function toLifecycle(reminder: Omit<ActiveReminder, 'lifecycle'>, localToday: st
   const state = reminder.state;
   if (state?.notApplicable === 1) return 'not_applicable';
 
-  // Kind-scoped terminal projection per reminder-interaction-contract.md#PO-REMI-003.
+  // Kind-scoped terminal projection per rule.parentos.remi.r003.
   // Null tolerance: rows persisted before v10 have NULL in every progression column,
   // which falls through to the non-terminal branches below exactly like a fresh row.
   if (reminder.kind === 'task' && state?.completedAt) return 'completed';

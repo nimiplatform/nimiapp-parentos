@@ -6,7 +6,7 @@ import {
 } from './check-parentos-spec-consistency.js';
 
 describe('check-parentos-spec-consistency', () => {
-  it('fails when the router exposes a route outside spec authority', () => {
+  it('fails when the router exposes a route outside structured authority data', () => {
     const errors = findRouteConsistencyErrors({
       routes: [
         { path: '/timeline', nav: true },
@@ -14,13 +14,28 @@ describe('check-parentos-spec-consistency', () => {
       ],
       routerSource: '<Route path="/timeline" /><Route path="/settings" /><Route path="/reports" />',
       navSource: "const navItems = [{ to: '/timeline' }, { to: '/settings' }]",
-      kernelIndexExists: true,
+      canonicalAuthorityExists: true,
     });
 
-    expect(errors).toContain('Route /reports is registered in routes.tsx but missing from routes.yaml');
+    expect(errors).toContain(
+      'Route /reports is registered in routes.tsx but missing from data/structured/parentos/routes.yaml',
+    );
   });
 
-  it('fails when routes.yaml breaks its own parent-feature constraint', () => {
+  it('fails when the v2 canonical authority landing is missing', () => {
+    const errors = findRouteConsistencyErrors({
+      routes: [{ path: '/timeline', nav: true }],
+      routerSource: '<Route path="/timeline" />',
+      navSource: "const navItems = [{ to: '/timeline' }]",
+      canonicalAuthorityExists: false,
+    });
+
+    expect(errors).toContain(
+      '.nimi/spec/parentos/canonical/project.authority.yaml is missing — v2 authority landing is incomplete',
+    );
+  });
+
+  it('fails when structured routes break their parent-feature constraint', () => {
     const errors = findRouteTableConstraintErrors([
       { path: '/profile', feature: 'profile' },
       { path: '/settings/ai', parent: '/settings', feature: 'profile' },
@@ -47,7 +62,7 @@ describe('check-parentos-spec-consistency', () => {
     });
 
     expect(errors).toContain(
-      'growth_reports.reportType mismatch between local-storage.yaml and structured-report.ts: spec=[custom, monthly, quarterly, quarterly-letter] ts=[custom, monthly, quarterly-letter]',
+      'growth_reports.reportType mismatch between data/structured/parentos/local-storage.yaml and structured-report.ts: spec=[custom, monthly, quarterly, quarterly-letter] ts=[custom, monthly, quarterly-letter]',
     );
   });
 });

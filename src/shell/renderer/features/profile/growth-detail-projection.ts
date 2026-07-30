@@ -620,7 +620,7 @@ export function buildGrowthDetailSnapshot(
   const enrichedInput: GrowthDetailProjectionInput = { ...input, values: enrichedValues };
 
   // selectedMetric — lookup via snapshot (which sources from
-  // health-metric-registry.yaml). buildHealthRecordSnapshot also gives us
+  // data/structured/parentos/health-metric-registry.yaml). buildHealthRecordSnapshot also gives us
   // freshness / nextRecordAt for free.
   const metricSnapshot = findMetricSnapshot(
     enrichedInput.events,

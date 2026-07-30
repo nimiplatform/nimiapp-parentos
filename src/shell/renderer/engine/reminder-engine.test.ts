@@ -581,7 +581,7 @@ describe('reminder engine unknown-rule fail-close (PO-TIME-007)', () => {
       .toThrowError(UnknownReminderRuleError);
   });
 
-  it('admits compiled PO-ORTHO-* ruleIds from orthodontic-protocols.yaml', () => {
+  it('admits compiled PO-ORTHO-* ruleIds from data/structured/parentos/orthodontic-protocols.yaml', () => {
     // Confirm the compiled catalog unions the admitted orthodontic rules in.
     const orthoAdmitted = REMINDER_RULES.filter((r) => r.ruleId.startsWith('PO-ORTHO-'));
     expect(orthoAdmitted.length).toBeGreaterThan(0);
@@ -592,7 +592,7 @@ describe('reminder engine unknown-rule fail-close (PO-TIME-007)', () => {
     expect(() => buildReminderAgenda(REMINDER_RULES, makeContext(), states)).not.toThrow();
   });
 
-  it('admits compiled PO-DEN-FOLLOWUP-* ruleIds from orthodontic-protocols.yaml', () => {
+  it('admits compiled PO-DEN-FOLLOWUP-* ruleIds from data/structured/parentos/orthodontic-protocols.yaml', () => {
     const followups = REMINDER_RULES.filter((r) => r.ruleId.startsWith('PO-DEN-FOLLOWUP-'));
     expect(followups.length).toBeGreaterThan(0);
     const sample = followups[0]!;

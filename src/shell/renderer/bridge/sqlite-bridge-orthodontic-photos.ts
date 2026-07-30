@@ -16,7 +16,7 @@
  * codebase reader, and the runtime all agree.
  *
  * Authority:
- *   spec/kernel/orthodontic-contract.md#PO-ORTHO-012
+ *   rule.parentos.ortho.r012
  *   src-tauri/src/orthodontic_photos.rs (Tauri commands)
  *   src-tauri/src/photos/mod.rs (codec gate)
  */

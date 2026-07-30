@@ -5,7 +5,7 @@
   "contentVersion": "2026-05-03.1",
   "schema": "schema.json",
   "authorityClass": "curated_knowledge_asset",
-  "ownerContract": "profile-contract.md#PO-PROF-007",
+  "ownerContract": "rule.parentos.prof.r007",
   "generatedModule": "milestone-catalog.gen.ts",
   "review": {
     "status": "reviewed",

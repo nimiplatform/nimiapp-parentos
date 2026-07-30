@@ -32,7 +32,7 @@ export const DASHBOARD_TASK_CATALOG: readonly DashboardTaskCatalogRow[] = [
   {
     "taskId": "dashboard-maintain-growth-infant",
     "family": "maintain",
-    "ownerContract": ".nimi/spec/parentos/kernel/timeline-contract.md",
+    "ownerContract": ".nimi/spec/parentos/canonical/timeline.authority.yaml",
     "cadencePolicy": "anchor",
     "biologicalAnchor": "birthDayOfMonth",
     "slotPreference": "weekend-heavy",
@@ -52,7 +52,7 @@ export const DASHBOARD_TASK_CATALOG: readonly DashboardTaskCatalogRow[] = [
   {
     "taskId": "dashboard-maintain-growth-child",
     "family": "maintain",
-    "ownerContract": ".nimi/spec/parentos/kernel/timeline-contract.md",
+    "ownerContract": ".nimi/spec/parentos/canonical/timeline.authority.yaml",
     "cadencePolicy": "anchor",
     "biologicalAnchor": "birthDayOfMonth",
     "slotPreference": "weekend-heavy",
@@ -71,7 +71,7 @@ export const DASHBOARD_TASK_CATALOG: readonly DashboardTaskCatalogRow[] = [
   {
     "taskId": "dashboard-maintain-sleep",
     "family": "maintain",
-    "ownerContract": ".nimi/spec/parentos/kernel/timeline-contract.md",
+    "ownerContract": ".nimi/spec/parentos/canonical/timeline.authority.yaml",
     "cadencePolicy": "interval",
     "biologicalAnchor": "none",
     "slotPreference": "weekday-evening-light",
@@ -89,7 +89,7 @@ export const DASHBOARD_TASK_CATALOG: readonly DashboardTaskCatalogRow[] = [
   {
     "taskId": "dashboard-maintain-outdoor",
     "family": "maintain",
-    "ownerContract": ".nimi/spec/parentos/kernel/timeline-contract.md",
+    "ownerContract": ".nimi/spec/parentos/canonical/timeline.authority.yaml",
     "cadencePolicy": "interval",
     "biologicalAnchor": "none",
     "slotPreference": "weekend-heavy",
@@ -107,7 +107,7 @@ export const DASHBOARD_TASK_CATALOG: readonly DashboardTaskCatalogRow[] = [
   {
     "taskId": "dashboard-maintain-vision",
     "family": "maintain",
-    "ownerContract": ".nimi/spec/parentos/kernel/timeline-contract.md",
+    "ownerContract": ".nimi/spec/parentos/canonical/timeline.authority.yaml",
     "cadencePolicy": "windowed",
     "biologicalAnchor": "none",
     "slotPreference": "weekend-heavy",
@@ -126,7 +126,7 @@ export const DASHBOARD_TASK_CATALOG: readonly DashboardTaskCatalogRow[] = [
   {
     "taskId": "dashboard-observe-growth-journal",
     "family": "observe",
-    "ownerContract": ".nimi/spec/parentos/kernel/journal-contract.md",
+    "ownerContract": ".nimi/spec/parentos/canonical/journal.authority.yaml",
     "cadencePolicy": "windowed",
     "biologicalAnchor": "none",
     "slotPreference": "weekday-evening-light",

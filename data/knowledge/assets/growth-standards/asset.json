@@ -5,7 +5,7 @@
   "contentVersion": "2026-05-07.2",
   "schema": "schema.json",
   "authorityClass": "reference_dataset",
-  "ownerContract": "profile-contract.md#PO-PROF-004",
+  "ownerContract": "rule.parentos.prof.r004",
   "generatedModule": "growth-standards.gen.ts",
   "review": {
     "status": "reviewed",

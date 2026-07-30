@@ -2856,7 +2856,7 @@
     "error": {
       "unknownRuleTitle": "Reminder catalog is incomplete",
       "unknownRuleIds": "Unregistered rule IDs found: {{ruleIds}}",
-      "unknownRuleBody": "The reminder flow fails closed under PO-TIME-007. Restart ParentOS to trigger schema v17 cleanup for these orphan records. If unregistered rule IDs remain after restart, fix reminder-rules.yaml or orthodontic-protocols.yaml.",
+      "unknownRuleBody": "The reminder flow fails closed under PO-TIME-007. Restart ParentOS to trigger schema v17 cleanup for these orphan records. If unregistered rule IDs remain after restart, fix data/structured/parentos/reminder-rules.yaml or data/structured/parentos/orthodontic-protocols.yaml.",
       "unknownCaptureProtocol": "Unrecognized captureProtocolId: {{captureProtocolId}}",
       "missingBoundAppliance": "The appliance bound to this reminder was not found (applianceId={{applianceId}})."
     },

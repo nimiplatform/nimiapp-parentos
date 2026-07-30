@@ -1,0 +1,270 @@
+format: nimicoding.authority/v2
+owner: team.parentos
+scope: parentos.structured-data
+units:
+  - id: definition.parentos.structured.dashboard.task.catalog
+    kind: definition
+    title: Dashboard Task Catalog
+    meaning: data/structured/parentos/dashboard-task-catalog.yaml is the specialized structured ParentOS artifact for the Dashboard Task Catalog dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.dashboard.task.catalog.binding
+    kind: rule
+    title: Dashboard Task Catalog binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/dashboard-task-catalog.yaml as the sole specialized structured artifact for the Dashboard Task Catalog dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Dashboard Task Catalog dataset.
+    failure: Fail closed when data/structured/parentos/dashboard-task-catalog.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.dashboard.task.catalog
+  - id: definition.parentos.structured.feature.matrix
+    kind: definition
+    title: Feature Matrix
+    meaning: data/structured/parentos/feature-matrix.yaml is the specialized structured ParentOS artifact for the Feature Matrix dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.feature.matrix.binding
+    kind: rule
+    title: Feature Matrix binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/feature-matrix.yaml as the sole specialized structured artifact for the Feature Matrix dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Feature Matrix dataset.
+    failure: Fail closed when data/structured/parentos/feature-matrix.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.feature.matrix
+  - id: definition.parentos.structured.growth.milestone.rules
+    kind: definition
+    title: Growth Milestone Rules
+    meaning: data/structured/parentos/growth-milestone-rules.yaml is the specialized structured ParentOS artifact for the Growth Milestone Rules dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.growth.milestone.rules.binding
+    kind: rule
+    title: Growth Milestone Rules binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/growth-milestone-rules.yaml as the sole specialized structured artifact for the Growth Milestone Rules dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Growth Milestone Rules dataset.
+    failure: Fail closed when data/structured/parentos/growth-milestone-rules.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.growth.milestone.rules
+  - id: definition.parentos.structured.health.capture.protocols
+    kind: definition
+    title: Health Capture Protocols
+    meaning: data/structured/parentos/health-capture-protocols.yaml is the specialized structured ParentOS artifact for the Health Capture Protocols dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.health.capture.protocols.binding
+    kind: rule
+    title: Health Capture Protocols binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/health-capture-protocols.yaml as the sole specialized structured artifact for the Health Capture Protocols dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Health Capture Protocols dataset.
+    failure: Fail closed when data/structured/parentos/health-capture-protocols.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.health.capture.protocols
+  - id: definition.parentos.structured.health.evaluation.rules
+    kind: definition
+    title: Health Evaluation Rules
+    meaning: data/structured/parentos/health-evaluation-rules.yaml is the specialized structured ParentOS artifact for the Health Evaluation Rules dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.health.evaluation.rules.binding
+    kind: rule
+    title: Health Evaluation Rules binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/health-evaluation-rules.yaml as the sole specialized structured artifact for the Health Evaluation Rules dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Health Evaluation Rules dataset.
+    failure: Fail closed when data/structured/parentos/health-evaluation-rules.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.health.evaluation.rules
+  - id: definition.parentos.structured.health.metric.registry
+    kind: definition
+    title: Health Metric Registry
+    meaning: data/structured/parentos/health-metric-registry.yaml is the specialized structured ParentOS artifact for the Health Metric Registry dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.health.metric.registry.binding
+    kind: rule
+    title: Health Metric Registry binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/health-metric-registry.yaml as the sole specialized structured artifact for the Health Metric Registry dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Health Metric Registry dataset.
+    failure: Fail closed when data/structured/parentos/health-metric-registry.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.health.metric.registry
+  - id: definition.parentos.structured.knowledge.source.readiness
+    kind: definition
+    title: Knowledge Source Readiness
+    meaning: data/structured/parentos/knowledge-source-readiness.yaml is the specialized structured ParentOS artifact for the Knowledge Source Readiness dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.knowledge.source.readiness.binding
+    kind: rule
+    title: Knowledge Source Readiness binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/knowledge-source-readiness.yaml as the sole specialized structured artifact for the Knowledge Source Readiness dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Knowledge Source Readiness dataset.
+    failure: Fail closed when data/structured/parentos/knowledge-source-readiness.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.knowledge.source.readiness
+  - id: definition.parentos.structured.local.storage
+    kind: definition
+    title: Local Storage
+    meaning: data/structured/parentos/local-storage.yaml is the specialized structured ParentOS artifact for the Local Storage dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.local.storage.binding
+    kind: rule
+    title: Local Storage binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/local-storage.yaml as the sole specialized structured artifact for the Local Storage dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Local Storage dataset.
+    failure: Fail closed when data/structured/parentos/local-storage.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.local.storage
+  - id: definition.parentos.structured.nimi.kit.adoption
+    kind: definition
+    title: Nimi Kit Adoption
+    meaning: data/structured/parentos/nimi-kit-adoption.yaml is the specialized structured ParentOS artifact for the Nimi Kit Adoption dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.nimi.kit.adoption.binding
+    kind: rule
+    title: Nimi Kit Adoption binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/nimi-kit-adoption.yaml as the sole specialized structured artifact for the Nimi Kit Adoption dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Nimi Kit Adoption dataset.
+    failure: Fail closed when data/structured/parentos/nimi-kit-adoption.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.nimi.kit.adoption
+  - id: definition.parentos.structured.nimi.kit.allowlists
+    kind: definition
+    title: Nimi Kit Allowlists
+    meaning: data/structured/parentos/nimi-kit-allowlists.yaml is the specialized structured ParentOS artifact for the Nimi Kit Allowlists dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.nimi.kit.allowlists.binding
+    kind: rule
+    title: Nimi Kit Allowlists binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/nimi-kit-allowlists.yaml as the sole specialized structured artifact for the Nimi Kit Allowlists dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Nimi Kit Allowlists dataset.
+    failure: Fail closed when data/structured/parentos/nimi-kit-allowlists.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.nimi.kit.allowlists
+  - id: definition.parentos.structured.nimi.kit.compositions
+    kind: definition
+    title: Nimi Kit Compositions
+    meaning: data/structured/parentos/nimi-kit-compositions.yaml is the specialized structured ParentOS artifact for the Nimi Kit Compositions dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.nimi.kit.compositions.binding
+    kind: rule
+    title: Nimi Kit Compositions binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/nimi-kit-compositions.yaml as the sole specialized structured artifact for the Nimi Kit Compositions dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Nimi Kit Compositions dataset.
+    failure: Fail closed when data/structured/parentos/nimi-kit-compositions.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.nimi.kit.compositions
+  - id: definition.parentos.structured.nurture.modes
+    kind: definition
+    title: Nurture Modes
+    meaning: data/structured/parentos/nurture-modes.yaml is the specialized structured ParentOS artifact for the Nurture Modes dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.nurture.modes.binding
+    kind: rule
+    title: Nurture Modes binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/nurture-modes.yaml as the sole specialized structured artifact for the Nurture Modes dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Nurture Modes dataset.
+    failure: Fail closed when data/structured/parentos/nurture-modes.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.nurture.modes
+  - id: definition.parentos.structured.orthodontic.protocols
+    kind: definition
+    title: Orthodontic Protocols
+    meaning: data/structured/parentos/orthodontic-protocols.yaml is the specialized structured ParentOS artifact for the Orthodontic Protocols dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.orthodontic.protocols.binding
+    kind: rule
+    title: Orthodontic Protocols binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/orthodontic-protocols.yaml as the sole specialized structured artifact for the Orthodontic Protocols dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Orthodontic Protocols dataset.
+    failure: Fail closed when data/structured/parentos/orthodontic-protocols.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.orthodontic.protocols
+  - id: definition.parentos.structured.reference.data.assets
+    kind: definition
+    title: Reference Data Assets
+    meaning: data/structured/parentos/reference-data-assets.yaml is the specialized structured ParentOS artifact for the Reference Data Assets dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.reference.data.assets.binding
+    kind: rule
+    title: Reference Data Assets binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/reference-data-assets.yaml as the sole specialized structured artifact for the Reference Data Assets dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Reference Data Assets dataset.
+    failure: Fail closed when data/structured/parentos/reference-data-assets.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.reference.data.assets
+  - id: definition.parentos.structured.reminder.capture.targets
+    kind: definition
+    title: Reminder Capture Targets
+    meaning: data/structured/parentos/reminder-capture-targets.yaml is the specialized structured ParentOS artifact for the Reminder Capture Targets dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.reminder.capture.targets.binding
+    kind: rule
+    title: Reminder Capture Targets binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/reminder-capture-targets.yaml as the sole specialized structured artifact for the Reminder Capture Targets dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Reminder Capture Targets dataset.
+    failure: Fail closed when data/structured/parentos/reminder-capture-targets.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.reminder.capture.targets
+  - id: definition.parentos.structured.reminder.rules.extended
+    kind: definition
+    title: Reminder Rules Extended
+    meaning: data/structured/parentos/reminder-rules-extended.yaml is the specialized structured ParentOS artifact for the Reminder Rules Extended dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.reminder.rules.extended.binding
+    kind: rule
+    title: Reminder Rules Extended binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/reminder-rules-extended.yaml as the sole specialized structured artifact for the Reminder Rules Extended dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Reminder Rules Extended dataset.
+    failure: Fail closed when data/structured/parentos/reminder-rules-extended.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.reminder.rules.extended
+  - id: definition.parentos.structured.reminder.rules
+    kind: definition
+    title: Reminder Rules
+    meaning: data/structured/parentos/reminder-rules.yaml is the specialized structured ParentOS artifact for the Reminder Rules dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.reminder.rules.binding
+    kind: rule
+    title: Reminder Rules binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/reminder-rules.yaml as the sole specialized structured artifact for the Reminder Rules dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Reminder Rules dataset.
+    failure: Fail closed when data/structured/parentos/reminder-rules.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.reminder.rules
+  - id: definition.parentos.structured.renderer.design.overlays
+    kind: definition
+    title: Renderer Design Overlays
+    meaning: data/structured/parentos/renderer-design-overlays.yaml is the specialized structured ParentOS artifact for the Renderer Design Overlays dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.renderer.design.overlays.binding
+    kind: rule
+    title: Renderer Design Overlays binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/renderer-design-overlays.yaml as the sole specialized structured artifact for the Renderer Design Overlays dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Renderer Design Overlays dataset.
+    failure: Fail closed when data/structured/parentos/renderer-design-overlays.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.renderer.design.overlays
+  - id: definition.parentos.structured.routes
+    kind: definition
+    title: Routes
+    meaning: data/structured/parentos/routes.yaml is the specialized structured ParentOS artifact for the Routes dataset; this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.routes.binding
+    kind: rule
+    title: Routes binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/routes.yaml as the sole specialized structured artifact for the Routes dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Routes dataset.
+    failure: Fail closed when data/structured/parentos/routes.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.routes

@@ -1,8 +1,8 @@
 /**
  * Pure derivation helpers for the orthodontic feature surface.
  *
- * Authority: spec/kernel/orthodontic-contract.md (PO-ORTHO-005a, PO-ORTHO-008,
- *            PO-ORTHO-010) and spec/kernel/tables/orthodontic-protocols.yaml.
+ * Authority: definition.parentos.orthodontic.contract (PO-ORTHO-005a, PO-ORTHO-008,
+ *            PO-ORTHO-010) and data/structured/parentos/orthodontic-protocols.yaml.
  *
  * This module is the single TS-side mirror of orthodontic spec defaults and
  * the per-cycle compliance projection (PO-ORTHO-008). All functions are pure
@@ -28,7 +28,7 @@ import { i18nText } from '../../i18n/index.js';
 
 /**
  * Default days between review visits per applianceType. Mirrors
- * `orthodontic-protocols.yaml#rules.defaultIntervalDays` and the Rust
+ * `data/structured/parentos/orthodontic-protocols.yaml#rules.defaultIntervalDays` and the Rust
  * `default_review_interval_days_for_rule`.
  */
 export function defaultReviewIntervalDays(applianceType: OrthodonticApplianceType): number {

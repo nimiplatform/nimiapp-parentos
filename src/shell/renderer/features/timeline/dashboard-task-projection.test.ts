@@ -18,7 +18,7 @@ function makeCatalogRow(overrides: Partial<DashboardTaskCatalogRow> = {}): Dashb
   return {
     taskId: 'test-row',
     family: 'maintain',
-    ownerContract: '.nimi/spec/parentos/kernel/timeline-contract.md',
+    ownerContract: '.nimi/spec/parentos/canonical/timeline.authority.yaml',
     cadencePolicy: 'interval',
     biologicalAnchor: 'none',
     slotPreference: 'weekend-heavy',

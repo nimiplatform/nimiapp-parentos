@@ -3,22 +3,12 @@
 <!-- nimicoding:managed:claude:start -->
 # Nimi Coding Managed Block
 
-Use the project's .nimi layer as the primary AI truth surface.
-
-Priority:
-1. .nimi/methodology
-2. .nimi/spec
-3. .nimi/contracts
-4. .nimi/config
-5. repository-local AI entrypoint files
-
-If the project still exposes only bootstrap seed files, use the reconstruction guidance, result contracts, manifest, host-profile, host-adapter, admitted package-owned adapter profiles, installer, runtime contract, installer result contract, collapsed installer summary projection lifecycle contract, operational evidence guidance, and handoff truth under .nimi rather than assuming skills are already installed.
-
-Default posture:
-- use risk-shaped methodology only for authority-bearing or high-risk work
-- prefer inline manager-worker unless a later admitted packet expands runtime ownership
-- keep code changes AI-context-efficient: prefer bounded cohesive files and split by responsibility during implementation instead of first concentrating unrelated logic into one file
-- keep continuity-agnostic semantics; do not assume persistent automation or self-hosting
-- treat handoff --json as the authoritative machine contract and handoff --prompt as a human-readable projection only
-- treat `/.nimi/spec/**` as today's repo-wide authority, treat pre-cutover authority history as Git-only, and treat cutover readiness as historical preflight evidence rather than the authority source
+- Product authority lives under `.nimi/spec/**`.
+- For canonical authority authoring, read only `.nimi/methodology/authority-authoring.yaml`, the affected authority files or bounded task context, and CLI diagnostics.
+- Use `nimicoding authority context <path> <id> --max-units <n> --max-bytes <n> --json` only for the complete declared outgoing interpretation closure; it is not complete task context, and failure never permits guessed or partial context.
+- Use `nimicoding authority diff` and `authority impact` with explicit `--max-bytes`; impact reports declared review obligations and does not prove implementation, consumers, or tests are synchronized.
+- Under `.nimi/spec/**`, author only closed multi-unit `*.authority.yaml` containers or single-unit `*.authority.md`; historical document formats are unsupported and never inferred.
+- Run `nimicoding authority fmt` on each changed file, then `nimicoding authority check` on the complete authority input set.
+- Never bypass a failure with inferred or fallback semantics; choose repair values only from product/task authority.
+- Keep derived and verification evidence under `.nimi/local/**`; it is never product authority.
 <!-- nimicoding:managed:claude:end -->

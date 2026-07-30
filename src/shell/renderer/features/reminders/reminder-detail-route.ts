@@ -2,7 +2,7 @@
  * Domain → dedicated detail route resolution for reminder primary actions.
  *
  * `actionType` decides the primary button copy (PO-REMI-002); the route target
- * is the domain's own detail surface from `routes.yaml`. Domains without a
+ * is the domain's own detail surface from `data/structured/parentos/routes.yaml`. Domains without a
  * dedicated detail surface fall back to the profile console.
  */
 

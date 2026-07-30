@@ -16,7 +16,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const REPO_ROOT = ROOT;
 const DATA_KNOWLEDGE = resolve(ROOT, 'data/knowledge');
-const REGISTRY = resolve(ROOT, '.nimi/spec/parentos/kernel/tables/reference-data-assets.yaml');
+const REGISTRY = resolve(ROOT, 'data/structured/parentos/reference-data-assets.yaml');
 const ASSET_IDS = [
   'growth-standards',
   'milestone-catalog',
@@ -75,7 +75,7 @@ export function collectKnowledgeAssetGovernanceErrors(): string[] {
 
     const row = rowsById.get(assetId);
     if (!row) {
-      errors.push(`${assetId}: missing reference-data-assets.yaml row`);
+      errors.push(`${assetId}: missing data/structured/parentos/reference-data-assets.yaml row`);
       continue;
     }
 
