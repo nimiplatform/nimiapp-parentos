@@ -39,6 +39,7 @@ async function bootstrapElectron(): Promise<void> {
     appId: PARENTOS_APP_ID,
     allowedRendererUrls: [rendererUrl],
     ipcMain,
+    onProtectedSessionFailure: () => app.quit(),
     appCommandHandlers: createParentOSElectronCommandHandlers({
       hostClient,
       getMainWindow: () => mainWindow,
@@ -73,11 +74,6 @@ function resolveAppRoot(electronDir: string): string {
 
 function configureParentOSElectronChromiumRuntime(): void {
   app.commandLine.appendSwitch('disable-background-networking');
-  const remoteDebuggingPort = normalizeText(process.env.NIMI_PARENTOS_ELECTRON_REMOTE_DEBUGGING_PORT);
-  if (!app.isPackaged && remoteDebuggingPort) {
-    app.commandLine.appendSwitch('remote-debugging-port', remoteDebuggingPort);
-    bootLog(`remote-debugging-port:${remoteDebuggingPort}`);
-  }
 }
 
 function installParentOSStandardApplicationMenu(): void {

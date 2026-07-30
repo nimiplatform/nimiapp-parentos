@@ -24,6 +24,7 @@ test('ParentOS Electron combines the fixed local-app carrier with exact app-owne
   assert.doesNotMatch(main, /trustedRuntimeMetadataProvider|createParentOSElectronTrustedRuntimeMetadataProvider/u);
   assert.doesNotMatch(main, /additionalArguments|installed-app-launch-binding|LAUNCH_NONCE|releaseDescriptorRef/u);
   assert.doesNotMatch(main, /NIMI_APP_DURABLE_DATA_ROOT|NIMI_PARENTOS_ELECTRON_(?:DURABLE_DATA_ROOT|STANDARD_DATA_ROOT)/u);
+  assert.doesNotMatch(main, /NIMI_PARENTOS_ELECTRON_REMOTE_DEBUGGING_PORT|remote-debugging-(?:address|port)/u);
   assert.doesNotMatch(main, /bundled-with-nimi/u);
   assert.doesNotMatch(main, /createNimiElectronFileAIConfigStore|standardDataRootBinding/u);
   assert.doesNotMatch(main, /commandPolicy\s*:/u);
