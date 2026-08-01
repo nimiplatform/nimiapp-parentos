@@ -105,7 +105,11 @@ function commitCapabilityPatch(
     params?: NimiJsonValue;
   },
 ): Promise<void> {
-  const current = surface.aiConfigService.aiConfig.get(surface.scopeRef);
+  const aiConfigService = surface.aiConfigService;
+  if (!aiConfigService) {
+    throw new Error('ParentOS AI config service is unavailable on this model-config surface.');
+  }
+  const current = aiConfigService.aiConfig.get(surface.scopeRef);
   return commitParentosAIConfig(
     applyModelConfigCapabilityPatch(current, capabilityId, patch),
   ).then(() => undefined);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, IconButton, Surface, TextareaField, Toggle as KitToggle } from '@nimiplatform/kit/ui';
+import { Button, IconButton, nimiToast, Surface, TextareaField, Toggle as KitToggle } from '@nimiplatform/kit/ui';
 import { Pencil, X } from 'lucide-react';
 import type { NarrativeReportContent, ProfessionalSummary, ProfessionalSummarySection } from './structured-report.js';
 import { i18nText } from '../../i18n/index.js';
@@ -163,8 +163,6 @@ interface ProfessionalViewProps {
 export function ProfessionalSummaryModal({
   open, onClose, content, onContentUpdate, title, onPrint, onCopy,
 }: ProfessionalViewProps) {
-  const [copyToast, setCopyToast] = useState<string | null>(null);
-
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -184,14 +182,13 @@ export function ProfessionalSummaryModal({
   const handleCopy = () => {
     if (!summary) return;
     const text = serializeProfessionalSummaryToText(summary, title);
-    if (onCopy) { onCopy(text); setCopyToast(i18nText('Reports.professional.copySuccess')); }
+    if (onCopy) { onCopy(text); nimiToast.success(i18nText('Reports.professional.copySuccess')); }
     else {
       navigator.clipboard?.writeText(text).then(
-        () => setCopyToast(i18nText('Reports.professional.copySuccess')),
-        () => setCopyToast(i18nText('Reports.professional.copyFailed')),
+        () => nimiToast.success(i18nText('Reports.professional.copySuccess')),
+        () => nimiToast.danger(i18nText('Reports.professional.copyFailed')),
       );
     }
-    setTimeout(() => setCopyToast(null), 1800);
   };
 
   const content_node = (
@@ -256,7 +253,7 @@ export function ProfessionalSummaryModal({
             </div>
           ) : <div className="report-professional-footer-spacer" />}
           <Button onClick={handleCopy} disabled={!summary} size="sm" tone="secondary">
-            {copyToast ?? i18nText('Reports.professional.copy')}
+            {i18nText('Reports.professional.copy')}
           </Button>
           <Button onClick={onPrint} disabled={!summary || !onPrint} size="sm" tone="primary">
             {i18nText('Reports.professional.savePdf')}

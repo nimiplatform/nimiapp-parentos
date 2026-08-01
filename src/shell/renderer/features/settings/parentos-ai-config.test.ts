@@ -28,6 +28,11 @@ describe('ParentOS app-owned AI configuration', () => {
     const parsed = parsePersistedParentosAIConfig(JSON.stringify({
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
+        logicalModelIds: {
+          'text.generate': 'gpt-5.4',
+          'text.generate.vision': 'gpt-5.4-vision',
+        },
+        selectedComponents: {},
         targetRefs: {
           'text.generate': {
             kind: 'cloud-connector',
@@ -59,6 +64,11 @@ describe('ParentOS app-owned AI configuration', () => {
     expect(parsed).toEqual({
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
+        logicalModelIds: {
+          'text.generate': 'gpt-5.4',
+          'text.generate.vision': 'gpt-5.4-vision',
+        },
+        selectedComponents: {},
         targetRefs: {
           'text.generate': expect.objectContaining({
             kind: 'cloud-connector',
@@ -91,6 +101,8 @@ describe('ParentOS app-owned AI configuration', () => {
     expect(parsePersistedParentosAIConfig(JSON.stringify({
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
+        logicalModelIds: { 'text.generate': 'gpt-5.4' },
+        selectedComponents: {},
         targetRefs: {
           'text.generate': {
             kind: 'local-runtime',
@@ -108,6 +120,8 @@ describe('ParentOS app-owned AI configuration', () => {
     const parsed = parsePersistedParentosAIConfig(JSON.stringify({
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
+        logicalModelIds: { 'text.generate': 'gpt-5.4' },
+        selectedComponents: {},
         targetRefs: {
           'text.generate': {
             kind: 'cloud-connector',
@@ -138,7 +152,7 @@ describe('ParentOS app-owned AI configuration', () => {
 
     await expect(loadPersistedParentosAIConfig()).resolves.toEqual({
       scopeRef: PARENTOS_AI_SCOPE_REF,
-      capabilities: { targetRefs: {}, selectedParams: {} },
+      capabilities: { logicalModelIds: {}, targetRefs: {}, selectedComponents: {}, selectedParams: {} },
       profileOrigin: null,
     });
     expect(getAppSettingMock).toHaveBeenCalledWith('parentos:ai-config:v1');
@@ -148,6 +162,7 @@ describe('ParentOS app-owned AI configuration', () => {
     const input = {
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
+        logicalModelIds: { 'audio.transcribe': 'whisper-large-v3' },
         targetRefs: {
           'audio.transcribe': {
             kind: 'local-runtime',
@@ -155,6 +170,7 @@ describe('ParentOS app-owned AI configuration', () => {
             profileBindingId: 'local-runtime:whisper-large-v3',
           },
         },
+        selectedComponents: {},
         selectedParams: {},
       },
       profileOrigin: null,

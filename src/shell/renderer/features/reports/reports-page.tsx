@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, DatePicker, NimiText, StatusBadge, Surface, TextareaField } from '@nimiplatform/kit/ui';
+import { Button, DatePicker, NimiText, nimiToast, StatusBadge, Surface, TextareaField } from '@nimiplatform/kit/ui';
 import { ArrowRight, ChevronDown, Eye, Pencil, Star } from 'lucide-react';
 import { useAppStore } from '../../app-shell/app-store.js';
 import {
@@ -269,8 +269,6 @@ export default function ReportsPage() {
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [generateState, setGenerateState] = useState<GenerateState>('idle');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { const d = computePresetDates('this-quarter'); setPeriodStart(d.start); setPeriodEnd(d.end); }, []);
@@ -298,13 +296,20 @@ export default function ReportsPage() {
   };
 
   const handleContentUpdate = async (reportId: string, updated: NarrativeReportContent) => {
-    try { await updateGrowthReportContent({ reportId, content: JSON.stringify(updated), now: isoNow() }); setReports(await getGrowthReports(activeChild.childId)); } catch { /* */ }
+    try {
+      await updateGrowthReportContent({ reportId, content: JSON.stringify(updated), now: isoNow() });
+      setReports(await getGrowthReports(activeChild.childId));
+    } catch (error) {
+      nimiToast.danger(i18nText('Reports.page.contentSaveFailed', {
+        message: error instanceof Error ? error.message : String(error),
+      }));
+    }
   };
 
   const handleGenerate = async () => {
     const bounds = resolvePeriodBounds(periodStart, periodEnd);
-    if (!bounds) { setErrorMessage(i18nText('Reports.page.invalidPeriod')); return; }
-    setGenerateState('saving'); setErrorMessage(null); setInfoMessage(null);
+    if (!bounds) { nimiToast.warning(i18nText('Reports.page.invalidPeriod')); return; }
+    setGenerateState('saving');
     try {
       const now = isoNow();
       const reportType = deriveReportType(periodPreset);
@@ -353,10 +358,10 @@ export default function ReportsPage() {
           };
         } catch (error) {
           catchLog('reports', 'action:generate-ai-report-failed', 'warn')(error);
-          setInfoMessage(i18nText('Reports.page.aiFallback'));
+          nimiToast.info(i18nText('Reports.page.aiFallback'));
         }
       } else {
-        setInfoMessage(i18nText('Reports.page.localFallback'));
+        nimiToast.info(i18nText('Reports.page.localFallback'));
       }
 
       if (!report) {
@@ -380,7 +385,7 @@ export default function ReportsPage() {
     } catch (error) {
       catchLog('reports', 'action:generate-report-failed')(error);
       setGenerateState('error');
-      setErrorMessage(i18nText('Reports.page.generateFailed'));
+      nimiToast.danger(i18nText('Reports.page.generateFailed'));
     }
   };
 
@@ -399,9 +404,6 @@ export default function ReportsPage() {
             {i18nText('Reports.page.heroSubtitle')}
           </NimiText>
         </header>
-
-        {errorMessage && <div className="report-message report-message--error">{errorMessage}</div>}
-        {infoMessage && <div className="report-message report-message--success">{infoMessage}</div>}
 
         {latestContent && latestReport ? (
           <div className="mb-6">

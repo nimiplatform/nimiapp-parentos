@@ -47,6 +47,8 @@ describe('parentos-ai-config-service', () => {
     const next = {
       scopeRef: PARENTOS_AI_SCOPE_REF,
       capabilities: {
+        logicalModelIds: { 'text.generate': 'local-model' },
+        selectedComponents: {},
         targetRefs: {
           'text.generate': {
             kind: 'local-runtime',

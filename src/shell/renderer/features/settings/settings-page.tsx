@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
-import { Surface, SegmentedControl, buttonVariants, cn } from '@nimiplatform/kit/ui';
+import { Surface, SegmentedControl, buttonVariants, cn, nimiToast } from '@nimiplatform/kit/ui';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { seedMockData, type SeedProgress } from '../../infra/mock-seed.js';
 import {
@@ -83,7 +83,6 @@ export default function SettingsPage() {
   const authUser = useAppStore((s) => s.auth.user);
   const authStatus = useAppStore((s) => s.auth.status);
   const [languageSaving, setLanguageSaving] = useState(false);
-  const [languageError, setLanguageError] = useState<string | null>(null);
   const [seedStatus, setSeedStatus] = useState<'idle' | 'seeding' | 'done' | 'error'>('idle');
   const [seedLabel, setSeedLabel] = useState('');
   const [seedResult, setSeedResult] = useState('');
@@ -100,11 +99,10 @@ export default function SettingsPage() {
       return;
     }
     setLanguageSaving(true);
-    setLanguageError(null);
     try {
       await saveAndApplyAppLanguage(language);
     } catch (error) {
-      setLanguageError(error instanceof Error ? error.message : String(error || t('Settings.language.saveFailed')));
+      nimiToast.danger(error instanceof Error ? error.message : String(error || t('Settings.language.saveFailed')));
     } finally {
       setLanguageSaving(false);
     }
@@ -152,9 +150,6 @@ export default function SettingsPage() {
           <div className="min-w-0 flex-1">
             <h3 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">{t('Settings.language.title')}</h3>
             <p className="mt-0.5 text-[13px] leading-snug text-[var(--nimi-text-muted)]">{t('Settings.language.desc')}</p>
-            {languageError ? (
-              <p className="mt-2 text-[13px] leading-snug text-[var(--nimi-status-danger)]">{languageError}</p>
-            ) : null}
           </div>
           <SegmentedControl
             ariaLabel={t('Settings.language.ariaLabel')}

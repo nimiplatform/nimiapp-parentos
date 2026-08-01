@@ -56,11 +56,16 @@ describe('parentos-runtime-route-options', () => {
       assets: [{
         localAssetId: 'local-qwen',
         assetId: 'qwen3',
+        logicalModelId: 'qwen3',
         engine: 'llama',
         status: LocalAssetStatus.ACTIVE,
         kind: LocalAssetKind.CHAT,
         endpoint: 'http://127.0.0.1:1234/v1',
         capabilities: [],
+        durableTargetRef: {
+          version: 'v2',
+          ref: { oneofKind: 'profileBindingId', profileBindingId: 'local-runtime:local-qwen' },
+        },
       }],
       nextPageToken: '',
     });
@@ -163,10 +168,15 @@ describe('parentos-runtime-route-options', () => {
       assets: [{
         localAssetId: 'local-gemma-vision',
         assetId: 'gemma-4-vision',
+        logicalModelId: 'gemma-4-vision',
         engine: 'llama',
         status: LocalAssetStatus.ACTIVE,
         kind: LocalAssetKind.CHAT,
         capabilities: ['text.generate.vision'],
+        durableTargetRef: {
+          version: 'v2',
+          ref: { oneofKind: 'profileBindingId', profileBindingId: 'local-runtime:local-gemma-vision' },
+        },
       }],
       nextPageToken: '',
     });

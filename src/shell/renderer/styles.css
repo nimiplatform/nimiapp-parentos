@@ -4,6 +4,11 @@
 @import "@nimiplatform/kit/ui/themes/nimi-accent.css";
 @import 'tailwindcss';
 
+/* Tailwind source scanning: kit components (toast, etc.) emit utility
+ * classes that must not be tree-shaken from this app's stylesheet. The app
+ * aliases @nimiplatform/kit to the linked source checkout, so scan that. */
+@source "../../../../../nimi/kit/**/*.{ts,tsx}";
+
 .parentos-radius-sm {
   border-radius: var(--nimi-radius-sm);
 }
@@ -1856,25 +1861,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   margin-top: 4px;
 }
 
-.report-message {
-  border-radius: var(--nimi-radius-sm);
-  font-size: 14px;
-  margin-bottom: 16px;
-  padding: 12px 16px;
-}
-
-.report-message--error {
-  background: color-mix(in srgb, var(--nimi-status-danger) 8%, var(--nimi-surface-card));
-  border: 1px solid color-mix(in srgb, var(--nimi-status-danger) 35%, transparent);
-  color: var(--nimi-status-danger);
-}
-
-.report-message--success {
-  background: color-mix(in srgb, var(--nimi-status-success) 8%, var(--nimi-surface-card));
-  border: 1px solid var(--nimi-border-subtle);
-  color: var(--nimi-text-primary);
-}
-
 .report-empty-state {
   border-radius: var(--nimi-radius-lg);
   margin-bottom: 24px;
@@ -1957,24 +1943,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border-radius: var(--nimi-radius-sm);
   font-size: 14px;
   padding-block: 10px;
-}
-
-.report-toast {
-  background: var(--nimi-surface-overlay);
-  border: 1px solid var(--nimi-border-subtle);
-  border-radius: 12px;
-  bottom: 32px;
-  box-shadow: var(--nimi-elevation-floating);
-  color: var(--nimi-text-primary);
-  font-size: 13px;
-  left: 50%;
-  letter-spacing: 0.02em;
-  max-width: 360px;
-  padding: 10px 18px;
-  position: fixed;
-  text-align: center;
-  transform: translateX(-50%);
-  z-index: 3000;
 }
 
 .report-family-share-row {

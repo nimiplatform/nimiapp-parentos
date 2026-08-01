@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, EmptyState, InlineAlert, StatusBadge, Surface, cn } from '@nimiplatform/kit/ui';
+import { Button, EmptyState, InlineAlert, nimiToast, StatusBadge, Surface, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
 import {
   deleteCustomTodo,
@@ -317,7 +317,6 @@ export default function RemindersPage() {
   const [freqModalReminder, setFreqModalReminder] = useState<ActiveReminder | null>(null);
   const [activeReminder, setActiveReminder] = useState<ActiveReminder | null>(null);
   const [captureSelection, setCaptureSelection] = useState<RecordDataReminderSelection | null>(null);
-  const [captureError, setCaptureError] = useState<string | null>(null);
   const ageMonths = child ? computeAgeMonths(child.birthDate) : 0;
   const localToday = getLocalToday();
   const repeatableRuleIds = useMemo(() => REMINDER_RULES.filter((r) => r.repeatRule).map((r) => r.ruleId), []);
@@ -358,11 +357,10 @@ export default function RemindersPage() {
 
   const openRecordDataCapture = useCallback((reminder: ActiveReminder) => {
     try {
-      setCaptureError(null);
       setCaptureSelection(getRecordDataReminderSelection(reminder));
     } catch (nextError) {
       setCaptureSelection(null);
-      setCaptureError(nextError instanceof Error ? nextError.message : String(nextError));
+      nimiToast.danger(nextError instanceof Error ? nextError.message : String(nextError));
     }
   }, []);
 
@@ -374,12 +372,22 @@ export default function RemindersPage() {
   }, [handleAction, localToday]);
 
   const handleRestoreCustomTodo = useCallback(async (todoId: string) => {
-    await uncompleteCustomTodo(todoId, isoNow()).catch(catchLog('reminders', 'action:restore-custom-todo-failed'));
+    await uncompleteCustomTodo(todoId, isoNow()).catch((error: unknown) => {
+      catchLog('reminders', 'action:restore-custom-todo-failed')(error);
+      nimiToast.danger(i18nText('Reminders.page.restoreTodoFailed', {
+        message: error instanceof Error ? error.message : String(error),
+      }));
+    });
     await reloadCustomTodos();
   }, [reloadCustomTodos]);
 
   const handleDeleteCustomTodo = useCallback(async (todoId: string) => {
-    await deleteCustomTodo(todoId).catch(catchLog('reminders', 'action:delete-custom-todo-failed'));
+    await deleteCustomTodo(todoId).catch((error: unknown) => {
+      catchLog('reminders', 'action:delete-custom-todo-failed')(error);
+      nimiToast.danger(i18nText('Reminders.page.deleteTodoFailed', {
+        message: error instanceof Error ? error.message : String(error),
+      }));
+    });
     await reloadCustomTodos();
   }, [reloadCustomTodos]);
 
@@ -565,12 +573,6 @@ export default function RemindersPage() {
             </div>
           </SectionCard>
         )}
-
-        {captureError ? (
-          <InlineAlert tone="danger">
-            {captureError}
-          </InlineAlert>
-        ) : null}
       </div>
 
       {child && captureSelection ? (

@@ -128,6 +128,22 @@ function normalizeJsonValue(value: unknown): NimiJsonValue | undefined {
   return next;
 }
 
+function normalizeLogicalModelIds(value: unknown): NimiAIConfig['capabilities']['logicalModelIds'] {
+  const object = asObject(value);
+  if (!object) {
+    return {};
+  }
+  const normalized: { [capabilityId: string]: string } = {};
+  for (const [capabilityId, modelId] of Object.entries(object)) {
+    const key = trimString(capabilityId);
+    const id = trimString(modelId);
+    if (key && id) {
+      normalized[key] = id;
+    }
+  }
+  return normalized;
+}
+
 function normalizeSelectedParams(value: unknown): NimiAIConfig['capabilities']['selectedParams'] {
   const object = asObject(value);
   if (!object) {
@@ -257,10 +273,17 @@ export function parsePersistedParentosAIConfig(value: unknown): NimiAIConfig | n
     return null;
   }
 
+  const selectedComponents = normalizeSelectedComponents(capabilities.selectedComponents);
+  if (!selectedComponents) {
+    return null;
+  }
+
   const normalized = {
     scopeRef,
     capabilities: {
+      logicalModelIds: normalizeLogicalModelIds(capabilities.logicalModelIds),
       targetRefs,
+      selectedComponents,
       selectedParams: normalizeSelectedParams(capabilities.selectedParams),
     },
     profileOrigin: normalizeProfileOrigin(object.profileOrigin),
@@ -292,4 +315,12 @@ export async function savePersistedParentosAIConfig(config: NimiAIConfig): Promi
     new Date().toISOString(),
   );
   return normalized;
+}
+
+function normalizeSelectedComponents(value: unknown): NimiAIConfig['capabilities']['selectedComponents'] | null {
+  if (value == null) {
+    return {};
+  }
+  const object = asObject(value);
+  return object as NimiAIConfig['capabilities']['selectedComponents'] | null;
 }

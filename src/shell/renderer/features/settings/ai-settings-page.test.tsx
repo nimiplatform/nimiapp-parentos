@@ -90,6 +90,8 @@ describe('AiSettingsPage', () => {
         ...createEmptyParentosAIConfig(),
         scopeRef: { ...PARENTOS_AI_SCOPE_REF },
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': {
               kind: 'local-runtime',

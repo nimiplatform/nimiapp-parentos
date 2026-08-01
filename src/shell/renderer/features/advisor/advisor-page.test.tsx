@@ -31,6 +31,8 @@ const messageStore: StoredMessage[] = [];
 const defaultLocalAIConfig = {
   scopeRef: { kind: 'app' as const, ownerId: 'nimi.parentos', surfaceId: 'app' },
   capabilities: {
+    logicalModelIds: {},
+    selectedComponents: {},
     targetRefs: {
       'text.generate': {
         kind: 'local-runtime' as const,
@@ -907,6 +909,8 @@ describe('AdvisorPage', () => {
       aiConfig: {
         scopeRef: { kind: 'app', ownerId: 'nimi.parentos', surfaceId: 'app' },
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': {
               kind: 'cloud-connector',

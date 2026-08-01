@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { nimiToast } from '@nimiplatform/kit/ui';
 import { computeAgeMonths, type ChildProfile } from '../../app-shell/app-store.js';
 import {
   REMINDER_RULES,
@@ -92,9 +93,9 @@ export interface ReminderPanelController {
   agenda: ReminderAgenda | null;
   /** Props for `<ReminderPanel>` — caller adds `embedded` for the drawer. */
   panelProps: Omit<ReminderPanelProps, 'embedded'>;
-  /** Capture modals (record-data / orthodontic) + error toast. The modals
-   *  portal to `document.body`, so this is safe to render inside a transformed
-   *  drawer surface. */
+  /** Capture modals (record-data / orthodontic). The modals portal to
+   *  `document.body`, so this is safe to render inside a transformed
+   *  drawer surface. Capture failures surface through `nimiToast`. */
   modalsNode: ReactNode;
 }
 
@@ -110,8 +111,14 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
 
   const [freqOverrides, setFreqOverrides] = useState<FreqOverrideMap>(new Map());
   const [captureSelection, setCaptureSelection] = useState<HealthCaptureSelection | null>(null);
-  const [captureError, setCaptureError] = useState<string | null>(null);
   const [orthoCapture, setOrthoCapture] = useState<OrthoCaptureState>(null);
+
+  // Capture failures surface as transient toasts. The modals signal
+  // `onError(null)` to clear before submit — dropped here since toasts
+  // auto-dismiss; their inline localError stays untouched.
+  const showCaptureError = useCallback((message: string | null) => {
+    if (message) nimiToast.danger(message);
+  }, []);
 
   const repeatableRuleIds = useMemo(
     () => REMINDER_RULES.filter((rule) => rule.repeatRule).map((rule) => rule.ruleId),
@@ -235,7 +242,6 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
   }, [child, reload]);
 
   const openRecordDataCapture = useCallback(async (reminder: ActiveReminder) => {
-    setCaptureError(null);
     // Orthodontic protocol reminders route to per-appliance modals instead of
     // the generic HealthCaptureModal — their capture surface is governed by
     // data/structured/parentos/orthodontic-protocols.yaml checkinType bindings, not
@@ -246,7 +252,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
     } catch (parseError) {
       setCaptureSelection(null);
       setOrthoCapture(null);
-      setCaptureError(parseError instanceof Error ? parseError.message : String(parseError));
+      showCaptureError(parseError instanceof Error ? parseError.message : String(parseError));
       return;
     }
     if (orthoBinding) {
@@ -288,7 +294,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
       } catch (loadError) {
         setCaptureSelection(null);
         setOrthoCapture(null);
-        setCaptureError(loadError instanceof Error ? loadError.message : String(loadError));
+        showCaptureError(loadError instanceof Error ? loadError.message : String(loadError));
       }
       return;
     }
@@ -296,21 +302,20 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
       setCaptureSelection(getRecordDataReminderSelection(reminder));
     } catch (nextError) {
       setCaptureSelection(null);
-      setCaptureError(nextError instanceof Error ? nextError.message : String(nextError));
+      showCaptureError(nextError instanceof Error ? nextError.message : String(nextError));
     }
-  }, [child, navigate]);
+  }, [child, navigate, showCaptureError]);
 
   // Dashboard task `maintain` card → HealthCaptureModal sidebar selection.
   const openDashboardTaskCapture = useCallback((intent: DashboardTaskCaptureIntent) => {
-    setCaptureError(null);
     const groupId = PROTOCOL_GROUP_LOOKUP.get(intent.captureProtocolId as HealthCaptureProtocolId);
     if (!groupId) {
       setCaptureSelection(null);
-      setCaptureError(i18nText('Timeline.error.unknownCaptureProtocol', { captureProtocolId: intent.captureProtocolId }));
+      showCaptureError(i18nText('Timeline.error.unknownCaptureProtocol', { captureProtocolId: intent.captureProtocolId }));
       return;
     }
     setCaptureSelection({ groupId, metricId: intent.metricIds[0] ?? null });
-  }, []);
+  }, [showCaptureError]);
 
   const dashboardTodayContent = agenda && child ? (
     <DashboardTaskList
@@ -347,15 +352,6 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
 
   const modalsNode = (
     <>
-      {captureError ? (
-        <div
-          className="fixed bottom-5 right-5 z-[110] rounded-[16px] px-4 py-3 text-[13px]"
-          style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}
-        >
-          {captureError}
-        </div>
-      ) : null}
-
       {captureSelection && child ? (
         <HealthCaptureModal
           open
@@ -383,7 +379,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
             setOrthoCapture(null);
             await reload();
           }}
-          onError={setCaptureError}
+          onError={showCaptureError}
         />
       ) : null}
 
@@ -398,7 +394,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
             setOrthoCapture(null);
             await reload();
           }}
-          onError={setCaptureError}
+          onError={showCaptureError}
         />
       ) : null}
     </>

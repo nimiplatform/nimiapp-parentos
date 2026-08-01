@@ -152,6 +152,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': localTargetRef('local-gemma-4'),
           },
@@ -182,6 +184,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'audio.transcribe': localTargetRef('local-whisper-large-v3'),
           },
@@ -216,6 +220,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': cloudTargetRef('openai-main', 'gpt-5.4'),
           },
@@ -242,6 +248,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'audio.transcribe': cloudTargetRef('openai-main', 'gpt-4o-mini-transcribe'),
           },
@@ -273,6 +281,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': localTargetRef('local-qwen3'),
           },
@@ -315,6 +325,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': localTargetRef('local-qwen3'),
           },
@@ -333,6 +345,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': localTargetRef('local-qwen3'),
           },
@@ -351,6 +365,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': {
               ...cloudTargetRef('chat-main', 'gemini-3.1-flash-lite-preview'),
@@ -415,6 +431,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'audio.transcribe': localTargetRef('local-whisper-large-v3'),
           },
@@ -452,6 +470,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': cloudTargetRef('openai-main', 'gpt-5.4'),
           },
@@ -478,6 +498,8 @@ describe('parentos-ai-runtime', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'audio.transcribe': cloudTargetRef('openai-main', 'gpt-4o-mini-transcribe'),
           },

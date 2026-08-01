@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { nimiToast } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths, computeAgeMonthsAt } from '../../app-shell/app-store.js';
 import { invoke } from '../../bridge/shell-command.js';
 import {
@@ -82,8 +83,6 @@ export function DentalHistoryView() {
   const [formEventDate, setFormEventDate] = useState(new Date().toISOString().slice(0, 10));
   const [formHospital, setFormHospital] = useState('');
   const [formNotes, setFormNotes] = useState('');
-  const [reminderMsg, setReminderMsg] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [existingPhotoAttachments, setExistingPhotoAttachments] = useState<AttachmentRow[]>([]);
   const [removedAttachmentIds, setRemovedAttachmentIds] = useState<string[]>([]);
@@ -323,8 +322,7 @@ export function DentalHistoryView() {
       }
 
       await refreshDentalData(child.childId);
-      setReminderMsg(t('Profile.rich.dental.scanSaved', { count: writtenRecordIds.length > 0 ? toWrite.length : 0 }));
-      setTimeout(() => setReminderMsg(null), 5000);
+      nimiToast.success(t('Profile.rich.dental.scanSaved', { count: writtenRecordIds.length > 0 ? toWrite.length : 0 }));
       setShowScanModal(false);
       resetScanState();
     } catch (error) {
@@ -536,9 +534,10 @@ export function DentalHistoryView() {
         resetForm();
       }
       await refreshDentalData(child.childId);
+      nimiToast.success(t('Profile.rich.dental.deleted'));
     } catch (error) {
       catchLog('dental', 'action:delete-record-failed')(error);
-      setErrorMsg(t('Profile.rich.dental.deleteFailed', { message: error instanceof Error ? error.message : String(error) }));
+      nimiToast.danger(t('Profile.rich.dental.deleteFailed', { message: error instanceof Error ? error.message : String(error) }));
     }
   };
 
@@ -546,7 +545,6 @@ export function DentalHistoryView() {
     if (!formEventDate || eventEntries.length === 0) return;
     const now = isoNow();
     const age = computeAgeMonthsAt(child.birthDate, formEventDate);
-    setErrorMsg(null);
     try {
       if (editingRecordId) {
         const entry = eventEntries[0];
@@ -613,9 +611,10 @@ export function DentalHistoryView() {
 
       await refreshDentalData(child.childId);
       resetForm();
+      nimiToast.success(t('Profile.rich.dental.saved'));
     } catch (error) {
       catchLog('dental', 'action:submit-dental-record-failed')(error);
-      setErrorMsg(t('Profile.rich.dental.saveFailed', { message: error instanceof Error ? error.message : String(error) }));
+      nimiToast.danger(t('Profile.rich.dental.saveFailed', { message: error instanceof Error ? error.message : String(error) }));
     }
   };
 
@@ -638,32 +637,6 @@ export function DentalHistoryView() {
         scanLabel={t('Profile.rich.dental.aiRecognizeTeeth')}
         addLabel={t('Profile.rich.common.addRecord')}
       />
-
-      {/* Reminder toast */}
-      {reminderMsg && (
-        <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[color-mix(in_srgb,var(--nimi-status-success)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-success)_8%,var(--nimi-surface-card))] px-4 py-2.5 text-[14px] font-medium text-[var(--nimi-status-success)]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
-          {reminderMsg}
-        </div>
-      )}
-
-      {errorMsg && (
-        <div
-          role="alert"
-          className="mb-4 flex items-start gap-2 rounded-2xl border border-[color-mix(in_srgb,var(--nimi-status-danger)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))] px-4 py-2.5 text-[14px] font-medium text-[var(--nimi-status-danger)]"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" /></svg>
-          <span className="flex-1">{errorMsg}</span>
-          <button
-            type="button"
-            onClick={() => setErrorMsg(null)}
-            className="cursor-pointer border-0 bg-transparent text-[12px] text-[var(--nimi-status-danger)]"
-             aria-label={t('Profile.rich.common.close')}
-          >
-            ×
-          </button>
-        </div>
-      )}
 
       {/* Tooth status overview. The standalone eyebrow label was dropped:
           the card itself carries a heading right inside, so the eyebrow was a

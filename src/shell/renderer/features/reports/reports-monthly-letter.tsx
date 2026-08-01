@@ -173,16 +173,18 @@ export function MonthlyLetterViewer({
 
   const reportFileStem = `${(childName && childName.trim()) || i18nText('Reports.monthly.defaultFileStem')}-${periodStart?.slice(0, 7) ?? ''}`;
   const handleSavePdf = async () => {
-    await exportReportAsPdf(articleRef.current, {
+    const result = await exportReportAsPdf(articleRef.current, {
       filename: `${reportFileStem}.pdf`,
       backgroundColor: 'var(--nimi-surface-card)',
     });
+    return Boolean(result.savedPath);
   };
   const handleSaveImage = async () => {
-    await exportReportAsImage(articleRef.current, {
+    const result = await exportReportAsImage(articleRef.current, {
       filename: `${reportFileStem}.png`,
       backgroundColor: 'var(--nimi-surface-card)',
     });
+    return Boolean(result.savedPath);
   };
   const handlePrintProfessional = () => {
     // Close the modal so only the professional printable subtree remains

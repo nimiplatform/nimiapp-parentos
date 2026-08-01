@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Button, Surface } from '@nimiplatform/kit/ui';
+import { useState } from 'react';
+import { Button, nimiToast, Surface } from '@nimiplatform/kit/ui';
 import { Check, FileImage, GraduationCap, LoaderCircle, Pencil, Printer } from 'lucide-react';
 import { describeError, logRendererEvent } from '../../infra/telemetry/renderer-log.js';
 import { i18nText } from '../../i18n/index.js';
@@ -35,20 +35,6 @@ function loadFamilySelection(): Set<string> {
 function saveFamilySelection(sel: Set<string>): void {
   if (typeof localStorage === 'undefined') return;
   try { localStorage.setItem(FAMILY_PRESETS_STORAGE_KEY, JSON.stringify([...sel])); } catch { /* */ }
-}
-
-/* ── Toast ───────────────────────────────────────────────────── */
-
-function Toast({ message, onDone }: { message: string; onDone: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 2400);
-    return () => clearTimeout(t);
-  }, [onDone]);
-  return (
-    <div className="report-toast">
-      {message}
-    </div>
-  );
 }
 
 /* ── Family share row ────────────────────────────────────────── */
@@ -239,40 +225,38 @@ function SavePanel({ onSavePdf, onSaveImage, busy }: SavePanelProps) {
 interface ReportActionBarProps {
   childName: string;
   selfRoleName?: string;
-  onSavePdf: () => Promise<void> | void;
-  onSaveImage: () => Promise<void> | void;
+  onSavePdf: () => Promise<boolean | void> | boolean | void;
+  onSaveImage: () => Promise<boolean | void> | boolean | void;
   onOpenProfessional: () => void;
   onRequestFocusNoteComposer?: () => void;
-  onFamilyShareToast?: (message: string) => void;
 }
 
 export function ReportActionBar({
   childName, selfRoleName, onSavePdf, onSaveImage, onOpenProfessional,
-  onRequestFocusNoteComposer, onFamilyShareToast,
+  onRequestFocusNoteComposer,
 }: ReportActionBarProps) {
-  const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState<SaveKind | null>(null);
-
-  const showToast = (msg: string) => {
-    if (onFamilyShareToast) onFamilyShareToast(msg);
-    else setToast(msg);
-  };
 
   const handleFamilySelection = (names: string[]) => {
     if (names.length === 0) {
-      showToast(i18nText('Reports.actionBar.family.selectOne'));
+      nimiToast.warning(i18nText('Reports.actionBar.family.selectOne'));
       return;
     }
-    showToast(i18nText('Reports.actionBar.family.prepared', {
+    nimiToast.success(i18nText('Reports.actionBar.family.prepared', {
       names: names.join(i18nText('Common.list.separator')),
     }));
   };
 
-  const runSave = async (kind: SaveKind, action: () => Promise<void> | void) => {
+  const runSave = async (kind: SaveKind, action: () => Promise<boolean | void> | boolean | void) => {
     if (busy) return;
     setBusy(kind);
     try {
-      await action();
+      const saved = await action();
+      if (saved !== false) {
+        nimiToast.success(kind === 'pdf'
+          ? i18nText('Reports.actionBar.save.pdfSuccess')
+          : i18nText('Reports.actionBar.save.imageSuccess'));
+      }
     } catch (error) {
       // Tauri rejects can be string / Error / plain object — surface
       // whatever we can so the user sees the actual failure instead of
@@ -284,7 +268,7 @@ export function ReportActionBar({
       const prefix = kind === 'pdf'
         ? i18nText('Reports.actionBar.save.pdfFailed')
         : i18nText('Reports.actionBar.save.imageFailed');
-      showToast(detail
+      nimiToast.danger(detail
         ? i18nText('Reports.actionBar.save.failedWithDetail', { prefix, detail })
         : i18nText('Reports.actionBar.save.retryLater', { prefix }));
       logRendererEvent({
@@ -300,7 +284,7 @@ export function ReportActionBar({
 
   const handleNote = () => {
     if (onRequestFocusNoteComposer) onRequestFocusNoteComposer();
-    else showToast(i18nText('Reports.actionBar.note.hint'));
+    else nimiToast.info(i18nText('Reports.actionBar.note.hint'));
   };
 
   return (
@@ -338,8 +322,6 @@ export function ReportActionBar({
         onSaveImage={() => void runSave('png', onSaveImage)}
         busy={busy}
       />
-
-      {toast ? <Toast message={toast} onDone={() => setToast(null)} /> : null}
     </Surface>
   );
 }

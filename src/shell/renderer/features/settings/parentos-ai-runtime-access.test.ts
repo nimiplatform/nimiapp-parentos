@@ -43,6 +43,8 @@ describe('parentos-ai-runtime access helpers', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': localTextTargetRef,
           },
@@ -64,6 +66,8 @@ describe('parentos-ai-runtime access helpers', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': cloudTextTargetRef,
           },
@@ -86,6 +90,8 @@ describe('parentos-ai-runtime access helpers', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': {
               kind: 'cloud-connector',
@@ -120,6 +126,8 @@ describe('parentos-ai-runtime access helpers', () => {
       aiConfig: {
         scopeRef: PARENTOS_AI_SCOPE_REF,
         capabilities: {
+          logicalModelIds: {},
+          selectedComponents: {},
           targetRefs: {
             'text.generate': cloudTextTargetRef,
           },

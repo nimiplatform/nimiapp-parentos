@@ -1,4 +1,4 @@
-import { Button, Surface } from '@nimiplatform/kit/ui';
+import { Button, nimiToast, Surface } from '@nimiplatform/kit/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -122,7 +122,6 @@ export function OrthodonticPage({
   const [dentalAttachmentMap, setDentalAttachmentMap] = useState<Map<string, AttachmentRow[]>>(new Map());
   const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showCaseForm, setShowCaseForm] = useState(false);
   const [showEditCaseForm, setShowEditCaseForm] = useState(false);
   const [showApplianceForm, setShowApplianceForm] = useState(false);
@@ -152,6 +151,13 @@ export function OrthodonticPage({
     return () => window.clearInterval(id);
   }, []);
 
+  // Transient operation failures surface as toasts. The modals signal
+  // `onError(null)` to clear before submit — dropped here since toasts
+  // auto-dismiss; their inline localError stays untouched.
+  const showError = useCallback((msg: string | null) => {
+    if (msg) nimiToast.danger(msg);
+  }, []);
+
   const reloadCases = useCallback(async () => {
     try {
       const rows = await getOrthodonticCases(childId);
@@ -160,9 +166,9 @@ export function OrthodonticPage({
       setActiveCaseId(nonCompleted?.caseId ?? null);
     } catch (error) {
       catchLog('ortho', 'action:load-cases-failed')(error);
-      setErrorMsg(error instanceof Error ? error.message : String(error));
+      showError(error instanceof Error ? error.message : String(error));
     }
-  }, [childId]);
+  }, [childId, showError]);
 
   const reloadAppliances = useCallback(async (caseId: string | null) => {
     if (!caseId) {
@@ -173,9 +179,9 @@ export function OrthodonticPage({
       setAppliances(await getOrthodonticAppliances(caseId));
     } catch (error) {
       catchLog('ortho', 'action:load-appliances-failed')(error);
-      setErrorMsg(error instanceof Error ? error.message : String(error));
+      showError(error instanceof Error ? error.message : String(error));
     }
-  }, []);
+  }, [showError]);
 
   const reloadAppliancesContent = useCallback(
     async (rows: OrthodonticApplianceRow[]) => {
@@ -226,10 +232,10 @@ export function OrthodonticPage({
         setDentalAttachmentMap(buildDentalAttachmentMap(allAttachments));
       } catch (error) {
         catchLog('ortho', 'action:load-journey-failed')(error);
-        setErrorMsg(error instanceof Error ? error.message : String(error));
+        showError(error instanceof Error ? error.message : String(error));
       }
     },
-    [childId],
+    [childId, showError],
   );
 
   useEffect(() => {
@@ -351,7 +357,7 @@ export function OrthodonticPage({
       await reloadAll();
     } catch (error) {
       catchLog('ortho', 'action:delete-clinical-event-failed')(error);
-      setErrorMsg(error instanceof Error ? error.message : String(error));
+      showError(error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -378,9 +384,9 @@ export function OrthodonticPage({
       onAddAppliance: () => setShowApplianceForm(true),
       onLogClinicalEvent: () => handleOpenClinicalEvent(),
       onCaseChanged: reloadAll,
-      onError: setErrorMsg,
+      onError: showError,
     }),
-    [handleLogOrthoIssue, handleOpenClinicalEvent, reloadAll],
+    [handleLogOrthoIssue, handleOpenClinicalEvent, reloadAll, showError],
   );
 
   if (loading) {
@@ -406,7 +412,7 @@ export function OrthodonticPage({
               setShowCaseForm(false);
               await reloadAll();
             }}
-            onError={setErrorMsg}
+            onError={showError}
           />
         )}
       </div>
@@ -422,8 +428,6 @@ export function OrthodonticPage({
 
   return (
     <div className="flex flex-col gap-4">
-      {errorMsg && <ErrorBanner msg={errorMsg} onDismiss={() => setErrorMsg(null)} />}
-
       {canAddAppliance && (
         <div className="flex items-center justify-end gap-2">
           <Button
@@ -454,7 +458,7 @@ export function OrthodonticPage({
           caseId={activeCase.caseId}
           onOpenCapture={() => setShowPhotoCapture(true)}
           reloadKey={selfiesReloadKey}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
 
@@ -487,7 +491,7 @@ export function OrthodonticPage({
             setShowCaseForm(false);
             await reloadAll();
           }}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
 
@@ -500,7 +504,7 @@ export function OrthodonticPage({
             setShowEditCaseForm(false);
             await reloadAll();
           }}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
 
@@ -515,7 +519,7 @@ export function OrthodonticPage({
             setShowApplianceForm(false);
             await reloadAll();
           }}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
 
@@ -527,7 +531,7 @@ export function OrthodonticPage({
             setEditingAppliance(null);
             await reloadAll();
           }}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
 
@@ -539,7 +543,7 @@ export function OrthodonticPage({
             setPhaseAdvanceAppliance(null);
             await reloadAll();
           }}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
 
@@ -554,7 +558,7 @@ export function OrthodonticPage({
             setSwitchAppliance(null);
             await reloadAll();
           }}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
 
@@ -566,7 +570,7 @@ export function OrthodonticPage({
             setActivationAppliance(null);
             await reloadAll();
           }}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
 
@@ -588,7 +592,7 @@ export function OrthodonticPage({
             setEditingClinicalRecord(null);
             await reloadAll();
           }}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
 
@@ -605,7 +609,7 @@ export function OrthodonticPage({
             setBackfillDefaultReason(undefined);
             await reloadAll();
           }}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
 
@@ -619,7 +623,7 @@ export function OrthodonticPage({
             setShowPhotoCapture(false);
             await reloadAll();
           }}
-          onError={setErrorMsg}
+          onError={showError}
         />
       )}
     </div>
@@ -644,24 +648,6 @@ function computeCaseMonthsTotal(
     return Math.max(1, Math.round(days / 30));
   }
   return null;
-}
-
-function ErrorBanner({ msg, onDismiss }: { msg: string; onDismiss: () => void }) {
-  return (
-    <div
-      role="alert"
-      className="flex items-start justify-between gap-2 rounded-xl border border-[color-mix(in_srgb,var(--nimi-status-danger)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))] p-3 text-[14px] text-[var(--nimi-status-danger)]"
-    >
-      <span style={{ wordBreak: 'break-word' }}>{msg}</span>
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="text-[12px] underline shrink-0"
-      >
-        {i18nText('Orthodontic.page.close')}
-      </button>
-    </div>
-  );
 }
 
 function EmptyState({ onCreate, hasHistory }: { onCreate: () => void; hasHistory: boolean }) {

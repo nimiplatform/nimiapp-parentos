@@ -13,6 +13,15 @@ export default defineConfig({
     // Pin the timezone so date-boundary logic (e.g. PO-ORTHO-008a's
     // "today 00:00 local" net-wear window) is deterministic across machines.
     env: { TZ: 'UTC' },
+    server: {
+      deps: {
+        // kit source imports `motion/react`, which only exists in the main
+        // repo's node_modules. Externalized, it would require('react') from
+        // there and create a second React copy (null hook dispatcher).
+        // Inlining lets the react aliases below point it at this app's copy.
+        inline: ['motion', 'framer-motion'],
+      },
+    },
   },
   resolve: {
     dedupe: [

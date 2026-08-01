@@ -8,6 +8,7 @@ import {
   createEmptyNimiAIConfig,
   createNimiAIConfigSubscriptionRegistry,
   createNimiAIHostSurface,
+  formatNimiAIValidationIssues,
   validateNimiAIConfig,
 } from '@nimiplatform/sdk/ai';
 import type { SharedAIConfigService } from '@nimiplatform/kit/core/model-config';
@@ -38,13 +39,15 @@ function getConfigForScope(scopeRef: NimiAIScopeRef): NimiAIConfig {
 function normalizeParentosAIConfig(config: NimiAIConfig): NimiAIConfig {
   const validation = validateNimiAIConfig(config);
   if (!validation.valid) {
-    throw new Error(`ParentOS AI config validation failed: ${validation.errors.join('; ')}`);
+    throw new Error(`ParentOS AI config validation failed: ${formatNimiAIValidationIssues(validation.issues)}`);
   }
   const resolvedConfig = {
     ...config,
     scopeRef: { ...PARENTOS_AI_SCOPE_REF },
     capabilities: {
+      logicalModelIds: { ...(config.capabilities.logicalModelIds || {}) },
       targetRefs: { ...(config.capabilities.targetRefs || {}) },
+      selectedComponents: { ...(config.capabilities.selectedComponents || {}) },
       selectedParams: { ...(config.capabilities.selectedParams || {}) },
     },
     profileOrigin: config.profileOrigin ?? null,
