@@ -5,12 +5,7 @@ import { insertMedicalEvent, getMedicalEvents, updateMedicalEvent } from '../../
 import type { MedicalEventRow } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 
-import { readImageFileAsDataUrl } from './checkup-ocr.js';
-import { EVENT_TYPE_LABELS, LAB_ITEMS, parseLabReport, type LabReportData } from './medical-events-page-shared.js';
-import {
-  runParentosMultimodalTextGenerate,
-} from '../settings/parentos-ai-runtime.js';
-import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import { LAB_ITEMS, parseLabReport, type LabReportData } from './medical-events-page-shared.js';
 import type {
   MedicalEventsChildContext,
   MedicalEventsFormMedication,
@@ -71,86 +66,12 @@ export function useMedicalEventsFormState(
     resetForm();
   }, [resetForm]);
 
-  const handleOCRUpload = useCallback(async (file: File) => {
-    setOcrLoading(true);
-    setOcrError(null);
+  const handleOCRUpload = useCallback((file: File) => {
+    // Vision/OCR intake has no admitted Nimi App Access operation; fail
+    // closed with the unavailable copy and keep manual entry as the path.
     setOcrImageName(file.name);
-    try {
-      const imageUrl = await readImageFileAsDataUrl(file);
-      if (!hasParentOSNimiClient()) {
-        setOcrError(i18nText('MedicalEvents.form.ocrRuntimeUnavailable'));
-        return;
-      }
-
-      const prompt = [
-        i18nText('MedicalEvents.ocrPrompt.role'),
-        '{',
-        '  "eventType": "visit|emergency|hospitalization|checkup|medication|other",',
-        i18nText('MedicalEvents.ocrPrompt.titleField'),
-        i18nText('MedicalEvents.ocrPrompt.eventDateField'),
-        i18nText('MedicalEvents.ocrPrompt.hospitalField'),
-        i18nText('MedicalEvents.ocrPrompt.severityField'),
-        i18nText('MedicalEvents.ocrPrompt.medicationsField'),
-        i18nText('MedicalEvents.ocrPrompt.notesField'),
-        '}',
-        i18nText('MedicalEvents.ocrPrompt.rulesTitle'),
-        i18nText('MedicalEvents.ocrPrompt.visibleOnly'),
-        i18nText('MedicalEvents.ocrPrompt.missingNull'),
-        i18nText('MedicalEvents.ocrPrompt.medicationsVisibleOnly'),
-        i18nText('MedicalEvents.ocrPrompt.outputOnly'),
-      ].join('\n');
-
-      const output = await runParentosMultimodalTextGenerate({
-        surfaceId: 'parentos.medical.ocr-intake',
-        capabilityId: 'text.generate.vision',
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'data', data: { type: 'image-url', url: imageUrl, detail: 'high' } },
-          ],
-        }],
-        defaults: { temperature: 0, maxTokens: 1000 },
-      });
-
-      const jsonMatch = output.text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        setOcrError(i18nText('MedicalEvents.form.ocrNoValidInfo'));
-        return;
-      }
-
-      const data = JSON.parse(jsonMatch[0]) as {
-        eventType?: string;
-        title?: string;
-        eventDate?: string | null;
-        hospital?: string | null;
-        severity?: string | null;
-        medications?: Array<{ name?: string; dose?: string; unit?: string; frequency?: string; days?: string }>;
-        notes?: string | null;
-      };
-
-      if (data.eventType && data.eventType in EVENT_TYPE_LABELS) setFormEventType(data.eventType);
-      if (data.title) setFormTitle(data.title);
-      if (data.eventDate) setFormEventDate(data.eventDate);
-      if (data.hospital) setFormHospital(data.hospital);
-      if (data.severity && ['mild', 'moderate', 'severe'].includes(data.severity)) setFormSeverity(data.severity);
-      if (data.notes) setFormNotes(data.notes);
-
-      if (data.medications && data.medications.length > 0) {
-        setFormMeds(data.medications.map((medication) => ({
-          name: medication.name ?? '',
-          dose: medication.dose ?? '',
-          unit: medication.unit ?? i18nText('MedicalEvents.form.medicationDefaultUnit'),
-          frequency: medication.frequency ?? '',
-          days: medication.days ?? '',
-          tags: [],
-        })));
-      }
-    } catch (error) {
-      setOcrError(error instanceof Error ? error.message : i18nText('MedicalEvents.form.ocrFailed'));
-    } finally {
-      setOcrLoading(false);
-    }
+    setOcrLoading(false);
+    setOcrError(i18nText('MedicalEvents.form.ocrRuntimeUnavailable'));
   }, []);
 
   const submitForm = useCallback(async () => {

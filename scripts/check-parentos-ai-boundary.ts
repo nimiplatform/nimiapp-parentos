@@ -52,14 +52,13 @@ function fileHasRuntimeCall(content: string) {
 function hasTextRuntimePath(content: string) {
   return content.includes('runtime.ai.text.generate')
     || content.includes('runtime.ai.text.stream')
-    || content.includes('runParentosTextGenerate')
-    || content.includes('streamParentosTextGenerate')
-    || content.includes('runParentosMultimodalTextGenerate');
+    || content.includes('ai.text.generateCandidate')
+    || content.includes('runParentosTextGenerate');
 }
 
 function hasSpeechRuntimePath(content: string) {
   return content.includes('media.stt.transcribe')
-    || content.includes('runParentosSpeechTranscribe');
+    || content.includes('audio.transcribe');
 }
 
 function hasSurfaceMarker(content: string, surfaceId: string) {
@@ -219,16 +218,19 @@ export function findJournalBoundaryErrors(journalAiSource: string) {
 export function findVoiceBoundaryErrors(voiceObservationSource: string) {
   const errors: string[] = [];
 
+  // STT has no admitted App Access operation; the runtime module must gate
+  // the surface off through the typed unavailable error instead of calling
+  // any transcription pipeline.
   for (const marker of [
-    'runParentosSpeechTranscribe',
-    'missing transcript text',
+    'createParentosAISurfaceUnavailableError',
+    'isParentosAISurfaceExecutable',
   ]) {
     if (!voiceObservationSource.includes(marker)) {
       errors.push(`voice observation runtime is missing boundary marker: ${marker}`);
     }
   }
 
-  if (!hasSurfaceMarker(voiceObservationSource, 'parentos.journal.voice-observation')) {
+  if (!voiceObservationSource.includes('parentos.journal.voice-observation')) {
     errors.push('voice observation runtime is missing the parentos.journal.voice-observation surface marker');
   }
 
@@ -411,21 +413,39 @@ export function findRuntimeHelperBoundaryErrors(parentosAiRuntimeSource: string)
 
   for (const marker of [
     'export async function runParentosTextGenerate',
-    'export async function streamParentosTextGenerate',
-    'resolveParentosTextRuntimeConfig(input.surfaceId',
-    'ensureParentosLocalRuntimeReady({',
-    'createNimiRuntimeAIModel({',
-    'runNimiTextGenerate({',
-    'streamNimiTextResponse({',
-    'metadata: toParentosCoreMetadata(input.surfaceId',
-    'FallbackPolicy.DENY',
-    'export async function runParentosSpeechTranscribe',
-    'resolveParentosSpeechTranscribeRuntimeConfig(input.surfaceId',
-    'scenarioType: ScenarioType.SPEECH_TRANSCRIBE',
-    'metadata: buildParentosRuntimeMetadata(input.surfaceId)',
+    'getParentOSNimiClient().ai.text.generateCandidate({',
+    'isParentosAISurfaceExecutable(input.surfaceId)',
+    'export function createParentosAISurfaceUnavailableError',
+    'MAX_CANDIDATE_MESSAGES',
+    'MAX_CANDIDATE_MESSAGE_BYTES',
+    'MAX_CANDIDATE_PROMPT_BYTES',
+    'MAX_CANDIDATE_TOKENS',
+    'parentos-ai-input-over-budget',
+    'parentos-ai-message-role-unsupported',
   ]) {
     if (!parentosAiRuntimeSource.includes(marker)) {
       errors.push(`parentos-ai-runtime.ts is missing governed helper marker: ${marker}`);
+    }
+  }
+
+  // Legacy first-party execution surfaces and custody material are forbidden:
+  // the unary text-candidate operation is the only admitted AI path.
+  for (const forbidden of [
+    'streamParentosTextGenerate',
+    'runParentosMultimodalTextGenerate',
+    'runParentosSpeechTranscribe',
+    'streamNimiTextResponse',
+    'executeScenario',
+    'createNimiRuntimeAIModel',
+    'runNimiTextGenerate({',
+    'SPEECH_TRANSCRIBE',
+    'profileBindingId',
+    'readinessRef',
+    'connectorId',
+    'runtime.ready()',
+  ]) {
+    if (parentosAiRuntimeSource.includes(forbidden)) {
+      errors.push(`parentos-ai-runtime.ts must not retain legacy runtime surface: ${forbidden}`);
     }
   }
 
@@ -456,8 +476,15 @@ export function findSettingsPrivacyErrors(input: {
     }
   }
 
-  if (!input.aiConfigSource.includes("surfaceId: 'parentos.ai'")) {
-    errors.push('ParentOS AI config scope must be app-wide (surfaceId: parentos.ai)');
+  if (!input.aiConfigSource.includes("PARENTOS_TEXT_CAPABILITY_CONTRACT = 'text.generate'")
+    && !input.aiConfigSource.includes("capabilityContract: 'text.generate'")) {
+    errors.push('ParentOS AI config must declare the portable text.generate capability intent');
+  }
+
+  for (const custody of ['connectorId', 'connectorGrantId', 'profileBindingId', 'readinessRef', 'ownerId']) {
+    if (input.aiConfigSource.includes(custody)) {
+      errors.push(`ParentOS AI config must not carry custody material: ${custody}`);
+    }
   }
 
   return errors;
@@ -559,7 +586,6 @@ export function runAiBoundaryCheck() {
   const aiSettingsSurfacePaths = [
     resolve(SRC, 'features/settings/ai-settings-page.tsx'),
     resolve(SRC, 'features/settings/parentos-ai-config.ts'),
-    resolve(SRC, 'features/settings/parentos-route-model-picker-provider.ts'),
   ];
   const aiSettingsSurfaceSources: SourceFile[] = aiSettingsSurfacePaths.map((path) => ({
     path: relativeToRoot(path, ROOT),

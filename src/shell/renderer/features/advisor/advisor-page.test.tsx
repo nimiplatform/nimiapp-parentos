@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { ReasonCode } from '@nimiplatform/sdk/types';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore } from '../../app-shell/app-store.js';
@@ -26,24 +25,14 @@ type StoredMessage = {
   createdAt: string;
 };
 
+type TextGenerateInput = {
+  surfaceId: string;
+  messages: Array<{ role: string; content: Array<{ type: string; text?: string }> }>;
+  defaults?: { temperature?: number; maxTokens?: number };
+};
+
 const conversationStore: StoredConversation[] = [];
 const messageStore: StoredMessage[] = [];
-const defaultLocalAIConfig = {
-  scopeRef: { kind: 'app' as const, ownerId: 'nimi.parentos', surfaceId: 'app' },
-  capabilities: {
-    logicalModelIds: {},
-    selectedComponents: {},
-    targetRefs: {
-      'text.generate': {
-        kind: 'local-runtime' as const,
-        version: 'v2' as const,
-        profileBindingId: 'local-runtime:local-qwen3',
-      },
-    },
-    selectedParams: {},
-  },
-  profileOrigin: null,
-};
 
 const {
   createConversationMock,
@@ -57,11 +46,8 @@ const {
   getJournalEntriesMock,
   getOutdoorRecordsMock,
   getOutdoorGoalMock,
-  loadParentosRuntimeRouteOptionsMock,
-  generateMock,
-  streamMock,
-  warmLocalAssetMock,
-  getParentOSNimiClientMock,
+  textGenerateMock,
+  chatControl,
 } = vi.hoisted(() => ({
   createConversationMock: vi.fn(async (params: {
     conversationId: string;
@@ -197,38 +183,11 @@ const {
   ]),
   getOutdoorRecordsMock: vi.fn(async () => []),
   getOutdoorGoalMock: vi.fn(async () => null),
-  loadParentosRuntimeRouteOptionsMock: vi.fn(async () => ({
-    capability: 'text.generate',
-    selected: null,
-    local: {
-      defaultEndpoint: 'http://127.0.0.1:1234/v1',
-      models: [{
-        label: 'qwen3',
-        engine: 'llama',
-        model: 'qwen3',
-        modelId: 'qwen3',
-        provider: 'llama',
-        endpoint: 'http://127.0.0.1:1234/v1',
-        status: 'active',
-        goRuntimeStatus: 'active',
-        capabilities: ['text.generate'],
-      }],
-    },
-    connectors: [{
-      id: 'connector-1',
-      label: 'OpenAI',
-      provider: 'openai',
-      models: ['gpt-5.4'],
-      modelCapabilities: {
-        'gpt-5.4': ['text.generate'],
-      },
-      modelProfiles: [],
-    }],
-  })),
-  generateMock: vi.fn(),
-  streamMock: vi.fn(),
-  warmLocalAssetMock: vi.fn(async () => ({})),
-  getParentOSNimiClientMock: vi.fn(),
+  textGenerateMock: vi.fn(),
+  chatControl: {
+    text: '默认顾问回复。',
+    failure: null as { message: string; reasonCode: string } | null,
+  },
 }));
 
 vi.mock('@nimiplatform/kit/features/chat/ui', () => {
@@ -251,11 +210,13 @@ vi.mock('@nimiplatform/kit/features/chat/ui', () => {
         continue;
       }
       flushList();
-      const boldMatch = line.match(/^\*\*(.+)\*\*$/);
-      if (boldMatch) {
-        elements.push(<p key={elements.length}><strong>{boldMatch[1]}</strong></p>);
-      } else if (line.trim()) {
-        elements.push(<p key={elements.length}>{line}</p>);
+      if (line.trim()) {
+        const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (
+          part.startsWith('**') && part.endsWith('**')
+            ? <strong key={i}>{part.slice(2, -2)}</strong>
+            : part
+        ));
+        elements.push(<p key={`p-${elements.length}`}>{parts}</p>);
       }
     }
     flushList();
@@ -263,54 +224,18 @@ vi.mock('@nimiplatform/kit/features/chat/ui', () => {
   }
 
   return {
-    CanonicalMessageBubble: ({ message }: { message: { text: string; role: string } }) => (
-      <div data-testid={`bubble-${message.role}`}><SimpleMd content={message.text} /></div>
+    CanonicalConversationShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    CanonicalTranscriptView: ({ messages }: { messages: Array<{ id: string; role: string; content: string }> }) => (
+      <div>
+        {messages.map((message) => (
+          <div key={message.id} data-role={message.role}>
+            <SimpleMd content={message.content} />
+          </div>
+        ))}
+      </div>
     ),
-    CanonicalTypingBubble: ({ thinkingLabel }: { thinkingLabel?: string }) => (
-      <div>{thinkingLabel ?? 'Thinking…'}</div>
-    ),
-    ChatMarkdownRenderer: SimpleMd,
   };
 });
-
-vi.mock('@nimiplatform/kit/ui', () => ({
-  Button: ({
-    children,
-    leadingIcon,
-    asChild,
-    ...props
-  }: {
-    children?: React.ReactNode;
-    leadingIcon?: React.ReactNode;
-    asChild?: boolean;
-  } & React.ButtonHTMLAttributes<HTMLButtonElement>) => {
-    if (asChild) return <>{children}</>;
-    return <button type="button" {...props}>{leadingIcon}{children}</button>;
-  },
-  IconButton: ({
-    icon,
-    ...props
-  }: {
-    icon: React.ReactNode;
-  } & React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-    <button type="button" {...props}>{icon}</button>
-  ),
-  ScrollArea: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div className={className}>{children}</div>
-  ),
-  Surface: ({ children, className, style }: { children?: React.ReactNode; className?: string; style?: React.CSSProperties }) => (
-    <div className={className} style={style}>{children}</div>
-  ),
-  TextareaField: ({
-    textareaClassName,
-    ...props
-  }: {
-    textareaClassName?: string;
-  } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-    <textarea className={textareaClassName} {...props} />
-  ),
-  cn: (...args: unknown[]) => args.filter(Boolean).join(' '),
-}));
 
 vi.mock('../../bridge/sqlite-bridge.js', () => ({
   createConversation: createConversationMock,
@@ -326,127 +251,30 @@ vi.mock('../../bridge/sqlite-bridge.js', () => ({
   getOutdoorGoal: getOutdoorGoalMock,
 }));
 
-vi.mock('@nimiplatform/sdk/runtime', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@nimiplatform/sdk/runtime')>();
-  return {
-    ...actual,
-    asNimiError: (err: unknown) => ({
-      reasonCode: (err as Record<string, unknown>)?.reasonCode ?? 'UNKNOWN',
-      message: (err as Record<string, unknown>)?.message ?? '',
-      details: (err as Record<string, unknown>)?.details ?? {},
-    }),
-  };
-});
-
-vi.mock('@nimiplatform/sdk/ai', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@nimiplatform/sdk/ai')>();
-  function normalizeTestMessageContent(content: unknown): string {
-    if (typeof content === 'string') {
-      return content;
-    }
-    if (Array.isArray(content)) {
-      return content.map((part) => {
-        if (part && typeof part === 'object' && 'text' in part) {
-          return String((part as { text?: unknown }).text ?? '');
-        }
-        return JSON.stringify(part);
-      }).join('\n');
-    }
-    return String(content ?? '');
-  }
-
-  function projectTestMessages(messages: Array<{ role: string; content: unknown }>) {
-    return messages.map((message) => ({
-      ...message,
-      content: normalizeTestMessageContent(message.content),
-    }));
-  }
-
-  function streamErrorEvent(error: unknown) {
-    const detail = error as { reasonCode?: string; message?: string };
-    return {
-      type: 'error' as const,
-      code: detail.reasonCode ?? 'UNKNOWN',
-      message: detail.message ?? String(error),
-      cause: error,
-    };
-  }
-
-  return {
-    ...actual,
-    createNimiRuntimeAIModel: (input: {
-      model: { modelId: string; providerId?: string };
-      routePolicy?: string;
-      connectorId?: string;
-      metadata?: Record<string, string>;
-    }) => ({
-      model: input.model,
-      async generateText(request: { messages: Array<{ role: string; content: string }>; parameters?: unknown }) {
-        return generateMock({
-          route: input.routePolicy,
-          model: input.model.modelId,
-          connectorId: input.connectorId,
-          metadata: input.metadata,
-          input: projectTestMessages(request.messages),
-          parameters: request.parameters,
-        });
-      },
-      async streamText(request: { messages: Array<{ role: string; content: string }>; parameters?: unknown }) {
-        const call = {
-          route: input.routePolicy,
-          model: input.model.modelId,
-          connectorId: input.connectorId,
-          metadata: input.metadata,
-          input: projectTestMessages(request.messages),
-          parameters: request.parameters,
-        };
-        return (async function* stream() {
-          yield { type: 'start' as const };
-          let output;
-          try {
-            output = await streamMock(call);
-          } catch (error) {
-            yield streamErrorEvent(error);
-            return;
-          }
-          for await (const event of output.stream) {
-            if (event.type === 'delta') {
-              yield { type: 'text-delta' as const, text: event.text };
-            } else if (event.type === 'error') {
-              yield streamErrorEvent(event.error);
-              return;
-            }
-          }
-          yield { type: 'done' as const, finishReason: 'stop', usage: {} };
-        })();
-      },
-    }),
-  };
-});
+vi.mock('../settings/parentos-ai-runtime.js', () => ({
+  runParentosTextGenerate: (input: TextGenerateInput) => textGenerateMock(input),
+}));
 
 vi.mock('../../infra/parentos-nimi-client.js', () => ({
-  getParentOSNimiClient: () => getParentOSNimiClientMock(),
   hasParentOSNimiClient: () => true,
 }));
 
-vi.mock('../../infra/parentos-runtime-route-options.js', () => ({
-  loadParentosRuntimeRouteOptions: loadParentosRuntimeRouteOptionsMock,
-}));
-
-function createStreamOutput(text: string) {
-  return {
-    stream: (async function* stream() {
-      yield { type: 'delta' as const, text };
-    })(),
-  };
+function promptTextOf(input: TextGenerateInput): string {
+  return input.messages
+    .map((message) => message.content.map((part) => part.text ?? '').join(''))
+    .join('\n');
 }
 
-function createStreamErrorOutput(error: unknown) {
-  return {
-    stream: (async function* stream() {
-      yield { type: 'error' as const, error };
-    })(),
-  };
+function isSuggestionCall(input: TextGenerateInput): boolean {
+  const system = input.messages.find((message) => message.role === 'system');
+  const systemText = system?.content.map((part) => part.text ?? '').join('') ?? '';
+  return systemText.startsWith('你是 ParentOS 的"推荐问题"助手。');
+}
+
+function chatCalls(): TextGenerateInput[] {
+  return textGenerateMock.mock.calls
+    .map((call) => call[0] as TextGenerateInput)
+    .filter((input) => !isSuggestionCall(input));
 }
 
 function renderAdvisorPage(
@@ -478,27 +306,38 @@ describe('AdvisorPage', () => {
     getJournalEntriesMock.mockClear();
     getOutdoorRecordsMock.mockClear();
     getOutdoorGoalMock.mockClear();
-    loadParentosRuntimeRouteOptionsMock.mockClear();
-    generateMock.mockReset();
-    streamMock.mockReset();
-    warmLocalAssetMock.mockReset();
-    generateMock.mockResolvedValue({
-      text: JSON.stringify([
-        '最近睡眠节律稳定吗？',
-        '户外活动还够吗？',
-        '敏感期要注意什么？',
-      ]),
-      finishReason: 'stop',
-      usage: {},
-    });
-    getParentOSNimiClientMock.mockReturnValue({
-      runtime: {
-        appId: 'nimi.parentos',
-        ready: vi.fn(async () => ({})),
-        local: {
-          warmLocalAsset: warmLocalAssetMock,
-        },
-      },
+    textGenerateMock.mockReset();
+    chatControl.text = '默认顾问回复。';
+    chatControl.failure = null;
+    textGenerateMock.mockImplementation(async (input: TextGenerateInput) => {
+      if (isSuggestionCall(input)) {
+        return {
+          ok: true as const,
+          text: JSON.stringify([
+            '最近睡眠节律稳定吗？',
+            '户外活动还够吗？',
+            '敏感期要注意什么？',
+          ]),
+          finishReason: 'stop' as const,
+          traceId: 'trace-suggest',
+        };
+      }
+      if (chatControl.failure) {
+        return {
+          ok: false as const,
+          error: {
+            message: chatControl.failure.message,
+            reasonCode: chatControl.failure.reasonCode,
+            cause: new Error(chatControl.failure.message),
+          },
+        };
+      }
+      return {
+        ok: true as const,
+        text: chatControl.text,
+        finishReason: 'stop' as const,
+        traceId: 'trace-chat',
+      };
     });
 
     useAppStore.setState({
@@ -525,7 +364,6 @@ describe('AdvisorPage', () => {
           updatedAt: '2026-01-01T00:00:00.000Z',
         },
       ],
-      aiConfig: defaultLocalAIConfig,
     });
   });
 
@@ -535,12 +373,11 @@ describe('AdvisorPage', () => {
       familyId: null,
       activeChildId: null,
       children: [],
-      aiConfig: null,
     });
   });
 
   it('persists a full frozen advisor snapshot and routes unknown domains to clarifier runtime', async () => {
-    streamMock.mockResolvedValue(createStreamOutput('你想聊睡眠、敏感期、屏幕使用，还是先看身高、疫苗、里程碑这些记录？'));
+    chatControl.text = '你想聊睡眠、敏感期、屏幕使用，还是先看身高、疫苗、里程碑这些记录？';
 
     renderAdvisorPage();
 
@@ -555,20 +392,14 @@ describe('AdvisorPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
 
     await waitFor(() => {
-      expect(streamMock).toHaveBeenCalledTimes(1);
+      expect(chatCalls()).toHaveLength(1);
     });
 
-    const streamInput = streamMock.mock.calls[0]?.[0] as {
-      route: string;
-      model: string;
-      input: Array<{ role: string; content: string }>;
-    };
-    expect(streamInput.route).toBe('local');
-    expect(streamInput.model).toBe('local-runtime:local-qwen3');
-    const promptText = streamInput.input.map((message) => message.content).join('\n');
+    const chatInput = chatCalls()[0]!;
+    expect(chatInput.surfaceId).toBe('parentos.advisor');
+    const promptText = promptTextOf(chatInput);
     expect(promptText).toContain('当前策略：unknown-clarifier');
     expect(promptText).toContain('已审核领域');
-    expect(warmLocalAssetMock).not.toHaveBeenCalled();
 
     const userCall = insertAiMessageMock.mock.calls.find((call) => call[0].role === 'user')?.[0];
     expect(userCall?.contextSnapshot).toBeTruthy();
@@ -594,7 +425,7 @@ describe('AdvisorPage', () => {
   });
 
   it('shows journal context preview and starts conversation on starter click', async () => {
-    streamMock.mockResolvedValue(createStreamOutput('我先帮你整理一下这条随记里值得继续留意的部分。'));
+    chatControl.text = '我先帮你整理一下这条随记里值得继续留意的部分。';
 
     renderAdvisorPage([{
       pathname: '/advisor',
@@ -627,7 +458,7 @@ describe('AdvisorPage', () => {
 
     await waitFor(() => {
       expect(createConversationMock).toHaveBeenCalledTimes(1);
-      expect(streamMock).toHaveBeenCalledTimes(1);
+      expect(chatCalls()).toHaveLength(1);
     });
 
     expect(createConversationMock.mock.calls[0]?.[0]).toMatchObject({
@@ -648,7 +479,7 @@ describe('AdvisorPage', () => {
   });
 
   it('persists reminder-launched advisor replies through the consultation transaction', async () => {
-    streamMock.mockResolvedValue(createStreamOutput('睡眠节律目前比较稳定。'));
+    chatControl.text = '睡眠节律目前比较稳定。';
 
     renderAdvisorPage(['/advisor?reminderRuleId=PO-REM-CONSULT-001&repeatIndex=2']);
 
@@ -662,7 +493,7 @@ describe('AdvisorPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
 
     await waitFor(() => {
-      expect(streamMock).toHaveBeenCalledTimes(1);
+      expect(chatCalls()).toHaveLength(1);
       expect(insertConsultationAiMessageMock).toHaveBeenCalledTimes(1);
     });
 
@@ -684,9 +515,7 @@ describe('AdvisorPage', () => {
   });
 
   it('shows structured fallback and still allows retry when reminder consultation writeback fails', async () => {
-    streamMock
-      .mockResolvedValueOnce(createStreamOutput('第一次回复不应显示。'))
-      .mockResolvedValueOnce(createStreamOutput('第二次回复已写回。'));
+    chatControl.text = '第一次回复不应显示。';
     insertConsultationAiMessageMock.mockRejectedValueOnce(new Error('missing reminder state'));
 
     renderAdvisorPage(['/advisor?reminderRuleId=PO-REM-CONSULT-001&repeatIndex=2']);
@@ -701,7 +530,7 @@ describe('AdvisorPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
 
     await waitFor(() => {
-      expect(streamMock).toHaveBeenCalledTimes(1);
+      expect(chatCalls()).toHaveLength(1);
       expect(insertConsultationAiMessageMock).toHaveBeenCalledTimes(1);
     });
     expect(screen.queryByText(/第一次回复不应显示/)).toBeNull();
@@ -710,6 +539,7 @@ describe('AdvisorPage', () => {
     });
     expect(insertAiMessageMock.mock.calls.filter((call) => call[0].role === 'assistant')).toHaveLength(0);
 
+    chatControl.text = '第二次回复已写回。';
     await waitFor(() => {
       expect(screen.getByPlaceholderText('输入问题...')).toBeTruthy();
     });
@@ -719,7 +549,7 @@ describe('AdvisorPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
 
     await waitFor(() => {
-      expect(streamMock).toHaveBeenCalledTimes(2);
+      expect(chatCalls()).toHaveLength(2);
       expect(insertConsultationAiMessageMock).toHaveBeenCalledTimes(2);
     });
     expect(insertConsultationAiMessageMock.mock.calls[1]?.[0]).toMatchObject({
@@ -735,7 +565,7 @@ describe('AdvisorPage', () => {
   });
 
   it('assembles reviewed-domain runtime prompts from the frozen snapshot', async () => {
-    streamMock.mockResolvedValue(createStreamOutput('睡眠节律目前比较稳定。'));
+    chatControl.text = '睡眠节律目前比较稳定。';
 
     renderAdvisorPage();
 
@@ -750,19 +580,12 @@ describe('AdvisorPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
 
     await waitFor(() => {
-      expect(streamMock).toHaveBeenCalledTimes(1);
+      expect(chatCalls()).toHaveLength(1);
     });
 
-    const streamInput = streamMock.mock.calls[0]?.[0] as {
-      route: string;
-      model: string;
-      input: Array<{ role: string; content: string }>;
-      metadata: { surfaceId: string };
-    };
-    expect(streamInput.route).toBe('local');
-    expect(streamInput.model).toBe('local-runtime:local-qwen3');
-    expect(streamInput.metadata.surfaceId).toBe('parentos.advisor');
-    const promptText = streamInput.input.map((message) => message.content).join('\n');
+    const chatInput = chatCalls()[0]!;
+    expect(chatInput.surfaceId).toBe('parentos.advisor');
+    const promptText = promptTextOf(chatInput);
     expect(promptText).toContain('当前策略：reviewed-advice');
     expect(promptText).toContain('问题：最近睡眠怎么样？');
     expect(promptText).toContain('已判定领域：sleep');
@@ -790,7 +613,7 @@ describe('AdvisorPage', () => {
       expect(insertAiMessageMock.mock.calls.filter((call) => call[0].role === 'assistant')).toHaveLength(1);
     });
 
-    expect(streamMock).not.toHaveBeenCalled();
+    expect(chatCalls()).toHaveLength(0);
 
     await waitFor(() => {
       expect(screen.getByText(/当前问题尚未明确到已审核领域/)).toBeTruthy();
@@ -815,7 +638,7 @@ describe('AdvisorPage', () => {
       expect(insertAiMessageMock.mock.calls.filter((call) => call[0].role === 'assistant')).toHaveLength(1);
     });
 
-    expect(streamMock).not.toHaveBeenCalled();
+    expect(chatCalls()).toHaveLength(0);
 
     await waitFor(() => {
       expect(screen.getByText(/当前问题涉及 needs-review 领域/)).toBeTruthy();
@@ -844,7 +667,7 @@ describe('AdvisorPage', () => {
       expect(insertAiMessageMock.mock.calls.filter((call) => call[0].role === 'assistant')).toHaveLength(1);
     });
 
-    expect(streamMock).not.toHaveBeenCalled();
+    expect(chatCalls()).toHaveLength(0);
     expect(insertAiMessageMock.mock.calls.find((call) => call[0].role === 'user')?.[0].contextSnapshot).toContain('"measurements":[]');
 
     await waitFor(() => {
@@ -871,20 +694,15 @@ describe('AdvisorPage', () => {
       expect(screen.getByText(/用户消息持久化失败/)).toBeTruthy();
     });
 
-    expect(streamMock).not.toHaveBeenCalled();
+    expect(chatCalls()).toHaveLength(0);
     expect(insertAiMessageMock.mock.calls.filter((call) => call[0].role === 'assistant')).toHaveLength(0);
   });
 
-  it('surfaces normalized runtime error details in the fallback note', async () => {
-    const runtimeError = {
-      reasonCode: ReasonCode.AI_PROVIDER_UNAVAILABLE,
-      message: 'provider request failed',
-      details: {
-        provider_message: 'dial tcp 127.0.0.1:8321: connect: connection refused',
-      },
+  it('keeps typed runtime failure codes out of the user-visible fallback note', async () => {
+    chatControl.failure = {
+      reasonCode: 'local-app-operation-unavailable',
+      message: 'dial tcp 127.0.0.1:8321: connect: connection refused',
     };
-    streamMock.mockRejectedValue(runtimeError);
-    generateMock.mockRejectedValue(runtimeError);
 
     renderAdvisorPage();
 
@@ -899,96 +717,10 @@ describe('AdvisorPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/AI_PROVIDER_UNAVAILABLE/)).toBeTruthy();
+      expect(screen.getByText(/AI 运行时响应失败，已退回本地结构化事实/)).toBeTruthy();
     });
-    expect(screen.getByText(/connect: connection refused/)).toBeTruthy();
-  });
-
-  it('retries cloud advisor chat with generate when the stream fails before any text arrives', async () => {
-    useAppStore.setState({
-      aiConfig: {
-        scopeRef: { kind: 'app', ownerId: 'nimi.parentos', surfaceId: 'app' },
-        capabilities: {
-          logicalModelIds: {},
-          selectedComponents: {},
-          targetRefs: {
-            'text.generate': {
-              kind: 'cloud-connector',
-              connectorId: 'connector-1',
-              remoteModelCatalogId: 'remote-catalog:connector-1:gpt-5.4',
-              providerModelId: 'gpt-5.4',
-            },
-          },
-          selectedParams: {},
-        },
-        profileOrigin: null,
-      },
-    });
-    streamMock.mockResolvedValue(createStreamErrorOutput({
-      reasonCode: ReasonCode.AI_STREAM_BROKEN,
-      message: 'retry stream request',
-    }));
-    generateMock
-      .mockResolvedValueOnce({
-        text: JSON.stringify([
-          '最近睡眠节律稳定吗？',
-          '户外活动还够吗？',
-          '敏感期要注意什么？',
-        ]),
-      })
-      .mockResolvedValueOnce({
-        text: 'cloud fallback reply',
-        finishReason: 'stop',
-        usage: {},
-        trace: {
-          routeDecision: 'cloud',
-          modelResolved: 'cloud/gpt-5.4',
-        },
-      });
-
-    renderAdvisorPage();
-
-    fireEvent.click(screen.getByRole('button', { name: /新对话/ }));
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('输入问题...')).toBeTruthy();
-    });
-    await waitFor(() => {
-      expect(generateMock).toHaveBeenCalledTimes(1);
-    });
-
-    fireEvent.change(screen.getByPlaceholderText('输入问题...'), {
-      target: { value: '最近睡眠怎么样？' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: '发送' }));
-
-    await waitFor(() => {
-      expect(streamMock).toHaveBeenCalledTimes(1);
-      expect(generateMock).toHaveBeenCalledTimes(2);
-    });
-
-    const streamInput = streamMock.mock.calls[0]?.[0] as {
-      route: string;
-      model: string;
-      connectorId?: string;
-    };
-    expect(streamInput.route).toBe('cloud');
-    expect(streamInput.model).toBe('gpt-5.4');
-    expect(streamInput.connectorId).toBe('connector-1');
-
-    const generateInput = generateMock.mock.calls[1]?.[0] as {
-      route: string;
-      model: string;
-      connectorId?: string;
-    };
-    expect(generateInput.route).toBe('cloud');
-    expect(generateInput.model).toBe('gpt-5.4');
-    expect(generateInput.connectorId).toBe('connector-1');
-    expect(warmLocalAssetMock).not.toHaveBeenCalled();
-
-    await waitFor(() => {
-      expect(screen.getByText('cloud fallback reply')).toBeTruthy();
-    });
-    expect(screen.queryByText(/已退回本地结构化事实/)).toBeNull();
+    expect(screen.queryByText(/local-app-operation-unavailable/)).toBeNull();
+    expect(screen.queryByText(/connect: connection refused/)).toBeNull();
   });
 
   it('renders conversation list and message content without raw UTC slices', async () => {
@@ -1029,14 +761,6 @@ describe('AdvisorPage', () => {
   });
 
   it('generates starter suggestions once runtime availability becomes ready', async () => {
-    generateMock.mockResolvedValue({
-      text: JSON.stringify([
-        '最近睡眠节律稳定吗？',
-        '户外活动还够吗？',
-        '敏感期要注意什么？',
-      ]),
-    });
-
     renderAdvisorPage();
 
     await act(async () => {
@@ -1044,7 +768,7 @@ describe('AdvisorPage', () => {
     });
 
     await waitFor(() => {
-      expect(generateMock).toHaveBeenCalledTimes(1);
+      expect(textGenerateMock).toHaveBeenCalledTimes(1);
     });
     await waitFor(() => {
       expect(screen.getByRole('button', { name: '最近睡眠节律稳定吗？' })).toBeTruthy();

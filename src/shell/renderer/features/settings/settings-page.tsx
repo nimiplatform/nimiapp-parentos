@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
@@ -16,8 +16,10 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Surface, SegmentedControl, buttonVariants, cn, nimiToast } from '@nimiplatform/kit/ui';
-import { useAppStore } from '../../app-shell/app-store.js';
+import type { NimiCurrentUserDisplay } from '@nimiplatform/sdk/app';
 import { seedMockData, type SeedProgress } from '../../infra/mock-seed.js';
+import { getParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import { probeParentosNimiAccess } from '../../infra/runtime-status.js';
 import {
   APP_LANGUAGE_LABELS,
   APP_LANGUAGES,
@@ -80,8 +82,7 @@ const infoCards = [
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
-  const authUser = useAppStore((s) => s.auth.user);
-  const authStatus = useAppStore((s) => s.auth.status);
+  const [currentUser, setCurrentUser] = useState<NimiCurrentUserDisplay | null>(null);
   const [languageSaving, setLanguageSaving] = useState(false);
   const [seedStatus, setSeedStatus] = useState<'idle' | 'seeding' | 'done' | 'error'>('idle');
   const [seedLabel, setSeedLabel] = useState('');
@@ -92,6 +93,26 @@ export default function SettingsPage() {
     label: APP_LANGUAGE_LABELS[language],
     disabled: languageSaving,
   }));
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const posture = await probeParentosNimiAccess();
+      if (posture.state !== 'ready') {
+        if (!cancelled) setCurrentUser(null);
+        return;
+      }
+      try {
+        const user = await getParentOSNimiClient().currentUser.get();
+        if (!cancelled) setCurrentUser(user);
+      } catch {
+        if (!cancelled) setCurrentUser(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleLanguageChange = async (value: string) => {
     const language = parseStoredAppLanguage(value);
@@ -124,17 +145,21 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-3xl px-6 pb-8 pt-[72px]">
         <h1 className="mb-6 text-2xl font-bold tracking-tight text-[var(--nimi-text-primary)]">{t('Settings.title')}</h1>
 
-        {authStatus === 'authenticated' && authUser ? (
+        {currentUser ? (
           <Surface tone="card" material="solid" elevation="base" padding="lg" className="mb-6 flex items-center gap-4 parentos-radius-xl p-5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_14%,var(--nimi-surface-card))] text-[var(--nimi-action-primary-bg)]">
-              <UserRound size={19} aria-hidden="true" />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_14%,var(--nimi-surface-card))] text-[var(--nimi-action-primary-bg)]">
+              {currentUser.avatarUrl ? (
+                <img src={currentUser.avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <UserRound size={19} aria-hidden="true" />
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="truncate text-[16px] font-semibold text-[var(--nimi-text-primary)]">
-                {authUser.displayName || t('Settings.account.unnamedUser')}
+                {currentUser.displayName || currentUser.handle || t('Settings.account.unnamedUser')}
               </h3>
-              {authUser.email ? (
-                <p className="mt-0.5 truncate text-[13px] text-[var(--nimi-text-muted)]">{authUser.email}</p>
+              {currentUser.handle ? (
+                <p className="mt-0.5 truncate text-[13px] text-[var(--nimi-text-muted)]">@{currentUser.handle}</p>
               ) : null}
               <p className="mt-1 text-[13px] leading-snug text-[var(--nimi-text-muted)]">
                 {t('Settings.account.managedByDesktop')}

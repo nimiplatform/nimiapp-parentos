@@ -1,24 +1,8 @@
-import type { NimiMessage } from '@nimiplatform/sdk/contracts';
 import {
-  runParentosMultimodalTextGenerate,
-  runParentosTextGenerate,
+  createParentosAISurfaceUnavailableError,
 } from '../settings/parentos-ai-runtime.js';
-import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import { isParentosAISurfaceExecutable } from '../settings/parentos-ai-surface-policy.js';
 import { i18nText } from '../../i18n/index.js';
-
-const PRIMARY_FDI = new Set([
-  '51', '52', '53', '54', '55',
-  '61', '62', '63', '64', '65',
-  '71', '72', '73', '74', '75',
-  '81', '82', '83', '84', '85',
-]);
-
-const PERMANENT_FDI = new Set([
-  '11', '12', '13', '14', '15', '16', '17', '18',
-  '21', '22', '23', '24', '25', '26', '27', '28',
-  '31', '32', '33', '34', '35', '36', '37', '38',
-  '41', '42', '43', '44', '45', '46', '47', '48',
-]);
 
 export type DentalToothType = 'primary' | 'permanent';
 
@@ -33,7 +17,7 @@ export interface DentalEruptionExtraction {
   warnings: string[];
 }
 
-type DentalScanErrorCode = 'invalid-json' | 'image-input-unsupported' | 'failed';
+type DentalScanErrorCode = 'surface-unavailable' | 'failed';
 
 class DentalScanError extends Error {
   constructor(readonly scanCode: DentalScanErrorCode, message: string) {
@@ -44,215 +28,22 @@ class DentalScanError extends Error {
 
 function dentalScanError(code: DentalScanErrorCode): DentalScanError {
   switch (code) {
-    case 'invalid-json':
-      return new DentalScanError(code, i18nText('DentalEruptionScan.error.invalidJson'));
-    case 'image-input-unsupported':
-      return new DentalScanError(code, i18nText('DentalEruptionScan.error.imageInputUnsupported'));
+    case 'surface-unavailable':
+      return new DentalScanError(code, i18nText('DentalEruptionScan.error.surfaceUnavailable'));
     case 'failed':
       return new DentalScanError(code, i18nText('DentalEruptionScan.error.failed'));
   }
 }
 
-function isValidToothId(value: string): value is string {
-  return PRIMARY_FDI.has(value) || PERMANENT_FDI.has(value);
-}
-
-function typeMatchesToothId(toothId: string, type: DentalToothType): boolean {
-  return type === 'primary' ? PRIMARY_FDI.has(toothId) : PERMANENT_FDI.has(toothId);
-}
-
-function parseExtractionPayload(payload: { teeth?: unknown; warnings?: unknown }): DentalEruptionExtraction {
-  if (!Array.isArray(payload.teeth)) {
-    throw new Error('dental scan response is missing a teeth array');
-  }
-
-  const seen = new Set<string>();
-  const candidates: DentalEruptionCandidate[] = [];
-
-  for (let index = 0; index < payload.teeth.length; index++) {
-    const item = payload.teeth[index];
-    if (!item || typeof item !== 'object') {
-      throw new Error(`dental scan tooth ${index + 1} is not an object`);
-    }
-    const raw = item as { toothId?: unknown; type?: unknown; status?: unknown; confidence?: unknown };
-    const status = String(raw.status ?? '').trim().toLowerCase();
-    if (status !== 'erupted') {
-      continue;
-    }
-    const toothId = String(raw.toothId ?? '').trim();
-    if (!isValidToothId(toothId)) {
-      continue;
-    }
-    const type = String(raw.type ?? '').trim().toLowerCase();
-    if (type !== 'primary' && type !== 'permanent') {
-      continue;
-    }
-    if (!typeMatchesToothId(toothId, type)) {
-      continue;
-    }
-    if (seen.has(toothId)) {
-      continue;
-    }
-    seen.add(toothId);
-    const confidenceRaw = Number(raw.confidence);
-    const confidence = Number.isFinite(confidenceRaw)
-      ? Math.min(Math.max(confidenceRaw, 0), 1)
-      : 0.5;
-    candidates.push({ toothId, type, confidence });
-  }
-
-  const warnings: string[] = [];
-  if (Array.isArray(payload.warnings)) {
-    for (const entry of payload.warnings) {
-      if (typeof entry === 'string' && entry.trim().length > 0) {
-        warnings.push(entry.trim());
-      }
-    }
-  }
-
-  return { candidates, warnings };
-}
-
-function extractJsonCandidates(raw: string): string[] {
-  const trimmed = raw.trim();
-  if (trimmed.length === 0) return [];
-
-  const seen = new Set<string>();
-  const out: string[] = [];
-  const push = (value: string) => {
-    const normalized = value.trim();
-    if (normalized.length === 0 || seen.has(normalized)) return;
-    seen.add(normalized);
-    out.push(normalized);
-  };
-
-  for (const match of trimmed.matchAll(/```(?:json)?\s*\n?([\s\S]*?)\n?```/gi)) {
-    push(match[1] ?? '');
-  }
-  push(trimmed);
-
-  const firstBrace = trimmed.indexOf('{');
-  const lastBrace = trimmed.lastIndexOf('}');
-  if (firstBrace >= 0 && lastBrace > firstBrace) {
-    push(trimmed.slice(firstBrace, lastBrace + 1));
-  }
-
-  return out;
-}
-
-function parseDentalEruptionExtraction(raw: string): DentalEruptionExtraction {
-  const candidates = extractJsonCandidates(raw);
-  let lastError: Error | null = null;
-
-  for (const candidate of candidates) {
-    try {
-      const payload = JSON.parse(candidate) as { teeth?: unknown; warnings?: unknown };
-      return parseExtractionPayload(payload);
-    } catch (error) {
-      if (error instanceof SyntaxError) continue;
-      lastError = error instanceof Error ? error : new Error(String(error));
-    }
-  }
-
-  if (lastError) throw lastError;
-  throw dentalScanError('invalid-json');
-}
-
-function buildScanPrompt(context: { ageMonths: number }): string {
-  const ageLabel = context.ageMonths < 24
-    ? `${context.ageMonths} months`
-    : `${Math.floor(context.ageMonths / 12)} years ${context.ageMonths % 12} months`;
-  return [
-    'You are a pediatric dentist assisting a parent-facing app.',
-    `The image shows a child's teeth. The child is ${ageLabel} old.`,
-    'The image may be: a panoramic dental X-ray, an intraoral photo, a smile photo, or an occlusal photo.',
-    'Task: list ONLY teeth that are clearly visible and fully or partially erupted in the oral cavity.',
-    '- Do NOT list teeth that are still inside the jaw bone (unerupted).',
-    '- Do NOT list teeth that are completely missing.',
-    '- Do NOT diagnose caries, fillings, alignment, or any medical condition.',
-    'Use FDI tooth numbering (ISO 3950). Primary teeth use 51-55, 61-65, 71-75, 81-85. Permanent teeth use 11-18, 21-28, 31-38, 41-48.',
-    'Quadrant reminder: from the viewer\'s perspective looking at the patient, upper-right quadrant uses 1x (primary 5x), upper-left uses 2x (primary 6x), lower-left uses 3x (primary 7x), lower-right uses 4x (primary 8x). Do not mirror the quadrants.',
-    'For each erupted tooth return an object with: toothId (string, FDI), type ("primary" or "permanent"), status (always "erupted" for the items you list), confidence (0.0-1.0).',
-    'If you are uncertain whether a crown belongs to a primary or permanent tooth, make your best determination from crown size, morphology, and the child\'s age; lower the confidence accordingly.',
-    'Return JSON only with no markdown, no prose, and no code fences. Use this exact schema:',
-    '{"teeth":[{"toothId":"11","type":"permanent","status":"erupted","confidence":0.9}],"warnings":["optional short note to the parent, e.g. image unclear or tilted"]}',
-    'If no erupted teeth can be confirmed, return {"teeth":[],"warnings":["..."]}.',
-  ].join('\n');
-}
-
-function buildScanInput(imageUrl: string, context: { ageMonths: number }): NimiMessage[] {
-  return [
-    {
-      role: 'user',
-      content: [
-        { type: 'text', text: buildScanPrompt(context) },
-        { type: 'data', data: { type: 'image-url', url: imageUrl, detail: 'high' } },
-      ],
-    },
-  ];
-}
-
-function buildRepairPrompt(raw: string): string {
-  return [
-    'Normalize the following dental scan extraction into strict JSON with no markdown.',
-    'Schema:',
-    '{"teeth":[{"toothId":"11","type":"primary|permanent","status":"erupted","confidence":0.0-1.0}],"warnings":["string"]}',
-    'Rules:',
-    '- Drop any tooth that is not clearly erupted.',
-    '- Drop any tooth whose toothId is not a valid FDI code.',
-    '- Do not invent teeth that are absent from the original output.',
-    '- If nothing can be reconstructed return {"teeth":[],"warnings":[]}.',
-    '',
-    'Raw output:',
-    raw.trim(),
-  ].join('\n');
-}
-
-async function repairDentalEruptionExtraction(input: {
-  raw: string;
-}): Promise<DentalEruptionExtraction> {
-  const repaired = await runParentosTextGenerate({
-    surfaceId: 'parentos.profile.dental-eruption-scan',
-    messages: [{ role: 'user', content: [{ type: 'text', text: buildRepairPrompt(input.raw) }] }],
-    defaults: { temperature: 0, maxTokens: 1200 },
-  });
-  if (!repaired.ok) {
-    throw new Error(repaired.error.message);
-  }
-  return parseDentalEruptionExtraction(repaired.text);
-}
-
-function isImageInputUnsupportedError(error: unknown): boolean {
-  const candidate = error as {
-    message?: unknown;
-    code?: unknown;
-    reasonCode?: unknown;
-    details?: { reasonCode?: unknown } | null;
-  };
-  const texts = [
-    candidate?.message,
-    candidate?.code,
-    candidate?.reasonCode,
-    candidate?.details?.reasonCode,
-  ]
-    .map((value) => String(value || '').trim().toUpperCase())
-    .filter(Boolean);
-  return texts.some((text) => text.includes('AI_MODALITY_NOT_SUPPORTED'));
-}
-
-function isStructuredParseError(error: Error): boolean {
-  return (error instanceof DentalScanError && error.scanCode === 'invalid-json')
-    || error.message.startsWith('dental scan');
+function isSurfaceNotAdmittedError(error: unknown): boolean {
+  return (error as { reasonCode?: unknown } | null)?.reasonCode === 'parentos-ai-surface-not-admitted';
 }
 
 export function normalizeDentalScanError(error: unknown): Error {
-  if (isImageInputUnsupportedError(error)) {
-    return dentalScanError('image-input-unsupported');
+  if (isSurfaceNotAdmittedError(error)) {
+    return dentalScanError('surface-unavailable');
   }
   if (error instanceof Error) {
-    if (isStructuredParseError(error)) {
-      return dentalScanError('invalid-json');
-    }
     return error;
   }
   return dentalScanError('failed');
@@ -263,7 +54,9 @@ export function getDentalScanDisplayMessage(error: unknown): string {
 }
 
 export async function hasDentalScanRuntime() {
-  return hasParentOSNimiClient();
+  // Vision/OCR has no admitted Nimi App Access operation; the entry stays
+  // visible but gated off with manual selection as the offered path.
+  return isParentosAISurfaceExecutable('parentos.profile.dental-eruption-scan');
 }
 
 export async function analyzeDentalEruptionImage(input: {
@@ -274,28 +67,7 @@ export async function analyzeDentalEruptionImage(input: {
   if (!imageUrl) {
     throw new Error('dental scan requires an imageUrl');
   }
-
-  try {
-    const output = await runParentosMultimodalTextGenerate({
-      surfaceId: 'parentos.profile.dental-eruption-scan',
-      capabilityId: 'text.generate.vision',
-      messages: buildScanInput(imageUrl, { ageMonths: input.ageMonths }),
-      defaults: { temperature: 0, maxTokens: 1200 },
-    });
-
-    try {
-      return parseDentalEruptionExtraction(output.text);
-    } catch (error) {
-      if (!(error instanceof DentalScanError) || error.scanCode !== 'invalid-json') {
-        throw error;
-      }
-      return await repairDentalEruptionExtraction({
-        raw: output.text,
-      });
-    }
-  } catch (error) {
-    throw normalizeDentalScanError(error);
-  }
+  throw createParentosAISurfaceUnavailableError('parentos.profile.dental-eruption-scan');
 }
 
 const QUADRANT_FLIP: Record<string, string> = {};

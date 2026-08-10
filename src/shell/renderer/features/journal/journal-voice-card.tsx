@@ -385,7 +385,7 @@ export function VoicePreviewPanel({
       ) : null}
 
       {voiceRuntimeAvailable === false ? (
-        <p className="text-center text-[12px] text-[var(--nimi-status-warning)]">
+        <p className="text-center text-[12px] text-[var(--nimi-text-muted)]">
           {i18nText('Journal.voiceCard.transcribeUnavailable')}
         </p>
       ) : null}

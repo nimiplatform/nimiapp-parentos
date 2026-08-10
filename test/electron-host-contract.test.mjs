@@ -16,6 +16,7 @@ test('ParentOS Electron combines the fixed local-app carrier with exact app-owne
 
   assert.match(main, /\bregisterNimiElectronAppBridge\b/u);
   assert.match(main, /--nimi-dev-renderer-url=/u);
+  assert.doesNotMatch(main, /\bonProtectedSessionFailure\b/u);
   assert.doesNotMatch(main, /\bcreateNimiElectronInstalledHost\b/u);
   assert.doesNotMatch(main, /\bNIMI_INSTALLED_NIMI_APP_STANDARD_SHELL_CAPABILITY_SET_ID\b/u);
   assert.match(main, /appCommandHandlers\s*:\s*createParentOSElectronCommandHandlers/u);
@@ -53,7 +54,7 @@ test('ParentOS Tauri exposes the local-app carrier and exact app-owned commands'
   assert.match(main, /sqlite::db_init/u);
   assert.match(main, /sqlite::queries::create_family/u);
   assert.match(main, /journal_audio::save_journal_voice_audio/u);
-  assert.match(main, /report_export::report_export_write_grant/u);
+  assert.match(main, /report_export::report_export_write_save_target/u);
   assert.doesNotMatch(main, /allow_data_root_in_asset_scope/u);
 });
 
@@ -82,22 +83,24 @@ test('all renderer-to-native media writes share bounded partition enforcement', 
   assert.match(boundary, /file_type\(\)\.is_symlink\(\)/u);
 });
 
-test('ParentOS manifest opts into the admitted Electron local-development profile', async () => {
+test('ParentOS manifest declares the standalone App Access contract', async () => {
   const manifest = await readProjectFile('nimi.app.yaml');
+  assert.match(manifest, /app_id:\s+nimi\.parentos/u);
+  assert.match(manifest, /profile:\s+standalone/u);
+  assert.match(manifest, /manifest_role:\s+submitted-input/u);
+  assert.match(manifest, /app_access:\s*\n\s+-\s+runtime\.consume/u);
   assert.match(manifest, /local_development:\s+electron:/u);
   assert.match(manifest, /renderer_origin:\s+http:\/\/127\.0\.0\.1:1426/u);
-  assert.match(manifest, /execution_profile_ref:\s+opaque:windows-native-electron-development-v1/u);
-  assert.match(manifest, /permissions:\s*\[\]/u);
-  assert.doesNotMatch(manifest, /declared_nimi_api_scopes|app-local-drafts/u);
+  assert.doesNotMatch(manifest, /permissions|execution_profile_ref|schema_version|declared_nimi_api_scopes|app-local-drafts/u);
 });
 
-test('ParentOS package scripts use the canonical Electron entry and preserve explicit Tauri access', async () => {
+test('ParentOS package scripts use the canonical Electron local-development entries', async () => {
   const packageJson = JSON.parse(await readProjectFile('package.json'));
   assert.equal(packageJson.scripts.dev, 'nimi-app dev --shell electron');
   assert.equal(packageJson.scripts['dev:shell'], 'nimi-app dev');
   assert.equal(packageJson.scripts['dev:renderer'], 'vite --host 127.0.0.1 --port 1426 --strictPort');
   assert.equal(packageJson.scripts['dev:electron'], 'nimi-app dev --shell electron');
-  assert.equal(packageJson.scripts['dev:tauri'], 'nimi-app dev --shell tauri');
+  assert.equal(packageJson.scripts['dev:tauri'], undefined);
 });
 
 test('Electron sidecar starts lazily for app-owned commands and preserves observability', async () => {

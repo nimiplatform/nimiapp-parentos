@@ -8,10 +8,10 @@ use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const MAX_REPORT_EXPORT_BYTES: usize = 60 * 1024 * 1024;
-const REPORT_SAVE_GRANT_TTL_MS: u128 = 5 * 60 * 1000;
+const REPORT_SAVE_TARGET_TTL_MS: u128 = 5 * 60 * 1000;
 
 #[derive(Debug, Clone)]
-struct ReportSaveTarget {
+struct PendingReportSaveTarget {
     path: PathBuf,
     display_path: String,
     expires_at_epoch_ms: u128,
@@ -19,14 +19,14 @@ struct ReportSaveTarget {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ReportSaveGrant {
+pub struct ReportSaveTarget {
     save_target_id: String,
     display_path: String,
 }
 
-static REPORT_SAVE_TARGETS: OnceLock<Mutex<HashMap<String, ReportSaveTarget>>> = OnceLock::new();
+static REPORT_SAVE_TARGETS: OnceLock<Mutex<HashMap<String, PendingReportSaveTarget>>> = OnceLock::new();
 
-fn save_targets() -> &'static Mutex<HashMap<String, ReportSaveTarget>> {
+fn save_targets() -> &'static Mutex<HashMap<String, PendingReportSaveTarget>> {
     REPORT_SAVE_TARGETS.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
@@ -53,11 +53,11 @@ fn filter_for_kind(kind: &str) -> (&'static str, &'static [&'static str]) {
 ///
 /// Returns `Ok(None)` if the user cancels.
 #[tauri::command]
-pub fn report_export_create_save_grant(
+pub fn report_export_create_save_target(
     default_filename: String,
     kind: String,
     title: Option<String>,
-) -> Result<Option<ReportSaveGrant>, String> {
+) -> Result<Option<ReportSaveTarget>, String> {
     let trimmed_filename = default_filename.trim();
     if trimmed_filename.is_empty() {
         return Err("default filename is required".to_string());
@@ -84,29 +84,29 @@ pub fn report_export_create_save_grant(
         .map_err(|error| error.to_string())?
         .insert(
             save_target_id.clone(),
-            ReportSaveTarget {
+            PendingReportSaveTarget {
                 path: target,
                 display_path: display_path.clone(),
-                expires_at_epoch_ms: current_epoch_millis() + REPORT_SAVE_GRANT_TTL_MS,
+                expires_at_epoch_ms: current_epoch_millis() + REPORT_SAVE_TARGET_TTL_MS,
             },
         );
-    Ok(Some(ReportSaveGrant {
+    Ok(Some(ReportSaveTarget {
         save_target_id,
         display_path,
     }))
 }
 
-/// Registers a native-host-selected report save target as a one-shot grant.
+/// Registers a native-host-selected report save target as a one-shot target.
 #[allow(dead_code)]
-pub fn register_report_save_grant(
+pub fn register_report_save_target(
     save_target_id: String,
     target: PathBuf,
     kind: String,
     display_path: Option<String>,
-) -> Result<ReportSaveGrant, String> {
-    let grant_id = save_target_id.trim().to_string();
-    if grant_id.is_empty() {
-        return Err("report save target grant id is required".to_string());
+) -> Result<ReportSaveTarget, String> {
+    let target_id = save_target_id.trim().to_string();
+    if target_id.is_empty() {
+        return Err("report save target id is required".to_string());
     }
     let target = ensure_kind_extension(target, kind.as_str())?;
     if !target.is_absolute() {
@@ -120,24 +120,24 @@ pub fn register_report_save_grant(
         .lock()
         .map_err(|error| error.to_string())?
         .insert(
-            grant_id.clone(),
-            ReportSaveTarget {
+            target_id.clone(),
+            PendingReportSaveTarget {
                 path: target,
                 display_path: display_path.clone(),
-                expires_at_epoch_ms: current_epoch_millis() + REPORT_SAVE_GRANT_TTL_MS,
+                expires_at_epoch_ms: current_epoch_millis() + REPORT_SAVE_TARGET_TTL_MS,
             },
         );
-    Ok(ReportSaveGrant {
-        save_target_id: grant_id,
+    Ok(ReportSaveTarget {
+        save_target_id: target_id,
         display_path,
     })
 }
 
 #[tauri::command]
-pub fn report_export_write_grant(
+pub fn report_export_write_save_target(
     save_target_id: String,
     base64_data: String,
-) -> Result<ReportSaveGrant, String> {
+) -> Result<ReportSaveTarget, String> {
     let bytes = BASE64_STANDARD
         .decode(base64_data.as_bytes())
         .map_err(|error| format!("invalid base64 payload: {error}"))?;
@@ -151,21 +151,21 @@ pub fn report_export_write_grant(
         ));
     }
 
-    let grant_id = save_target_id.trim().to_string();
+    let target_id = save_target_id.trim().to_string();
     let target = save_targets()
         .lock()
         .map_err(|error| error.to_string())?
-        .remove(&grant_id)
-        .ok_or_else(|| "report save target grant is missing or already consumed".to_string())?;
+        .remove(&target_id)
+        .ok_or_else(|| "report save target is missing or already consumed".to_string())?;
 
     if current_epoch_millis() > target.expires_at_epoch_ms {
-        return Err("report save target grant expired".to_string());
+        return Err("report save target expired".to_string());
     }
 
     atomic_write_report_export(&target.path, &bytes)?;
 
-    Ok(ReportSaveGrant {
-        save_target_id: grant_id,
+    Ok(ReportSaveTarget {
+        save_target_id: target_id,
         display_path: target.display_path,
     })
 }
@@ -253,14 +253,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn register_grant_rejects_wrong_extension_for_known_kind() {
+    fn register_save_target_rejects_wrong_extension_for_known_kind() {
         let target = std::env::temp_dir().join(format!(
             "parentos-report-wrong-extension-{}.txt",
             std::process::id()
         ));
 
-        let result = register_report_save_grant(
-            "wrong-extension-grant".to_string(),
+        let result = register_report_save_target(
+            "wrong-extension-target".to_string(),
             target,
             "pdf".to_string(),
             None,
@@ -268,13 +268,13 @@ mod tests {
 
         assert!(
             result.is_err(),
-            "report save grants must fail closed when the selected path extension does not match the report kind"
+            "report save targets must fail closed when the selected path extension does not match the report kind"
         );
     }
 
     #[test]
-    fn write_grant_rejects_expired_targets() {
-        let grant_id = format!("expired-grant-{}", std::process::id());
+    fn write_save_target_rejects_expired_targets() {
+        let target_id = format!("expired-target-{}", std::process::id());
         let target = std::env::temp_dir().join(format!(
             "parentos-expired-report-{}.pdf",
             std::process::id()
@@ -283,45 +283,45 @@ mod tests {
             .lock()
             .expect("report save target lock")
             .insert(
-                grant_id.clone(),
-                ReportSaveTarget {
+                target_id.clone(),
+                PendingReportSaveTarget {
                     path: target,
                     display_path: "expired-report.pdf".to_string(),
                     expires_at_epoch_ms: current_epoch_millis()
-                        .saturating_sub(REPORT_SAVE_GRANT_TTL_MS + 1),
+                        .saturating_sub(REPORT_SAVE_TARGET_TTL_MS + 1),
                 },
             );
 
         let payload = BASE64_STANDARD.encode(b"%PDF-1.7");
-        let result = report_export_write_grant(grant_id, payload);
+        let result = report_export_write_save_target(target_id, payload);
 
         assert!(
             result.is_err(),
-            "expired report save grants must not be accepted as reusable raw path authority"
+            "expired report save targets must not be accepted as reusable raw path authority"
         );
     }
 
     #[test]
-    fn write_grant_consumes_target_once_and_rejects_reuse() {
-        let grant_id = format!("one-shot-grant-{}", std::process::id());
+    fn write_save_target_consumes_target_once_and_rejects_reuse() {
+        let target_id = format!("one-shot-target-{}", std::process::id());
         let target = std::env::temp_dir().join(format!(
             "parentos-one-shot-report-{}.pdf",
             std::process::id()
         ));
         let _ = std::fs::remove_file(&target);
-        let grant = register_report_save_grant(
-            grant_id.clone(),
+        let registered = register_report_save_target(
+            target_id.clone(),
             target.clone(),
             "pdf".to_string(),
             Some("display-only-report.pdf".to_string()),
         )
-        .expect("register report save grant");
+        .expect("register report save target");
 
         let payload = BASE64_STANDARD.encode(b"%PDF-1.7 one shot");
-        let first = report_export_write_grant(grant.save_target_id.clone(), payload.clone())
-            .expect("first grant write succeeds");
-        let second = report_export_write_grant(grant.save_target_id, payload)
-            .expect_err("report save grant must be consumed after the first write");
+        let first = report_export_write_save_target(registered.save_target_id.clone(), payload.clone())
+            .expect("first save-target write succeeds");
+        let second = report_export_write_save_target(registered.save_target_id, payload)
+            .expect_err("report save target must be consumed after the first write");
 
         assert_eq!(first.display_path, "display-only-report.pdf");
         assert_eq!(
@@ -333,52 +333,52 @@ mod tests {
     }
 
     #[test]
-    fn write_grant_rejects_display_path_replay() {
-        let grant_id = format!("display-replay-grant-{}", std::process::id());
+    fn write_save_target_rejects_display_path_replay() {
+        let target_id = format!("display-replay-target-{}", std::process::id());
         let target = std::env::temp_dir().join(format!(
             "parentos-display-replay-report-{}.pdf",
             std::process::id()
         ));
-        let grant = register_report_save_grant(
-            grant_id,
+        let registered = register_report_save_target(
+            target_id,
             target,
             "pdf".to_string(),
             Some("display-only-report.pdf".to_string()),
         )
-        .expect("register report save grant");
+        .expect("register report save target");
 
-        let result = report_export_write_grant(
-            grant.display_path.clone(),
+        let result = report_export_write_save_target(
+            registered.display_path.clone(),
             BASE64_STANDARD.encode(b"%PDF-1.7"),
         );
 
         assert!(
             result.is_err(),
-            "displayPath must not replay as raw path or grant authority"
+            "displayPath must not replay as raw path or save-target authority"
         );
     }
 
     #[test]
-    fn write_grant_rejects_oversized_payload_before_consuming_target() {
-        let grant_id = format!("oversized-grant-{}", std::process::id());
+    fn write_save_target_rejects_oversized_payload_before_consuming_target() {
+        let target_id = format!("oversized-target-{}", std::process::id());
         let target = std::env::temp_dir().join(format!(
             "parentos-oversized-report-{}.pdf",
             std::process::id()
         ));
-        let grant = register_report_save_grant(grant_id, target.clone(), "pdf".to_string(), None)
-            .expect("register report save grant");
+        let registered = register_report_save_target(target_id, target.clone(), "pdf".to_string(), None)
+            .expect("register report save target");
         let payload = BASE64_STANDARD.encode(vec![b'a'; MAX_REPORT_EXPORT_BYTES + 1]);
 
-        let result = report_export_write_grant(grant.save_target_id.clone(), payload);
+        let result = report_export_write_save_target(registered.save_target_id.clone(), payload);
         let second_try =
-            report_export_write_grant(grant.save_target_id, BASE64_STANDARD.encode(b"%PDF-1.7"));
+            report_export_write_save_target(registered.save_target_id, BASE64_STANDARD.encode(b"%PDF-1.7"));
 
         assert!(result
             .expect_err("oversized payload must fail")
             .contains("exceeds"));
         assert!(
             second_try.is_ok(),
-            "oversized payload rejection must not consume the host-owned save grant"
+            "oversized payload rejection must not consume the host-owned save target"
         );
         let _ = std::fs::remove_file(&target);
     }

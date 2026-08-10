@@ -5,12 +5,12 @@
  * on click, not after a multi-second render):
  *
  *   1. Rust opens the native rfd save dialog and returns a one-shot
- *      save target grant (or null on cancel).
+ *      save target (or null on cancel).
  *   2. The renderer then captures the article DOM with `html-to-image`
  *      (SVG <foreignObject> + native browser paint — supports modern
  *      CSS like var(), color-mix(), oklch()) and, for PDF, wraps the
  *      bitmap in an A4 jsPDF document.
- *   3. Rust writes the bytes by consuming the one-shot grant picked in
+ *   3. Rust writes the bytes by consuming the one-shot target picked in
  *      step 1.
  *
  * window.print() is intentionally avoided: under the Tauri WebView on
@@ -63,25 +63,25 @@ export interface ExportResult {
 
 type SaveKind = 'pdf' | 'png' | 'csv';
 
-type ReportSaveGrant = {
+type ReportSaveTarget = {
   saveTargetId: string;
   displayPath: string;
 };
 
-async function createReportSaveGrant(
+async function createReportSaveTarget(
   defaultFilename: string,
   kind: SaveKind,
   title: string,
-): Promise<ReportSaveGrant | null> {
-  return invoke<ReportSaveGrant | null>('report_export_create_save_grant', {
+): Promise<ReportSaveTarget | null> {
+  return invoke<ReportSaveTarget | null>('report_export_create_save_target', {
     defaultFilename,
     kind,
     title,
   });
 }
 
-async function writeReportGrant(saveTargetId: string, base64Data: string): Promise<ReportSaveGrant> {
-  return invoke<ReportSaveGrant>('report_export_write_grant', { saveTargetId, base64Data });
+async function writeReportSaveTarget(saveTargetId: string, base64Data: string): Promise<ReportSaveTarget> {
+  return invoke<ReportSaveTarget>('report_export_write_save_target', { saveTargetId, base64Data });
 }
 
 /**
@@ -97,10 +97,10 @@ export async function saveTextFileViaDialog(params: {
   kind: SaveKind;
   title: string;
 }): Promise<string | null> {
-  const grant = await createReportSaveGrant(params.defaultFilename, params.kind, params.title);
+  const grant = await createReportSaveTarget(params.defaultFilename, params.kind, params.title);
   if (!grant) return null;
   const base64Data = await blobToBase64(new Blob([params.text]));
-  const saved = await writeReportGrant(grant.saveTargetId, base64Data);
+  const saved = await writeReportSaveTarget(grant.saveTargetId, base64Data);
   return saved.displayPath;
 }
 
@@ -454,12 +454,12 @@ export async function exportReportAsImage(
   }
 
   const filename = options.filename ?? `growth-report-${formatTimestamp(new Date())}.png`;
-  const grant = await createReportSaveGrant(filename, 'png', i18nText('Reports.export.saveImageTitle'));
+  const grant = await createReportSaveTarget(filename, 'png', i18nText('Reports.export.saveImageTitle'));
   if (!grant) return { savedPath: null, filename };
 
   const canvas = await renderTargetToCanvas(target, options);
   const base64Data = canvasToPngBase64(canvas);
-  const saved = await writeReportGrant(grant.saveTargetId, base64Data);
+  const saved = await writeReportSaveTarget(grant.saveTargetId, base64Data);
   return { savedPath: saved.displayPath, filename };
 }
 
@@ -478,7 +478,7 @@ export async function exportReportAsPdf(
   }
 
   const filename = options.filename ?? `growth-report-${formatTimestamp(new Date())}.pdf`;
-  const grant = await createReportSaveGrant(filename, 'pdf', i18nText('Reports.export.savePdfTitle'));
+  const grant = await createReportSaveTarget(filename, 'pdf', i18nText('Reports.export.savePdfTitle'));
   if (!grant) return { savedPath: null, filename };
 
   const canvas = await renderTargetToCanvas(target, options);
@@ -503,6 +503,6 @@ export async function exportReportAsPdf(
 
   const pdfBlob = pdf.output('blob');
   const base64Data = await blobToBase64(pdfBlob);
-  const saved = await writeReportGrant(grant.saveTargetId, base64Data);
+  const saved = await writeReportSaveTarget(grant.saveTargetId, base64Data);
   return { savedPath: saved.displayPath, filename };
 }

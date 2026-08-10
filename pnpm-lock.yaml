@@ -125,8 +125,8 @@ importers:
         specifier: link:../../nimi/kit/shell/protected-local-node/npm/win32-x64
         version: link:../../nimi/kit/shell/protected-local-node/npm/win32-x64
       '@nimiplatform/nimi-coding':
-        specifier: 0.4.0
-        version: 0.4.0
+        specifier: 0.5.0
+        version: 0.5.0
       '@tailwindcss/vite':
         specifier: ^4.3.0
         version: 4.3.0(vite@7.3.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
@@ -831,8 +831,8 @@ packages:
     resolution: {integrity: sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q==}
     engines: {node: '>= 10.0.0'}
 
-  '@nimiplatform/nimi-coding@0.4.0':
-    resolution: {integrity: sha512-RcggO2CRWCvpqhxUe83rk5TKGOp9PDg0qeypIvgdlCPh8qhrDYZaxuZER4RUNa+2F02HkDlr4iXLCiDwZKPYJw==}
+  '@nimiplatform/nimi-coding@0.5.0':
+    resolution: {integrity: sha512-eI44+u8Divp9MccuIjMSL9ONdDeaaOn3RivT16a7deX3sfVCRP60Zof3lkyMYaODLcFfHu8NrdJxDzjkeK6iTw==}
     engines: {node: '>=24.0.0', pnpm: '>=10.0.0'}
     hasBin: true
 
@@ -4533,7 +4533,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@nimiplatform/nimi-coding@0.4.0':
+  '@nimiplatform/nimi-coding@0.5.0':
     dependencies:
       yaml: 2.9.0
 

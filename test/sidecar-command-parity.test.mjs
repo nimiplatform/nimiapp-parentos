@@ -6,11 +6,11 @@ import { test } from 'node:test';
 const repoRoot = process.cwd();
 const ELECTRON_NATIVE_APP_COMMANDS = new Set([
   'pick_image_files_as_base64',
-  'report_export_create_save_grant',
+  'report_export_create_save_target',
 ]);
 const INTERNAL_SIDECAR_COMMANDS = new Set([
   'dropped_file_read_image_files_as_base64',
-  'report_export_register_save_grant',
+  'report_export_register_save_target',
 ]);
 
 function readRepoFile(path) {

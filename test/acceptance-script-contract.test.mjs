@@ -4,7 +4,6 @@ import test from 'node:test';
 
 const acceptanceScripts = [
   'scripts/acceptance-electron.mjs',
-  'scripts/acceptance-tauri.mjs',
 ];
 
 test('live acceptance verifies ParentOS app-owned product bootstrap end to end', async () => {
@@ -20,32 +19,30 @@ test('live acceptance verifies ParentOS app-owned product bootstrap end to end',
   }
 });
 
-test('live acceptance verifies Desktop-supervised local-app carriers and direct Runtime denial', async () => {
+test('live acceptance verifies the supervised App Access contract and denial boundaries', async () => {
   const electronSource = await readFile('scripts/acceptance-electron.mjs', 'utf8');
   assert.match(electronSource, /@nimiplatform['"], 'app-tools'|@nimiplatform.*app-tools/su, 'Electron acceptance must launch through the official app-tools entry');
   assert.match(electronSource, /'dev', '--shell', 'electron'/u, 'Electron acceptance must request the Electron supervisor plan');
-  assert.match(electronSource, /NIMI_LOCAL_AGENT_PRODUCT_ZHIYU_CDP_PORT/u, 'Electron acceptance must bind to the existing Desktop checkpoint observation port');
-  assert.match(electronSource, /requires the checkpoint CDP port/u, 'Electron acceptance must fail closed without an observable supervised host');
+  assert.match(electronSource, /NIMI_PARENTOS_ELECTRON_ACCEPTANCE_CDP_PORT/u, 'Electron acceptance must allow pinning the supervised observation port');
+  assert.match(electronSource, /--cdp-port/u, 'Electron acceptance must request an explicit CDP port from the supervisor');
   assert.match(electronSource, /local-app\.sessionStatus/u, 'Electron acceptance must prove a bound local-app session');
-  assert.match(electronSource, /local-app\.permissionStatus/u, 'Electron acceptance must inspect canonical public permission posture');
-  assert.match(electronSource, /reservedPermissionId = ['"]agents\.interact/u, 'Electron acceptance must use a canonical permission id');
-  assert.match(electronSource, /baseEntitlementWriteResult\.ok, true/u, 'Electron acceptance must prove app-private JSON needs no prompt');
-  assert.doesNotMatch(electronSource, /permission approval required|deniedBeforeGrant|grantedWrite|deniedAfterRevoke/iu, 'Electron acceptance must not recreate the retired storage grant flow');
-
-  const tauriSource = await readFile('scripts/acceptance-tauri.mjs', 'utf8');
-  assert.match(tauriSource, /local-app\.sessionStatus/u, 'official Tauri dev must probe the supervised local-app carrier');
-  assert.match(tauriSource, /local-app\.permissionStatus/u, 'official Tauri dev must inspect canonical public permission posture');
-  assert.match(tauriSource, /baseEntitlementWriteResult\.ok, true/u, 'official Tauri dev must prove app-private JSON needs no prompt');
-
-  for (const scriptPath of acceptanceScripts) {
-    const source = scriptPath.endsWith('tauri.mjs') ? tauriSource : electronSource;
-    assert.match(source, /runtime\.unary/u, `${scriptPath} must attempt direct Runtime access`);
-    assert.match(source, /directRuntimeResult\.ok, false/u, `${scriptPath} must require direct Runtime denial`);
-    assert.match(source, /appDomainResult\.ok, true/u, `${scriptPath} must require app-owned data success`);
-    assert.match(source, /invokeBridge\(page, ['"]get_family['"]/u, `${scriptPath} must probe local data admission`);
-    assert.match(source, /auth(?:\.session\.load|_session_load)/u, `${scriptPath} must test a concrete account-session command`);
-    assert.match(source, /probe command must be concrete/u, `${scriptPath} must reject undefined acceptance probes`);
-  }
+  assert.match(electronSource, /local-app\.aiConfigGet/u, 'Electron acceptance must read the app-owned AIConfig');
+  assert.match(electronSource, /local-app\.aiConfigOverwrite/u, 'Electron acceptance must declare the portable AIConfig intent');
+  assert.match(electronSource, /local-app\.textGenerateCandidate/u, 'Electron acceptance must exercise the declared runtime.consume domain');
+  assert.match(electronSource, /local-app\.realmWorldCoreList/u, 'Electron acceptance must probe an undeclared App Access domain');
+  assert.match(electronSource, /local-app-access-denied/u, 'Electron acceptance must assert the typed denial for undeclared domains');
+  assert.match(electronSource, /appStorageWriteResult\.ok, true/u, 'Electron acceptance must prove app-private JSON storage works without App Access domains');
+  assert.match(electronSource, /runtime\.unary/u, 'Electron acceptance must attempt direct Runtime access');
+  assert.match(electronSource, /directRuntimeResult\.ok, false/u, 'Electron acceptance must require direct Runtime denial');
+  assert.match(electronSource, /appDomainResult\.ok, true/u, 'Electron acceptance must require app-owned data success');
+  assert.match(electronSource, /invokeBridge\(page, ['"]get_family['"]/u, 'Electron acceptance must probe local data admission');
+  assert.match(electronSource, /auth\.session\.load/u, 'Electron acceptance must test a concrete account-session command');
+  assert.match(electronSource, /probe command must be concrete/u, 'Electron acceptance must reject undefined acceptance probes');
+  assert.doesNotMatch(
+    electronSource,
+    /permissionStatus|reservedPermissionId|permission approval required|deniedBeforeGrant|grantedWrite|deniedAfterRevoke|base_entitlement|baseEntitlement|agents\.interact/iu,
+    'Electron acceptance must not retain the retired permission platform vocabulary',
+  );
 });
 
 test('live acceptance records desktop, narrow, accessibility, overflow, and console evidence', async () => {

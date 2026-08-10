@@ -18,8 +18,9 @@ describe('ParentOS local-app authority hardcut', () => {
     const manifest = readFileSync(manifestPath, 'utf8');
     expect(manifest).toContain('app_id: nimi.parentos');
     expect(manifest).toContain('manifest_role: submitted-input');
-    expect(manifest).toMatch(/permissions:\s*\[\]/u);
-    expect(manifest).not.toContain('declared_nimi_api_scopes');
+    expect(manifest).toContain('profile: standalone');
+    expect(manifest).toContain('app_access:');
+    expect(manifest).not.toMatch(/permissions|execution_profile_ref|declared_nimi_api_scopes/u);
   });
 
   it('hydrates app-owned data without constructing a protected Runtime client', () => {

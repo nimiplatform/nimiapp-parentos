@@ -1,7 +1,7 @@
 import {
-  runParentosSpeechTranscribe,
+  createParentosAISurfaceUnavailableError,
 } from '../settings/parentos-ai-runtime.js';
-import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import { isParentosAISurfaceExecutable } from '../settings/parentos-ai-surface-policy.js';
 
 export interface VoiceObservationTranscription {
   transcript: string;
@@ -13,18 +13,11 @@ export interface VoiceObservationTranscription {
   };
 }
 
-function toArtifactMetadata(
-  artifacts: ReadonlyArray<{ artifactId?: string; mimeType?: string; displayName?: string }> | undefined,
-) {
-  return Array.isArray(artifacts) ? artifacts.map((artifact) => ({
-    artifactId: artifact.artifactId,
-    mimeType: artifact.mimeType,
-    displayName: artifact.displayName,
-  })) : [];
-}
-
+// Speech transcription has no admitted Nimi App Access operation (the unary
+// text surface carries no audio channel). Recording and playback stay fully
+// local; only the transcribe action is gated off as a typed product gap.
 export async function hasVoiceTranscriptionRuntime() {
-  return hasParentOSNimiClient();
+  return isParentosAISurfaceExecutable('parentos.journal.voice-observation');
 }
 
 export async function transcribeVoiceObservation(input: {
@@ -35,34 +28,8 @@ export async function transcribeVoiceObservation(input: {
   if (!mimeType) {
     throw new Error('voice observation transcription requires a mimeType');
   }
-
-  const audioBytes = new Uint8Array(await input.audioBlob.arrayBuffer());
-  if (audioBytes.length === 0) {
+  if (input.audioBlob.size === 0) {
     throw new Error('voice observation transcription requires audio bytes');
   }
-
-  const output = await runParentosSpeechTranscribe({
-    surfaceId: 'parentos.journal.voice-observation',
-    audioBytes,
-    mimeType,
-    defaults: {
-      language: 'zh-CN',
-      responseFormat: 'text',
-    },
-  });
-
-  const transcript = output.text.trim();
-  if (!transcript) {
-    throw new Error('runtime speechTranscribe output is missing transcript text');
-  }
-
-  return {
-    transcript,
-    artifacts: toArtifactMetadata(output.artifacts),
-    trace: {
-      traceId: output.trace.traceId,
-      modelResolved: output.trace.modelResolved,
-      routeDecision: output.trace.routeDecision,
-    },
-  };
+  throw createParentosAISurfaceUnavailableError('parentos.journal.voice-observation');
 }

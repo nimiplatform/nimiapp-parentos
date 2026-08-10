@@ -53,7 +53,7 @@ describe('check-parentos-ai-boundary', () => {
         },
         {
           path: '/repo/src/shell/renderer/features/profile/checkup-ocr.ts',
-          content: 'parseOCRMeasurementExtraction(output.text); runParentosMultimodalTextGenerate({ surfaceId: \'parentos.profile.checkup-ocr\', messages:[{ role:"user", content:[{ type: \'data\', data: { type: \'image-url\', url: imageUrl }}]}] });',
+          content: "parseOCRMeasurementExtraction(raw); throw createParentosAISurfaceUnavailableError('parentos.profile.checkup-ocr');",
         },
         {
           path: '/repo/src/shell/renderer/features/profile/medical-events-page-insights.ts',
@@ -65,11 +65,7 @@ describe('check-parentos-ai-boundary', () => {
         },
         {
           path: '/repo/src/shell/renderer/features/profile/medical-events-page-form-state.ts',
-          content: [
-            'JSON.parse(output.text);',
-            "const image = { type: 'image-url', imageUrl };",
-            "runParentosMultimodalTextGenerate({ surfaceId: 'parentos.medical.ocr-intake' });",
-          ].join('\n'),
+          content: "setOcrError(i18nText('MedicalEvents.form.ocrRuntimeUnavailable'));",
         },
       ],
     });
@@ -111,7 +107,7 @@ describe('check-parentos-ai-boundary', () => {
         'appendAdvisorSources',
         "surfaceId: 'parentos.advisor'",
         'contextSnapshot: snapshotJson',
-        'streamParentosTextGenerate',
+        'runParentosTextGenerate',
         'buildAdvisorRuntimeInput(',
         'shouldAppendAdvisorSources(',
         '运行时响应触发了安全过滤',
@@ -128,24 +124,43 @@ describe('check-parentos-ai-boundary', () => {
     expect(errors).toEqual([]);
   });
 
-  it('requires governed runtime helpers to own binding, warmup, metadata, and fallback policy', () => {
+  it('requires the unary text-candidate helper with budget guards and no legacy surfaces', () => {
     const errors = findRuntimeHelperBoundaryErrors([
       'export async function runParentosTextGenerate',
-      'export async function streamParentosTextGenerate',
-      'resolveParentosTextRuntimeConfig(input.surfaceId',
-      'ensureParentosLocalRuntimeReady({',
-      'createNimiRuntimeAIModel({',
-      'runNimiTextGenerate({',
-      'streamNimiTextResponse({',
-      'metadata: toParentosCoreMetadata(input.surfaceId',
-      'FallbackPolicy.DENY',
-      'export async function runParentosSpeechTranscribe',
-      'resolveParentosSpeechTranscribeRuntimeConfig(input.surfaceId',
-      'scenarioType: ScenarioType.SPEECH_TRANSCRIBE',
-      'metadata: buildParentosRuntimeMetadata(input.surfaceId)',
+      'getParentOSNimiClient().ai.text.generateCandidate({',
+      'isParentosAISurfaceExecutable(input.surfaceId)',
+      'export function createParentosAISurfaceUnavailableError',
+      'MAX_CANDIDATE_MESSAGES',
+      'MAX_CANDIDATE_MESSAGE_BYTES',
+      'MAX_CANDIDATE_PROMPT_BYTES',
+      'MAX_CANDIDATE_TOKENS',
+      'parentos-ai-input-over-budget',
+      'parentos-ai-message-role-unsupported',
     ].join('\n'));
 
     expect(errors).toEqual([]);
+  });
+
+  it('flags legacy first-party execution surfaces in the runtime helper', () => {
+    const errors = findRuntimeHelperBoundaryErrors([
+      'export async function runParentosTextGenerate',
+      'getParentOSNimiClient().ai.text.generateCandidate({',
+      'isParentosAISurfaceExecutable(input.surfaceId)',
+      'export function createParentosAISurfaceUnavailableError',
+      'MAX_CANDIDATE_MESSAGES',
+      'MAX_CANDIDATE_MESSAGE_BYTES',
+      'MAX_CANDIDATE_PROMPT_BYTES',
+      'MAX_CANDIDATE_TOKENS',
+      'parentos-ai-input-over-budget',
+      'parentos-ai-message-role-unsupported',
+      'streamNimiTextResponse({',
+      'runtime.ai.executeScenario(',
+    ].join('\n'));
+
+    expect(errors).toEqual(expect.arrayContaining([
+      'parentos-ai-runtime.ts must not retain legacy runtime surface: streamNimiTextResponse',
+      'parentos-ai-runtime.ts must not retain legacy runtime surface: executeScenario',
+    ]));
   });
 
   it('flags settings/privacy drift when cloud controls remain exposed', () => {
@@ -157,12 +172,14 @@ describe('check-parentos-ai-boundary', () => {
           content: "value: 'cloud'\nConnector ID\nroute、model 和 connector",
         },
       ],
-      aiConfigSource: "surfaceId: 'advisor'",
+      aiConfigSource: "scopeRef: { ownerId: 'nimi.parentos' }, connectorId: 'openai-main'",
     });
 
     expect(errors).toEqual(expect.arrayContaining([
       "AI settings must stay local-only while privacy copy says no cloud upload (value: 'cloud' in src/shell/renderer/features/settings/ai-settings-page.tsx)",
-      'ParentOS AI config scope must be app-wide (surfaceId: parentos.ai)',
+      'ParentOS AI config must declare the portable text.generate capability intent',
+      'ParentOS AI config must not carry custody material: connectorId',
+      'ParentOS AI config must not carry custody material: ownerId',
     ]));
   });
 

@@ -8,14 +8,14 @@ import {
   getFamily,
 } from '../bridge/sqlite-bridge.js';
 import { mapChildRow } from '../bridge/mappers.js';
-import { loadPersistedParentosAIConfig } from '../features/settings/parentos-ai-config.js';
+import { ensureParentosAIConfigDeclared } from '../features/settings/parentos-ai-config.js';
 import { loadAndApplyPersistedAppLanguage } from '../i18n/app-language.js';
 import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
-import { setParentOSNimiClient } from './parentos-nimi-client.js';
+import { createParentOSNimiClient, setParentOSNimiClient } from './parentos-nimi-client.js';
 
 // ParentOS owns its SQLite, media, settings, and product commands. The native
 // host binds those surfaces to fixed OS app-data roots and the exact renderer;
-// no Nimi permission or generic Runtime client participates in local hydration.
+// Nimi App Access posture never participates in local hydration.
 const ACTIVE_CHILD_SETTING_KEYS = ['activeChildId', 'inspection:last-active-child-id'] as const;
 
 let bootstrapPromise: Promise<void> | null = null;
@@ -57,7 +57,22 @@ async function doRunParentOSBootstrap(): Promise<void> {
   store.setBootstrapError(null);
   store.setBootstrapFailure(null);
   store.clearAuthSession();
-  setParentOSNimiClient(null);
+  // Nimi access is established independently from app-owned data hydration:
+  // client creation is side-effect free and never blocks local bootstrap.
+  setParentOSNimiClient(createParentOSNimiClient());
+  // The app-owned AI capability intent is declared opportunistically and never
+  // gates local data; failure leaves a typed posture for surfaces to render.
+  void ensureParentosAIConfigDeclared().then((declaration) => {
+    if (declaration.state !== 'declared') {
+      logRendererEvent({
+        level: 'warn',
+        area: 'bootstrap.ai-config',
+        message: 'action:ai-config-declaration-unavailable',
+        flowId,
+        details: { reasonCode: declaration.reasonCode },
+      });
+    }
+  });
 
   try {
     await loadLocalData();
@@ -107,14 +122,9 @@ async function loadLocalData(): Promise<void> {
   store.clearLocalData();
 
   // The current ParentOS product is local-first. Its database is scoped to the
-  // OS app-data root, not to a Nimi account or permission decision.
+  // OS app-data root, not to a Nimi account or App Access decision.
   await dbInit(null);
   await loadAndApplyPersistedAppLanguage();
-
-  const persistedAIConfig = await loadPersistedParentosAIConfig();
-  if (persistedAIConfig) {
-    useAppStore.getState().setAIConfig(persistedAIConfig);
-  }
 
   const persistedActiveChildId = await loadPersistedActiveChildId();
   const persistedActiveChild = persistedActiveChildId

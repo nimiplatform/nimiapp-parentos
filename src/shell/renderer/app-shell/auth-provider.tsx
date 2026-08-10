@@ -58,11 +58,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               <InlineAlert role="alert" tone="warning" icon={<LockKeyhole size={17} aria-hidden="true" />}>
                 <div className="min-w-0 space-y-1">
                   <p className="font-semibold">{i18nText('Auth.bootstrapFailure.localDataLocked')}</p>
-                  <p className="break-words text-xs opacity-80">
-                    {i18nText('Auth.bootstrapFailure.reasonCode')}: {bootstrapFailure.reasonCode}
-                  </p>
                 </div>
               </InlineAlert>
+
+              <details className="rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
+                <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
+                  {i18nText('Auth.bootstrapFailure.technicalDetails')}
+                </summary>
+                <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">
+                  {i18nText('Auth.bootstrapFailure.reasonCode')}: {bootstrapFailure.reasonCode}
+                </p>
+              </details>
 
               <div className="rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">

@@ -1,188 +1,89 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { NimiAIConfig } from '@nimiplatform/sdk/ai';
 
-const { getAppSettingMock, setAppSettingMock } = vi.hoisted(() => ({
-  getAppSettingMock: vi.fn(),
-  setAppSettingMock: vi.fn(),
-}));
+const getParentOSNimiClientMock = vi.fn();
+const hasParentOSNimiClientMock = vi.fn();
 
-vi.mock('../../bridge/sqlite-bridge.js', () => ({
-  getAppSetting: getAppSettingMock,
-  setAppSetting: setAppSettingMock,
+vi.mock('../../infra/parentos-nimi-client.js', () => ({
+  getParentOSNimiClient: () => getParentOSNimiClientMock(),
+  hasParentOSNimiClient: () => hasParentOSNimiClientMock(),
 }));
 
 import {
-  PARENTOS_AI_SCOPE_REF,
-  loadPersistedParentosAIConfig,
-  parsePersistedParentosAIConfig,
-  savePersistedParentosAIConfig,
+  ensureParentosAIConfigDeclared,
+  parentosDeclaredAIConfigIntents,
+  readParentosAIConfig,
 } from './parentos-ai-config.js';
 
-describe('ParentOS app-owned AI configuration', () => {
+function clientWithAIConfig(aiConfig: { get: ReturnType<typeof vi.fn>; overwrite: ReturnType<typeof vi.fn> }) {
+  return { aiConfig };
+}
+
+describe('ParentOS portable AIConfig intent', () => {
   beforeEach(() => {
-    getAppSettingMock.mockReset().mockResolvedValue(null);
-    setAppSettingMock.mockReset().mockResolvedValue(undefined);
+    getParentOSNimiClientMock.mockReset();
+    hasParentOSNimiClientMock.mockReset().mockReturnValue(true);
   });
 
-  it('normalizes a persisted ParentOS AI config payload', () => {
-    const parsed = parsePersistedParentosAIConfig(JSON.stringify({
-      scopeRef: PARENTOS_AI_SCOPE_REF,
-      capabilities: {
-        logicalModelIds: {
-          'text.generate': 'gpt-5.4',
-          'text.generate.vision': 'gpt-5.4-vision',
-        },
-        selectedComponents: {},
-        targetRefs: {
-          'text.generate': {
-            kind: 'cloud-connector',
-            connectorId: 'connector-1',
-            remoteModelCatalogId: 'remote-catalog:connector-1:gpt-5.4',
-            providerModelId: 'gpt-5.4',
-            provider: 'openai',
-          },
-          'text.generate.vision': {
-            kind: 'cloud-connector',
-            connectorId: 'connector-vision',
-            remoteModelCatalogId: 'remote-catalog:connector-vision:gpt-5.4-vision',
-            providerModelId: 'gpt-5.4-vision',
-            provider: 'openai',
-          },
-          'audio.transcribe': null,
-        },
-        selectedParams: {
-          'text.generate': { temperature: 0.2 },
-        },
+  it('declares exactly one local text capability intent without custody material', () => {
+    const intents = parentosDeclaredAIConfigIntents();
+    expect(intents).toEqual([
+      {
+        capabilityContract: 'text.generate',
+        requiredFeatures: [],
+        route: { oneofKind: 'local', local: {} },
       },
-      profileOrigin: {
-        profileId: 'profile-1',
-        title: 'Recommended',
-        appliedAt: '2026-04-10T09:00:00.000Z',
-      },
-    }));
+    ]);
+    const serialized = JSON.stringify(intents);
+    expect(serialized).not.toMatch(/connectorId|connectorGrantId|profileBindingId|readinessRef|ownerId|account/u);
+  });
 
-    expect(parsed).toEqual({
-      scopeRef: PARENTOS_AI_SCOPE_REF,
-      capabilities: {
-        logicalModelIds: {
-          'text.generate': 'gpt-5.4',
-          'text.generate.vision': 'gpt-5.4-vision',
-        },
-        selectedComponents: {},
-        targetRefs: {
-          'text.generate': expect.objectContaining({
-            kind: 'cloud-connector',
-            connectorId: 'connector-1',
-            remoteModelCatalogId: 'remote-catalog:connector-1:gpt-5.4',
-            providerModelId: 'gpt-5.4',
-            provider: 'openai',
-          }),
-          'text.generate.vision': expect.objectContaining({
-            kind: 'cloud-connector',
-            connectorId: 'connector-vision',
-            remoteModelCatalogId: 'remote-catalog:connector-vision:gpt-5.4-vision',
-            providerModelId: 'gpt-5.4-vision',
-            provider: 'openai',
-          }),
-        },
-        selectedParams: {
-          'text.generate': { temperature: 0.2 },
-        },
-      },
-      profileOrigin: {
-        profileId: 'profile-1',
-        title: 'Recommended',
-        appliedAt: '2026-04-10T09:00:00.000Z',
-      },
+  it('reports unavailable when the shell bridge is absent', async () => {
+    hasParentOSNimiClientMock.mockReturnValue(false);
+    await expect(ensureParentosAIConfigDeclared()).resolves.toEqual({
+      state: 'unavailable',
+      reasonCode: 'nimi-shell-runtime-bridge-unavailable',
     });
   });
 
-  it('rejects retired local target ids while parsing ParentOS AI config', () => {
-    expect(parsePersistedParentosAIConfig(JSON.stringify({
-      scopeRef: PARENTOS_AI_SCOPE_REF,
-      capabilities: {
-        logicalModelIds: { 'text.generate': 'gpt-5.4' },
-        selectedComponents: {},
-        targetRefs: {
-          'text.generate': {
-            kind: 'local-runtime',
-            targetId: 'local-qwen',
-            profileId: 'runtime-baseline:ready',
-          },
-        },
-        selectedParams: {},
-      },
-      profileOrigin: null,
-    }))).toBeNull();
+  it('overwrites only when the text capability is not yet declared', async () => {
+    const get = vi.fn().mockResolvedValue({ owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } }, capabilities: [] });
+    const overwrite = vi.fn().mockResolvedValue({});
+    getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get, overwrite }));
+
+    await expect(ensureParentosAIConfigDeclared()).resolves.toEqual({ state: 'declared' });
+    expect(overwrite).toHaveBeenCalledWith(parentosDeclaredAIConfigIntents());
   });
 
-  it('preserves canonical cloud bindings while parsing', () => {
-    const parsed = parsePersistedParentosAIConfig(JSON.stringify({
-      scopeRef: PARENTOS_AI_SCOPE_REF,
-      capabilities: {
-        logicalModelIds: { 'text.generate': 'gpt-5.4' },
-        selectedComponents: {},
-        targetRefs: {
-          'text.generate': {
-            kind: 'cloud-connector',
-            connectorId: 'openai-main',
-            remoteModelCatalogId: 'remote-catalog:openai-main:gpt-5.4',
-            providerModelId: 'gpt-5.4',
-          },
-        },
-        selectedParams: {},
-      },
-      profileOrigin: null,
-    }));
+  it('never clobbers an existing text capability declaration', async () => {
+    const get = vi.fn().mockResolvedValue({
+      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
+      capabilities: [{ capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: {} } }],
+    });
+    const overwrite = vi.fn();
+    getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get, overwrite }));
 
-    expect(parsed?.capabilities.targetRefs['text.generate']).toEqual({
-      kind: 'cloud-connector',
-      connectorId: 'openai-main',
-      remoteModelCatalogId: 'remote-catalog:openai-main:gpt-5.4',
-      providerModelId: 'gpt-5.4',
+    await expect(ensureParentosAIConfigDeclared()).resolves.toEqual({ state: 'declared' });
+    expect(overwrite).not.toHaveBeenCalled();
+  });
+
+  it('maps typed failures to a bounded unavailable declaration', async () => {
+    const get = vi.fn().mockRejectedValue(Object.assign(new Error('denied'), { reasonCode: 'local-app-access-denied' }));
+    getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get, overwrite: vi.fn() }));
+
+    await expect(ensureParentosAIConfigDeclared()).resolves.toEqual({
+      state: 'unavailable',
+      reasonCode: 'local-app-access-denied',
     });
   });
 
-  it('loads app-owned AI preferences without a Nimi permission decision', async () => {
-    getAppSettingMock.mockResolvedValue(JSON.stringify({
-      scopeRef: PARENTOS_AI_SCOPE_REF,
-      capabilities: { targetRefs: {}, selectedParams: {} },
-      profileOrigin: null,
-    }));
+  it('reads back the declared config when ready', async () => {
+    const config = {
+      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
+      capabilities: [{ capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: {} } }],
+    };
+    const get = vi.fn().mockResolvedValue(config);
+    getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get, overwrite: vi.fn() }));
 
-    await expect(loadPersistedParentosAIConfig()).resolves.toEqual({
-      scopeRef: PARENTOS_AI_SCOPE_REF,
-      capabilities: { logicalModelIds: {}, targetRefs: {}, selectedComponents: {}, selectedParams: {} },
-      profileOrigin: null,
-    });
-    expect(getAppSettingMock).toHaveBeenCalledWith('parentos:ai-config:v1');
-  });
-
-  it('validates and persists AI preferences in ParentOS SQLite', async () => {
-    const input = {
-      scopeRef: PARENTOS_AI_SCOPE_REF,
-      capabilities: {
-        logicalModelIds: { 'audio.transcribe': 'whisper-large-v3' },
-        targetRefs: {
-          'audio.transcribe': {
-            kind: 'local-runtime',
-            version: 'v2',
-            profileBindingId: 'local-runtime:whisper-large-v3',
-          },
-        },
-        selectedComponents: {},
-        selectedParams: {},
-      },
-      profileOrigin: null,
-    } satisfies NimiAIConfig;
-
-    await expect(savePersistedParentosAIConfig(input)).resolves.toEqual(input);
-    expect(setAppSettingMock).toHaveBeenCalledWith(
-      'parentos:ai-config:v1',
-      JSON.stringify(input),
-      expect.any(String),
-    );
-    await expect(savePersistedParentosAIConfig({} as NimiAIConfig))
-      .rejects.toThrow('ParentOS AI config is invalid');
+    await expect(readParentosAIConfig()).resolves.toEqual({ state: 'ready', config });
   });
 });

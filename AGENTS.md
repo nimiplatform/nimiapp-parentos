@@ -14,11 +14,12 @@
 
 | Layer | Technology | Location |
 |-------|-----------|----------|
-| Desktop shell | Tauri 2 | `src-tauri/` |
+| Desktop shell | Electron (admitted Nimi local-development carrier) | `src-electron/` |
+| Legacy shell | Tauri 2 (builds and cargo tests stay green; not an admitted Nimi local-development carrier — its Nimi integration is deferred) | `src-tauri/` |
 | Frontend | React 19 + Vite 7 + Tailwind 4 | `src/shell/renderer/` |
 | Local storage | SQLite (rusqlite, bundled) | `src-tauri/src/sqlite/` |
-| AI | nimi runtime (`runtime.ai.text.generate`) | via `@nimiplatform/sdk` |
-| UI components | `@nimiplatform/kit` | npm dependency |
+| AI | Nimi App Access `runtime.ai.text-candidate.generate` (unary, declared via `app_access: [runtime.consume]` in `nimi.app.yaml`) | via `@nimiplatform/sdk/app` |
+| UI components | `@nimiplatform/kit` | link dependency |
 | State | Zustand | `app-shell/app-store.ts` |
 | Charts | recharts | growth curves |
 | Dev port | 1426 | vite.config.ts |
@@ -109,6 +110,7 @@ Two-layer model (boundary: whether individual data inference is involved):
 - Data anomaly → describe objective data + "建议咨询专业人士", no causal interpretation.
 - Domains marked `needs-review` in `data/structured/parentos/knowledge-source-readiness.yaml` must not enter Phase 1 free-form prompt.
 - AI boundary authority lives in `.nimi/spec/parentos/canonical/advisor.authority.yaml` for advisor/reports, `.nimi/spec/parentos/canonical/profile.authority.yaml` for profile-local AI summaries and OCR-assisted extraction, `.nimi/spec/parentos/canonical/journal.authority.yaml` for journal AI tagging/STT, and `data/structured/parentos/knowledge-source-readiness.yaml` for reviewed-domain gates. `definition.parentos.project.authority-boundary` defines the v2 authority boundary; no legacy guide is active authority.
+- Platform-contract reality (2026-08): the App Access contract admits unary text generation only. Vision/OCR (`parentos.profile.checkup-ocr`, `parentos.profile.dental-eruption-scan`, `parentos.medical.ocr-intake`) and STT (`parentos.journal.voice-observation`) surfaces are gated off as typed product gaps — entries stay visible with info-tone unavailable copy; never substitute a self-built channel.
 
 ### Nurture Mode Boundary
 - P0 reminders are ALWAYS `push` in ALL modes. No exceptions.
@@ -171,7 +173,8 @@ Skip: `node_modules/`, `dist/`, `src-tauri/target/`, `src-tauri/gen/`, lockfiles
 - JSON serialized as TEXT in SQLite.
 - `childId` is the primary filter for most queries.
 - ESM imports use `.js` extension even for `.ts` files.
-- Tauri host glue is consumed from `@nimiplatform/kit` (`kit/shell/tauri/`).
+- `@nimiplatform/sdk`, `@nimiplatform/kit`, `@nimiplatform/app-tools` are consumed as `link:` dependencies into the sibling platform checkout (`../../nimi/**`), resolving package `exports` to built `dist/` (never source aliases). After pulling platform changes or on a fresh checkout, run `pnpm prepare:workspace-surfaces` once to rebuild those dist artifacts; it is also chained into `pnpm build`.
+- Tauri host glue (`nimi-shell-tauri` path crate) still builds, but Tauri is not an admitted Nimi local-development carrier; `pnpm dev` is Electron-only (`nimi-app dev --shell electron`).
 
 <!-- nimicoding:managed:agents:start -->
 # Nimi Coding Managed Block

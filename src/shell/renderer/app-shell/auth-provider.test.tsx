@@ -31,7 +31,6 @@ describe('AuthProvider app-owned data bootstrap', () => {
       familyId: null,
       children: [],
       activeChildId: null,
-      aiConfig: null,
     });
   });
 
@@ -61,7 +60,10 @@ describe('AuthProvider app-owned data bootstrap', () => {
 
     const failure = screen.getByTestId('parentos-bootstrap-failure');
     expect(failure.getAttribute('data-bootstrap-state')).toBe(state);
-    expect(screen.getByRole('alert').textContent).toContain(`test-${state}`);
+    // Machine codes stay out of the primary alert; they live in the collapsed
+    // technical-details region only.
+    expect(screen.getByRole('alert').textContent).not.toContain(`test-${state}`);
+    expect(failure.querySelector('details')?.textContent).toContain(`test-${state}`);
     expect((screen.getByTestId('parentos-app-data-locked') as HTMLButtonElement).disabled).toBe(true);
     expect(screen.queryByText('APP_CONTENT')).toBeNull();
   });

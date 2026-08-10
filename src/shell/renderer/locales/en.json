@@ -7,56 +7,19 @@
     "logoAlt": "ParentOS logo"
   },
   "Auth": {
-    "clickToAuthorize": "Click to authorize in browser",
     "launchEnter": "Enter ParentOS",
-    "desktopLogoIdleHint": "Click to authorize and enter ParentOS",
-    "signinTagline": "The AI operating system for your child's growth",
-    "desktopAuthFailed": "Authorization failed. Click logo to retry.",
-    "currentAccount": "Current account",
-    "authorizeDesktopButton": "Authorize desktop",
-    "useAnotherAccount": "Use another account",
-    "nimiNetwork": "NIMI PLATFORM",
-    "authorizing": "Authorizing...",
-    "comingSoon": "Coming soon",
-    "emailNotRegistered": "Email not registered",
-    "registerConfirmHint": "Would you like to register a new account with this email?",
-    "cancel": "Cancel",
-    "confirmRegister": "Confirm registration",
-    "alternative": "Other login methods",
-    "emailPlaceholder": "Enter email address",
-    "chooseAlternative": "Choose another login method",
-    "web3": "Web3 Wallet",
-    "useEmailCodeInstead": "Use email code instead",
-    "passwordPlaceholder": "Enter password",
-    "otpConfirmMessage": "A verification code will be sent to your email",
-    "confirmOtp": "Send code",
-    "setPasswordHint": "Set a password to protect your account",
-    "passwordMinChars": "At least 8 characters",
-    "confirmPasswordPlaceholder": "Confirm password",
-    "settingPassword": "Setting...",
-    "setPasswordButton": "Set password",
-    "otpSentTo": "Verification code sent to",
-    "verifying": "Verifying...",
-    "verifyAndContinue": "Verify and continue",
-    "resendIn": "Resend in {{count}}s",
-    "resendCode": "Resend code",
-    "twoFaHint": "Enter your two-factor authentication code",
-    "verifyAndLogin": "Verify and login",
-    "selectWalletHint": "Select a wallet to connect",
-    "desktopLogoHint": "Authorization failed. Click the logo to retry.",
-    "desktopAuthOpen": "Browser opened. Complete authorization on the web page.",
-    "desktopAuthSuccess": "Web authorization succeeded. Signed in.",
     "bootstrapFailure": {
       "eyebrow": "ParentOS local data",
       "localDataLocked": "The app-owned local database could not be opened",
       "reasonCode": "Reason",
+      "technicalDetails": "Technical details",
       "nextStep": "Next step",
       "localDataButton": "Local data unavailable",
       "retry": "Try again",
       "states": {
         "app-data-unavailable": {
           "title": "ParentOS local data is unavailable",
-          "description": "The native ParentOS host could not open its fixed OS app-data directory. This is an app-host failure, not a Nimi permission decision.",
+          "description": "The native ParentOS host could not open its fixed OS app-data directory. This is an app-host failure, independent of Nimi App Access posture.",
           "action": "Restart ParentOS. In development, build the ParentOS host sidecar before trying again."
         },
         "app-data-repair-required": {
@@ -106,9 +69,6 @@
     },
     "account": {
       "unnamedUser": "Unnamed user",
-      "logout": "Log out",
-      "loggingOut": "Logging out...",
-      "logoutFailed": "Log out failed",
       "managedByDesktop": "Sign-in and account switching are managed by Nimi Desktop."
     },
     "language": {
@@ -131,8 +91,8 @@
         "desc": "View and manage custom reminder frequencies"
       },
       "ai": {
-        "label": "AI model settings",
-        "desc": "Configure models for chat, transcription, and other AI capabilities"
+        "label": "AI Settings",
+        "desc": "Nimi access posture and AI capability declarations."
       }
     },
     "nurtureMode": {
@@ -638,55 +598,46 @@
   },
   "AISettings": {
     "page": {
-      "backToSettings": "Back to settings",
-      "title": "AI model settings",
-      "boundCount": "{{configured}} / {{total}} bound",
-      "capabilityTitle": "ParentOS AI capabilities",
-      "capabilityDescription": "The runtime route catalog owns model sources. ParentOS stores only capability bindings.",
-      "refreshRuntime": "Refresh runtime status"
+      "backToSettings": "Back to Settings",
+      "title": "AI Settings",
+      "subtitle": "Nimi access posture and AI capability declarations. Model routing is managed by the platform.",
+      "refreshRuntime": "Refresh status"
     },
-    "availability": {
-      "checking": "Checking runtime",
-      "connected": "Runtime connected",
-      "notConnected": "Runtime not connected",
-      "routeSnapshotUnavailable": "Route snapshot unavailable",
-      "daemonHint": "Nimi runtime daemon was not detected. Start the runtime before using the model selector.",
-      "routeSnapshotFailed": "Failed to read runtime route snapshot: {{detail}}.",
-      "daemonBanner": "Runtime is not connected, so model selection is unavailable. Start nimi runtime.{{detail}}",
-      "routeSnapshotBanner": "Failed to read runtime route snapshot. {{detail}}"
+    "posture": {
+      "checking": "Checking…",
+      "ready": "Connected",
+      "unavailable": "Unavailable",
+      "actionRequired": "Action required",
+      "bridgeAbsent": "Not running inside the Nimi desktop environment"
+    },
+    "access": {
+      "title": "Nimi Access",
+      "description": "AI capabilities are provided through the Nimi runtime; losing access never affects local data.",
+      "technicalDetails": "Technical details"
+    },
+    "declared": {
+      "title": "AI Capability Declarations",
+      "description": "Capability intents ParentOS declares to the platform.",
+      "empty": "No capabilities declared yet.",
+      "declareNow": "Declare text generation capability",
+      "routeLocal": "Local route",
+      "routeCloud": "Cloud route"
+    },
+    "features": {
+      "title": "Feature Availability",
+      "description": "Feature status under the current platform contract.",
+      "available": "Available",
+      "unavailable": "Unavailable",
+      "advisor": "Growth advisor",
+      "report": "Report narrative",
+      "journalTagging": "Journal smart tagging",
+      "profileSummary": "Profile smart summary",
+      "medicalInsights": "Medical event insights",
+      "ocrIntake": "Report image recognition",
+      "voiceTranscribe": "Voice transcription"
     },
     "runtime": {
-      "imageInputUnsupported": "The AI recognition model is not configured. Choose a vision-capable model for Recognition in AI Settings and try again.",
-      "visionCapability": "AI recognition",
-      "speechCapability": "Speech transcription",
-      "textCapability": "AI chat",
-      "modelMissing": "ParentOS {{capabilityLabel}} model is not configured. Choose a model for {{surfaceId}} in AI Settings first."
-    },
-    "capability": {
-      "textGenerateLabel": "AI chat",
-      "textGenerateDetail": "Used for growth questions, journal tagging, and analysis report generation",
-      "textGenerateVisionLabel": "AI recognition",
-      "textGenerateVisionDetail": "Used for image recognition of optometry, axial length, and checkup reports",
-      "audioTranscribeLabel": "Speech transcription",
-      "audioTranscribeDetail": "Used for voice observation records",
-      "runtimeNotReady": "Runtime not ready",
-      "runtimeUnavailable": "Runtime unavailable",
-      "needsBinding": "Needs binding",
-      "bound": "Bound",
-      "missingBinding": "Missing model binding",
-      "modelConfigured": "Model configured",
-      "bootstrapNotReady": "ParentOS bootstrap has not completed.",
-      "capabilityNotConfigured": "{{label}} is not configured"
-    },
-    "card": {
-      "notBound": "Not bound",
-      "saveFailed": "Failed to save AI configuration",
-      "saving": "Saving...",
-      "chooseModel": "Choose runtime model",
-      "runtimeNotReady": "Runtime not ready",
-      "params": "Params",
-      "customized": "Customized",
-      "clearBinding": "Clear binding"
+      "imageInputUnsupported": "Image or attachment input is not supported in this version."
     }
   },
   "HealthCapture": {
@@ -867,8 +818,7 @@
     "title": "AI tooth eruption recognition",
     "subtitle": "Supports panoramic dental images, intraoral photos, and bite photos. AI recognition is for reference only; follow a clinician's diagnosis.",
     "error": {
-      "invalidJson": "AI recognition returned an incomplete result format. Try again or use a clearer photo.",
-      "imageInputUnsupported": "The current AI chat model does not support image recognition. Switch to a vision-capable model in AI Settings and try again.",
+      "surfaceUnavailable": "AI recognition is unavailable in this version. Use manual entry instead.",
       "failed": "AI recognition failed. Try again."
     },
     "tooth": {
@@ -2725,9 +2675,7 @@
       "high": "High"
     },
     "form": {
-      "ocrRuntimeUnavailable": "AI runtime is unavailable. Confirm it is running.",
-      "ocrNoValidInfo": "No valid information could be recognized from the image.",
-      "ocrFailed": "Recognition failed. Try again.",
+      "ocrRuntimeUnavailable": "Smart recognition is unavailable: this version does not support image input. Fill in manually.",
       "titleRequired": "Enter a diagnosis or symptom.",
       "dateRequired": "Select the event date.",
       "saveFailed": "Save failed: {{message}}",

@@ -1,9 +1,7 @@
-import type { NimiMessage } from '@nimiplatform/sdk/contracts';
 import {
-  runParentosMultimodalTextGenerate,
-  runParentosTextGenerate,
+  createParentosAISurfaceUnavailableError,
 } from '../settings/parentos-ai-runtime.js';
-import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import { isParentosAISurfaceExecutable } from '../settings/parentos-ai-surface-policy.js';
 import type { GrowthTypeId } from '../../knowledge-base/gen/growth-standards.gen.js';
 
 const SUPPORTED_IMPORT_TYPES = [
@@ -57,8 +55,8 @@ export interface OCRMeasurementExtraction {
 
 const SUPPORTED_IMPORT_TYPE_SET = new Set<OCRImportTypeId>(SUPPORTED_IMPORT_TYPES);
 const CHECKUP_OCR_INVALID_JSON_MESSAGE = '\u667a\u80fd\u8bc6\u522b\u8fd4\u56de\u7684\u7ed3\u679c\u683c\u5f0f\u4e0d\u5b8c\u6574\uff0c\u8bf7\u91cd\u8bd5\u6216\u6362\u4e00\u5f20\u66f4\u6e05\u6670\u7684\u62a5\u544a\u56fe\u3002';
-const CHECKUP_OCR_IMAGE_INPUT_UNSUPPORTED_MESSAGE = '\u5f53\u524d AI \u5bf9\u8bdd\u6a21\u578b\u4e0d\u652f\u6301\u56fe\u7247\u8bc6\u522b\uff0c\u8bf7\u5728 AI \u8bbe\u7f6e\u4e2d\u5207\u6362\u5230\u652f\u6301\u89c6\u89c9\u8f93\u5165\u7684\u6a21\u578b\u540e\u91cd\u8bd5\u3002';
 const CHECKUP_OCR_FAILED_MESSAGE = '\u667a\u80fd\u8bc6\u522b\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5\u3002';
+const CHECKUP_OCR_UNAVAILABLE_MESSAGE = '\u667a\u80fd\u8bc6\u522b\u6682\u4e0d\u53ef\u7528\uff1a\u5f53\u524d\u7248\u672c\u4e0d\u652f\u6301\u56fe\u7247\u8bc6\u522b\uff0c\u8bf7\u4f7f\u7528\u624b\u52a8\u5f55\u5165\u3002';
 
 function isOCRImportTypeId(value: string): value is OCRImportTypeId {
   return SUPPORTED_IMPORT_TYPE_SET.has(value as OCRImportTypeId);
@@ -176,89 +174,12 @@ function parseOCRMeasurementExtraction(raw: string): OCRMeasurementExtraction {
   throw new Error(CHECKUP_OCR_INVALID_JSON_MESSAGE);
 }
 
-function buildOCRPrompt(): string {
-  const supportedTypeIds = SUPPORTED_IMPORT_TYPES.join('|');
-  return [
-    'You are extracting structured pediatric growth measurements from a health-sheet image.',
-    'Return JSON only with no markdown, no prose, and no code fences.',
-    'Use this exact schema:',
-    `{"measurements":[{"typeId":"${supportedTypeIds}","value":123.4,"measuredAt":"YYYY-MM-DD","notes":"optional short extraction note or null"}]}`,
-    'Rules:',
-    '- Extract only values explicitly visible in the image.',
-    '- Do not infer missing measurements.',
-    '- Map OD/right/R/\u53f3\u773c to *-right and OS/left/L/\u5de6\u773c to *-left.',
-    '- Common eye-sheet aliases include SPH, CYL, AXIS, VA, corrected VA, AL/AXL, IOP, K1, K2, K avg/KM, ACD, and LT.',
-    '- Do not output diagnosis, ranking, treatment, percentile, or advice.',
-    '- If no supported measurement is visible, return {"measurements":[]}.',
-  ].join('\n');
-}
-
-function buildOCRInput(imageUrl: string): NimiMessage[] {
-  return [
-    {
-      role: 'user',
-      content: [
-        { type: 'text', text: buildOCRPrompt() },
-        { type: 'data', data: { type: 'image-url', url: imageUrl, detail: 'high' } },
-      ],
-    },
-  ];
-}
-
 export function parseCheckupOCRResponse(raw: string) {
   return parseOCRMeasurementExtraction(raw.trim());
 }
 
-function buildOCRRepairPrompt(raw: string): string {
-  const supportedTypeIds = SUPPORTED_IMPORT_TYPES.join('|');
-  return [
-    'Normalize this OCR extraction into strict JSON.',
-    'Return JSON only with no markdown, no prose, and no code fences.',
-    'Use this exact schema:',
-    `{"measurements":[{"typeId":"${supportedTypeIds}","value":123.4,"measuredAt":"YYYY-MM-DD","notes":"optional short extraction note or null"}]}`,
-    'Rules:',
-    '- Use only values explicitly present in the OCR text below.',
-    '- Drop any item if side, supported type, numeric value, or measuredAt cannot be determined explicitly.',
-    '- Map OD/right/R/\u53f3\u773c to *-right and OS/left/L/\u5de6\u773c to *-left.',
-    '- Common eye-sheet aliases include SPH, CYL, AXIS, VA, corrected VA, AL/AXL, IOP, K1, K2, K avg/KM, ACD, and LT.',
-    '- If no supported measurement can be reconstructed, return {"measurements":[]}.',
-    '',
-    'Raw OCR output:',
-    raw.trim(),
-  ].join('\n');
-}
-
-async function repairOCRMeasurementExtraction(input: {
-  raw: string;
-}): Promise<OCRMeasurementExtraction> {
-  const repaired = await runParentosTextGenerate({
-    surfaceId: 'parentos.profile.checkup-ocr',
-    messages: [{ role: 'user', content: [{ type: 'text', text: buildOCRRepairPrompt(input.raw) }] }],
-    defaults: { temperature: 0, maxTokens: 800 },
-  });
-  if (!repaired.ok) {
-    throw new Error(repaired.error.message);
-  }
-
-  return parseOCRMeasurementExtraction(repaired.text);
-}
-
-function isImageInputUnsupportedError(error: unknown): boolean {
-  const candidate = error as {
-    message?: unknown;
-    code?: unknown;
-    reasonCode?: unknown;
-    details?: { reasonCode?: unknown } | null;
-  };
-  const texts = [
-    candidate?.message,
-    candidate?.code,
-    candidate?.reasonCode,
-    candidate?.details?.reasonCode,
-  ]
-    .map((value) => String(value || '').trim().toUpperCase())
-    .filter(Boolean);
-  return texts.some((text) => text.includes('AI_MODALITY_NOT_SUPPORTED'));
+function isSurfaceNotAdmittedError(error: unknown): boolean {
+  return (error as { reasonCode?: unknown } | null)?.reasonCode === 'parentos-ai-surface-not-admitted';
 }
 
 function isStructuredOCRParseError(error: Error): boolean {
@@ -269,8 +190,8 @@ function isStructuredOCRParseError(error: Error): boolean {
 }
 
 export function normalizeCheckupOCRError(error: unknown): Error {
-  if (isImageInputUnsupportedError(error)) {
-    return new Error(CHECKUP_OCR_IMAGE_INPUT_UNSUPPORTED_MESSAGE);
+  if (isSurfaceNotAdmittedError(error)) {
+    return new Error(CHECKUP_OCR_UNAVAILABLE_MESSAGE);
   }
   if (error instanceof Error) {
     if (isStructuredOCRParseError(error)) {
@@ -286,7 +207,9 @@ export function getCheckupOCRDisplayMessage(error: unknown): string {
 }
 
 export async function hasCheckupOCRRuntime() {
-  return hasParentOSNimiClient();
+  // Vision/OCR has no admitted Nimi App Access operation; the entry stays
+  // visible but gated off with manual entry as the offered path.
+  return isParentosAISurfaceExecutable('parentos.profile.checkup-ocr');
 }
 
 export async function analyzeCheckupSheetOCR(input: {
@@ -296,29 +219,7 @@ export async function analyzeCheckupSheetOCR(input: {
   if (!imageUrl) {
     throw new Error('checkup OCR requires an imageUrl');
   }
-
-  try {
-    const output = await runParentosMultimodalTextGenerate({
-      surfaceId: 'parentos.profile.checkup-ocr',
-      capabilityId: 'text.generate.vision',
-      messages: buildOCRInput(imageUrl),
-      defaults: { temperature: 0, maxTokens: 800 },
-    });
-
-    try {
-      return parseOCRMeasurementExtraction(output.text);
-    } catch (error) {
-      if (!(error instanceof Error) || error.message !== CHECKUP_OCR_INVALID_JSON_MESSAGE) {
-        throw error;
-      }
-
-      return await repairOCRMeasurementExtraction({
-        raw: output.text,
-      });
-    }
-  } catch (error) {
-    throw normalizeCheckupOCRError(error);
-  }
+  throw createParentosAISurfaceUnavailableError('parentos.profile.checkup-ocr');
 }
 
 export function readImageFileAsDataUrl(file: File): Promise<string> {

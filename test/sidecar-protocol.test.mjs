@@ -288,7 +288,7 @@ test('parentos_host sidecar protocol reaches sqlite host core and rejects unsafe
     const exportRoot = path.join(storageRoot, 'exports with spaces');
     await mkdir(exportRoot, { recursive: true });
     const directTarget = path.join(exportRoot, 'direct-write.pdf');
-    const directAbsoluteWrite = await expectErr(commandBody('report_export_write_grant', {
+    const directAbsoluteWrite = await expectErr(commandBody('report_export_write_save_target', {
       saveTargetId: directTarget,
       base64Data: Buffer.from('%PDF-1.7 direct').toString('base64'),
     }));
@@ -297,7 +297,7 @@ test('parentos_host sidecar protocol reaches sqlite host core and rejects unsafe
     await assertPathMissing(directTarget);
 
     const grantedTarget = path.join(exportRoot, 'granted-report.pdf');
-    const grant = await expectResult(commandBody('report_export_register_save_grant', {
+    const grant = await expectResult(commandBody('report_export_register_save_target', {
       saveTargetId: 'grant-sidecar-1',
       path: grantedTarget,
       kind: 'pdf',
@@ -306,7 +306,7 @@ test('parentos_host sidecar protocol reaches sqlite host core and rejects unsafe
     assert.deepEqual(Object.keys(grant).sort(), ['displayPath', 'saveTargetId']);
     assert.equal(grant.displayPath, 'display-only-report.pdf');
 
-    const written = await expectResult(commandBody('report_export_write_grant', {
+    const written = await expectResult(commandBody('report_export_write_save_target', {
       saveTargetId: grant.saveTargetId,
       base64Data: Buffer.from('%PDF-1.7 granted').toString('base64'),
     }));
@@ -314,14 +314,14 @@ test('parentos_host sidecar protocol reaches sqlite host core and rejects unsafe
     assert.equal(written.displayPath, 'display-only-report.pdf');
     assert.equal((await readFile(grantedTarget, 'utf8')), '%PDF-1.7 granted');
 
-    const reusedGrant = await expectErr(commandBody('report_export_write_grant', {
+    const reusedGrant = await expectErr(commandBody('report_export_write_save_target', {
       saveTargetId: grant.saveTargetId,
       base64Data: Buffer.from('%PDF-1.7 reuse').toString('base64'),
     }));
     assert.equal(reusedGrant.reasonCode, 'parentos-sidecar-command-failed');
     assert.match(reusedGrant.details.cause, /missing|consumed/u);
 
-    const displayPathReplay = await expectErr(commandBody('report_export_write_grant', {
+    const displayPathReplay = await expectErr(commandBody('report_export_write_save_target', {
       saveTargetId: grant.displayPath,
       base64Data: Buffer.from('%PDF-1.7 replay').toString('base64'),
     }));

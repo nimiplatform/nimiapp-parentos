@@ -69,20 +69,6 @@
   color: color-mix(in srgb, var(--nimi-text-muted) 70%, transparent);
 }
 
-.parentos-ai-capability-card {
-  border: 1px solid color-mix(in srgb, var(--nimi-border-subtle) 74%, transparent);
-  background: color-mix(in srgb, var(--nimi-surface-card) 94%, var(--nimi-surface-panel));
-}
-
-.parentos-ai-params-panel {
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--nimi-text-primary) 4%, transparent);
-}
-
-.parentos-ai-params-panel :where(label, .text-slate-700, .text-slate-600) {
-  color: var(--nimi-text-secondary) !important;
-  letter-spacing: 0 !important;
-}
-
 .parentos-ai-params-panel :where(.text-slate-500, .text-slate-400) {
   color: var(--nimi-text-muted) !important;
   letter-spacing: 0 !important;

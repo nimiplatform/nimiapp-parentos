@@ -10,7 +10,7 @@ const PARENTOS_SIDECAR_COMMANDS = [
   'save_journal_photo',
   'save_child_avatar',
   'delete_journal_photo',
-  'report_export_write_grant',
+  'report_export_write_save_target',
   'create_family',
   'get_family',
   'get_child',
@@ -151,8 +151,8 @@ export function createParentOSElectronCommandHandlers(
     ...sidecarHandlers,
     pick_image_files_as_base64: (context: Parameters<NimiElectronCommandHandler>[0]) =>
       pickImageFilesAsBase64(input.hostClient, input.getMainWindow(), context.payload),
-    report_export_create_save_grant: (context: Parameters<NimiElectronCommandHandler>[0]) =>
-      createReportSaveGrant(input.hostClient, input.getMainWindow(), context.payload),
+    report_export_create_save_target: (context: Parameters<NimiElectronCommandHandler>[0]) =>
+      createReportSaveTarget(input.hostClient, input.getMainWindow(), context.payload),
   };
 }
 
@@ -179,12 +179,12 @@ async function pickImageFilesAsBase64(
   });
 }
 
-async function createReportSaveGrant(
+async function createReportSaveTarget(
   hostClient: ParentOSHostClient,
   mainWindow: BrowserWindow | undefined,
   payload: unknown,
 ): Promise<{ saveTargetId: string; displayPath: string } | null> {
-  const input = asRecord(payload, 'report_export_create_save_grant payload');
+  const input = asRecord(payload, 'report_export_create_save_target payload');
   const defaultFilename = requiredText(input.defaultFilename, 'defaultFilename');
   const kind = requiredText(input.kind, 'kind');
   const title = optionalText(input.title);
@@ -202,7 +202,7 @@ async function createReportSaveGrant(
   const targetPath = ensureKindExtension(result.filePath, kind);
   const displayPath = displayOnlyPath(targetPath);
   const saveTargetId = nextReportSaveTargetId();
-  const registered = await hostClient.invoke('report_export_register_save_grant', {
+  const registered = await hostClient.invoke('report_export_register_save_target', {
     saveTargetId,
     path: targetPath,
     kind,

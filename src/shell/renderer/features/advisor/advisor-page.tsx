@@ -29,7 +29,6 @@ import {
 } from './advisor-boundary.js';
 import {
   runParentosTextGenerate,
-  streamParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
 import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
@@ -244,50 +243,22 @@ function shouldAppendAdvisorSources(strategy: AdvisorPromptStrategy, domains: st
   return strategy === 'reviewed-advice' && domains.length > 0;
 }
 
-function shouldRetryAdvisorWithNonStreaming(streamedText: string, error: unknown) {
-  if (streamedText.trim()) {
-    return false;
-  }
-  return !(error instanceof DOMException && error.name === 'AbortError');
+function buildAdvisorRuntimeFailureNote() {
+  // Machine codes and provider details stay out of user-visible copy; the
+  // typed error is already logged by the caller.
+  return '补充说明：AI 运行时响应失败，已退回本地结构化事实。';
 }
 
-function buildAdvisorRuntimeFailureNote(error: unknown) {
-  const record = error && typeof error === 'object' ? error as {
-    message?: unknown;
-    code?: unknown;
-    reasonCode?: unknown;
-    details?: { provider_message?: unknown } | null;
-  } : null;
-  const reasonCode = String(record?.reasonCode || record?.code || 'RUNTIME_AI_FAILED').trim();
-  const providerMessage = typeof record?.details?.provider_message === 'string'
-    ? record.details.provider_message.trim()
-    : '';
-  const detail = providerMessage || String(record?.message || error || '').trim();
-  if (detail) {
-    return `补充说明：运行时响应失败（${reasonCode}：${detail}），已退回本地结构化事实。`;
-  }
-  return `补充说明：运行时响应失败（${reasonCode}），已退回本地结构化事实。`;
+function buildAdvisorSnapshotFailureNote() {
+  return '补充说明：本地快照读取失败，已退回仅含儿童基础资料的结构化事实。';
 }
 
-function buildAdvisorSnapshotFailureNote(error: unknown) {
-  const detail = error instanceof Error ? error.message : String(error || '').trim();
-  return detail
-    ? `补充说明：本地快照读取失败（${detail}），已退回仅含儿童基础资料的结构化事实。`
-    : '补充说明：本地快照读取失败，已退回仅含儿童基础资料的结构化事实。';
+function buildAdvisorUserPersistenceFailureNote() {
+  return '补充说明：用户消息持久化失败，本轮没有调用运行时，已退回本地结构化事实。';
 }
 
-function buildAdvisorUserPersistenceFailureNote(error: unknown) {
-  const detail = error instanceof Error ? error.message : String(error || '').trim();
-  return detail
-    ? `补充说明：用户消息持久化失败（${detail}），本轮没有调用运行时，已退回本地结构化事实。`
-    : '补充说明：用户消息持久化失败，本轮没有调用运行时，已退回本地结构化事实。';
-}
-
-function buildAdvisorAssistantPersistenceFailureNote(error: AdvisorAssistantPersistenceError) {
-  const cause = error.cause instanceof Error ? error.cause.message : String(error.cause || '').trim();
-  return cause
-    ? `补充说明：首条咨询回复持久化失败（${cause}），未写回提醒咨询状态，已退回本地结构化事实。`
-    : '补充说明：首条咨询回复持久化失败，未写回提醒咨询状态，已退回本地结构化事实。';
+function buildAdvisorAssistantPersistenceFailureNote() {
+  return '补充说明：首条咨询回复持久化失败，未写回提醒咨询状态，已退回本地结构化事实。';
 }
 
 function createLocalAdvisorMessage(input: {
@@ -478,7 +449,7 @@ export default function AdvisorPage() {
       snapshot = await buildAdvisorSnapshot(snapshotInput);
     } catch (err) {
       snapshot = buildMinimalAdvisorSnapshot(snapshotInput);
-      snapshotFailureNote = buildAdvisorSnapshotFailureNote(err);
+      snapshotFailureNote = buildAdvisorSnapshotFailureNote();
       catchLog('advisor', 'action:build-turn-snapshot-failed')(err);
     }
     const snapshotJson = serializeAdvisorSnapshot(snapshot);
@@ -496,7 +467,7 @@ export default function AdvisorPage() {
     } catch (err) {
       catchLog('advisor', 'action:persist-user-message-failed')(err);
       const fallbackContent = buildStructuredAdvisorFallback(params.question, domains, snapshot, {
-        note: buildAdvisorUserPersistenceFailureNote(err),
+        note: buildAdvisorUserPersistenceFailureNote(),
       });
       setMessages((prev) => [
         ...prev,
@@ -565,38 +536,20 @@ export default function AdvisorPage() {
         },
       ];
       let full = '';
-      try {
-        const streamResult = await streamParentosTextGenerate({
-          surfaceId: 'parentos.advisor',
-          messages,
-          defaults: { temperature: 0.5, maxTokens: 4096 },
-          signal: ac.signal,
-        }, {
-          onDelta: (delta) => {
-            full += delta;
-            setStreamingContent(full);
-          },
-        });
-        full = streamResult.text;
-      } catch (streamErr) {
-        if (!shouldRetryAdvisorWithNonStreaming(full, streamErr)) {
-          throw streamErr;
-        }
-        if (ac.signal.aborted) {
-          throw new DOMException('The operation was aborted.', 'AbortError');
-        }
-        const generated = await runParentosTextGenerate({
-          surfaceId: 'parentos.advisor',
-          messages,
-          defaults: { temperature: 0.5, maxTokens: 4096 },
-          signal: ac.signal,
-        });
-        if (!generated.ok) {
-          throw generated.error.cause || new Error(generated.error.message);
-        }
-        full = generated.text;
-        setStreamingContent(full);
+      const generated = await runParentosTextGenerate({
+        surfaceId: 'parentos.advisor',
+        messages,
+        defaults: { temperature: 0.5, maxTokens: 4096 },
+        signal: ac.signal,
+      });
+      if (ac.signal.aborted) {
+        throw new DOMException('The operation was aborted.', 'AbortError');
       }
+      if (!generated.ok) {
+        throw generated.error.cause || new Error(generated.error.message);
+      }
+      full = generated.text;
+      setStreamingContent(full);
       const filtered = filterAIResponse(full);
       if (!filtered.safe) {
         await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
@@ -613,12 +566,12 @@ export default function AdvisorPage() {
       if (err instanceof AdvisorAssistantPersistenceError) {
         catchLog('advisor', 'action:persist-consultation-assistant-failed')(err);
         displayLocalAssistantMsg(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
-          note: buildAdvisorAssistantPersistenceFailureNote(err),
+          note: buildAdvisorAssistantPersistenceFailureNote(),
         }), snapshotJson);
         return;
       }
       await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
-        note: buildAdvisorRuntimeFailureNote(err),
+        note: buildAdvisorRuntimeFailureNote(),
       }), snapshotJson, params.reminderConsultationAnchor);
     } finally {
       setStreamingState('idle');

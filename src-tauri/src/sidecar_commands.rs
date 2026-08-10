@@ -15,7 +15,7 @@ pub const PARENTOS_DIRECT_SIDECAR_COMMANDS: &[&str] = &[
     "save_journal_photo",
     "save_child_avatar",
     "delete_journal_photo",
-    "report_export_write_grant",
+    "report_export_write_save_target",
     "create_family",
     "get_family",
     "get_child",
@@ -160,7 +160,7 @@ struct NoArgs {}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct ReportExportRegisterSaveGrantArgs {
+struct ReportExportRegisterSaveTargetArgs {
     save_target_id: String,
     path: String,
     kind: String,
@@ -214,7 +214,7 @@ struct DeleteJournalPhotoArgs {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct ReportExportWriteGrantArgs {
+struct ReportExportWriteSaveTargetArgs {
     save_target_id: String,
     base64_data: String,
 }
@@ -1471,11 +1471,11 @@ pub fn dispatch_parentos_sidecar_command(
             let args: DeleteJournalPhotoArgs = parse_args(command, payload)?;
             serialize_result(command, journal_photo::delete_journal_photo(args.path))
         }
-        "report_export_write_grant" => {
-            let args: ReportExportWriteGrantArgs = parse_args(command, payload)?;
+        "report_export_write_save_target" => {
+            let args: ReportExportWriteSaveTargetArgs = parse_args(command, payload)?;
             serialize_result(
                 command,
-                report_export::report_export_write_grant(args.save_target_id, args.base64_data),
+                report_export::report_export_write_save_target(args.save_target_id, args.base64_data),
             )
         }
         "create_family" => {
@@ -2744,11 +2744,11 @@ pub fn dispatch_parentos_sidecar_command(
             let args: DbInitArgs = parse_args(command, payload)?;
             serialize_result(command, sqlite::db_init(args.app_account_id))
         }
-        "report_export_register_save_grant" => {
-            let args: ReportExportRegisterSaveGrantArgs = parse_args(command, payload)?;
+        "report_export_register_save_target" => {
+            let args: ReportExportRegisterSaveTargetArgs = parse_args(command, payload)?;
             serialize_result(
                 command,
-                report_export::register_report_save_grant(
+                report_export::register_report_save_target(
                     args.save_target_id,
                     PathBuf::from(args.path.trim()),
                     args.kind,

@@ -14,13 +14,12 @@ const evidenceRoot = path.join(
   '.nimi',
   'local',
   'acceptance',
-  '2026-07-18-app-launch-migration-wave',
+  '2026-08-08-app-access-migration',
   'parentos-electron',
 );
 const bridgeKey = '__NIMI_ELECTRON_RUNTIME__';
-const reservedPermissionId = 'agents.interact';
 const storageRunId = new Date().toISOString().replace(/[^0-9A-Za-z]/gu, '-');
-const storageRelativePath = `acceptance/parentos-base-entitlement-${storageRunId}.json`;
+const storageRelativePath = `acceptance/parentos-app-storage-${storageRunId}.json`;
 const plainNegative = process.argv.includes('--plain-negative');
 
 async function main() {
@@ -29,15 +28,8 @@ async function main() {
   await mkdir(screenshotDir, { recursive: true });
 
   const configuredSupervisorPort = String(
-    process.env.NIMI_PARENTOS_ELECTRON_ACCEPTANCE_CDP_PORT
-    || process.env.NIMI_LOCAL_AGENT_PRODUCT_ZHIYU_CDP_PORT
-    || '',
+    process.env.NIMI_PARENTOS_ELECTRON_ACCEPTANCE_CDP_PORT || '',
   ).trim();
-  if (!plainNegative && !configuredSupervisorPort) {
-    throw new Error(
-      'Desktop-supervised Electron acceptance requires the checkpoint CDP port used when Desktop was started.',
-    );
-  }
   const port = Number(configuredSupervisorPort || await reservePort());
   if (!Number.isInteger(port) || port < 1024 || port > 65535) {
     throw new Error('Electron acceptance CDP port is invalid.');
@@ -76,7 +68,7 @@ async function main() {
     launcherCommand = process.execPath;
     launcherArgs = [
       path.join(repoRoot, 'node_modules', '@nimiplatform', 'app-tools', 'bin', 'nimi-app.mjs'),
-      'dev', '--shell', 'electron',
+      'dev', '--shell', 'electron', '--cdp-port', String(port),
     ];
   }
   const appProcess = spawn(launcherCommand, launcherArgs, {
@@ -134,24 +126,82 @@ async function main() {
       );
     }
 
-    const permissionStatusResult = await invokeBridge(
+    const aiConfigOverwriteResult = await invokeBridge(
       page,
-      NIMI_STANDARD_SHELL_COMMANDS['local-app.permissionStatus'],
-      { payload: { permissionId: reservedPermissionId } },
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.aiConfigOverwrite'],
+      {
+        payload: {
+          capabilities: [{
+            capabilityContract: 'text.generate',
+            requiredFeatures: [],
+            route: { oneofKind: 'local', local: {} },
+          }],
+        },
+      },
     );
-    const baseEntitlementWriteResult = await invokeBridge(
+    const aiConfigGetResult = await invokeBridge(
+      page,
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.aiConfigGet'],
+      {},
+    );
+    const textCandidateResult = await invokeBridge(
+      page,
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.textGenerateCandidate'],
+      {
+        payload: {
+          messages: [{ role: 'user', text: '用一句简短的话确认 ParentOS 文本生成通路。' }],
+          temperature: 0,
+          topP: 1,
+          maxTokens: 32,
+        },
+      },
+    );
+    const realmDenialResult = await invokeBridge(
+      page,
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.realmWorldCoreList'],
+      { payload: { take: 1 } },
+    );
+    const agentDenialResult = await invokeBridge(
+      page,
+      NIMI_STANDARD_SHELL_COMMANDS['local-app.agentReferenceList'],
+      {},
+    );
+    const appStorageWriteResult = await invokeBridge(
       page,
       NIMI_STANDARD_SHELL_COMMANDS['storage.writeJson'],
-      { payload: { relativePath: storageRelativePath, value: { shell: 'electron', class: 'base_entitlement' } } },
+      { payload: { relativePath: storageRelativePath, value: { shell: 'electron', class: 'base' } } },
     );
     if (plainNegative) {
-      assert.equal(permissionStatusResult.ok, false, 'unsupervised Electron must not read protected permission posture');
-      assert.equal(baseEntitlementWriteResult.ok, false, 'unsupervised Electron must not acquire the Runtime private-storage base entitlement');
+      assert.equal(aiConfigOverwriteResult.ok, false, 'unsupervised Electron must not reach the app AIConfig carrier');
+      assert.equal(textCandidateResult.ok, false, 'unsupervised Electron must not reach the text-candidate carrier');
+      assert.equal(realmDenialResult.ok, false, 'unsupervised Electron must not reach undeclared domain carriers');
+      assert.equal(appStorageWriteResult.ok, false, 'unsupervised Electron must not reach app-private JSON storage');
     } else {
-      assert.equal(permissionStatusResult.ok, true, `reserved permission posture must be readable: ${JSON.stringify(permissionStatusResult)}`);
-      assert.equal(permissionStatusResult.value?.state, 'unavailable', 'reserved permission must remain unavailable');
-      assert.equal(permissionStatusResult.value?.canRequest, false, 'reserved permission must not be requestable');
-      assert.equal(baseEntitlementWriteResult.ok, true, `app-private JSON must use its base entitlement without a prompt: ${JSON.stringify(baseEntitlementWriteResult)}`);
+      assert.equal(aiConfigOverwriteResult.ok, true, `app-owned AIConfig intent must be declarable: ${JSON.stringify(aiConfigOverwriteResult)}`);
+      assert.equal(aiConfigGetResult.ok, true, `app-owned AIConfig must be readable: ${JSON.stringify(aiConfigGetResult)}`);
+      assert.match(
+        JSON.stringify(aiConfigGetResult.value),
+        /text\.generate/u,
+        'app-owned AIConfig must contain the declared text.generate intent',
+      );
+      assert.equal(textCandidateResult.ok, true, `declared runtime.consume domain must produce a text candidate: ${JSON.stringify(textCandidateResult)}`);
+      assert.ok(
+        String(textCandidateResult.value?.text || '').trim().length > 0,
+        `text candidate must carry text: ${JSON.stringify(textCandidateResult)}`,
+      );
+      assert.equal(realmDenialResult.ok, false, 'undeclared realm.data domain must fail closed');
+      assert.equal(
+        String(realmDenialResult.error?.reasonCode || ''),
+        'local-app-access-denied',
+        `undeclared realm.data domain must surface the typed denial: ${JSON.stringify(realmDenialResult)}`,
+      );
+      assert.equal(agentDenialResult.ok, false, 'undeclared agent.local domain must fail closed');
+      assert.equal(
+        String(agentDenialResult.error?.reasonCode || ''),
+        'local-app-access-denied',
+        `undeclared agent.local domain must surface the typed denial: ${JSON.stringify(agentDenialResult)}`,
+      );
+      assert.equal(appStorageWriteResult.ok, true, `app-private JSON storage must work without App Access domains: ${JSON.stringify(appStorageWriteResult)}`);
     }
 
     const directRuntimeResult = await invokeBridge(
@@ -223,8 +273,12 @@ async function main() {
       desktopState,
       narrowState,
       sessionStatusResult,
-      permissionStatusResult,
-      baseEntitlementWriteResult,
+      aiConfigOverwriteResult,
+      aiConfigGetResult,
+      textCandidateResult,
+      realmDenialResult,
+      agentDenialResult,
+      appStorageWriteResult,
       directRuntimeResult,
       appDomainResult,
       mediaWriteResult,

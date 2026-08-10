@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import type { NimiAIConfig } from '@nimiplatform/sdk/ai';
 import { i18nText } from '../i18n/index.js';
 import type { ParentOSBootstrapFailure } from './bootstrap-failure.js';
 
@@ -61,9 +60,6 @@ interface AppState {
 
   familyId: string | null;
   setFamilyId: (id: string | null) => void;
-
-  aiConfig: NimiAIConfig | null;
-  setAIConfig: (config: NimiAIConfig) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -86,7 +82,6 @@ export const useAppStore = create<AppState>((set) => ({
       familyId: null,
       children: [],
       activeChildId: null,
-      aiConfig: null,
     });
   },
   setBootstrapReady: (ready) => set({ bootstrapReady: ready }),
@@ -96,7 +91,6 @@ export const useAppStore = create<AppState>((set) => ({
     familyId: null,
     children: [],
     activeChildId: null,
-    aiConfig: null,
   }),
 
   activeChildId: null,
@@ -107,9 +101,6 @@ export const useAppStore = create<AppState>((set) => ({
 
   familyId: null,
   setFamilyId: (id) => set({ familyId: id }),
-
-  aiConfig: null,
-  setAIConfig: (config) => set({ aiConfig: config }),
 }));
 
 /** Compute age in months from birth date to now */

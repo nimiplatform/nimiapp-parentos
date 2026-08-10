@@ -1,8 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from '../locales/en.json';
-import modelConfigEn from '../locales/model-config.en.json';
-import modelConfigZh from '../locales/model-config.zh.json';
 import zh from '../locales/zh.json';
 import {
   APP_LANGUAGES,
@@ -12,8 +10,8 @@ import {
 } from './language.js';
 
 const resources = {
-  en: { translation: { ...en, ModelConfig: modelConfigEn } },
-  zh: { translation: { ...zh, ModelConfig: modelConfigZh } },
+  en: { translation: { ...en } },
+  zh: { translation: { ...zh } },
 };
 
 const detectedLanguage = detectDefaultAppLanguage();

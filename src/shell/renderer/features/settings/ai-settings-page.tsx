@@ -1,221 +1,85 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
   Bot,
   CheckCircle2,
   ChevronLeft,
-  Eye,
-  MessageCircle,
-  Mic,
+  CircleDashed,
   RefreshCw,
-  TriangleAlert,
-  type LucideIcon,
 } from 'lucide-react';
-import {
-  type AppModelConfigSurface,
-  type ModelConfigI18nFormatter,
-  type ModelConfigProjectionStatus,
-} from '@nimiplatform/kit/features/model-config';
-import { summarizeTargetRef } from '@nimiplatform/kit/core/model-config';
 import { Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
-import type { NimiAIConfig, NimiAICapabilityRequirementDeclaration } from '@nimiplatform/sdk/ai';
-import { useAppStore } from '../../app-shell/app-store.js';
 import {
-  PARENTOS_AI_SCOPE_REF,
-  PARENTOS_CAPABILITIES,
-  type ParentosCapabilityId,
+  ensureParentosAIConfigDeclared,
+  readParentosAIConfig,
+  type ParentosPortableAIConfig,
 } from './parentos-ai-config.js';
-import { getParentosAIConfigService } from './parentos-ai-config-service.js';
-import { createParentosRuntimeModelPickerProviderCache } from './parentos-route-model-picker-provider.js';
-import { ParentosAICapabilityCard } from './parentos-ai-capability-card.js';
 import {
-  parentosAISettingsAvailabilityBannerCopy,
-  parentosAISettingsAvailabilityLabel,
-  probeParentosAISettingsAvailability,
-  type ParentosAISettingsAvailability,
-} from './parentos-ai-settings-availability.js';
+  probeParentosNimiAccess,
+  type ParentosNimiAccessPosture,
+} from '../../infra/runtime-status.js';
+import { isParentosAISurfaceExecutable } from './parentos-ai-surface-policy.js';
 import { i18nText } from '../../i18n/index.js';
 
-
-const PARENTOS_ENABLED_CAPABILITIES = PARENTOS_CAPABILITIES.map((capability) => capability.id);
-
-const CAPABILITY_ICONS: Record<ParentosCapabilityId, LucideIcon> = {
-  'text.generate': MessageCircle,
-  'text.generate.vision': Eye,
-  'audio.transcribe': Mic,
+type ParentosAIFeatureRow = {
+  readonly labelKey: string;
+  readonly available: boolean;
 };
 
-const CAPABILITY_TITLE_KEYS: Record<string, ParentosCapabilityId> = {
-  'ModelConfig.capability.textGenerate.title': 'text.generate',
-  'ModelConfig.capability.textGenerate.detail': 'text.generate',
-  'ModelConfig.capability.textGenerateVision.title': 'text.generate.vision',
-  'ModelConfig.capability.textGenerateVision.detail': 'text.generate.vision',
-  'ModelConfig.capability.audioTranscribe.title': 'audio.transcribe',
-  'ModelConfig.capability.audioTranscribe.detail': 'audio.transcribe',
-};
+const PARENTOS_AI_FEATURE_ROWS: readonly ParentosAIFeatureRow[] = [
+  { labelKey: 'AISettings.features.advisor', available: isParentosAISurfaceExecutable('parentos.advisor') },
+  { labelKey: 'AISettings.features.report', available: isParentosAISurfaceExecutable('parentos.report') },
+  { labelKey: 'AISettings.features.journalTagging', available: isParentosAISurfaceExecutable('parentos.journal.ai-tagging') },
+  { labelKey: 'AISettings.features.profileSummary', available: isParentosAISurfaceExecutable('parentos.profile.summary.growth') },
+  { labelKey: 'AISettings.features.medicalInsights', available: isParentosAISurfaceExecutable('parentos.medical.smart-insight') },
+  { labelKey: 'AISettings.features.ocrIntake', available: isParentosAISurfaceExecutable('parentos.profile.checkup-ocr') },
+  { labelKey: 'AISettings.features.voiceTranscribe', available: isParentosAISurfaceExecutable('parentos.journal.voice-observation') },
+];
 
-function targetDisplayLabel(config: NimiAIConfig, capabilityId: ParentosCapabilityId): string | null {
-  const targetRef = config.capabilities.targetRefs?.[capabilityId] || null;
-  if (!targetRef) {
-    return null;
+function postureLabelKey(posture: ParentosNimiAccessPosture | null): string {
+  if (!posture) {
+    return 'AISettings.posture.checking';
   }
-  const summary = summarizeTargetRef(targetRef);
-  return [summary.label, summary.detail].filter(Boolean).join(' · ') || null;
-}
-
-function createParentosAIRequirementDeclaration(): NimiAICapabilityRequirementDeclaration {
-  return {
-    requirementId: 'parentos.ai.capabilities',
-    scopeRef: PARENTOS_AI_SCOPE_REF,
-    requiredSlices: PARENTOS_CAPABILITIES.map((capability) => ({
-      requirementSliceId: `parentos.${capability.id}`,
-      capability: capability.routeCapability,
-      profileSliceRef: `parentos.${capability.id}`,
-      readinessPolicy: 'required',
-      runtimeDescriptor: {
-        sliceId: `parentos.${capability.id}`,
-        providerCapability: capability.routeCapability,
-      },
-    })),
-    setupProjectionPolicy: 'sdk-ai-config-setup-projection',
-  };
-}
-
-function parentosCapabilityProjection(input: {
-  config: NimiAIConfig;
-  capabilityId: ParentosCapabilityId;
-  runtimeReady: boolean;
-  runtimeDetail: string | null;
-}): ModelConfigProjectionStatus {
-  const capability = PARENTOS_CAPABILITIES.find((item) => item.id === input.capabilityId);
-  if (!input.runtimeReady) {
-    return {
-      supported: false,
-      tone: 'attention',
-      badgeLabel: i18nText('AISettings.capability.runtimeNotReady'),
-      title: i18nText('AISettings.capability.runtimeUnavailable'),
-      detail: input.runtimeDetail || i18nText('AISettings.capability.bootstrapNotReady'),
-    };
+  switch (posture.state) {
+    case 'ready':
+      return 'AISettings.posture.ready';
+    case 'action-required':
+      return 'AISettings.posture.actionRequired';
+    case 'bridge-absent':
+      return 'AISettings.posture.bridgeAbsent';
+    default:
+      return 'AISettings.posture.unavailable';
   }
-
-  const targetLabel = targetDisplayLabel(input.config, input.capabilityId);
-  if (!targetLabel) {
-    return {
-      supported: false,
-      tone: 'attention',
-      badgeLabel: i18nText('AISettings.capability.needsBinding'),
-      title: i18nText('AISettings.capability.missingBinding'),
-      detail: i18nText('AISettings.capability.capabilityNotConfigured', {
-        label: capability?.label || input.capabilityId,
-      }),
-    };
-  }
-
-  return {
-    supported: true,
-    tone: 'ready',
-    badgeLabel: i18nText('AISettings.capability.bound'),
-    title: i18nText('AISettings.capability.modelConfigured'),
-    detail: targetLabel,
-  };
-}
-
-function statusPillClassName(ready: boolean): string {
-  return ready
-    ? 'border-[color-mix(in_srgb,var(--nimi-status-success)_26%,transparent)] bg-[color-mix(in_srgb,var(--nimi-status-success)_9%,var(--nimi-surface-card))] text-[var(--nimi-status-success)]'
-    : 'border-[color-mix(in_srgb,var(--nimi-status-warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--nimi-status-warning)_10%,var(--nimi-surface-card))] text-[var(--nimi-status-warning)]';
 }
 
 export default function AiSettingsPage() {
   const { t } = useTranslation();
-  const bootstrapReady = useAppStore((s) => s.bootstrapReady);
-  const bootstrapError = useAppStore((s) => s.bootstrapError);
-  const aiConfigService = useMemo(() => getParentosAIConfigService(), []);
-  const providerCache = useMemo(() => createParentosRuntimeModelPickerProviderCache(), []);
-  const [availability, setAvailability] = useState<ParentosAISettingsAvailability | null>(null);
-  const [availabilityRefreshKey, setAvailabilityRefreshKey] = useState(0);
-  const [aiConfig, setAIConfig] = useState<NimiAIConfig>(() => (
-    aiConfigService.aiConfig.get(PARENTOS_AI_SCOPE_REF)
-  ));
+  const [posture, setPosture] = useState<ParentosNimiAccessPosture | null>(null);
+  const [aiConfig, setAiConfig] = useState<ParentosPortableAIConfig | null>(null);
+  const [aiConfigLoaded, setAiConfigLoaded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const nextAvailability = await probeParentosAISettingsAvailability();
-      if (!cancelled) {
-        setAvailability(nextAvailability);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [availabilityRefreshKey]);
-
-  useEffect(() => {
-    setAIConfig(aiConfigService.aiConfig.get(PARENTOS_AI_SCOPE_REF));
-    return aiConfigService.aiConfig.subscribe(PARENTOS_AI_SCOPE_REF, setAIConfig);
-  }, [aiConfigService]);
-
-  const runtimeReady = bootstrapReady;
-  const runtimeStatusLabel = runtimeReady
-    ? parentosAISettingsAvailabilityLabel(availability)
-    : (bootstrapError || i18nText('AISettings.capability.runtimeNotReady'));
-  const runtimeStatusReady = runtimeReady && availability?.kind === 'ready';
-  const bannerCopy = parentosAISettingsAvailabilityBannerCopy(availability);
-  const configuredCount = PARENTOS_ENABLED_CAPABILITIES.filter((capabilityId) => (
-    Boolean(targetDisplayLabel(aiConfig, capabilityId))
-  )).length;
-
-  const translateModelConfig = useMemo<ModelConfigI18nFormatter>(() => (
-    (key, vars) => {
-      const capabilityId = CAPABILITY_TITLE_KEYS[key];
-      if (capabilityId) {
-        const capability = PARENTOS_CAPABILITIES.find((item) => item.id === capabilityId);
-        if (key.endsWith('.detail')) {
-          return capability?.detail || t(key, vars);
-        }
-        return capability?.label || t(key, vars);
-      }
-      return t(key, vars);
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [nextPosture, nextConfig] = await Promise.all([
+        probeParentosNimiAccess(),
+        readParentosAIConfig(),
+      ]);
+      setPosture(nextPosture);
+      setAiConfig(nextConfig.state === 'ready' ? nextConfig.config : null);
+      setAiConfigLoaded(true);
+    } finally {
+      setRefreshing(false);
     }
-  ), [t]);
+  }, []);
 
-  const surface: AppModelConfigSurface = useMemo(() => ({
-    scopeRef: PARENTOS_AI_SCOPE_REF,
-    aiConfigService,
-    requirementDeclaration: createParentosAIRequirementDeclaration(),
-    providerResolver: (routeCapability: string) => (
-      runtimeReady ? providerCache(routeCapability) : null
-    ),
-    projectionResolver: (capabilityId: string) => (
-      parentosCapabilityProjection({
-        config: aiConfig,
-        capabilityId: capabilityId as ParentosCapabilityId,
-        runtimeReady,
-        runtimeDetail: runtimeStatusLabel,
-      })
-    ),
-    runtimeNotReadyLabel: runtimeStatusLabel,
-    i18n: { t: translateModelConfig },
-  }), [
-    aiConfig,
-    aiConfigService,
-    providerCache,
-    runtimeReady,
-    runtimeStatusLabel,
-    translateModelConfig,
-  ]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
-  const footer = bannerCopy ? (
-    <div
-      className={bannerCopy.kind === 'warning'
-        ? 'parentos-radius-lg border border-[color-mix(in_srgb,var(--nimi-status-warning)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-warning)_10%,var(--nimi-surface-card))] px-4 py-3 text-sm text-[var(--nimi-status-warning)]'
-        : 'parentos-radius-lg border border-[color-mix(in_srgb,var(--nimi-status-danger)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))] px-4 py-3 text-sm text-[var(--nimi-status-danger)]'}
-    >
-      {bannerCopy.message}
-    </div>
-  ) : null;
+  const postureReady = posture?.state === 'ready';
+  const declaredCapabilities = aiConfig?.capabilities ?? [];
 
   return (
     <div className="h-full overflow-y-auto bg-transparent">
@@ -226,15 +90,12 @@ export default function AiSettingsPage() {
             className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'h-8 min-h-8 w-8 px-0')}
             aria-label={i18nText('AISettings.page.backToSettings')}
           >
-            <ChevronLeft size={16} aria-hidden="true" />
+            <ChevronLeft size={18} aria-hidden="true" />
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-[var(--nimi-text-primary)]">{i18nText('AISettings.page.title')}</h1>
             <p className="mt-1 text-[13px] text-[var(--nimi-text-muted)]">
-              {i18nText('AISettings.page.boundCount', {
-                configured: configuredCount,
-                total: PARENTOS_ENABLED_CAPABILITIES.length,
-              })}
+              {i18nText('AISettings.page.subtitle')}
             </p>
           </div>
         </div>
@@ -246,9 +107,9 @@ export default function AiSettingsPage() {
                 <Bot size={20} aria-hidden="true" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{i18nText('AISettings.page.capabilityTitle')}</h2>
+                <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{i18nText('AISettings.access.title')}</h2>
                 <p className="mt-0.5 text-[13px] leading-[1.6] text-[var(--nimi-text-muted)]">
-                  {i18nText('AISettings.page.capabilityDescription')}
+                  {i18nText('AISettings.access.description')}
                 </p>
               </div>
             </div>
@@ -256,17 +117,20 @@ export default function AiSettingsPage() {
               <span
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] font-semibold',
-                  statusPillClassName(runtimeStatusReady),
+                  postureReady
+                    ? 'border-[color-mix(in_srgb,var(--nimi-status-success)_26%,transparent)] bg-[color-mix(in_srgb,var(--nimi-status-success)_9%,var(--nimi-surface-card))] text-[var(--nimi-status-success)]'
+                    : 'border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] text-[var(--nimi-text-muted)]',
                 )}
               >
-                {runtimeStatusReady
+                {postureReady
                   ? <CheckCircle2 size={13} aria-hidden="true" />
-                  : <TriangleAlert size={13} aria-hidden="true" />}
-                {runtimeStatusLabel}
+                  : <CircleDashed size={13} aria-hidden="true" />}
+                {t(postureLabelKey(posture))}
               </span>
               <button
                 type="button"
-                onClick={() => setAvailabilityRefreshKey((value) => value + 1)}
+                disabled={refreshing}
+                onClick={() => void refresh()}
                 className={cn(buttonVariants({ tone: 'secondary', size: 'sm' }), 'h-8 min-h-8 w-8 px-0')}
                 aria-label={i18nText('AISettings.page.refreshRuntime')}
               >
@@ -274,30 +138,80 @@ export default function AiSettingsPage() {
               </button>
             </div>
           </div>
+          {posture && !postureReady ? (
+            <details className="mt-4 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
+                {t('AISettings.access.technicalDetails')}
+              </summary>
+              <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">
+                {posture.reasonCode} · {posture.actionHint}
+              </p>
+            </details>
+          ) : null}
         </Surface>
 
-        <div className="space-y-4">
-          {PARENTOS_CAPABILITIES.map((capability) => {
-            const CapabilityIcon = CAPABILITY_ICONS[capability.id];
-            const status = parentosCapabilityProjection({
-              config: aiConfig,
-              capabilityId: capability.id,
-              runtimeReady,
-              runtimeDetail: runtimeStatusLabel,
-            });
-            return (
-              <ParentosAICapabilityCard
-                key={capability.id}
-                capability={capability}
-                icon={CapabilityIcon}
-                surface={surface}
-                config={aiConfig}
-                status={status}
-              />
-            );
-          })}
-          {footer}
-        </div>
+        <Surface tone="card" material="solid" elevation="base" padding="lg" className="mb-5 parentos-radius-xl p-5">
+          <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{i18nText('AISettings.declared.title')}</h2>
+          <p className="mt-0.5 text-[13px] leading-[1.6] text-[var(--nimi-text-muted)]">
+            {i18nText('AISettings.declared.description')}
+          </p>
+          <div className="mt-4 space-y-2">
+            {declaredCapabilities.map((capability) => (
+              <div
+                key={capability.capabilityContract}
+                className="flex items-center justify-between rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3"
+              >
+                <span className="text-[13px] font-medium text-[var(--nimi-text-primary)]">
+                  {capability.capabilityContract}
+                </span>
+                <span className="text-[12px] text-[var(--nimi-text-muted)]">
+                  {capability.route.oneofKind === 'local'
+                    ? t('AISettings.declared.routeLocal')
+                    : t('AISettings.declared.routeCloud')}
+                </span>
+              </div>
+            ))}
+            {aiConfigLoaded && declaredCapabilities.length === 0 ? (
+              <p className="text-[13px] text-[var(--nimi-text-muted)]">{t('AISettings.declared.empty')}</p>
+            ) : null}
+          </div>
+          {postureReady && aiConfigLoaded && declaredCapabilities.length === 0 ? (
+            <button
+              type="button"
+              className={cn(buttonVariants({ tone: 'secondary', size: 'sm' }), 'mt-4')}
+              onClick={() => {
+                void ensureParentosAIConfigDeclared().then(() => refresh());
+              }}
+            >
+              {t('AISettings.declared.declareNow')}
+            </button>
+          ) : null}
+        </Surface>
+
+        <Surface tone="card" material="solid" elevation="base" padding="lg" className="parentos-radius-xl p-5">
+          <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{i18nText('AISettings.features.title')}</h2>
+          <p className="mt-0.5 text-[13px] leading-[1.6] text-[var(--nimi-text-muted)]">
+            {i18nText('AISettings.features.description')}
+          </p>
+          <div className="mt-4 space-y-2">
+            {PARENTOS_AI_FEATURE_ROWS.map((row) => (
+              <div
+                key={row.labelKey}
+                className="flex items-center justify-between rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3"
+              >
+                <span className="text-[13px] font-medium text-[var(--nimi-text-primary)]">{t(row.labelKey)}</span>
+                <span
+                  className={cn(
+                    'text-[12px] font-semibold',
+                    row.available ? 'text-[var(--nimi-status-success)]' : 'text-[var(--nimi-text-muted)]',
+                  )}
+                >
+                  {row.available ? t('AISettings.features.available') : t('AISettings.features.unavailable')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Surface>
       </div>
     </div>
   );

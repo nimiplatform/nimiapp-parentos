@@ -1,5 +1,8 @@
 {
-  "supportedLocales": ["en", "zh"],
+  "supportedLocales": [
+    "en",
+    "zh"
+  ],
   "bundles": [
     {
       "name": "translation",
@@ -8,19 +11,18 @@
         "en": "src/shell/renderer/locales/en.json",
         "zh": "src/shell/renderer/locales/zh.json"
       }
-    },
-    {
-      "name": "ModelConfig",
-      "baseLocale": "en",
-      "files": {
-        "en": "src/shell/renderer/locales/model-config.en.json",
-        "zh": "src/shell/renderer/locales/model-config.zh.json"
-      }
     }
   ],
   "audit": {
-    "scopeDirs": ["src/shell/renderer", "src/shell/renderer/index.html"],
-    "extensions": [".ts", ".tsx", ".html"],
+    "scopeDirs": [
+      "src/shell/renderer",
+      "src/shell/renderer/index.html"
+    ],
+    "extensions": [
+      ".ts",
+      ".tsx",
+      ".html"
+    ],
     "excludePathPatterns": [
       "/locales/",
       "/knowledge-base/",

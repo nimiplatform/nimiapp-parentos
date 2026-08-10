@@ -160,7 +160,7 @@ export function AISummaryCard(props: AISummaryCardProps) {
         }
         return {
           text: result.text,
-          finishReason: result.result.finishReason,
+          finishReason: result.finishReason,
         };
       };
 

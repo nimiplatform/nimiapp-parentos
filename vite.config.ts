@@ -5,9 +5,12 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 const require = createRequire(import.meta.url);
+// Linked platform packages (@nimiplatform/sdk, @nimiplatform/kit) resolve
+// through their package `exports` into the linked checkout's built dist/.
+// The repo root stays on fs.allow/manualChunks only because pnpm link: makes
+// served files physically live outside this workspace.
 const nimiRepoRoot = path.resolve(__dirname, '../../nimi');
-const nimiSdkSourceRoot = path.resolve(nimiRepoRoot, 'sdks/typescript');
-const nimiKitSourceRoot = path.resolve(nimiRepoRoot, 'kit');
+const nimiRepoRootNormalized = nimiRepoRoot.split(path.sep).join('/');
 
 function matchesAny(value: string, patterns: readonly string[]): boolean {
   return patterns.some((pattern) => value.includes(pattern));
@@ -56,7 +59,6 @@ export default defineConfig(() => {
         'tailwind-merge',
         'three',
         'zod',
-        '@nimiplatform/sdk',
       ],
       alias: [
         { find: 'react/jsx-dev-runtime', replacement: path.resolve(__dirname, 'node_modules/react/jsx-dev-runtime.js') },
@@ -66,37 +68,6 @@ export default defineConfig(() => {
         { find: 'react', replacement: path.resolve(__dirname, 'node_modules/react/index.js') },
         { find: 'scheduler', replacement: require.resolve('scheduler') },
         { find: '@tauri-apps/api/core', replacement: path.resolve(__dirname, 'node_modules/@tauri-apps/api/core.js') },
-        { find: /^@nimiplatform\/sdk$/, replacement: path.resolve(nimiSdkSourceRoot, 'index.ts') },
-        { find: /^@nimiplatform\/sdk\/app$/, replacement: path.resolve(nimiSdkSourceRoot, 'core/app/index.ts') },
-        { find: /^@nimiplatform\/sdk\/ai$/, replacement: path.resolve(nimiSdkSourceRoot, 'core/ai/index.ts') },
-        { find: /^@nimiplatform\/sdk\/contracts$/, replacement: path.resolve(nimiSdkSourceRoot, 'core/contracts/index.ts') },
-        { find: /^@nimiplatform\/sdk\/features\/conversation$/, replacement: path.resolve(nimiSdkSourceRoot, 'features/conversation/index.ts') },
-        { find: /^@nimiplatform\/sdk\/features\/generation$/, replacement: path.resolve(nimiSdkSourceRoot, 'features/generation/index.ts') },
-        { find: /^@nimiplatform\/sdk\/realm$/, replacement: path.resolve(nimiSdkSourceRoot, 'realm/index.ts') },
-        { find: /^@nimiplatform\/sdk\/realm\/generated$/, replacement: path.resolve(nimiSdkSourceRoot, 'realm/generated.ts') },
-        { find: /^@nimiplatform\/sdk\/runtime$/, replacement: path.resolve(nimiSdkSourceRoot, 'runtime/index.ts') },
-        { find: /^@nimiplatform\/sdk\/runtime\/generated$/, replacement: path.resolve(nimiSdkSourceRoot, 'runtime/generated.ts') },
-        { find: /^@nimiplatform\/sdk\/runtime\/wire-types$/, replacement: path.resolve(nimiSdkSourceRoot, 'runtime/wire-types/index.ts') },
-        { find: /^@nimiplatform\/sdk\/types$/, replacement: path.resolve(nimiSdkSourceRoot, 'types/index.ts') },
-        { find: /^@nimiplatform\/kit\/auth$/, replacement: path.resolve(nimiKitSourceRoot, 'auth/src/index.ts') },
-        { find: /^@nimiplatform\/kit\/auth\/shell$/, replacement: path.resolve(nimiKitSourceRoot, 'auth/src/shell/index.ts') },
-        { find: /^@nimiplatform\/kit\/auth\/styles\.css$/, replacement: path.resolve(nimiKitSourceRoot, 'auth/src/styles.css') },
-        { find: /^@nimiplatform\/kit\/core\/desktop-open$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/desktop-open.ts') },
-        { find: /^@nimiplatform\/kit\/core\/model-config$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/model-config/index.ts') },
-        { find: /^@nimiplatform\/kit\/core\/oauth$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/oauth/index.ts') },
-        { find: /^@nimiplatform\/kit\/core\/shell-mode$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/shell-mode.ts') },
-        { find: /^@nimiplatform\/kit\/core\/runtime-capabilities$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/runtime-capabilities/index.ts') },
-        { find: /^@nimiplatform\/kit\/core\/sdk-contract$/, replacement: path.resolve(nimiKitSourceRoot, 'core/src/sdk-contract.ts') },
-        { find: /^@nimiplatform\/kit\/features\/model-config$/, replacement: path.resolve(nimiKitSourceRoot, 'features/model-config/src/index.ts') },
-        { find: /^@nimiplatform\/kit\/features\/model-picker$/, replacement: path.resolve(nimiKitSourceRoot, 'features/model-picker/src/index.ts') },
-        { find: /^@nimiplatform\/kit\/features\/model-picker\/runtime$/, replacement: path.resolve(nimiKitSourceRoot, 'features/model-picker/src/runtime.ts') },
-        { find: /^@nimiplatform\/kit\/features\/model-picker\/ui$/, replacement: path.resolve(nimiKitSourceRoot, 'features/model-picker/src/ui.ts') },
-        { find: /^@nimiplatform\/kit\/shell\/capabilities$/, replacement: path.resolve(nimiKitSourceRoot, 'shell/capabilities/src/index.ts') },
-        { find: /^@nimiplatform\/kit\/shell\/renderer\/bridge$/, replacement: path.resolve(nimiKitSourceRoot, 'shell/renderer/src/bridge/index.ts') },
-        { find: /^@nimiplatform\/kit\/ui$/, replacement: path.resolve(nimiKitSourceRoot, 'ui/src/index.ts') },
-        { find: /^@nimiplatform\/kit\/ui\/styles\.css$/, replacement: path.resolve(nimiKitSourceRoot, 'ui/src/styles.css') },
-        { find: /^@nimiplatform\/kit\/ui\/themes\/(.+\.css)$/, replacement: path.resolve(nimiKitSourceRoot, 'ui/src/themes/$1') },
-        { find: /^@nimiplatform\/kit\/ui\/(.+)$/, replacement: path.resolve(nimiKitSourceRoot, 'ui/src/$1') },
         { find: '@renderer', replacement: path.resolve(__dirname, 'src/shell/renderer') },
         { find: '@engine', replacement: path.resolve(__dirname, 'src/shell/renderer/engine') },
       ],
@@ -129,36 +100,6 @@ export default defineConfig(() => {
         'tailwind-merge',
         'zustand',
       ],
-      exclude: [
-        '@nimiplatform/kit',
-        '@nimiplatform/kit/ui',
-        '@nimiplatform/kit/auth',
-        '@nimiplatform/kit/auth/shell',
-        '@nimiplatform/kit/core/desktop-open',
-        '@nimiplatform/kit/core/model-config',
-        '@nimiplatform/kit/core/oauth',
-        '@nimiplatform/kit/core/shell-mode',
-        '@nimiplatform/kit/core/runtime-capabilities',
-        '@nimiplatform/kit/core/sdk-contract',
-        '@nimiplatform/kit/features/model-config',
-        '@nimiplatform/kit/features/model-picker',
-        '@nimiplatform/kit/features/model-picker/runtime',
-        '@nimiplatform/kit/features/model-picker/ui',
-        '@nimiplatform/kit/shell/capabilities',
-        '@nimiplatform/kit/shell/renderer/bridge',
-        '@nimiplatform/sdk',
-        '@nimiplatform/sdk/app',
-        '@nimiplatform/sdk/ai',
-        '@nimiplatform/sdk/contracts',
-        '@nimiplatform/sdk/features/conversation',
-        '@nimiplatform/sdk/features/generation',
-        '@nimiplatform/sdk/realm',
-        '@nimiplatform/sdk/realm/generated',
-        '@nimiplatform/sdk/runtime',
-        '@nimiplatform/sdk/runtime/generated',
-        '@nimiplatform/sdk/runtime/wire-types',
-        '@nimiplatform/sdk/types',
-      ],
     },
     server: {
       host: '127.0.0.1',
@@ -176,15 +117,6 @@ export default defineConfig(() => {
       emptyOutDir: true,
       sourcemap: true,
       rollupOptions: {
-        treeshake: {
-          moduleSideEffects(id) {
-            const normalizedId = id.split(path.sep).join('/');
-            if (normalizedId.includes('/kit/auth/src/') && !normalizedId.endsWith('.css')) {
-              return false;
-            }
-            return true;
-          },
-        },
         input: {
           main: path.resolve(__dirname, 'src/shell/renderer/index.html'),
         },
@@ -192,108 +124,23 @@ export default defineConfig(() => {
           manualChunks(id) {
             const normalizedId = id.split(path.sep).join('/');
 
-            if (
-              normalizedId.includes('/sdk/src/runtime/generated/')
-              || normalizedId.includes('/sdks/typescript/core-generated/runtime-protobuf/')
-            ) {
-              if (matchesAny(normalizedId, [
-                '/runtime/v1/common',
-                '/runtime/v1/runtime_target_identity',
-                '/runtime/v1/voice',
-              ])) {
-                return 'sdk-runtime-shared-generated';
-              }
-              if (matchesAny(normalizedId, [
-                '/runtime/v1/ai',
-                '/runtime/v1/agent_service',
-                '/runtime/v1/workflow',
-                '/runtime/v1/local_runtime_device_environment',
-              ])) {
-                return 'sdk-runtime-ai-generated';
-              }
-              if (matchesAny(normalizedId, [
-                '/runtime/v1/account',
-                '/runtime/v1/app',
-                '/runtime/v1/auth',
-                '/runtime/v1/audit',
-                '/runtime/v1/grant',
-              ])) {
-                return 'sdk-runtime-account-generated';
-              }
-              if (matchesAny(normalizedId, [
-                '/runtime/v1/agent_common',
-                '/runtime/v1/agent_companion',
-                '/runtime/v1/agent_group_message_candidate',
-                '/runtime/v1/agent_participation',
-                '/runtime/v1/artifact_service',
-                '/runtime/v1/delegated_control',
-                '/runtime/v1/external_agent',
-                '/runtime/v1/knowledge',
-                '/runtime/v1/memory',
-              ])) {
-                return 'sdk-runtime-agent-generated';
-              }
-              if (
-                normalizedId.includes('/sdk/src/runtime/generated/google/')
-                || normalizedId.includes('/sdks/typescript/core-generated/runtime-protobuf/google/')
-              ) {
-                return 'sdk-runtime-google-generated';
-              }
-              if (
-                normalizedId.includes('/sdk/src/runtime/generated/runtime/v1/ai')
-                || normalizedId.includes('/sdks/typescript/core-generated/runtime-protobuf/runtime/v1/ai')
-              ) {
-                return 'sdk-runtime-ai-generated';
-              }
-              if (
-                normalizedId.includes('/sdk/src/runtime/generated/runtime/v1/local_runtime')
-                || normalizedId.includes('/sdks/typescript/core-generated/runtime-protobuf/runtime/v1/local_runtime')
-              ) {
-                return 'sdk-runtime-local-generated';
-              }
-              if (
-                normalizedId.includes('/sdk/src/runtime/generated/runtime/v1/connector')
-                || normalizedId.includes('/sdks/typescript/core-generated/runtime-protobuf/runtime/v1/connector')
-              ) {
-                return 'sdk-runtime-connector-generated';
-              }
-              if (
-                normalizedId.includes('/sdk/src/runtime/generated/runtime/v1/workflow')
-                || normalizedId.includes('/sdks/typescript/core-generated/runtime-protobuf/runtime/v1/workflow')
-              ) {
-                return 'sdk-runtime-workflow-generated';
-              }
-              if (
-                normalizedId.includes('/sdk/src/runtime/generated/runtime/v1/model')
-                || normalizedId.includes('/sdks/typescript/core-generated/runtime-protobuf/runtime/v1/model')
-              ) {
-                return 'sdk-runtime-model-generated';
-              }
-              if (
-                normalizedId.includes('/sdk/src/runtime/generated/runtime/')
-                || normalizedId.includes('/sdks/typescript/core-generated/runtime-protobuf/runtime/')
-              ) {
-                return 'sdk-runtime-core-generated';
-              }
-              return 'sdk-runtime-support-generated';
+            const isNimiSdk = normalizedId.includes('/node_modules/@nimiplatform/sdk/')
+              || normalizedId.startsWith(`${nimiRepoRootNormalized}/sdks/typescript/`);
+            const isNimiKit = normalizedId.includes('/node_modules/@nimiplatform/kit/')
+              || normalizedId.startsWith(`${nimiRepoRootNormalized}/kit/`);
+            if (isNimiSdk && normalizedId.includes('/dist/core-generated/runtime-protobuf/google/')) {
+              return 'sdk-runtime-google-generated';
             }
-            if (
-              normalizedId.includes('/sdk/src/realm/generated/')
-              || normalizedId.includes('/sdks/typescript/core-generated/realm-')
-              || normalizedId.includes('/sdks/typescript/realm/generated')
-            ) {
+            if (isNimiSdk && normalizedId.includes('/dist/core-generated/runtime-protobuf/')) {
+              return 'sdk-runtime-core-generated';
+            }
+            if (isNimiSdk && normalizedId.includes('/dist/core-generated/realm-')) {
               return 'sdk-realm-generated';
             }
-            if (normalizedId.includes('/sdks/typescript/core-generated/')) {
-              return 'sdk-runtime-support-generated';
-            }
-            if (normalizedId.includes('/sdk/src/') || normalizedId.includes('/sdks/typescript/')) {
+            if (isNimiSdk) {
               return 'sdk-client';
             }
-            if (normalizedId.includes('/kit/auth/src/')) {
-              return 'sdk-client';
-            }
-            if (normalizedId.includes('/kit/ui/src/') || normalizedId.includes('/kit/features/')) {
+            if (isNimiKit) {
               return 'vendor-platform';
             }
             if (normalizedId.includes('/features/profile/generated/lms-slices/')) {

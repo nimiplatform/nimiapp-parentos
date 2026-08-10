@@ -7,56 +7,19 @@
     "logoAlt": "ParentOS 标志"
   },
   "Auth": {
-    "clickToAuthorize": "点击以在浏览器中授权",
     "launchEnter": "进入成长底稿",
-    "desktopLogoIdleHint": "点击授权并进入成长底稿",
-    "signinTagline": "AI 驱动的儿童成长操作系统",
-    "desktopAuthFailed": "授权失败。点击标志重试。",
-    "currentAccount": "当前账号",
-    "authorizeDesktopButton": "授权桌面端",
-    "useAnotherAccount": "使用其他账号",
-    "nimiNetwork": "NIMI PLATFORM",
-    "authorizing": "授权中...",
-    "comingSoon": "即将推出",
-    "emailNotRegistered": "邮箱未注册",
-    "registerConfirmHint": "是否使用该邮箱注册新账号？",
-    "cancel": "取消",
-    "confirmRegister": "确认注册",
-    "alternative": "其他登录方式",
-    "emailPlaceholder": "输入邮箱地址",
-    "chooseAlternative": "选择其他登录方式",
-    "web3": "Web3 钱包",
-    "useEmailCodeInstead": "使用邮箱验证码登录",
-    "passwordPlaceholder": "输入密码",
-    "otpConfirmMessage": "将向您的邮箱发送验证码",
-    "confirmOtp": "发送验证码",
-    "setPasswordHint": "设置密码以保护您的账号",
-    "passwordMinChars": "至少 8 个字符",
-    "confirmPasswordPlaceholder": "确认密码",
-    "settingPassword": "设置中...",
-    "setPasswordButton": "设置密码",
-    "otpSentTo": "验证码已发送至",
-    "verifying": "验证中...",
-    "verifyAndContinue": "验证并继续",
-    "resendIn": "{{count}} 秒后重新发送",
-    "resendCode": "重新发送验证码",
-    "twoFaHint": "请输入双重验证码",
-    "verifyAndLogin": "验证并登录",
-    "selectWalletHint": "选择钱包进行连接",
-    "desktopLogoHint": "授权失败。点击 logo 重试。",
-    "desktopAuthOpen": "已打开浏览器，请在网页完成授权登录。",
-    "desktopAuthSuccess": "网页登录授权成功，已登录。",
     "bootstrapFailure": {
       "eyebrow": "ParentOS 本地数据",
       "localDataLocked": "应用自有的本地数据库无法打开",
       "reasonCode": "原因代码",
+      "technicalDetails": "技术详情",
       "nextStep": "下一步",
       "localDataButton": "本地数据不可用",
       "retry": "重试",
       "states": {
         "app-data-unavailable": {
           "title": "ParentOS 本地数据暂不可用",
-          "description": "ParentOS 原生宿主无法打开固定的系统应用数据目录。这是应用宿主故障，不是 Nimi 权限决定。",
+          "description": "ParentOS 原生宿主无法打开固定的系统应用数据目录。这是应用宿主故障，与 Nimi App Access 姿态无关。",
           "action": "请重启 ParentOS；开发环境中，请先构建 ParentOS host sidecar 后再试。"
         },
         "app-data-repair-required": {
@@ -106,9 +69,6 @@
     },
     "account": {
       "unnamedUser": "未命名用户",
-      "logout": "退出登录",
-      "loggingOut": "退出中...",
-      "logoutFailed": "退出登录失败",
       "managedByDesktop": "登录和账户切换由 Nimi Desktop 统一管理。"
     },
     "language": {
@@ -131,8 +91,8 @@
         "desc": "查看和管理已自定义频率的提醒"
       },
       "ai": {
-        "label": "AI 模型设置",
-        "desc": "配置对话、语音转写等 AI 能力使用的模型"
+        "label": "AI 设置",
+        "desc": "Nimi 访问姿态与 AI 能力声明。"
       }
     },
     "nurtureMode": {
@@ -639,54 +599,45 @@
   "AISettings": {
     "page": {
       "backToSettings": "返回设置",
-      "title": "AI 模型设置",
-      "boundCount": "{{configured}} / {{total}} 已绑定",
-      "capabilityTitle": "ParentOS AI 能力",
-      "capabilityDescription": "Runtime route catalog 负责模型来源，ParentOS 只保存能力绑定。",
-      "refreshRuntime": "刷新 Runtime 状态"
+      "title": "AI 设置",
+      "subtitle": "Nimi 访问姿态与 AI 能力声明。模型路由由平台统一管理。",
+      "refreshRuntime": "刷新状态"
     },
-    "availability": {
-      "checking": "运行时检测中",
-      "connected": "运行时已连接",
-      "notConnected": "运行时未连接",
-      "routeSnapshotUnavailable": "路由快照不可用",
-      "daemonHint": "当前未检测到 nimi runtime daemon，请确认 runtime 已启动后再使用模型选择器。",
-      "routeSnapshotFailed": "runtime route snapshot 读取失败：{{detail}}。",
-      "daemonBanner": "运行时未连接，模型选择不可用。请确认 nimi runtime 已启动。{{detail}}",
-      "routeSnapshotBanner": "runtime 路由快照读取失败。{{detail}}"
+    "posture": {
+      "checking": "检测中…",
+      "ready": "已连接",
+      "unavailable": "暂不可用",
+      "actionRequired": "需要操作",
+      "bridgeAbsent": "未在 Nimi 桌面环境中运行"
+    },
+    "access": {
+      "title": "Nimi 访问",
+      "description": "AI 能力通过 Nimi 运行时提供；访问丢失不会影响本地数据。",
+      "technicalDetails": "技术详情"
+    },
+    "declared": {
+      "title": "AI 能力声明",
+      "description": "ParentOS 向平台声明的能力意图。",
+      "empty": "尚未声明任何能力。",
+      "declareNow": "声明文本生成能力",
+      "routeLocal": "本地路由",
+      "routeCloud": "云端路由"
+    },
+    "features": {
+      "title": "功能可用性",
+      "description": "基于当前平台契约的功能状态。",
+      "available": "可用",
+      "unavailable": "暂不可用",
+      "advisor": "成长顾问",
+      "report": "成长报告叙述",
+      "journalTagging": "日记智能标记",
+      "profileSummary": "档案智能摘要",
+      "medicalInsights": "医疗事件智能分析",
+      "ocrIntake": "报告图片识别",
+      "voiceTranscribe": "语音转写"
     },
     "runtime": {
-      "imageInputUnsupported": "当前 AI 智能识别模型未配置，请在 AI 设置中为“智能识别”选择支持视觉输入的模型后重试。",
-      "visionCapability": "智能识别",
-      "speechCapability": "语音转写",
-      "textCapability": "AI 对话",
-      "modelMissing": "ParentOS {{capabilityLabel}}模型未配置，请先在 AI 设置中为 {{surfaceId}} 选择模型。"
-    },
-    "capability": {
-      "textGenerateLabel": "AI 对话",
-      "textGenerateDetail": "用于成长提问、日志标签与分析报告生成",
-      "textGenerateVisionLabel": "智能识别",
-      "textGenerateVisionDetail": "用于验光单、眼轴单、体检单等图片识别",
-      "audioTranscribeLabel": "语音转写",
-      "audioTranscribeDetail": "用于语音观察记录",
-      "runtimeNotReady": "Runtime 未就绪",
-      "runtimeUnavailable": "Runtime 不可用",
-      "needsBinding": "需要绑定",
-      "bound": "已绑定",
-      "missingBinding": "缺少模型绑定",
-      "modelConfigured": "模型已配置",
-      "bootstrapNotReady": "ParentOS bootstrap 尚未完成。",
-      "capabilityNotConfigured": "{{label}} 未配置"
-    },
-    "card": {
-      "notBound": "未绑定",
-      "saveFailed": "AI 配置保存失败",
-      "saving": "保存中...",
-      "chooseModel": "选择 Runtime 模型",
-      "runtimeNotReady": "Runtime 未就绪",
-      "params": "参数",
-      "customized": "已自定义",
-      "clearBinding": "清除绑定"
+      "imageInputUnsupported": "当前版本不支持图片或附件输入。"
     }
   },
   "HealthCapture": {
@@ -867,8 +818,7 @@
     "title": "AI 识别牙齿萌出情况",
     "subtitle": "支持口腔全景片、口内照、咬合照。AI 识别仅供参考，请以医生诊断为准。",
     "error": {
-      "invalidJson": "AI 识别返回的结果格式不完整，请重试或换一张更清晰的照片。",
-      "imageInputUnsupported": "当前 AI 对话模型不支持图片识别，请在 AI 设置中切换到支持视觉输入的模型后重试。",
+      "surfaceUnavailable": "当前版本暂不支持 AI 识别，请使用手动录入。",
       "failed": "AI 识别失败，请重试。"
     },
     "tooth": {
@@ -2725,9 +2675,7 @@
       "high": "偏高"
     },
     "form": {
-      "ocrRuntimeUnavailable": "AI 运行时不可用，请确认已启动",
-      "ocrNoValidInfo": "未能从图片中识别出有效信息",
-      "ocrFailed": "识别失败，请重试",
+      "ocrRuntimeUnavailable": "智能识别暂不可用：当前版本不支持图片识别，请手动填写。",
       "titleRequired": "请填写诊断或症状",
       "dateRequired": "请选择发生日期",
       "saveFailed": "保存失败：{{message}}",
