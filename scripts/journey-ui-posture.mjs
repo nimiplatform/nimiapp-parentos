@@ -91,10 +91,6 @@ async function main() {
     await page.waitForFunction(() => Boolean(window.__NIMI_ELECTRON_RUNTIME__?.invoke), null, { timeout: 30_000 });
     await page.getByTestId('parentos-launch-trigger').click();
     await page.waitForSelector('[data-testid="parentos-app-routed-surface"]', { timeout: 30_000 });
-    const skip = page.getByTestId('parentos-welcome-intro-skip');
-    await skip.waitFor({ state: 'visible', timeout: 8_000 }).then(() => skip.click())
-      .then(() => page.waitForSelector('[data-testid="parentos-welcome-intro"]', { state: 'detached', timeout: 8_000 }))
-      .catch(() => undefined);
 
     // In-app SPA navigation (BrowserRouter in dev): pushState + popstate is
     // how react-router picks up programmatic location changes.

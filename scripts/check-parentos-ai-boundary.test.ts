@@ -172,12 +172,13 @@ describe('check-parentos-ai-boundary', () => {
           content: "value: 'cloud'\nConnector ID\nroute、model 和 connector",
         },
       ],
-      aiConfigSource: "scopeRef: { ownerId: 'nimi.parentos' }, connectorId: 'openai-main'",
+      aiConfigSource: "scopeRef: { ownerId: 'nimi.parentos' }, connectorId: 'openai-main'; client.aiConfig.overwrite([])",
     });
 
     expect(errors).toEqual(expect.arrayContaining([
       "AI settings must stay local-only while privacy copy says no cloud upload (value: 'cloud' in src/shell/renderer/features/settings/ai-settings-page.tsx)",
-      'ParentOS AI config must declare the portable text.generate capability intent',
+      'ParentOS AI config must recognize the portable text.generate capability intent',
+      'ParentOS AI config must remain a read-only platform projection',
       'ParentOS AI config must not carry custody material: connectorId',
       'ParentOS AI config must not carry custody material: ownerId',
     ]));

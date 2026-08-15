@@ -5,7 +5,6 @@ const getAppSettingMock = vi.fn();
 const getChildMock = vi.fn();
 const getFamilyMock = vi.fn();
 const getChildrenMock = vi.fn();
-const ensureParentosAIConfigDeclaredMock = vi.fn();
 const loadAndApplyPersistedAppLanguageMock = vi.fn();
 
 vi.mock('../bridge/sqlite-bridge.js', () => ({
@@ -17,9 +16,6 @@ vi.mock('../bridge/sqlite-bridge.js', () => ({
 }));
 
 vi.mock('../bridge/mappers.js', () => ({ mapChildRow: vi.fn((row) => row) }));
-vi.mock('../features/settings/parentos-ai-config.js', () => ({
-  ensureParentosAIConfigDeclared: ensureParentosAIConfigDeclaredMock,
-}));
 vi.mock('./parentos-nimi-client.js', () => ({
   createParentOSNimiClient: vi.fn(() => null),
   setParentOSNimiClient: vi.fn(),
@@ -39,7 +35,6 @@ describe('ParentOS app-owned data bootstrap', () => {
     getChildMock.mockReset().mockResolvedValue(null);
     getFamilyMock.mockReset().mockResolvedValue(null);
     getChildrenMock.mockReset().mockResolvedValue([]);
-    ensureParentosAIConfigDeclaredMock.mockReset().mockResolvedValue({ state: 'declared' });
     loadAndApplyPersistedAppLanguageMock.mockReset().mockResolvedValue(undefined);
 
     ({ useAppStore } = await import('../app-shell/app-store.js'));

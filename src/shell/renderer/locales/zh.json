@@ -617,9 +617,9 @@
     },
     "declared": {
       "title": "AI 能力声明",
-      "description": "ParentOS 向平台声明的能力意图。",
-      "empty": "尚未声明任何能力。",
-      "declareNow": "声明文本生成能力",
+      "description": "Nimi 平台为 ParentOS 配置的只读能力意图。",
+      "empty": "尚未配置任何能力。",
+      "platformManaged": "能力声明与路由由 Nimi 平台管理；ParentOS 不会从应用内改写。",
       "routeLocal": "本地路由",
       "routeCloud": "云端路由"
     },
@@ -2827,52 +2827,32 @@
       "posture": "体态"
     },
     "welcome": {
-      "greeting": {
-        "morning": "早上好",
-        "afternoon": "下午好",
-        "evening": "晚上好"
-      },
-      "greetingLine": "{{greeting}}，开启今天的育儿之旅。",
-      "eyebrow": "ParentOS / 成长底稿",
-      "brandName": "成长底稿",
-      "brandTagline": "AI 驱动的儿童成长操作系统",
       "hero": {
         "withChildrenTitle": "选择一个孩子开始",
-        "emptyTitle": "把零散成长，沉淀成可理解的底稿。",
+        "emptyTitle": "给孩子建一份成长档案",
         "withChildrenDescription": "请选择一个孩子，进入他的成长时间线与阶段提醒。",
-        "emptyDescription": "从第一笔身高体重，到一次观察笔记，再到下一阶段最该关注的提醒，ParentOS 把家庭记录组织成长期、可追溯的成长系统。"
+        "emptyDescription": "之后，每个阶段最该关注什么，它会主动告诉你。"
       },
       "addChild": "添加新孩子",
       "createProfile": "建立宝贝专属档案",
-      "companionTitle": "我们将这样陪伴你",
-      "feature": {
-        "healthArchive": {
-          "title": "构建全景健康档案",
-          "description": "把生长、视力、口腔、体检与医疗记录沉淀为同一份本地档案，长期趋势不再散落。"
+      "stepsTitle": "三步开始",
+      "step": {
+        "createProfile": {
+          "title": "建立档案",
+          "description": "只要姓名和生日，一分钟完成"
         },
-        "observation": {
-          "title": "让观察成为线索",
-          "description": "日常笔记进入结构化观察框架，语言、动作、情绪与关系质量可以被连续追踪。"
+        "record": {
+          "title": "随手记录",
+          "description": "身高体重、观察笔记，想记就记"
         },
-        "reminder": {
-          "title": "阶段重点主动浮现",
-          "description": "规则引擎按年龄和记录状态推出阶段提醒，AI 只做解释与整理，不替代专业判断。"
+        "remind": {
+          "title": "接收提醒",
+          "description": "每个阶段的重点，主动浮现"
         }
       },
       "trust": {
         "localFirst": "本地优先，儿童数据留在设备内",
         "standards": "中国与 WHO 参考标准并行"
-      },
-      "intro": {
-        "ariaLabel": "成长底稿引导动画",
-        "skip": "跳过",
-        "line": "孩子的成长，应该被理解。"
-      },
-      "systemNode": {
-        "profile": "健康档案",
-        "journal": "观察笔记",
-        "reminder": "阶段提醒",
-        "advisor": "AI 解释"
       }
     },
     "domain": {

@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
 import {
-  ensureParentosAIConfigDeclared,
   readParentosAIConfig,
   type ParentosPortableAIConfig,
 } from './parentos-ai-config.js';
@@ -176,15 +175,9 @@ export default function AiSettingsPage() {
             ) : null}
           </div>
           {postureReady && aiConfigLoaded && declaredCapabilities.length === 0 ? (
-            <button
-              type="button"
-              className={cn(buttonVariants({ tone: 'secondary', size: 'sm' }), 'mt-4')}
-              onClick={() => {
-                void ensureParentosAIConfigDeclared().then(() => refresh());
-              }}
-            >
-              {t('AISettings.declared.declareNow')}
-            </button>
+            <p className="mt-4 text-[12px] leading-5 text-[var(--nimi-text-muted)]">
+              {t('AISettings.declared.platformManaged')}
+            </p>
           ) : null}
         </Surface>
 

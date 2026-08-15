@@ -35,6 +35,10 @@ test('ParentOS Electron combines the fixed local-app carrier with exact app-owne
   assert.match(main, /\bsandbox\s*:\s*true\b/u);
   assert.match(main, /\bsetWindowOpenHandler\b/u);
   assert.match(main, /\bwill-navigate\b/u);
+  assert.match(main, /\bdid-fail-load\b/u);
+  assert.match(main, /界面资源未能加载/u);
+  assert.match(main, /rendererLoadFailureUrl/u);
+  assert.match(main, /allowedRendererUrls:\s*\[rendererUrl\]/u, 'failure surface must not receive renderer host-command authority');
 
   assert.match(preload, /\binstallNimiElectronRuntimeBridge\b/u);
   assert.equal(existsSync(path.join(root, 'src-electron/runtime-auth.ts')), false);

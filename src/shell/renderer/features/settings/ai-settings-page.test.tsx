@@ -9,7 +9,6 @@ import AiSettingsPage from './ai-settings-page.js';
 
 const probeParentosNimiAccessMock = vi.fn();
 const readParentosAIConfigMock = vi.fn();
-const ensureParentosAIConfigDeclaredMock = vi.fn();
 
 vi.mock('../../infra/runtime-status.js', () => ({
   probeParentosNimiAccess: () => probeParentosNimiAccessMock(),
@@ -17,7 +16,6 @@ vi.mock('../../infra/runtime-status.js', () => ({
 
 vi.mock('./parentos-ai-config.js', () => ({
   readParentosAIConfig: () => readParentosAIConfigMock(),
-  ensureParentosAIConfigDeclared: () => ensureParentosAIConfigDeclaredMock(),
 }));
 
 const DECLARED_CONFIG = {
@@ -37,7 +35,6 @@ describe('AiSettingsPage', () => {
       retryable: true,
     });
     readParentosAIConfigMock.mockReset().mockResolvedValue({ state: 'ready', config: DECLARED_CONFIG });
-    ensureParentosAIConfigDeclaredMock.mockReset().mockResolvedValue({ state: 'declared' });
   });
 
   function renderPage() {
@@ -94,5 +91,20 @@ describe('AiSettingsPage', () => {
     const details = container.querySelector('details');
     expect(details).toBeTruthy();
     expect(details?.textContent).toContain('runtime-service-unavailable');
+  });
+
+  it('keeps missing capability configuration read-only', async () => {
+    readParentosAIConfigMock.mockResolvedValue({
+      state: 'ready',
+      config: { ...DECLARED_CONFIG, capabilities: [] },
+    });
+
+    const { container } = renderPage();
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('尚未配置任何能力');
+      expect(container.textContent).toContain('由 Nimi 平台管理');
+    });
+    expect(screen.queryByRole('button', { name: '声明文本生成能力' })).toBeNull();
   });
 });

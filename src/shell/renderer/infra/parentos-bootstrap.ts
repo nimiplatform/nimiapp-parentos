@@ -8,7 +8,6 @@ import {
   getFamily,
 } from '../bridge/sqlite-bridge.js';
 import { mapChildRow } from '../bridge/mappers.js';
-import { ensureParentosAIConfigDeclared } from '../features/settings/parentos-ai-config.js';
 import { loadAndApplyPersistedAppLanguage } from '../i18n/app-language.js';
 import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
 import { createParentOSNimiClient, setParentOSNimiClient } from './parentos-nimi-client.js';
@@ -60,19 +59,6 @@ async function doRunParentOSBootstrap(): Promise<void> {
   // Nimi access is established independently from app-owned data hydration:
   // client creation is side-effect free and never blocks local bootstrap.
   setParentOSNimiClient(createParentOSNimiClient());
-  // The app-owned AI capability intent is declared opportunistically and never
-  // gates local data; failure leaves a typed posture for surfaces to render.
-  void ensureParentosAIConfigDeclared().then((declaration) => {
-    if (declaration.state !== 'declared') {
-      logRendererEvent({
-        level: 'warn',
-        area: 'bootstrap.ai-config',
-        message: 'action:ai-config-declaration-unavailable',
-        flowId,
-        details: { reasonCode: declaration.reasonCode },
-      });
-    }
-  });
 
   try {
     await loadLocalData();

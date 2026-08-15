@@ -617,9 +617,9 @@
     },
     "declared": {
       "title": "AI Capability Declarations",
-      "description": "Capability intents ParentOS declares to the platform.",
-      "empty": "No capabilities declared yet.",
-      "declareNow": "Declare text generation capability",
+      "description": "Read-only capability intents configured for ParentOS by the Nimi platform.",
+      "empty": "No capabilities are configured yet.",
+      "platformManaged": "Capability declarations and routes are managed by the Nimi platform; ParentOS does not rewrite them in-app.",
       "routeLocal": "Local route",
       "routeCloud": "Cloud route"
     },
@@ -2827,52 +2827,32 @@
       "posture": "Posture"
     },
     "welcome": {
-      "greeting": {
-        "morning": "Good morning",
-        "afternoon": "Good afternoon",
-        "evening": "Good evening"
-      },
-      "greetingLine": "{{greeting}}, start today's parenting journey.",
-      "eyebrow": "ParentOS / Growth record",
-      "brandName": "Growth Record",
-      "brandTagline": "AI-powered child growth operating system",
       "hero": {
         "withChildrenTitle": "Choose a child to begin",
-        "emptyTitle": "Turn scattered growth moments into an understandable record.",
+        "emptyTitle": "Build a growth record for your child",
         "withChildrenDescription": "Choose a child to enter their growth timeline and stage reminders.",
-        "emptyDescription": "From the first height and weight record, to an observation note, to the next stage reminders that matter most, ParentOS organizes family records into a long-term traceable growth system."
+        "emptyDescription": "After that, it proactively tells you what matters most at each stage."
       },
       "addChild": "Add new child",
       "createProfile": "Create child profile",
-      "companionTitle": "How we will support you",
-      "feature": {
-        "healthArchive": {
-          "title": "Build a full health archive",
-          "description": "Growth, vision, dental, checkup, and medical records stay in one local archive so long-term trends do not scatter."
+      "stepsTitle": "Three steps to begin",
+      "step": {
+        "createProfile": {
+          "title": "Create the profile",
+          "description": "Just a name and birthday, done in a minute"
         },
-        "observation": {
-          "title": "Turn observations into signals",
-          "description": "Daily notes enter a structured observation framework so language, movement, emotion, and relationship quality can be tracked continuously."
+        "record": {
+          "title": "Jot things down",
+          "description": "Height, weight, and observations, anytime"
         },
-        "reminder": {
-          "title": "Surface stage priorities proactively",
-          "description": "The rules engine surfaces stage reminders from age and record state. AI explains and organizes; it does not replace professional judgment."
+        "remind": {
+          "title": "Get reminded",
+          "description": "What matters at each stage, surfaced for you"
         }
       },
       "trust": {
         "localFirst": "Local first; child data stays on this device",
         "standards": "Chinese and WHO references side by side"
-      },
-      "intro": {
-        "ariaLabel": "Growth Record intro animation",
-        "skip": "Skip",
-        "line": "A child's growth should be understood."
-      },
-      "systemNode": {
-        "profile": "Health archive",
-        "journal": "Observation notes",
-        "reminder": "Stage reminders",
-        "advisor": "AI explanation"
       }
     },
     "domain": {

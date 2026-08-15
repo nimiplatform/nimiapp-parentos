@@ -95,7 +95,8 @@ function randomParticle(width: number, height: number): Particle {
     x: (Math.random() - 0.5) * width * 1.5,
     y: (Math.random() - 0.5) * height * 1.5,
     z: (Math.random() - 0.5) * 100,
-    radius: Math.random() < 0.3 ? 3.5 : 2,
+    // Sized to match the Nimi desktop boot particles' perceived size (diameter ~2.1/1.2 CSS px).
+    radius: Math.random() < 0.3 ? 1.05 : 0.6,
   };
 }
 

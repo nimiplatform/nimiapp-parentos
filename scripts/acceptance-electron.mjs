@@ -97,7 +97,7 @@ async function main() {
     assertLaunchState(launchState, 'Electron');
     await page.getByTestId('parentos-launch-trigger').click();
     await waitForProductRoute(page);
-    await dismissWelcomeIntro(page);
+    await page.getByTestId('parentos-welcome-page').waitFor({ state: 'visible', timeout: 30_000 });
     const desktopState = await captureProductState(page);
     assertProductState(desktopState, 'Electron');
     const desktopOverflow = await assertNoVisibleOverflow(page, 'electron-desktop');
@@ -126,19 +126,6 @@ async function main() {
       );
     }
 
-    const aiConfigOverwriteResult = await invokeBridge(
-      page,
-      NIMI_STANDARD_SHELL_COMMANDS['local-app.aiConfigOverwrite'],
-      {
-        payload: {
-          capabilities: [{
-            capabilityContract: 'text.generate',
-            requiredFeatures: [],
-            route: { oneofKind: 'local', local: {} },
-          }],
-        },
-      },
-    );
     const aiConfigGetResult = await invokeBridge(
       page,
       NIMI_STANDARD_SHELL_COMMANDS['local-app.aiConfigGet'],
@@ -172,17 +159,16 @@ async function main() {
       { payload: { relativePath: storageRelativePath, value: { shell: 'electron', class: 'base' } } },
     );
     if (plainNegative) {
-      assert.equal(aiConfigOverwriteResult.ok, false, 'unsupervised Electron must not reach the app AIConfig carrier');
+      assert.equal(aiConfigGetResult.ok, false, 'unsupervised Electron must not reach the app AIConfig carrier');
       assert.equal(textCandidateResult.ok, false, 'unsupervised Electron must not reach the text-candidate carrier');
       assert.equal(realmDenialResult.ok, false, 'unsupervised Electron must not reach undeclared domain carriers');
       assert.equal(appStorageWriteResult.ok, false, 'unsupervised Electron must not reach app-private JSON storage');
     } else {
-      assert.equal(aiConfigOverwriteResult.ok, true, `app-owned AIConfig intent must be declarable: ${JSON.stringify(aiConfigOverwriteResult)}`);
-      assert.equal(aiConfigGetResult.ok, true, `app-owned AIConfig must be readable: ${JSON.stringify(aiConfigGetResult)}`);
+      assert.equal(aiConfigGetResult.ok, true, `platform-owned AIConfig projection must be readable: ${JSON.stringify(aiConfigGetResult)}`);
       assert.match(
         JSON.stringify(aiConfigGetResult.value),
         /text\.generate/u,
-        'app-owned AIConfig must contain the declared text.generate intent',
+        'platform-owned AIConfig must contain the admitted text.generate intent',
       );
       assert.equal(textCandidateResult.ok, true, `declared runtime.consume domain must produce a text candidate: ${JSON.stringify(textCandidateResult)}`);
       assert.ok(
@@ -273,7 +259,6 @@ async function main() {
       desktopState,
       narrowState,
       sessionStatusResult,
-      aiConfigOverwriteResult,
       aiConfigGetResult,
       textCandidateResult,
       realmDenialResult,
@@ -359,13 +344,6 @@ async function waitForProductRoute(page) {
     && !document.querySelector('[data-testid="parentos-bootstrap-loading"]')
     && !document.querySelector('[data-testid="parentos-bootstrap-failure"]')
   ), null, { timeout: 30_000 });
-}
-
-async function dismissWelcomeIntro(page) {
-  const skip = page.getByTestId('parentos-welcome-intro-skip');
-  await skip.waitFor({ state: 'visible', timeout: 5_000 });
-  await skip.click();
-  await page.waitForSelector('[data-testid="parentos-welcome-intro"]', { state: 'detached' });
 }
 
 async function captureLaunchState(page) {

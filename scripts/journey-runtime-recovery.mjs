@@ -138,10 +138,6 @@ async function main() {
     // Enter the product (launch gate) and open the AI settings surface.
     await page.getByTestId('parentos-launch-trigger').click();
     await page.waitForSelector('[data-testid="parentos-app-routed-surface"]', { timeout: 30_000 });
-    const skip = page.getByTestId('parentos-welcome-intro-skip');
-    if (await skip.isVisible().catch(() => false)) {
-      await skip.click();
-    }
 
     const before = await invokeBridge(page, NIMI_STANDARD_SHELL_COMMANDS['local-app.sessionStatus'], {});
     assert.equal(before.ok, true, `session must be ready before the kill: ${JSON.stringify(before)}`);

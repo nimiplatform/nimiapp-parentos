@@ -478,7 +478,11 @@ export function findSettingsPrivacyErrors(input: {
 
   if (!input.aiConfigSource.includes("PARENTOS_TEXT_CAPABILITY_CONTRACT = 'text.generate'")
     && !input.aiConfigSource.includes("capabilityContract: 'text.generate'")) {
-    errors.push('ParentOS AI config must declare the portable text.generate capability intent');
+    errors.push('ParentOS AI config must recognize the portable text.generate capability intent');
+  }
+
+  if (input.aiConfigSource.includes('.aiConfig.overwrite(')) {
+    errors.push('ParentOS AI config must remain a read-only platform projection');
   }
 
   for (const custody of ['connectorId', 'connectorGrantId', 'profileBindingId', 'readinessRef', 'ownerId']) {

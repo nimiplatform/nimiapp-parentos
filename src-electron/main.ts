@@ -19,7 +19,10 @@ const appRoot = resolveAppRoot(currentDir);
 const preloadPath = path.join(currentDir, 'preload.cjs');
 const rendererDistIndex = path.join(appRoot, 'dist', 'index.html');
 const rendererDistUrl = pathToFileURL(rendererDistIndex).toString();
-const rendererUrl = readDevelopmentRendererUrl() || rendererDistUrl;
+const developmentRendererUrl = readDevelopmentRendererUrl();
+const rendererUrl = developmentRendererUrl || rendererDistUrl;
+const rendererLoadFailureUrl = createRendererLoadFailureUrl(developmentRendererUrl);
+const rendererFailureLoads = new WeakMap<BrowserWindow, Promise<void>>();
 let mainWindow: BrowserWindow | undefined;
 
 bootLog('module-loaded');
@@ -115,13 +118,21 @@ async function createMainWindow(): Promise<BrowserWindow> {
   });
   hardenParentOSWindowChrome(window);
   secureParentOSWindow(window);
-  await loadRenderer(window);
-  bootLog('create-window:renderer-loaded');
+  installRendererLoadFailureSurface(window);
+  const rendererLoaded = await loadRenderer(window);
+  bootLog(rendererLoaded ? 'create-window:renderer-loaded' : 'create-window:renderer-unavailable');
   return window;
 }
 
-async function loadRenderer(window: BrowserWindow): Promise<void> {
-  await window.loadURL(rendererUrl);
+async function loadRenderer(window: BrowserWindow): Promise<boolean> {
+  try {
+    await window.loadURL(rendererUrl);
+    return true;
+  } catch (error) {
+    bootLog(`renderer-load-failure:${errorMessage(error)}`);
+    await showRendererLoadFailure(window);
+    return false;
+  }
 }
 
 function hardenParentOSWindowChrome(window: BrowserWindow): void {
@@ -132,10 +143,74 @@ function hardenParentOSWindowChrome(window: BrowserWindow): void {
 function secureParentOSWindow(window: BrowserWindow): void {
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => {
-    if (!isParentOSRendererUrl(url)) {
+    if (!isParentOSRendererUrl(url) && url !== rendererLoadFailureUrl) {
       event.preventDefault();
     }
   });
+}
+
+function installRendererLoadFailureSurface(window: BrowserWindow): void {
+  window.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedUrl, isMainFrame) => {
+    if (
+      !isMainFrame
+      || errorCode === -3
+      || !isParentOSRendererUrl(validatedUrl)
+      || window.isDestroyed()
+    ) {
+      return;
+    }
+    bootLog(`renderer-navigation-failure:${errorCode}:${errorDescription}`);
+    void showRendererLoadFailure(window).catch((error) => {
+      bootLog(`renderer-failure-surface-error:${errorMessage(error)}`);
+    });
+  });
+}
+
+function showRendererLoadFailure(window: BrowserWindow): Promise<void> {
+  const active = rendererFailureLoads.get(window);
+  if (active) {
+    return active;
+  }
+  const load = window.loadURL(rendererLoadFailureUrl).finally(() => {
+    if (rendererFailureLoads.get(window) === load) {
+      rendererFailureLoads.delete(window);
+    }
+  });
+  rendererFailureLoads.set(window, load);
+  return load;
+}
+
+function createRendererLoadFailureUrl(developmentUrl: string): string {
+  const instruction = developmentUrl
+    ? `请确认 ParentOS renderer（${new URL(developmentUrl).host}）正在运行，然后重新加载。`
+    : '请重新启动 ParentOS；如果问题持续，请重新构建或安装应用。';
+  const html = `<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="referrer" content="no-referrer" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>成长底稿</title>
+    <style>
+      :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
+      * { box-sizing: border-box; }
+      body { align-items: center; background: #f4f7fb; color: #182033; display: flex; justify-content: center; margin: 0; min-height: 100vh; padding: 32px; }
+      main { background: #fff; border: 1px solid #e5e9f1; border-radius: 20px; box-shadow: 0 18px 50px rgba(29, 45, 76, .1); max-width: 520px; padding: 36px; width: 100%; }
+      p { color: #667085; line-height: 1.7; margin: 12px 0 0; }
+      h1 { font-size: 24px; margin: 0; }
+      a { background: #4db6d1; border-radius: 12px; color: #fff; display: inline-flex; font-weight: 650; margin-top: 24px; padding: 11px 18px; text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <main role="alert">
+      <h1>界面资源未能加载</h1>
+      <p>${instruction}</p>
+      <a href="${rendererUrl}">重新加载</a>
+    </main>
+  </body>
+</html>`;
+  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
 }
 
 function allowedRendererUrls(): string[] {
