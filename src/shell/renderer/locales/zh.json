@@ -6,6 +6,22 @@
     "loading": "加载中...",
     "logoAlt": "ParentOS 标志"
   },
+  "Onboarding": {
+    "title": {
+      "line1": "科学陪伴每一步",
+      "line2": "成长更有方向"
+    },
+    "subtitle": "疫苗、体检、里程碑、敏感期——按孩子的年龄与阶段，主动提醒当下最值得关注的事。",
+    "tagline": "从出生到青春期，为孩子的成长留一份看得懂的底稿。",
+    "cta": "建立宝贝档案",
+    "milestone": {
+      "vaccine": "疫苗接种",
+      "checkup": "定期体检",
+      "milestone": "发育里程碑",
+      "sensitive": "敏感期提示",
+      "journal": "成长记录"
+    }
+  },
   "Auth": {
     "launchEnter": "进入成长底稿",
     "bootstrapFailure": {
@@ -2829,12 +2845,9 @@
     "welcome": {
       "hero": {
         "withChildrenTitle": "选择一个孩子开始",
-        "emptyTitle": "给孩子建一份成长档案",
-        "withChildrenDescription": "请选择一个孩子，进入他的成长时间线与阶段提醒。",
-        "emptyDescription": "之后，每个阶段最该关注什么，它会主动告诉你。"
+        "withChildrenDescription": "请选择一个孩子，进入他的成长时间线与阶段提醒。"
       },
       "addChild": "添加新孩子",
-      "createProfile": "建立宝贝专属档案",
       "stepsTitle": "三步开始",
       "step": {
         "createProfile": {
@@ -2851,7 +2864,6 @@
         }
       },
       "trust": {
-        "localFirst": "本地优先，儿童数据留在设备内",
         "standards": "中国与 WHO 参考标准并行"
       }
     },

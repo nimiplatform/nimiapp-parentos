@@ -6,6 +6,22 @@
     "loading": "Loading...",
     "logoAlt": "ParentOS logo"
   },
+  "Onboarding": {
+    "title": {
+      "line1": "Guided by science,",
+      "line2": "growing with direction"
+    },
+    "subtitle": "Vaccines, checkups, milestones, sensitive periods — surfaced proactively for your child's age and stage.",
+    "tagline": "From newborn to teen, keep a clear record of how your child grows.",
+    "cta": "Create Child Profile",
+    "milestone": {
+      "vaccine": "Vaccinations",
+      "checkup": "Regular Checkups",
+      "milestone": "Milestones",
+      "sensitive": "Sensitive Periods",
+      "journal": "Growth Journal"
+    }
+  },
   "Auth": {
     "launchEnter": "Enter ParentOS",
     "bootstrapFailure": {
@@ -2829,12 +2845,9 @@
     "welcome": {
       "hero": {
         "withChildrenTitle": "Choose a child to begin",
-        "emptyTitle": "Build a growth record for your child",
-        "withChildrenDescription": "Choose a child to enter their growth timeline and stage reminders.",
-        "emptyDescription": "After that, it proactively tells you what matters most at each stage."
+        "withChildrenDescription": "Choose a child to enter their growth timeline and stage reminders."
       },
       "addChild": "Add new child",
-      "createProfile": "Create child profile",
       "stepsTitle": "Three steps to begin",
       "step": {
         "createProfile": {
@@ -2851,7 +2864,6 @@
         }
       },
       "trust": {
-        "localFirst": "Local first; child data stays on this device",
         "standards": "Chinese and WHO references side by side"
       }
     },

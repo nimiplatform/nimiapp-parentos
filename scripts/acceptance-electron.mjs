@@ -97,7 +97,7 @@ async function main() {
     assertLaunchState(launchState, 'Electron');
     await page.getByTestId('parentos-launch-trigger').click();
     await waitForProductRoute(page);
-    await page.getByTestId('parentos-welcome-page').waitFor({ state: 'visible', timeout: 30_000 });
+    await page.getByTestId('parentos-onboarding-page').waitFor({ state: 'visible', timeout: 30_000 });
     const desktopState = await captureProductState(page);
     assertProductState(desktopState, 'Electron');
     const desktopOverflow = await assertNoVisibleOverflow(page, 'electron-desktop');
@@ -325,6 +325,8 @@ function assertProductState(state, label) {
   assert.equal(state.failure, false, `${label} must not show an app-data failure`);
   assert.equal(state.routed, true, `${label} must render ParentOS product routes`);
   assert.equal(state.launch, false, `${label} must leave the launch surface after interaction`);
+  assert.equal(state.onboarding, true, `${label} must render the zero-profile onboarding surface`);
+  assert.equal(state.createChildCta, true, `${label} must expose the create-child action`);
   assert.ok(state.bodyText.trim().length > 0, `${label} must render readable product content`);
   assert.doesNotMatch(state.bodyText, /�/u, `${label} must not contain replacement-glyph text`);
 }
@@ -370,6 +372,8 @@ async function captureProductState(page) {
     failure: Boolean(document.querySelector('[data-testid="parentos-bootstrap-failure"]')),
     routed: Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]')),
     launch: Boolean(document.querySelector('[data-testid="parentos-launch-page"]')),
+    onboarding: Boolean(document.querySelector('[data-testid="parentos-onboarding-page"]')),
+    createChildCta: Boolean(document.querySelector('[data-testid="parentos-onboarding-create-child"]')),
     viewport: { width: window.innerWidth, height: window.innerHeight },
   }));
 }

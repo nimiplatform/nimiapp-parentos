@@ -2221,3 +2221,194 @@ button.report-note-composer {
     border: 1px solid #fde68a !important;
   }
 }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * ParentOS Onboarding — first-launch empty state
+ *
+ * Scoped visual language for the welcome surface: near-white blue ambient
+ * light, logo-blue CTA with a faint violet tail, growth-trajectory SVG,
+ * and lightweight floating milestone tags. Motion is deliberately quiet
+ * (500–800ms entry, slow tag drift) and fully disabled under
+ * prefers-reduced-motion.
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.parentos-onboarding-ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(52% 46% at 78% 30%, color-mix(in srgb, var(--nimi-action-primary-bg) 12%, transparent) 0%, transparent 70%),
+    radial-gradient(38% 34% at 88% 74%, rgba(139, 124, 246, 0.08) 0%, transparent 72%),
+    radial-gradient(40% 36% at 12% 82%, color-mix(in srgb, var(--nimi-action-primary-bg) 7%, transparent) 0%, transparent 75%);
+}
+
+.parentos-onboarding-glow {
+  position: absolute;
+  inset: -6% -4%;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 42% at 62% 44%, color-mix(in srgb, var(--nimi-action-primary-bg) 16%, transparent) 0%, transparent 68%),
+    radial-gradient(30% 28% at 30% 70%, rgba(69, 184, 214, 0.10) 0%, transparent 70%),
+    radial-gradient(26% 24% at 84% 20%, rgba(139, 124, 246, 0.10) 0%, transparent 70%);
+}
+
+.parentos-onboarding-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 13px 26px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  color: #ffffff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #3e8fe5 0%, #557ff0 58%, #7d7df2 100%);
+  box-shadow:
+    0 6px 16px rgba(62, 143, 229, 0.26),
+    0 2px 6px rgba(62, 143, 229, 0.16);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.parentos-onboarding-cta:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow:
+    0 10px 24px rgba(80, 120, 235, 0.30),
+    0 3px 8px rgba(62, 143, 229, 0.18);
+}
+
+.parentos-onboarding-cta:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+  box-shadow:
+    0 4px 12px rgba(62, 143, 229, 0.24),
+    0 1px 4px rgba(62, 143, 229, 0.14);
+}
+
+.parentos-onboarding-cta:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, #3e8fe5 30%, transparent),
+    0 6px 16px rgba(62, 143, 229, 0.26);
+}
+
+/* Lightweight floating milestone tag — icon chip + short label, no card. */
+.parentos-onboarding-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 9999px;
+  padding: 6px 12px 6px 6px;
+  background: color-mix(in srgb, var(--nimi-surface-card) 88%, transparent);
+  box-shadow: 0 4px 14px rgba(70, 110, 180, 0.10);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+
+.parentos-onboarding-tag-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+}
+
+.parentos-onboarding-tag-icon--blue {
+  background: rgba(62, 143, 229, 0.12);
+  color: #3b82e0;
+}
+
+.parentos-onboarding-tag-icon--teal {
+  background: rgba(69, 184, 214, 0.14);
+  color: #2aa79b;
+}
+
+.parentos-onboarding-tag-icon--violet {
+  background: rgba(139, 124, 246, 0.12);
+  color: #7c6ff0;
+}
+
+.parentos-onboarding-tag-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--nimi-text-secondary);
+}
+
+/* Entry + ambient motion. */
+@keyframes parentosOnboardingRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes parentosOnboardingScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes parentosOnboardingFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes parentosOnboardingTagFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.parentos-onboarding-enter-left {
+  animation: parentosOnboardingRise 620ms ease-out both;
+}
+
+.parentos-onboarding-enter-visual {
+  animation: parentosOnboardingScaleIn 720ms ease-out both;
+}
+
+.parentos-onboarding-enter-path {
+  animation: parentosOnboardingFade 820ms ease-out 180ms both;
+}
+
+.parentos-onboarding-tag-enter {
+  animation: parentosOnboardingRise 560ms ease-out both;
+}
+
+.parentos-onboarding-tag-float {
+  animation: parentosOnboardingTagFloat 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parentos-onboarding-enter-left,
+  .parentos-onboarding-enter-visual,
+  .parentos-onboarding-enter-path,
+  .parentos-onboarding-tag-enter,
+  .parentos-onboarding-tag-float {
+    animation: none;
+  }
+}

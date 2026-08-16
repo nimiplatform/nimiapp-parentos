@@ -310,14 +310,14 @@ export function ShellLayout({ children }: { children: ReactNode }) {
           onMouseDown={handleWindowDragMouseDown}
         >
           <div className="flex min-w-0 items-center gap-2">
-            <img
-              src={parentosLogoUrl}
-              alt={t('App.logoAlt')}
-              className="h-6 w-6 shrink-0 rounded-[6px] object-contain"
-            />
-            <h1 className="hidden text-[18px] font-semibold text-[var(--nimi-text-primary)] sm:block">ParentOS</h1>
             {hasActiveChild ? (
               <>
+                <img
+                  src={parentosLogoUrl}
+                  alt={t('App.logoAlt')}
+                  className="h-6 w-6 shrink-0 rounded-[6px] object-contain"
+                />
+                <h1 className="hidden text-[18px] font-semibold text-[var(--nimi-text-primary)] sm:block">ParentOS</h1>
                 <span className="select-none text-[var(--nimi-border-strong)]" aria-hidden="true">/</span>
                 <ChildSwitcherBreadcrumb
                   childList={childList}

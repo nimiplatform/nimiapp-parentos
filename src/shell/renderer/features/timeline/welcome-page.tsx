@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Landmark, Plus, ShieldCheck } from 'lucide-react';
+import { Landmark, Plus } from 'lucide-react';
 import { AmbientBackground, buttonVariants, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
 import { ChildAvatar } from '../../shared/child-avatar.js';
 import { i18nText } from '../../i18n/index.js';
+import { ParentOnboardingPage } from '../onboarding/parent-onboarding-page.js';
 import welcomeHeroKids from './assets/welcome-hero-kids.png';
 
 interface StepSpec {
@@ -33,6 +34,10 @@ export function WelcomePage() {
   const setActiveChildId = useAppStore((s) => s.setActiveChildId);
   const hasChildren = children.length > 0;
 
+  if (!hasChildren) {
+    return <ParentOnboardingPage />;
+  }
+
   return (
     <AmbientBackground variant="mesh" className="relative flex h-full overflow-hidden">
       <div
@@ -60,63 +65,44 @@ export function WelcomePage() {
             <div className="relative z-10 flex flex-col gap-10 xl:flex-row xl:items-center xl:justify-between">
               <div className="max-w-[520px]">
                 <h2 className="text-[28px] font-semibold leading-snug text-[var(--nimi-text-primary)] sm:text-[34px]">
-                  {hasChildren ? i18nText('Timeline.welcome.hero.withChildrenTitle') : i18nText('Timeline.welcome.hero.emptyTitle')}
+                  {i18nText('Timeline.welcome.hero.withChildrenTitle')}
                 </h2>
                 <p className="mt-3 max-w-[440px] text-[15px] leading-relaxed text-[var(--nimi-text-muted)]">
-                  {hasChildren
-                    ? i18nText('Timeline.welcome.hero.withChildrenDescription')
-                    : i18nText('Timeline.welcome.hero.emptyDescription')}
+                  {i18nText('Timeline.welcome.hero.withChildrenDescription')}
                 </p>
 
-                {hasChildren ? (
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    {children.map((child) => {
-                      const age = computeAgeMonths(child.birthDate);
-                      const years = Math.floor(age / 12);
-                      const months = age % 12;
-                      const ageLabel = age < 12
-                        ? i18nText('Common.age.months', { months: age })
-                        : months > 0 ? i18nText('Common.age.yearsMonths', { years, months }) : i18nText('Common.age.years', { years });
-                      return (
-                        <button
-                          key={child.childId}
-                          type="button"
-                          onClick={() => setActiveChildId(child.childId)}
-                          className="group flex items-center gap-3 rounded-full border border-[var(--nimi-material-glass-thin-border)] bg-[var(--nimi-surface-card)] py-2 pl-2.5 pr-5 text-left text-[var(--nimi-text-primary)] shadow-[var(--nimi-elevation-base)] transition-all duration-[var(--nimi-motion-fast)] hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_30%,var(--nimi-material-glass-thin-border))]"
-                        >
-                          <ChildAvatar child={child} ageMonths={age} className="h-9 w-9 shrink-0 rounded-full object-cover" />
-                          <span>
-                            <span className="block text-[14px] font-semibold">{child.displayName}</span>
-                            <span className="block text-[13px] text-[var(--nimi-text-muted)]">{ageLabel}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                    <Link
-                      to="/settings/children"
-                      state={{ intent: 'add-child' }}
-                      className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'gap-2 border border-dashed border-[var(--nimi-border-strong)] px-5')}
-                    >
-                      <Plus size={16} />
-                      {i18nText('Timeline.welcome.addChild')}
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="mt-8">
-                    <Link
-                      to="/settings/children"
-                      state={{ intent: 'add-child' }}
-                      className={cn(buttonVariants({ tone: 'primary', size: 'lg' }), 'gap-2 px-7 py-3.5 text-[16px]')}
-                    >
-                      {i18nText('Timeline.welcome.createProfile')}
-                      <ArrowRight size={18} />
-                    </Link>
-                    <p className="mt-3.5 flex items-center gap-1.5 text-[13px] text-[var(--nimi-text-muted)]">
-                      <ShieldCheck size={14} strokeWidth={2} className="shrink-0 text-[var(--nimi-action-primary-bg)]" />
-                      {i18nText('Timeline.welcome.trust.localFirst')}
-                    </p>
-                  </div>
-                )}
+                <div className="mt-8 flex flex-wrap gap-3">
+                  {children.map((child) => {
+                    const age = computeAgeMonths(child.birthDate);
+                    const years = Math.floor(age / 12);
+                    const months = age % 12;
+                    const ageLabel = age < 12
+                      ? i18nText('Common.age.months', { months: age })
+                      : months > 0 ? i18nText('Common.age.yearsMonths', { years, months }) : i18nText('Common.age.years', { years });
+                    return (
+                      <button
+                        key={child.childId}
+                        type="button"
+                        onClick={() => setActiveChildId(child.childId)}
+                        className="group flex items-center gap-3 rounded-full border border-[var(--nimi-material-glass-thin-border)] bg-[var(--nimi-surface-card)] py-2 pl-2.5 pr-5 text-left text-[var(--nimi-text-primary)] shadow-[var(--nimi-elevation-base)] transition-all duration-[var(--nimi-motion-fast)] hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_30%,var(--nimi-material-glass-thin-border))]"
+                      >
+                        <ChildAvatar child={child} ageMonths={age} className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                        <span>
+                          <span className="block text-[14px] font-semibold">{child.displayName}</span>
+                          <span className="block text-[13px] text-[var(--nimi-text-muted)]">{ageLabel}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                  <Link
+                    to="/settings/children"
+                    state={{ intent: 'add-child' }}
+                    className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'gap-2 border border-dashed border-[var(--nimi-border-strong)] px-5')}
+                  >
+                    <Plus size={16} />
+                    {i18nText('Timeline.welcome.addChild')}
+                  </Link>
+                </div>
               </div>
             </div>
           </section>

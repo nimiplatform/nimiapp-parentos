@@ -13,6 +13,8 @@ test('live acceptance verifies ParentOS app-owned product bootstrap end to end',
     assert.match(source, /parentos-launch-page/u, `${scriptPath} must inspect the launch surface`);
     assert.match(source, /parentos-launch-trigger/u, `${scriptPath} must exercise the launch interaction`);
     assert.match(source, /parentos-app-routed-surface/u, `${scriptPath} must require product routes`);
+    assert.match(source, /parentos-onboarding-page/u, `${scriptPath} must require the zero-profile onboarding surface`);
+    assert.match(source, /parentos-onboarding-create-child/u, `${scriptPath} must require the create-child action`);
     assert.match(source, /app-owned SQLite command must remain available independently/u, `${scriptPath} must prove app-owned data access`);
     assert.match(source, /invokeBridge\(page, ['"]get_family['"]/u, `${scriptPath} must invoke an exact app-owned command`);
     assert.doesNotMatch(source, /parentos-protected-operation-set-not-admitted|local data disabled/u, `${scriptPath} must not retain the obsolete product-wide lock`);

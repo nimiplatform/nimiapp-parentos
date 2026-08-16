@@ -155,6 +155,8 @@ describe('ShellLayout', () => {
 
     expect(container.querySelector('nav')).toBeNull();
     expect(container.querySelector('a[href="/reports"]')).toBeNull();
+    expect(screen.queryByRole('img', { name: 'ParentOS 标志' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'ParentOS' })).toBeNull();
     expect(screen.getByTestId('shell-main-drag-region')).toBeTruthy();
   });
 

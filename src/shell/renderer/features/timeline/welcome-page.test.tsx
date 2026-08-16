@@ -21,15 +21,14 @@ describe('WelcomePage', () => {
     });
   });
 
-  it('shows the empty-profile action immediately without an intro screen', () => {
+  it('shows the onboarding empty state when no child profile exists', () => {
     render(
       <MemoryRouter>
         <WelcomePage />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: '建立宝贝专属档案' })).toBeTruthy();
-    expect(screen.getByTestId('parentos-welcome-page')).toBeTruthy();
-    expect(screen.queryByTestId('parentos-welcome-intro')).toBeNull();
+    expect(screen.getByTestId('parentos-onboarding-page')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '建立宝贝档案' })).toBeTruthy();
   });
 });
