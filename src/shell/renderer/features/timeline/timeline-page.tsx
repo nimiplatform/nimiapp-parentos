@@ -94,7 +94,7 @@ export default function TimelinePage() {
   }
 
   return (
-    <div className="relative flex h-full" style={{ background: 'transparent' }}>
+    <div className="relative flex h-full min-w-0" style={{ background: 'transparent' }}>
       {/* Ambient gradient — diffuse pink + blue cloud that warms the whole dashboard.
        * Placed once at the page shell so inner cards stay neutral and don't stack blurs. */}
       <div
@@ -109,19 +109,19 @@ export default function TimelinePage() {
           filter: 'blur(28px)',
         }}
       />
-      <div className="hide-scrollbar relative z-[1] min-w-0 flex-1 overflow-y-auto px-6 pb-8" style={{ paddingTop: 28 }}>
-        <div className="mb-6 flex gap-6">
+      <div className="hide-scrollbar relative z-[1] min-w-0 flex-1 overflow-y-auto px-3 pb-8 sm:px-6" style={{ paddingTop: 28 }}>
+        <div className="mb-4 flex min-w-0 flex-col gap-4 lg:mb-6 lg:flex-row lg:gap-6">
           <ChildContextCard child={child} ageMonths={ageMonths} />
           <RecentChangesHeroCard items={homeVm.recentChanges} />
         </div>
-        <div className="grid auto-rows-min grid-cols-8 gap-6">
+        <div className="grid auto-rows-min grid-cols-8 gap-4 md:gap-6">
           <QuickLinksStrip ageMonths={ageMonths} />
           {/* Growth snapshot (left) + Sleep trend & Vision (right, stacked) */}
-          <div className="col-span-8 flex gap-6">
+          <div className="col-span-8 flex min-w-0 flex-col gap-4 lg:flex-row lg:gap-6">
             <div className="min-w-0 flex-1 [&>div]:h-full">
               <GrowthSnapshotCard snapshot={homeVm.growthSnapshot} />
             </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-6">
+            <div className="flex min-w-0 flex-1 flex-col gap-4 lg:gap-6">
               <div className="flex-1 [&>div]:h-full">
                 <SleepTrendCard summary={homeVm.sleepTrend} />
               </div>
@@ -139,7 +139,7 @@ export default function TimelinePage() {
         </div>
       </div>
 
-      <div className="relative z-[1]">
+      <div className="relative z-[1] hidden xl:block">
         <ReminderPanel {...panelProps} />
       </div>
 

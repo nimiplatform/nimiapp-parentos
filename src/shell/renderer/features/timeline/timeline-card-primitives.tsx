@@ -24,7 +24,7 @@ export function Cd({
       material={material}
       padding="none"
       tone="card"
-      className={`p-7 transition-transform hover:-translate-y-0.5 ${cls}`}
+      className={`max-md:col-span-8 p-5 transition-transform hover:-translate-y-0.5 sm:p-7 ${cls}`}
       style={style}
     >
       {children}

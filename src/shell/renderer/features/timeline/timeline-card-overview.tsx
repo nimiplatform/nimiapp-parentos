@@ -143,7 +143,7 @@ export function ChildContextCard({ child, ageMonths }: { child: ChildProfile; ag
     <div
       className="relative z-10 shrink-0"
       style={{
-        width: 240,
+        width: 'min(240px, 100%)',
         borderRadius: 24,
         background: '#ffffff',
         boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 14px rgba(15,23,42,0.04), 0 18px 36px rgba(15,23,42,0.04)',
@@ -188,7 +188,7 @@ function RecentChangeLeadCell({ item }: { item: RecentChangeItem }) {
   return (
     <Link
       to={item.to}
-      className="dashboard-inset dashboard-inset--interactive col-span-3 flex flex-col rounded-[22px] p-6 transition-all duration-200 hover:-translate-y-0.5"
+      className="dashboard-inset dashboard-inset--interactive col-span-1 flex flex-col rounded-[22px] p-5 transition-all duration-200 hover:-translate-y-0.5 sm:col-span-3 sm:p-6"
     >
       <div className="flex items-center gap-3">
         <RecentChangeIcon item={item} size={20} />
@@ -250,9 +250,9 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
       </div>
 
       {lead ? (
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
           <RecentChangeLeadCell item={lead} />
-          <div className="col-span-2 space-y-3">
+          <div className="col-span-1 space-y-3 sm:col-span-2">
             {secondary.map((item) => <RecentChangeSecondaryCell key={item.id} item={item} />)}
             {secondary.length === 0 ? (
               <div className="dashboard-inset rounded-[18px] p-4">
@@ -313,7 +313,7 @@ export function QuickLinksStrip({ ageMonths }: { ageMonths: number }) {
   return (
     <Cd cls="col-span-8">
       <Hdr title={i18nText('Timeline.home.quickLinksTitle')} />
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-6">
         {links.map((item) => (
           (() => {
             const iconMeta = QUICK_LINK_ICON_META[item.id] ?? DEFAULT_QUICK_LINK_ICON_META;
