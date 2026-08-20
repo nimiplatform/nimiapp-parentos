@@ -7,12 +7,16 @@ import {
   type ParentosAISurfaceId,
 } from './parentos-ai-surface-policy.js';
 import { i18nText } from '../../i18n/index.js';
+import {
+  hasParentosAIConfigCapability,
+  PARENTOS_TEXT_CAPABILITY_CONTRACT,
+} from './parentos-ai-config.js';
 
-// runtime.ai.text-candidate.generate is the only admitted AI execution surface
-// for a third-party Local App. It is unary and bounded: at most 8 messages
-// (system messages first, at least one user message), 32 KiB per message,
-// 64 KiB aggregate, maxTokens <= 4096. There is no streaming, tool, or
-// attachment channel; every violation must fail closed before the call.
+// ParentOS text surfaces deliberately use the bounded foreground candidate
+// operation even though current App Access also exposes text-turn streaming
+// and Scenario Jobs. This path admits at most 8 messages (system first and at
+// least one user), 32 KiB per message, 64 KiB aggregate, and 4096 output
+// tokens. Tools and attachments remain outside this text helper.
 const MAX_CANDIDATE_MESSAGES = 8;
 const MAX_CANDIDATE_MESSAGE_BYTES = 32 * 1024;
 const MAX_CANDIDATE_PROMPT_BYTES = 64 * 1024;
@@ -174,6 +178,12 @@ export async function runParentosTextGenerate(
     const policy = getParentosAISurfacePolicy(input.surfaceId);
     if (policy.inputKind !== 'structured-local' && policy.inputKind !== 'closed-set') {
       throw createParentosAISurfaceUnavailableError(input.surfaceId);
+    }
+    if (!await hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)) {
+      throw createParentosAIError(
+        'ParentOS text generation requires a Nimi-owned text.generate AIConfig intent.',
+        'parentos-ai-capability-not-configured',
+      );
     }
     const messages = toCandidateMessages(input.messages);
     assertPromptBudget(messages);

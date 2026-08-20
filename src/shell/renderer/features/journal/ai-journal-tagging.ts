@@ -3,7 +3,10 @@ import type { ObservationDimension } from '../../knowledge-base/index.js';
 import {
   runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
-import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import {
+  hasParentosAIConfigCapability,
+  PARENTOS_TEXT_CAPABILITY_CONTRACT,
+} from '../settings/parentos-ai-config.js';
 
 export interface JournalTagSuggestion {
   dimensionId: string | null;
@@ -143,7 +146,7 @@ export function parseJournalTagSuggestion(
 }
 
 export async function hasJournalTaggingRuntime() {
-  return hasParentOSNimiClient();
+  return hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT);
 }
 
 export async function suggestJournalTags(input: {

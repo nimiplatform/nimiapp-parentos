@@ -11,7 +11,10 @@ import {
 } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
-import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import {
+  hasParentosAIConfigCapability,
+  PARENTOS_TEXT_CAPABILITY_CONTRACT,
+} from '../settings/parentos-ai-config.js';
 import { generateNarrativeReportForPeriod } from './narrative-prompt.js';
 import { MonthlyLetterViewer } from './reports-monthly-letter.js';
 import {
@@ -111,7 +114,7 @@ function buildNarrativeTitle(childName: string, reportType: GrowthReportType) {
 }
 
 async function hasAvailableReportsRuntime() {
-  return hasParentOSNimiClient();
+  return hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT);
 }
 
 function reportBadgeLabel(c: ParsedReportContent): string {

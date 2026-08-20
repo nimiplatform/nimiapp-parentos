@@ -1,11 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const generateCandidateMock = vi.fn();
+const hasCapabilityMock = vi.fn();
 
 vi.mock('../../infra/parentos-nimi-client.js', () => ({
   getParentOSNimiClient: () => ({
     ai: { text: { generateCandidate: generateCandidateMock } },
   }),
+}));
+
+vi.mock('./parentos-ai-config.js', () => ({
+  hasParentosAIConfigCapability: () => hasCapabilityMock(),
+  PARENTOS_TEXT_CAPABILITY_CONTRACT: 'text.generate',
 }));
 
 import {
@@ -19,11 +25,27 @@ function textMessage(role: 'system' | 'user', text: string) {
 
 describe('runParentosTextGenerate (unary text-candidate contract)', () => {
   beforeEach(() => {
+    hasCapabilityMock.mockReset().mockResolvedValue(true);
     generateCandidateMock.mockReset().mockResolvedValue({
       text: '观察到孩子在持续积累。',
       finishReason: 'stop',
       traceId: 'trace-1',
     });
+  });
+
+  it('fails closed before dispatch when the Nimi-owned text intent is missing', async () => {
+    hasCapabilityMock.mockResolvedValue(false);
+
+    const result = await runParentosTextGenerate({
+      surfaceId: 'parentos.advisor',
+      messages: [textMessage('user', '问题')],
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { reasonCode: 'parentos-ai-capability-not-configured' },
+    });
+    expect(generateCandidateMock).not.toHaveBeenCalled();
   });
 
   it('maps system+user messages onto the candidate contract with clamped defaults', async () => {
@@ -99,7 +121,7 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
     expect(generateCandidateMock).not.toHaveBeenCalled();
   });
 
-  it('fails closed on surfaces without an admitted operation (vision/STT gap)', async () => {
+  it('fails closed when a vision surface is sent through the text-only helper', async () => {
     const result = await runParentosTextGenerate({
       surfaceId: 'parentos.profile.checkup-ocr',
       messages: [textMessage('user', '识别这张图')],

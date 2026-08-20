@@ -218,12 +218,15 @@ export function findJournalBoundaryErrors(journalAiSource: string) {
 export function findVoiceBoundaryErrors(voiceObservationSource: string) {
   const errors: string[] = [];
 
-  // STT has no admitted App Access operation; the runtime module must gate
-  // the surface off through the typed unavailable error instead of calling
-  // any transcription pipeline.
+  // Voice transcription must use the public protected Local App Scenario Job
+  // adapter, require the exact owner-managed audio intent, and reject an empty
+  // transcript instead of fabricating success.
   for (const marker of [
-    'createParentosAISurfaceUnavailableError',
-    'isParentosAISurfaceExecutable',
+    'runRuntimeSpeechTranscribe',
+    'createNimiLocalAppRuntimeScenarioJobClient',
+    'hasParentosAIConfigCapability',
+    'PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT',
+    'if (!transcript)',
   ]) {
     if (!voiceObservationSource.includes(marker)) {
       errors.push(`voice observation runtime is missing boundary marker: ${marker}`);
@@ -415,6 +418,7 @@ export function findRuntimeHelperBoundaryErrors(parentosAiRuntimeSource: string)
     'export async function runParentosTextGenerate',
     'getParentOSNimiClient().ai.text.generateCandidate({',
     'isParentosAISurfaceExecutable(input.surfaceId)',
+    'hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)',
     'export function createParentosAISurfaceUnavailableError',
     'MAX_CANDIDATE_MESSAGES',
     'MAX_CANDIDATE_MESSAGE_BYTES',
@@ -428,8 +432,9 @@ export function findRuntimeHelperBoundaryErrors(parentosAiRuntimeSource: string)
     }
   }
 
-  // Legacy first-party execution surfaces and custody material are forbidden:
-  // the unary text-candidate operation is the only admitted AI path.
+  // Legacy first-party execution surfaces and custody material remain
+  // forbidden in the governed foreground text helper. Current protected App
+  // Access Scenario Jobs are consumed only by their typed feature modules.
   for (const forbidden of [
     'streamParentosTextGenerate',
     'runParentosMultimodalTextGenerate',

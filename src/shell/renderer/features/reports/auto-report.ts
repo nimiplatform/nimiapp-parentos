@@ -7,8 +7,11 @@ import {
 } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { generateNarrativeReport } from './narrative-prompt.js';
-import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
+import {
+  hasParentosAIConfigCapability,
+  PARENTOS_TEXT_CAPABILITY_CONTRACT,
+} from '../settings/parentos-ai-config.js';
 import { findNextEligibleRollingReportPeriod, requireValidGrowthReports } from './report-cycle.js';
 import { buildStructuredGrowthReport } from './structured-report.js';
 
@@ -27,7 +30,7 @@ async function generateNextEligibleMonthlyReport(child: ChildProfile): Promise<s
   ]);
 
   let report: Awaited<ReturnType<typeof generateNarrativeReport>> | ReturnType<typeof buildStructuredGrowthReport> | null = null;
-  if (hasParentOSNimiClient()) {
+  if (await hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)) {
     const [sleepRecords, dentalRecords, allergyRecords, medicalEvents, fitnessAssessments, tannerAssessments] = await Promise.all([
       getSleepRecords(child.childId), getDentalRecords(child.childId), getAllergyRecords(child.childId),
       getMedicalEvents(child.childId), getFitnessAssessments(child.childId), getTannerAssessments(child.childId),

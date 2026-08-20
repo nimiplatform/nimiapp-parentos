@@ -117,10 +117,10 @@ export function getParentosAISurfacePolicy(surfaceId: ParentosAISurfaceId): Pare
   ];
 }
 
-// The Nimi App Access contract admits unary text generation only. Surfaces
-// whose input kind needs vision/OCR or STT have no admitted operation and are
-// gated off everywhere; this is a typed product gap, never a silent fallback.
+// Current Nimi App Access admits bounded foreground text consumption and
+// Scenario Job speech transcription. Vision understanding/OCR still has no
+// admitted operation, so OCR surfaces remain a typed product gap.
 export function isParentosAISurfaceExecutable(surfaceId: ParentosAISurfaceId): boolean {
   const { inputKind } = getParentosAISurfacePolicy(surfaceId);
-  return inputKind === 'structured-local' || inputKind === 'closed-set';
+  return inputKind === 'structured-local' || inputKind === 'closed-set' || inputKind === 'stt';
 }

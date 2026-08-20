@@ -6,6 +6,7 @@ import {
   findReportsBoundaryErrors,
   findRuntimeHelperBoundaryErrors,
   findSettingsPrivacyErrors,
+  findVoiceBoundaryErrors,
 } from './check-parentos-ai-boundary.js';
 
 describe('check-parentos-ai-boundary', () => {
@@ -124,11 +125,25 @@ describe('check-parentos-ai-boundary', () => {
     expect(errors).toEqual([]);
   });
 
+  it('requires the protected Scenario Job STT path and fail-close transcript validation', () => {
+    const errors = findVoiceBoundaryErrors([
+      'runRuntimeSpeechTranscribe',
+      'createNimiLocalAppRuntimeScenarioJobClient',
+      'hasParentosAIConfigCapability',
+      'PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT',
+      'if (!transcript)',
+      'parentos.journal.voice-observation',
+    ].join('\n'));
+
+    expect(errors).toEqual([]);
+  });
+
   it('requires the unary text-candidate helper with budget guards and no legacy surfaces', () => {
     const errors = findRuntimeHelperBoundaryErrors([
       'export async function runParentosTextGenerate',
       'getParentOSNimiClient().ai.text.generateCandidate({',
       'isParentosAISurfaceExecutable(input.surfaceId)',
+      'hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)',
       'export function createParentosAISurfaceUnavailableError',
       'MAX_CANDIDATE_MESSAGES',
       'MAX_CANDIDATE_MESSAGE_BYTES',
@@ -146,6 +161,7 @@ describe('check-parentos-ai-boundary', () => {
       'export async function runParentosTextGenerate',
       'getParentOSNimiClient().ai.text.generateCandidate({',
       'isParentosAISurfaceExecutable(input.surfaceId)',
+      'hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)',
       'export function createParentosAISurfaceUnavailableError',
       'MAX_CANDIDATE_MESSAGES',
       'MAX_CANDIDATE_MESSAGE_BYTES',

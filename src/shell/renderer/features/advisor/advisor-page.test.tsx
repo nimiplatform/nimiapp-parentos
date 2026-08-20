@@ -255,8 +255,9 @@ vi.mock('../settings/parentos-ai-runtime.js', () => ({
   runParentosTextGenerate: (input: TextGenerateInput) => textGenerateMock(input),
 }));
 
-vi.mock('../../infra/parentos-nimi-client.js', () => ({
-  hasParentOSNimiClient: () => true,
+vi.mock('../settings/parentos-ai-config.js', () => ({
+  hasParentosAIConfigCapability: () => Promise.resolve(true),
+  PARENTOS_TEXT_CAPABILITY_CONTRACT: 'text.generate',
 }));
 
 function promptTextOf(input: TextGenerateInput): string {

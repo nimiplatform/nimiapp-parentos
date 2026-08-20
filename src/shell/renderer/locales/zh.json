@@ -648,7 +648,11 @@
       "title": "AI 能力声明",
       "description": "Nimi 平台为 ParentOS 配置的只读能力意图。",
       "empty": "尚未配置任何能力。",
-      "platformManaged": "能力声明与路由由 Nimi 平台管理；ParentOS 不会从应用内改写。",
+      "platformManaged": "能力声明与路由由 Nimi 平台管理；ParentOS 只读取当前配置，并跳转到 Nimi 完成修改。",
+      "openOwnerConfiguration": "在 Nimi 中配置",
+      "openingOwnerConfiguration": "正在打开…",
+      "loadFailed": "AI 配置读取失败",
+      "ownerHandoffFailed": "未能打开 Nimi 配置页",
       "routeLocal": "本地路由",
       "routeCloud": "云端路由"
     },

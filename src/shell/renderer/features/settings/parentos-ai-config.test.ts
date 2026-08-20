@@ -9,6 +9,8 @@ vi.mock('../../infra/parentos-nimi-client.js', () => ({
 }));
 
 import {
+  hasParentosAIConfigCapability,
+  PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT,
   readParentosAIConfig,
 } from './parentos-ai-config.js';
 
@@ -47,6 +49,45 @@ describe('ParentOS portable AIConfig projection', () => {
 
     await expect(readParentosAIConfig()).resolves.toEqual({ state: 'ready', config });
     expect(overwrite).not.toHaveBeenCalled();
+  });
+
+  it('distinguishes an absent owner configuration from a transport failure', async () => {
+    const get = vi.fn().mockRejectedValue(Object.assign(new Error('missing'), { reasonCode: 'ai-config-not-found' }));
+    getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
+
+    await expect(readParentosAIConfig()).resolves.toEqual({
+      state: 'not-configured',
+      reasonCode: 'ai-config-not-found',
+    });
+  });
+
+  it('checks exact configured capabilities from the read-only projection', async () => {
+    const get = vi.fn().mockResolvedValue({
+      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
+      capabilities: [{ capabilityContract: 'audio.transcribe', requiredFeatures: [], route: { oneofKind: 'local', local: {} } }],
+    });
+    getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
+
+    await expect(hasParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).resolves.toBe(true);
+  });
+
+  it('does not admit a cloud intent across the ParentOS local-only privacy boundary', async () => {
+    const get = vi.fn().mockResolvedValue({
+      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
+      capabilities: [{
+        capabilityContract: 'audio.transcribe',
+        requiredFeatures: [],
+        route: {
+          oneofKind: 'cloud',
+          cloud: {
+            implementation: { implementationId: 'cloud.stt', driverId: 'driver.stt', driverDialect: 'stt/v1' },
+          },
+        },
+      }],
+    });
+    getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
+
+    await expect(hasParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).resolves.toBe(false);
   });
 
   it('maps typed failures to a bounded unavailable projection', async () => {

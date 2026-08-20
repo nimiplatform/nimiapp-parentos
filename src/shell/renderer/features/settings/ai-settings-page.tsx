@@ -8,7 +8,8 @@ import {
   CircleDashed,
   RefreshCw,
 } from 'lucide-react';
-import { Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
+import { Button, Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
+import { openDesktopIntent } from '@nimiplatform/kit/shell/renderer/bridge';
 import {
   readParentosAIConfig,
   type ParentosPortableAIConfig,
@@ -22,17 +23,20 @@ import { i18nText } from '../../i18n/index.js';
 
 type ParentosAIFeatureRow = {
   readonly labelKey: string;
-  readonly available: boolean;
+  readonly supported: boolean;
+  readonly capabilityContract: 'text.generate' | 'audio.transcribe' | null;
 };
 
+const PARENTOS_APP_ID = 'nimi.parentos';
+
 const PARENTOS_AI_FEATURE_ROWS: readonly ParentosAIFeatureRow[] = [
-  { labelKey: 'AISettings.features.advisor', available: isParentosAISurfaceExecutable('parentos.advisor') },
-  { labelKey: 'AISettings.features.report', available: isParentosAISurfaceExecutable('parentos.report') },
-  { labelKey: 'AISettings.features.journalTagging', available: isParentosAISurfaceExecutable('parentos.journal.ai-tagging') },
-  { labelKey: 'AISettings.features.profileSummary', available: isParentosAISurfaceExecutable('parentos.profile.summary.growth') },
-  { labelKey: 'AISettings.features.medicalInsights', available: isParentosAISurfaceExecutable('parentos.medical.smart-insight') },
-  { labelKey: 'AISettings.features.ocrIntake', available: isParentosAISurfaceExecutable('parentos.profile.checkup-ocr') },
-  { labelKey: 'AISettings.features.voiceTranscribe', available: isParentosAISurfaceExecutable('parentos.journal.voice-observation') },
+  { labelKey: 'AISettings.features.advisor', supported: isParentosAISurfaceExecutable('parentos.advisor'), capabilityContract: 'text.generate' },
+  { labelKey: 'AISettings.features.report', supported: isParentosAISurfaceExecutable('parentos.report'), capabilityContract: 'text.generate' },
+  { labelKey: 'AISettings.features.journalTagging', supported: isParentosAISurfaceExecutable('parentos.journal.ai-tagging'), capabilityContract: 'text.generate' },
+  { labelKey: 'AISettings.features.profileSummary', supported: isParentosAISurfaceExecutable('parentos.profile.summary.growth'), capabilityContract: 'text.generate' },
+  { labelKey: 'AISettings.features.medicalInsights', supported: isParentosAISurfaceExecutable('parentos.medical.smart-insight'), capabilityContract: 'text.generate' },
+  { labelKey: 'AISettings.features.ocrIntake', supported: isParentosAISurfaceExecutable('parentos.profile.checkup-ocr'), capabilityContract: null },
+  { labelKey: 'AISettings.features.voiceTranscribe', supported: isParentosAISurfaceExecutable('parentos.journal.voice-observation'), capabilityContract: 'audio.transcribe' },
 ];
 
 function postureLabelKey(posture: ParentosNimiAccessPosture | null): string {
@@ -56,7 +60,10 @@ export default function AiSettingsPage() {
   const [posture, setPosture] = useState<ParentosNimiAccessPosture | null>(null);
   const [aiConfig, setAiConfig] = useState<ParentosPortableAIConfig | null>(null);
   const [aiConfigLoaded, setAiConfigLoaded] = useState(false);
+  const [aiConfigReasonCode, setAiConfigReasonCode] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [ownerHandoffPending, setOwnerHandoffPending] = useState(false);
+  const [ownerHandoffFailure, setOwnerHandoffFailure] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -67,6 +74,7 @@ export default function AiSettingsPage() {
       ]);
       setPosture(nextPosture);
       setAiConfig(nextConfig.state === 'ready' ? nextConfig.config : null);
+      setAiConfigReasonCode(nextConfig.state === 'ready' ? null : nextConfig.reasonCode);
       setAiConfigLoaded(true);
     } finally {
       setRefreshing(false);
@@ -77,8 +85,47 @@ export default function AiSettingsPage() {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    const refreshOnFocus = () => { void refresh(); };
+    const refreshOnVisibility = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
+    window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshOnVisibility);
+    return () => {
+      window.removeEventListener('focus', refreshOnFocus);
+      document.removeEventListener('visibilitychange', refreshOnVisibility);
+    };
+  }, [refresh]);
+
+  // @nimi-authority: rule.parentos.shell.r001
+  const openOwnerConfiguration = useCallback(async () => {
+    if (ownerHandoffPending) return;
+    setOwnerHandoffPending(true);
+    setOwnerHandoffFailure(null);
+    try {
+      const result = await openDesktopIntent({
+        intent: { kind: 'open-apps', appId: PARENTOS_APP_ID, section: 'ai-models' },
+      });
+      if (result.status === 'rejected') {
+        setOwnerHandoffFailure(result.reasonCode);
+      }
+    } catch (error) {
+      const reasonCode = error && typeof error === 'object'
+        && 'reasonCode' in error && typeof error.reasonCode === 'string'
+        ? error.reasonCode
+        : 'desktop-open-host-unavailable';
+      setOwnerHandoffFailure(reasonCode);
+    } finally {
+      setOwnerHandoffPending(false);
+    }
+  }, [ownerHandoffPending]);
+
   const postureReady = posture?.state === 'ready';
   const declaredCapabilities = aiConfig?.capabilities ?? [];
+  const configuredLocalCapabilities = new Set(declaredCapabilities
+    .filter((capability) => capability.route.oneofKind === 'local')
+    .map((capability) => capability.capabilityContract));
 
   return (
     <div className="h-full overflow-y-auto bg-transparent">
@@ -170,14 +217,45 @@ export default function AiSettingsPage() {
                 </span>
               </div>
             ))}
-            {aiConfigLoaded && declaredCapabilities.length === 0 ? (
-              <p className="text-[13px] text-[var(--nimi-text-muted)]">{t('AISettings.declared.empty')}</p>
-            ) : null}
+            {aiConfigLoaded
+              && declaredCapabilities.length === 0
+              && (!aiConfigReasonCode || aiConfigReasonCode === 'ai-config-not-found') ? (
+                <p className="text-[13px] text-[var(--nimi-text-muted)]">{t('AISettings.declared.empty')}</p>
+              ) : null}
           </div>
-          {postureReady && aiConfigLoaded && declaredCapabilities.length === 0 ? (
-            <p className="mt-4 text-[12px] leading-5 text-[var(--nimi-text-muted)]">
-              {t('AISettings.declared.platformManaged')}
-            </p>
+          {postureReady && aiConfigLoaded ? (
+            <div className="mt-4 flex flex-col gap-3 border-t border-[var(--nimi-border-subtle)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[12px] leading-5 text-[var(--nimi-text-muted)]">
+                {t('AISettings.declared.platformManaged')}
+              </p>
+              <Button
+                type="button"
+                tone="secondary"
+                size="sm"
+                disabled={ownerHandoffPending}
+                onClick={() => void openOwnerConfiguration()}
+              >
+                {t(ownerHandoffPending
+                  ? 'AISettings.declared.openingOwnerConfiguration'
+                  : 'AISettings.declared.openOwnerConfiguration')}
+              </Button>
+            </div>
+          ) : null}
+          {aiConfigLoaded && aiConfigReasonCode && aiConfigReasonCode !== 'ai-config-not-found' ? (
+            <details className="mt-3 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
+                {t('AISettings.declared.loadFailed')}
+              </summary>
+              <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">{aiConfigReasonCode}</p>
+            </details>
+          ) : null}
+          {ownerHandoffFailure ? (
+            <details className="mt-3 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
+                {t('AISettings.declared.ownerHandoffFailed')}
+              </summary>
+              <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">{ownerHandoffFailure}</p>
+            </details>
           ) : null}
         </Surface>
 
@@ -187,7 +265,11 @@ export default function AiSettingsPage() {
             {i18nText('AISettings.features.description')}
           </p>
           <div className="mt-4 space-y-2">
-            {PARENTOS_AI_FEATURE_ROWS.map((row) => (
+            {PARENTOS_AI_FEATURE_ROWS.map((row) => {
+              const available = row.supported
+                && row.capabilityContract !== null
+                && configuredLocalCapabilities.has(row.capabilityContract);
+              return (
               <div
                 key={row.labelKey}
                 className="flex items-center justify-between rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3"
@@ -196,13 +278,14 @@ export default function AiSettingsPage() {
                 <span
                   className={cn(
                     'text-[12px] font-semibold',
-                    row.available ? 'text-[var(--nimi-status-success)]' : 'text-[var(--nimi-text-muted)]',
+                    available ? 'text-[var(--nimi-status-success)]' : 'text-[var(--nimi-text-muted)]',
                   )}
                 >
-                  {row.available ? t('AISettings.features.available') : t('AISettings.features.unavailable')}
+                  {available ? t('AISettings.features.available') : t('AISettings.features.unavailable')}
                 </span>
               </div>
-            ))}
+              );
+            })}
           </div>
         </Surface>
       </div>

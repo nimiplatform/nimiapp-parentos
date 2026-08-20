@@ -30,7 +30,10 @@ import {
 import {
   runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
-import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import {
+  hasParentosAIConfigCapability,
+  PARENTOS_TEXT_CAPABILITY_CONTRACT,
+} from '../settings/parentos-ai-config.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { AdvisorSidebar } from './advisor-sidebar.js';
 import { AdvisorTranscript } from './advisor-transcript.js';
@@ -592,9 +595,9 @@ export default function AdvisorPage() {
 
   useEffect(() => {
     async function checkRuntime() {
-      setRuntimeAvailable(hasParentOSNimiClient());
+      setRuntimeAvailable(await hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT));
     }
-    checkRuntime();
+    void checkRuntime();
   }, []);
 
   // ── Handle incoming topic from reminder panel ─────────────

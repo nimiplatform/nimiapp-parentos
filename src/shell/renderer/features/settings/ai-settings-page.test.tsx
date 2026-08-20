@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { TooltipProvider } from '@nimiplatform/kit/ui';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,7 @@ import AiSettingsPage from './ai-settings-page.js';
 
 const probeParentosNimiAccessMock = vi.fn();
 const readParentosAIConfigMock = vi.fn();
+const openDesktopIntentMock = vi.fn();
 
 vi.mock('../../infra/runtime-status.js', () => ({
   probeParentosNimiAccess: () => probeParentosNimiAccessMock(),
@@ -16,6 +17,10 @@ vi.mock('../../infra/runtime-status.js', () => ({
 
 vi.mock('./parentos-ai-config.js', () => ({
   readParentosAIConfig: () => readParentosAIConfigMock(),
+}));
+
+vi.mock('@nimiplatform/kit/shell/renderer/bridge', () => ({
+  openDesktopIntent: (request: unknown) => openDesktopIntentMock(request),
 }));
 
 const DECLARED_CONFIG = {
@@ -35,6 +40,13 @@ describe('AiSettingsPage', () => {
       retryable: true,
     });
     readParentosAIConfigMock.mockReset().mockResolvedValue({ state: 'ready', config: DECLARED_CONFIG });
+    openDesktopIntentMock.mockReset().mockResolvedValue({
+      status: 'accepted',
+      confirmation: 'desktop-accepted',
+      bridgeId: 'desktop-open-bridge-1',
+      requestId: 'desktop-open-request-1',
+      appliedTarget: 'open-apps',
+    });
   });
 
   function renderPage() {
@@ -60,7 +72,7 @@ describe('AiSettingsPage', () => {
     });
   });
 
-  it('lists text features as available and vision/STT gaps as unavailable', async () => {
+  it('lists text and STT as supported while keeping vision OCR unavailable', async () => {
     const { container } = renderPage();
 
     await waitFor(() => {
@@ -93,10 +105,10 @@ describe('AiSettingsPage', () => {
     expect(details?.textContent).toContain('runtime-service-unavailable');
   });
 
-  it('keeps missing capability configuration read-only', async () => {
+  it('keeps missing capability configuration read-only and hands changes to Nimi', async () => {
     readParentosAIConfigMock.mockResolvedValue({
-      state: 'ready',
-      config: { ...DECLARED_CONFIG, capabilities: [] },
+      state: 'not-configured',
+      reasonCode: 'ai-config-not-found',
     });
 
     const { container } = renderPage();
@@ -105,6 +117,12 @@ describe('AiSettingsPage', () => {
       expect(container.textContent).toContain('尚未配置任何能力');
       expect(container.textContent).toContain('由 Nimi 平台管理');
     });
-    expect(screen.queryByRole('button', { name: '声明文本生成能力' })).toBeNull();
+    const configureButton = screen.getByRole('button', { name: '在 Nimi 中配置' });
+    fireEvent.click(configureButton);
+    await waitFor(() => {
+      expect(openDesktopIntentMock).toHaveBeenCalledWith({
+        intent: { kind: 'open-apps', appId: 'nimi.parentos', section: 'ai-models' },
+      });
+    });
   });
 });

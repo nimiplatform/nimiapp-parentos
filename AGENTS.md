@@ -18,7 +18,7 @@
 | Legacy shell | Tauri 2 (builds and cargo tests stay green; not an admitted Nimi local-development carrier — its Nimi integration is deferred) | `src-tauri/` |
 | Frontend | React 19 + Vite 7 + Tailwind 4 | `src/shell/renderer/` |
 | Local storage | SQLite (rusqlite, bundled) | `src-tauri/src/sqlite/` |
-| AI | Nimi App Access `runtime.ai.text-candidate.generate` (unary, declared via `app_access: [runtime.consume]` in `nimi.app.yaml`) | via `@nimiplatform/sdk/app` |
+| AI | Nimi App Access protected Local App consumption: bounded foreground text candidate generation plus Scenario Job `audio.transcribe` (declared via `app_access: [runtime.consume]` in `nimi.app.yaml`) | via `@nimiplatform/sdk/app` + `@nimiplatform/kit/features/generation/runtime` |
 | UI components | `@nimiplatform/kit` | link dependency |
 | State | Zustand | `app-shell/app-store.ts` |
 | Charts | recharts | growth curves |
@@ -110,7 +110,7 @@ Two-layer model (boundary: whether individual data inference is involved):
 - Data anomaly → describe objective data + "建议咨询专业人士", no causal interpretation.
 - Domains marked `needs-review` in `data/structured/parentos/knowledge-source-readiness.yaml` must not enter Phase 1 free-form prompt.
 - AI boundary authority lives in `.nimi/spec/parentos/canonical/advisor.authority.yaml` for advisor/reports, `.nimi/spec/parentos/canonical/profile.authority.yaml` for profile-local AI summaries and OCR-assisted extraction, `.nimi/spec/parentos/canonical/journal.authority.yaml` for journal AI tagging/STT, and `data/structured/parentos/knowledge-source-readiness.yaml` for reviewed-domain gates. `definition.parentos.project.authority-boundary` defines the v2 authority boundary; no legacy guide is active authority.
-- Platform-contract reality (2026-08): the App Access contract admits unary text generation only. Vision/OCR (`parentos.profile.checkup-ocr`, `parentos.profile.dental-eruption-scan`, `parentos.medical.ocr-intake`) and STT (`parentos.journal.voice-observation`) surfaces are gated off as typed product gaps — entries stay visible with info-tone unavailable copy; never substitute a self-built channel.
+- Platform-contract reality (2026-08): App Access admits bounded foreground text candidate/turn consumption and protected Scenario Jobs, including `audio.transcribe`. ParentOS consumes local-route `text.generate` and `audio.transcribe` through the public Local App client; App AIConfig stays read-only and configuration hands off to the Nimi-owned Apps surface. Vision/OCR (`parentos.profile.checkup-ocr`, `parentos.profile.dental-eruption-scan`, `parentos.medical.ocr-intake`) still has no admitted understanding/extraction operation and remains gated off as a typed product gap; never substitute a self-built channel.
 
 ### Nurture Mode Boundary
 - P0 reminders are ALWAYS `push` in ALL modes. No exceptions.
