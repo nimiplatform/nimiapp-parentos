@@ -8,7 +8,7 @@ import {
 } from './parentos-ai-surface-policy.js';
 import { i18nText } from '../../i18n/index.js';
 import {
-  hasParentosAIConfigCapability,
+  requireParentosAIConfigCapability,
   PARENTOS_TEXT_CAPABILITY_CONTRACT,
 } from './parentos-ai-config.js';
 
@@ -179,12 +179,7 @@ export async function runParentosTextGenerate(
     if (policy.inputKind !== 'structured-local' && policy.inputKind !== 'closed-set') {
       throw createParentosAISurfaceUnavailableError(input.surfaceId);
     }
-    if (!await hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)) {
-      throw createParentosAIError(
-        'ParentOS text generation requires a Nimi-owned text.generate AIConfig intent.',
-        'parentos-ai-capability-not-configured',
-      );
-    }
+    await requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT);
     const messages = toCandidateMessages(input.messages);
     assertPromptBudget(messages);
     const result = await getParentOSNimiClient().ai.text.generateCandidate({

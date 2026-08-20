@@ -5,6 +5,7 @@ import { getParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import {
   hasParentosAIConfigCapability,
   PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT,
+  requireParentosAIConfigCapability,
 } from '../settings/parentos-ai-config.js';
 import { isParentosAISurfaceExecutable } from '../settings/parentos-ai-surface-policy.js';
 
@@ -43,12 +44,13 @@ export async function transcribeVoiceObservation(input: {
   if (input.audioBlob.size > MAX_TRANSCRIPTION_AUDIO_BYTES) {
     throw new Error('voice observation transcription exceeds the Nimi App Access audio bound');
   }
-  if (!await hasVoiceTranscriptionRuntime()) {
+  if (!isParentosAISurfaceExecutable('parentos.journal.voice-observation')) {
     throw Object.assign(
-      new Error('ParentOS voice transcription requires a Nimi-owned audio.transcribe AIConfig intent.'),
-      { reasonCode: 'parentos-ai-capability-not-configured' },
+      new Error('ParentOS voice transcription has no admitted Nimi App Access operation.'),
+      { reasonCode: 'parentos-ai-surface-not-admitted' },
     );
   }
+  await requireParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT);
 
   const audio = new Uint8Array(await input.audioBlob.arrayBuffer());
   const result = await runRuntimeSpeechTranscribe({

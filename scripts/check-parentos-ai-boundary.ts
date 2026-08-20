@@ -224,7 +224,7 @@ export function findVoiceBoundaryErrors(voiceObservationSource: string) {
   for (const marker of [
     'runRuntimeSpeechTranscribe',
     'createNimiLocalAppRuntimeScenarioJobClient',
-    'hasParentosAIConfigCapability',
+    'requireParentosAIConfigCapability',
     'PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT',
     'if (!transcript)',
   ]) {
@@ -418,7 +418,7 @@ export function findRuntimeHelperBoundaryErrors(parentosAiRuntimeSource: string)
     'export async function runParentosTextGenerate',
     'getParentOSNimiClient().ai.text.generateCandidate({',
     'isParentosAISurfaceExecutable(input.surfaceId)',
-    'hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)',
+    'requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)',
     'export function createParentosAISurfaceUnavailableError',
     'MAX_CANDIDATE_MESSAGES',
     'MAX_CANDIDATE_MESSAGE_BYTES',

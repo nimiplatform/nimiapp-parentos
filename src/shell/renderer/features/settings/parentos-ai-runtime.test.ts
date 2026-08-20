@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const generateCandidateMock = vi.fn();
-const hasCapabilityMock = vi.fn();
+const requireCapabilityMock = vi.fn();
 
 vi.mock('../../infra/parentos-nimi-client.js', () => ({
   getParentOSNimiClient: () => ({
@@ -10,7 +10,7 @@ vi.mock('../../infra/parentos-nimi-client.js', () => ({
 }));
 
 vi.mock('./parentos-ai-config.js', () => ({
-  hasParentosAIConfigCapability: () => hasCapabilityMock(),
+  requireParentosAIConfigCapability: () => requireCapabilityMock(),
   PARENTOS_TEXT_CAPABILITY_CONTRACT: 'text.generate',
 }));
 
@@ -25,7 +25,7 @@ function textMessage(role: 'system' | 'user', text: string) {
 
 describe('runParentosTextGenerate (unary text-candidate contract)', () => {
   beforeEach(() => {
-    hasCapabilityMock.mockReset().mockResolvedValue(true);
+    requireCapabilityMock.mockReset().mockResolvedValue(undefined);
     generateCandidateMock.mockReset().mockResolvedValue({
       text: '观察到孩子在持续积累。',
       finishReason: 'stop',
@@ -34,7 +34,9 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
   });
 
   it('fails closed before dispatch when the Nimi-owned text intent is missing', async () => {
-    hasCapabilityMock.mockResolvedValue(false);
+    requireCapabilityMock.mockRejectedValue(Object.assign(new Error('missing'), {
+      reasonCode: 'parentos-ai-capability-not-configured',
+    }));
 
     const result = await runParentosTextGenerate({
       surfaceId: 'parentos.advisor',
@@ -44,6 +46,23 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
     expect(result).toMatchObject({
       ok: false,
       error: { reasonCode: 'parentos-ai-capability-not-configured' },
+    });
+    expect(generateCandidateMock).not.toHaveBeenCalled();
+  });
+
+  it('preserves a typed AIConfig access failure before dispatch', async () => {
+    requireCapabilityMock.mockRejectedValue(Object.assign(new Error('denied'), {
+      reasonCode: 'local-app-access-denied',
+    }));
+
+    const result = await runParentosTextGenerate({
+      surfaceId: 'parentos.advisor',
+      messages: [textMessage('user', '问题')],
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { reasonCode: 'local-app-access-denied' },
     });
     expect(generateCandidateMock).not.toHaveBeenCalled();
   });

@@ -11,7 +11,9 @@ vi.mock('../../infra/parentos-nimi-client.js', () => ({
 import {
   hasParentosAIConfigCapability,
   PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT,
+  PARENTOS_TEXT_CAPABILITY_CONTRACT,
   readParentosAIConfig,
+  requireParentosAIConfigCapability,
 } from './parentos-ai-config.js';
 
 function clientWithAIConfig(aiConfig: {
@@ -97,6 +99,27 @@ describe('ParentOS portable AIConfig projection', () => {
     await expect(readParentosAIConfig()).resolves.toEqual({
       state: 'unavailable',
       reasonCode: 'local-app-access-denied',
+    });
+  });
+
+  it('preserves typed AIConfig access failures when execution requires a capability', async () => {
+    const get = vi.fn().mockRejectedValue(Object.assign(new Error('denied'), { reasonCode: 'local-app-access-denied' }));
+    getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
+
+    await expect(requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)).rejects.toMatchObject({
+      reasonCode: 'local-app-access-denied',
+    });
+  });
+
+  it('uses the product-level not-configured error only when the local intent is absent', async () => {
+    const get = vi.fn().mockResolvedValue({
+      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
+      capabilities: [],
+    });
+    getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
+
+    await expect(requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)).rejects.toMatchObject({
+      reasonCode: 'parentos-ai-capability-not-configured',
     });
   });
 });

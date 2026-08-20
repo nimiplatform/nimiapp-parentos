@@ -4,11 +4,13 @@ const {
   createScenarioClientMock,
   getParentOSNimiClientMock,
   hasCapabilityMock,
+  requireCapabilityMock,
   runRuntimeSpeechTranscribeMock,
 } = vi.hoisted(() => ({
   createScenarioClientMock: vi.fn(() => ({ scenario: 'adapter' })),
   getParentOSNimiClientMock: vi.fn(() => ({ ai: { scenarioJobs: {}, artifacts: {} } })),
   hasCapabilityMock: vi.fn(),
+  requireCapabilityMock: vi.fn(),
   runRuntimeSpeechTranscribeMock: vi.fn(),
 }));
 
@@ -27,6 +29,7 @@ vi.mock('../../infra/parentos-nimi-client.js', () => ({
 vi.mock('../settings/parentos-ai-config.js', () => ({
   hasParentosAIConfigCapability: hasCapabilityMock,
   PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT: 'audio.transcribe',
+  requireParentosAIConfigCapability: requireCapabilityMock,
 }));
 
 import { hasVoiceTranscriptionRuntime, transcribeVoiceObservation } from './voice-observation-runtime.js';
@@ -36,6 +39,7 @@ describe('voice observation runtime (Nimi App Access Scenario Job STT)', () => {
     createScenarioClientMock.mockClear();
     getParentOSNimiClientMock.mockClear();
     hasCapabilityMock.mockReset().mockResolvedValue(true);
+    requireCapabilityMock.mockReset().mockResolvedValue(undefined);
     runRuntimeSpeechTranscribeMock.mockReset().mockResolvedValue({
       ok: true,
       output: { text: '孩子今天专注地搭积木。' },
@@ -68,13 +72,14 @@ describe('voice observation runtime (Nimi App Access Scenario Job STT)', () => {
   });
 
   it('fails closed when the owner intent is missing or Runtime returns no transcript', async () => {
-    hasCapabilityMock.mockResolvedValue(false);
+    requireCapabilityMock.mockRejectedValueOnce(Object.assign(new Error('missing'), {
+      reasonCode: 'parentos-ai-capability-not-configured',
+    }));
     await expect(transcribeVoiceObservation({
       audioBlob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
       mimeType: 'audio/webm',
     })).rejects.toMatchObject({ reasonCode: 'parentos-ai-capability-not-configured' });
 
-    hasCapabilityMock.mockResolvedValue(true);
     runRuntimeSpeechTranscribeMock.mockResolvedValue({
       ok: true,
       output: { text: '   ' },
@@ -83,6 +88,18 @@ describe('voice observation runtime (Nimi App Access Scenario Job STT)', () => {
       audioBlob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
       mimeType: 'audio/webm',
     })).rejects.toMatchObject({ reasonCode: 'parentos-ai-transcript-invalid' });
+  });
+
+  it('preserves a typed AIConfig access failure before Scenario Job dispatch', async () => {
+    requireCapabilityMock.mockRejectedValue(Object.assign(new Error('denied'), {
+      reasonCode: 'local-app-access-denied',
+    }));
+
+    await expect(transcribeVoiceObservation({
+      audioBlob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
+      mimeType: 'audio/webm',
+    })).rejects.toMatchObject({ reasonCode: 'local-app-access-denied' });
+    expect(runRuntimeSpeechTranscribeMock).not.toHaveBeenCalled();
   });
 
   it('validates input before dispatch', async () => {

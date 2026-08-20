@@ -14,6 +14,8 @@ export const PARENTOS_AI_CAPABILITY_CONTRACTS: readonly ParentosAIConfigCapabili
   PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT,
 ];
 
+type ParentosAIConfigCapabilityError = Error & { readonly reasonCode: string };
+
 function reasonCodeFromUnknownError(error: unknown): string {
   const record = error && typeof error === 'object' ? error as Record<string, unknown> : {};
   const reasonCode = typeof record.reasonCode === 'string' ? record.reasonCode.trim() : '';
@@ -57,4 +59,27 @@ export async function hasParentosAIConfigCapability(
       capability.capabilityContract === capabilityContract
       && capability.route.oneofKind === 'local'
     ));
+}
+
+export async function requireParentosAIConfigCapability(
+  capabilityContract: ParentosAIConfigCapabilityContract,
+): Promise<void> {
+  const result = await readParentosAIConfig();
+  if (result.state === 'unavailable') {
+    throw Object.assign(
+      new Error(`ParentOS could not read the Nimi-owned ${capabilityContract} AIConfig intent.`),
+      { reasonCode: result.reasonCode },
+    ) as ParentosAIConfigCapabilityError;
+  }
+  const configured = result.state === 'ready'
+    && result.config.capabilities.some((capability) => (
+      capability.capabilityContract === capabilityContract
+      && capability.route.oneofKind === 'local'
+    ));
+  if (!configured) {
+    throw Object.assign(
+      new Error(`ParentOS requires a Nimi-owned local ${capabilityContract} AIConfig intent.`),
+      { reasonCode: 'parentos-ai-capability-not-configured' },
+    ) as ParentosAIConfigCapabilityError;
+  }
 }
