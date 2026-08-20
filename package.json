@@ -55,11 +55,11 @@
     "nimicoding:doctor": "nimicoding doctor"
   },
   "devDependencies": {
-    "@nimiplatform/app-tools": "link:../../nimi/app-tools",
-    "@nimiplatform/kit-protected-local-win32-x64": "link:../../nimi/kit/shell/protected-local-node/npm/win32-x64",
     "@electron/asar": "3.4.1",
     "@eslint/js": "^10.0.1",
-    "@nimiplatform/nimi-coding": "0.5.0",
+    "@nimiplatform/app-tools": "link:../../nimi/app-tools",
+    "@nimiplatform/kit-protected-local-win32-x64": "link:../../nimi/kit/shell/protected-local-node/npm/win32-x64",
+    "@nimiplatform/nimi-coding": "0.6.1",
     "@tailwindcss/vite": "^4.3.0",
     "@tauri-apps/cli": "^2.11.2",
     "@testing-library/jest-dom": "^6.9.1",
