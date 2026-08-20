@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { LockKeyhole, RefreshCw, ShieldAlert } from 'lucide-react';
 import {
   AmbientBackground,
@@ -8,23 +8,21 @@ import {
 } from '@nimiplatform/kit/ui';
 import { useAppStore } from './app-store.js';
 import { runParentOSBootstrap } from '../infra/parentos-bootstrap.js';
-import { ParentOSLaunchPage } from '../features/auth/parentos-login-page.js';
 import { i18nText } from '../i18n/index.js';
 
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const authStatus = useAppStore((s) => s.auth.status);
+// @nimi-authority: rule.parentos.shell.r001
+// @nimi-authority: rule.parentos.shell.r007
+export function AppBootstrapBoundary({ children }: { children: React.ReactNode }) {
   const bootstrapReady = useAppStore((s) => s.bootstrapReady);
   const bootstrapFailure = useAppStore((s) => s.bootstrapFailure);
-  const [launchEntered, setLaunchEntered] = useState(false);
 
   useEffect(() => {
     void runParentOSBootstrap();
   }, []);
 
   if (bootstrapFailure) {
-    const titleKey = `Auth.bootstrapFailure.states.${bootstrapFailure.state}.title`;
-    const descriptionKey = `Auth.bootstrapFailure.states.${bootstrapFailure.state}.description`;
+    const titleKey = `Bootstrap.failure.states.${bootstrapFailure.state}.title`;
+    const descriptionKey = `Bootstrap.failure.states.${bootstrapFailure.state}.description`;
     return (
       <AmbientBackground variant="mesh" className="min-h-dvh w-full overflow-y-auto px-4 py-8 sm:px-6">
         <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-xl items-center justify-center">
@@ -44,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[length:var(--nimi-type-body-sm-size)] font-semibold uppercase tracking-[0.12em] text-[var(--nimi-text-muted)]">
-                    {i18nText('Auth.bootstrapFailure.eyebrow')}
+                    {i18nText('Bootstrap.failure.eyebrow')}
                   </p>
                   <h1 className="mt-1 text-balance text-2xl font-semibold leading-tight text-[var(--nimi-text-primary)]">
                     {i18nText(titleKey)}
@@ -57,25 +55,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
               <InlineAlert role="alert" tone="warning" icon={<LockKeyhole size={17} aria-hidden="true" />}>
                 <div className="min-w-0 space-y-1">
-                  <p className="font-semibold">{i18nText('Auth.bootstrapFailure.localDataLocked')}</p>
+                  <p className="font-semibold">{i18nText('Bootstrap.failure.localDataLocked')}</p>
                 </div>
               </InlineAlert>
 
               <details className="rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
                 <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
-                  {i18nText('Auth.bootstrapFailure.technicalDetails')}
+                  {i18nText('Bootstrap.failure.technicalDetails')}
                 </summary>
                 <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">
-                  {i18nText('Auth.bootstrapFailure.reasonCode')}: {bootstrapFailure.reasonCode}
+                  {i18nText('Bootstrap.failure.reasonCode')}: {bootstrapFailure.reasonCode}
                 </p>
               </details>
 
               <div className="rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
-                  {i18nText('Auth.bootstrapFailure.nextStep')}
+                  {i18nText('Bootstrap.failure.nextStep')}
                 </p>
                 <p className="mt-1 break-words text-sm leading-6 text-[var(--nimi-text-secondary)]">
-                  {i18nText(`Auth.bootstrapFailure.states.${bootstrapFailure.state}.action`)}
+                  {i18nText(`Bootstrap.failure.states.${bootstrapFailure.state}.action`)}
                 </p>
               </div>
 
@@ -87,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   className="w-full sm:w-auto"
                   leadingIcon={<LockKeyhole size={16} aria-hidden="true" />}
                 >
-                  {i18nText('Auth.bootstrapFailure.localDataButton')}
+                  {i18nText('Bootstrap.failure.localDataButton')}
                 </Button>
                 <Button
                   data-testid="parentos-bootstrap-retry"
@@ -96,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   leadingIcon={<RefreshCw size={16} aria-hidden="true" />}
                   onClick={() => void runParentOSBootstrap({ force: true })}
                 >
-                  {i18nText('Auth.bootstrapFailure.retry')}
+                  {i18nText('Bootstrap.failure.retry')}
                 </Button>
               </div>
             </div>
@@ -106,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!bootstrapReady || authStatus === 'bootstrapping') {
+  if (!bootstrapReady) {
     return (
       <AmbientBackground variant="mesh" className="flex h-screen w-screen items-center justify-center">
         <div data-testid="parentos-bootstrap-loading" className="relative z-10 text-center space-y-4">
@@ -115,10 +113,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         </div>
       </AmbientBackground>
     );
-  }
-
-  if (!launchEntered) {
-    return <ParentOSLaunchPage onEnter={() => setLaunchEntered(true)} />;
   }
 
   return <>{children}</>;

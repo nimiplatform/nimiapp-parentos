@@ -4,15 +4,6 @@ import type { ParentOSBootstrapFailure } from './bootstrap-failure.js';
 
 export type NurtureMode = 'relaxed' | 'balanced' | 'advanced';
 
-export type AuthUser = {
-  id: string;
-  displayName: string;
-  email?: string;
-  avatarUrl?: string;
-};
-
-export type AuthStatus = 'bootstrapping' | 'authenticated' | 'unauthenticated';
-
 export interface ChildProfile {
   childId: string;
   familyId: string;
@@ -33,20 +24,10 @@ export interface ChildProfile {
 }
 
 interface AppState {
-  // PO-SHELL-008 / spec K-ACCSVC-008: ParentOS does not own access or refresh
-  // tokens. The `auth` slice tracks only the runtime-projected account
-  // identity. Non-first-party local app auth uses Runtime app sessions and
-  // scoped/protected metadata, not raw Realm access-token projection.
-  auth: {
-    status: AuthStatus;
-    user: AuthUser | null;
-  };
   bootstrapReady: boolean;
   bootstrapError: string | null;
   bootstrapFailure: ParentOSBootstrapFailure | null;
 
-  setAuthSession: (user: AuthUser) => void;
-  clearAuthSession: () => void;
   setBootstrapReady: (ready: boolean) => void;
   setBootstrapError: (error: string | null) => void;
   setBootstrapFailure: (failure: ParentOSBootstrapFailure | null) => void;
@@ -63,27 +44,10 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  auth: {
-    status: 'bootstrapping',
-    user: null,
-  },
   bootstrapReady: false,
   bootstrapError: null,
   bootstrapFailure: null,
 
-  setAuthSession(user) {
-    set({
-      auth: { status: 'authenticated', user },
-    });
-  },
-  clearAuthSession() {
-    set({
-      auth: { status: 'unauthenticated', user: null },
-      familyId: null,
-      children: [],
-      activeChildId: null,
-    });
-  },
   setBootstrapReady: (ready) => set({ bootstrapReady: ready }),
   setBootstrapError: (error) => set({ bootstrapError: error }),
   setBootstrapFailure: (failure) => set({ bootstrapFailure: failure }),

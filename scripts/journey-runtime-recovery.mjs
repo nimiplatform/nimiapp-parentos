@@ -135,8 +135,7 @@ async function main() {
 
     await page.waitForFunction(() => Boolean(window.__NIMI_ELECTRON_RUNTIME__?.invoke), null, { timeout: 30_000 });
 
-    // Enter the product (launch gate) and open the AI settings surface.
-    await page.getByTestId('parentos-launch-trigger').click();
+    // Wait for app-owned bootstrap to open the product routes directly.
     await page.waitForSelector('[data-testid="parentos-app-routed-surface"]', { timeout: 30_000 });
 
     const before = await invokeBridge(page, NIMI_STANDARD_SHELL_COMMANDS['local-app.sessionStatus'], {});

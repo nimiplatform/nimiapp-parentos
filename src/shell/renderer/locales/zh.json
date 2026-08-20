@@ -40,9 +40,8 @@
       "journal": "成长记录"
     }
   },
-  "Auth": {
-    "launchEnter": "进入成长底稿",
-    "bootstrapFailure": {
+  "Bootstrap": {
+    "failure": {
       "eyebrow": "ParentOS 本地数据",
       "localDataLocked": "应用自有的本地数据库无法打开",
       "reasonCode": "原因代码",
@@ -84,12 +83,8 @@
       "ariaLabel": "切换孩子",
       "addFamilyMember": "添加家庭成员"
     },
-    "account": {
-      "openMenu": "打开账号菜单",
-      "unnamedUser": "用户",
-      "logout": "退出登录",
-      "loggingOut": "退出中...",
-      "logoutFailed": "退出登录失败"
+    "appMenu": {
+      "openMenu": "打开应用菜单"
     }
   },
   "Settings": {

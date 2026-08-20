@@ -40,7 +40,6 @@ describe('ParentOS app-owned data bootstrap', () => {
     ({ useAppStore } = await import('../app-shell/app-store.js'));
     ({ runParentOSBootstrap } = await import('./parentos-bootstrap.js'));
     useAppStore.setState({
-      auth: { status: 'bootstrapping', user: null },
       bootstrapReady: false,
       bootstrapError: null,
       bootstrapFailure: null,
@@ -57,7 +56,6 @@ describe('ParentOS app-owned data bootstrap', () => {
     expect(dbInitMock).toHaveBeenCalledWith(null);
     expect(loadAndApplyPersistedAppLanguageMock).toHaveBeenCalledOnce();
     expect(useAppStore.getState()).toMatchObject({
-      auth: { status: 'unauthenticated', user: null },
       bootstrapReady: true,
       bootstrapError: null,
       bootstrapFailure: null,

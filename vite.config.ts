@@ -55,7 +55,6 @@ export default defineConfig(() => {
         'lucide-react',
         'react-markdown',
         'remark-gfm',
-        'simplex-noise',
         'tailwind-merge',
         'three',
         'zod',
@@ -377,9 +376,6 @@ export default defineConfig(() => {
               || isNodePackage(normalizedId, 'tslib')
             ) {
               return 'vendor-react-ui';
-            }
-            if (isNodePackage(normalizedId, 'simplex-noise')) {
-              return 'vendor-noise';
             }
             if (isNodePackage(normalizedId, '@tanstack/virtual-core')) {
               return 'vendor-virtual';

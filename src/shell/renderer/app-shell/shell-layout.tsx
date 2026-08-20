@@ -149,16 +149,15 @@ function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
   );
 }
 
-/* ── Account Avatar Menu ───────────────────────────────────── */
+/* ── App Menu ──────────────────────────────────────────────── */
 
-const accountMenuItems = [
+const appMenuItems = [
   { id: 'profile', labelKey: 'Shell.navigation.profile', icon: User, route: '/profile' },
   { id: 'settings', labelKey: 'Shell.navigation.settings', icon: Settings, route: '/settings' },
 ] as const;
 
-function AccountAvatarMenu() {
+function AppMenu() {
   const { t } = useTranslation();
-  const authUser = useAppStore((s) => s.auth.user);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -178,18 +177,15 @@ function AccountAvatarMenu() {
     return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', escHandler); };
   }, [open]);
 
-  const displayName = authUser?.displayName || t('Shell.account.unnamedUser');
-  const initial = displayName.charAt(0).toUpperCase();
-
   return (
     <div ref={ref} className="relative z-40">
       <button
         onClick={() => open ? closeMenu() : openMenu()}
         aria-expanded={open}
-        aria-label={t('Shell.account.openMenu')}
+        aria-label={t('Shell.appMenu.openMenu')}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--nimi-text-primary)] text-[14px] font-semibold text-[var(--nimi-text-inverse)] shadow-[var(--nimi-elevation-base)] transition-all hover:-translate-y-0.5"
       >
-        {initial}
+        <Settings size={17} aria-hidden="true" />
       </button>
 
       {mounted && (
@@ -204,27 +200,9 @@ function AccountAvatarMenu() {
           )}
           onTransitionEnd={() => { if (!open) setMounted(false); }}
         >
-          {/* ── User info header ── */}
-          <div className="flex items-center gap-3 px-4 py-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--nimi-text-primary)] text-[16px] font-semibold text-[var(--nimi-text-inverse)]">
-              {initial}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-[var(--nimi-text-primary)]">
-                {displayName}
-              </p>
-              {authUser?.email ? (
-                <p className="truncate text-xs text-[var(--nimi-text-muted)]">{authUser.email}</p>
-              ) : null}
-            </div>
-          </div>
-
-          {/* ── Divider ── */}
-          <div className="mx-3 border-t border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_20%,transparent)]" />
-
           {/* ── Menu items ── */}
           <div className="px-1.5 py-1.5">
-            {accountMenuItems.map((item) => (
+            {appMenuItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => { closeMenu(); navigate(item.route); }}
@@ -329,7 +307,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-3">
-            <AccountAvatarMenu />
+            <AppMenu />
           </div>
         </header>
 

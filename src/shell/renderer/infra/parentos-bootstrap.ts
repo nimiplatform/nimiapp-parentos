@@ -55,7 +55,7 @@ async function doRunParentOSBootstrap(): Promise<void> {
   store.setBootstrapReady(false);
   store.setBootstrapError(null);
   store.setBootstrapFailure(null);
-  store.clearAuthSession();
+  store.clearLocalData();
   // Nimi access is established independently from app-owned data hydration:
   // client creation is side-effect free and never blocks local bootstrap.
   setParentOSNimiClient(createParentOSNimiClient());

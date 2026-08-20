@@ -114,7 +114,6 @@
     "recharts": "^3.8.1",
     "remark-gfm": "^4.0.1",
     "scheduler": "^0.27.0",
-    "simplex-noise": "^4.0.3",
     "tailwind-merge": "^3.6.0",
     "three": "^0.184.0",
     "zod": "4.4.3",

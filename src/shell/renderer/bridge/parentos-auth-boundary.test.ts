@@ -62,7 +62,10 @@ describe('ParentOS local-app authority hardcut', () => {
 
   it('does not expose app-owned account control or daemon configuration', () => {
     expect(existsSync(join(root, 'src/shell/renderer/features/auth/parentos-auth-adapter.ts'))).toBe(false);
+    expect(existsSync(join(root, 'src/shell/renderer/features/auth/parentos-login-page.tsx'))).toBe(false);
+    expect(existsSync(join(root, 'src/shell/renderer/features/auth/nimi-login-background.tsx'))).toBe(false);
     expect(settingsSource).not.toMatch(/logoutParentOSRuntimeAccount|clearAuthSession/);
+    expect(bootstrapSource).not.toMatch(/clearAuthSession|parentos-launch-page|parentos-launch-trigger/);
     expect(bridgeSource).not.toMatch(/startDaemon|stopDaemon|restartDaemon|getDaemonConfig|setDaemonConfig/);
     expect(bridgeSource).not.toMatch(/oauthListenForCode|openExternalUrl|parentosTauriOAuthBridge/);
   });

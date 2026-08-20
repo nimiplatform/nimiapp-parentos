@@ -44,7 +44,6 @@ export default defineConfig({
       'lucide-react',
       'react-markdown',
       'remark-gfm',
-      'simplex-noise',
       'tailwind-merge',
       'three',
       'zod',

@@ -6,7 +6,7 @@ import { NimiToaster, TooltipProvider } from '@nimiplatform/kit/ui';
 import { i18n } from './i18n/index.js';
 import { AppRoutes } from './app-shell/routes.js';
 import { ShellLayout } from './app-shell/shell-layout.js';
-import { AuthProvider } from './app-shell/auth-provider.js';
+import { AppBootstrapBoundary } from './app-shell/app-bootstrap-boundary.js';
 import { shouldUseParentOSHashRouter } from './app-router-mode.js';
 
 const queryClient = new QueryClient({
@@ -26,13 +26,13 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <ParentOSRouter>
-            <AuthProvider>
+            <AppBootstrapBoundary>
               <ShellLayout>
                 <div data-testid="parentos-app-routed-surface" className="h-full">
                   <AppRoutes />
                 </div>
               </ShellLayout>
-            </AuthProvider>
+            </AppBootstrapBoundary>
           </ParentOSRouter>
           <NimiToaster />
         </TooltipProvider>

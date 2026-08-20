@@ -92,12 +92,7 @@ async function main() {
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
     await page.waitForFunction((key) => Boolean(window[key]?.invoke), bridgeKey, { timeout: 30_000 });
     await page.setViewportSize({ width: 1365, height: 900 });
-    await waitForProductLaunch(page);
-    const launchState = await captureLaunchState(page);
-    assertLaunchState(launchState, 'Electron');
-    await page.getByTestId('parentos-launch-trigger').click();
     await waitForProductRoute(page);
-    await page.getByTestId('parentos-onboarding-page').waitFor({ state: 'visible', timeout: 30_000 });
     const desktopState = await captureProductState(page);
     assertProductState(desktopState, 'Electron');
     const desktopOverflow = await assertNoVisibleOverflow(page, 'electron-desktop');
@@ -255,7 +250,6 @@ async function main() {
       mode: plainNegative ? 'plain-negative' : 'desktop-supervised',
       launcher: { command: launcherCommand, args: launcherArgs },
       cdpEndpoint,
-      launchState,
       desktopState,
       narrowState,
       sessionStatusResult,
@@ -311,57 +305,26 @@ async function verifyRendererHmr(page, consoleEvents) {
   throw new Error(`Renderer HMR did not emit an update for ${probePath}`);
 }
 
-function assertLaunchState(state, label) {
-  assert.equal(state.loading, false, `${label} must leave bootstrap loading`);
-  assert.equal(state.failure, false, `${label} must not show an app-data failure`);
-  assert.equal(state.launch, true, `${label} must render the ParentOS launch surface`);
-  assert.equal(state.routed, false, `${label} must wait for explicit launch interaction`);
-  assert.ok(state.launchLabel.length > 0, `${label} launch control must have an accessible name`);
-  assert.doesNotMatch(state.bodyText, /�/u, `${label} must not contain replacement-glyph text`);
-}
-
 function assertProductState(state, label) {
   assert.equal(state.loading, false, `${label} must leave bootstrap loading`);
   assert.equal(state.failure, false, `${label} must not show an app-data failure`);
   assert.equal(state.routed, true, `${label} must render ParentOS product routes`);
-  assert.equal(state.launch, false, `${label} must leave the launch surface after interaction`);
-  assert.equal(state.onboarding, true, `${label} must render the zero-profile onboarding surface`);
-  assert.equal(state.createChildCta, true, `${label} must expose the create-child action`);
+  assert.equal(
+    state.onboarding,
+    state.createChildCta,
+    `${label} onboarding must expose the create-child action; an existing family may render its active product route`,
+  );
   assert.ok(state.bodyText.trim().length > 0, `${label} must render readable product content`);
   assert.doesNotMatch(state.bodyText, /�/u, `${label} must not contain replacement-glyph text`);
 }
 
-async function waitForProductLaunch(page) {
-  await page.waitForFunction(() => {
-    const launch = document.querySelector('[data-testid="parentos-launch-page"]');
-    const loading = document.querySelector('[data-testid="parentos-bootstrap-loading"]');
-    const failure = document.querySelector('[data-testid="parentos-bootstrap-failure"]');
-    return Boolean(launch) && !loading && !failure;
-  }, null, { timeout: 30_000 });
-}
-
 async function waitForProductRoute(page) {
-  await page.waitForFunction(() => (
-    Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]'))
-    && !document.querySelector('[data-testid="parentos-bootstrap-loading"]')
-    && !document.querySelector('[data-testid="parentos-bootstrap-failure"]')
-  ), null, { timeout: 30_000 });
-}
-
-async function captureLaunchState(page) {
-  return page.evaluate(() => {
-    const trigger = document.querySelector('[data-testid="parentos-launch-trigger"]');
-    return {
-      title: document.title,
-      bodyText: document.body?.innerText ?? '',
-      loading: Boolean(document.querySelector('[data-testid="parentos-bootstrap-loading"]')),
-      failure: Boolean(document.querySelector('[data-testid="parentos-bootstrap-failure"]')),
-      routed: Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]')),
-      launch: Boolean(document.querySelector('[data-testid="parentos-launch-page"]')),
-      launchLabel: trigger?.getAttribute('aria-label')?.trim() ?? '',
-      viewport: { width: window.innerWidth, height: window.innerHeight },
-    };
-  });
+  await page.waitForFunction(() => {
+    const routedSurface = document.querySelector('[data-testid="parentos-app-routed-surface"]');
+    return Boolean(routedSurface?.textContent?.trim())
+      && !document.querySelector('[data-testid="parentos-bootstrap-loading"]')
+      && !document.querySelector('[data-testid="parentos-bootstrap-failure"]');
+  }, null, { timeout: 30_000 });
 }
 
 async function captureProductState(page) {
@@ -371,7 +334,6 @@ async function captureProductState(page) {
     loading: Boolean(document.querySelector('[data-testid="parentos-bootstrap-loading"]')),
     failure: Boolean(document.querySelector('[data-testid="parentos-bootstrap-failure"]')),
     routed: Boolean(document.querySelector('[data-testid="parentos-app-routed-surface"]')),
-    launch: Boolean(document.querySelector('[data-testid="parentos-launch-page"]')),
     onboarding: Boolean(document.querySelector('[data-testid="parentos-onboarding-page"]')),
     createChildCta: Boolean(document.querySelector('[data-testid="parentos-onboarding-create-child"]')),
     viewport: { width: window.innerWidth, height: window.innerHeight },

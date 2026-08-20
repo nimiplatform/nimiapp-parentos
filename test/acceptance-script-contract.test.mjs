@@ -10,11 +10,11 @@ test('live acceptance verifies ParentOS app-owned product bootstrap end to end',
   for (const scriptPath of acceptanceScripts) {
     const source = await readFile(scriptPath, 'utf8');
 
-    assert.match(source, /parentos-launch-page/u, `${scriptPath} must inspect the launch surface`);
-    assert.match(source, /parentos-launch-trigger/u, `${scriptPath} must exercise the launch interaction`);
+    assert.doesNotMatch(source, /parentos-launch-page|parentos-launch-trigger/u, `${scriptPath} must not retain a manual launch gate`);
     assert.match(source, /parentos-app-routed-surface/u, `${scriptPath} must require product routes`);
-    assert.match(source, /parentos-onboarding-page/u, `${scriptPath} must require the zero-profile onboarding surface`);
-    assert.match(source, /parentos-onboarding-create-child/u, `${scriptPath} must require the create-child action`);
+    assert.match(source, /parentos-onboarding-page/u, `${scriptPath} must inspect the zero-profile onboarding surface`);
+    assert.match(source, /parentos-onboarding-create-child/u, `${scriptPath} must validate the create-child action when onboarding is active`);
+    assert.match(source, /an existing family may render its active product route/u, `${scriptPath} must admit an existing device-local family state`);
     assert.match(source, /app-owned SQLite command must remain available independently/u, `${scriptPath} must prove app-owned data access`);
     assert.match(source, /invokeBridge\(page, ['"]get_family['"]/u, `${scriptPath} must invoke an exact app-owned command`);
     assert.doesNotMatch(source, /parentos-protected-operation-set-not-admitted|local data disabled/u, `${scriptPath} must not retain the obsolete product-wide lock`);
@@ -53,7 +53,7 @@ test('live acceptance records desktop, narrow, accessibility, overflow, and cons
 
     assert.match(source, /width: 1365, height: 900/u, `${scriptPath} must capture desktop layout`);
     assert.match(source, /width: 390, height: 844/u, `${scriptPath} must capture narrow layout`);
-    assert.match(source, /launchLabel/u, `${scriptPath} must inspect the launch control accessible name`);
+    assert.doesNotMatch(source, /launchLabel/u, `${scriptPath} must not inspect a removed launch control`);
     assert.match(source, /assertNoVisibleOverflow/u, `${scriptPath} must fail on horizontal overflow`);
     assert.match(source, /pageErrors/u, `${scriptPath} must record page errors`);
     assert.match(source, /event\.type === 'error'/u, `${scriptPath} must fail on console errors`);

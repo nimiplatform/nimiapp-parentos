@@ -40,9 +40,8 @@
       "journal": "Growth Journal"
     }
   },
-  "Auth": {
-    "launchEnter": "Enter ParentOS",
-    "bootstrapFailure": {
+  "Bootstrap": {
+    "failure": {
       "eyebrow": "ParentOS local data",
       "localDataLocked": "The app-owned local database could not be opened",
       "reasonCode": "Reason",
@@ -84,12 +83,8 @@
       "ariaLabel": "Switch child",
       "addFamilyMember": "Add family member"
     },
-    "account": {
-      "openMenu": "Open account menu",
-      "unnamedUser": "User",
-      "logout": "Log out",
-      "loggingOut": "Logging out...",
-      "logoutFailed": "Log out failed"
+    "appMenu": {
+      "openMenu": "Open app menu"
     }
   },
   "Settings": {

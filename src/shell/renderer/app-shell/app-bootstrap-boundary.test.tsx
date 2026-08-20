@@ -12,19 +12,12 @@ vi.mock('../infra/parentos-bootstrap.js', () => ({
   runParentOSBootstrap: runParentOSBootstrapMock,
 }));
 
-vi.mock('../features/auth/parentos-login-page.js', () => ({
-  ParentOSLaunchPage: ({ onEnter }: { onEnter: () => void }) => (
-    <button type="button" onClick={onEnter}>LAUNCH_SCREEN</button>
-  ),
-}));
+import { AppBootstrapBoundary } from './app-bootstrap-boundary.js';
 
-import { AuthProvider } from './auth-provider.js';
-
-describe('AuthProvider app-owned data bootstrap', () => {
+describe('AppBootstrapBoundary app-owned data bootstrap', () => {
   beforeEach(() => {
     runParentOSBootstrapMock.mockClear();
     useAppStore.setState({
-      auth: { status: 'bootstrapping', user: null },
       bootstrapReady: false,
       bootstrapError: null,
       bootstrapFailure: null,
@@ -35,7 +28,7 @@ describe('AuthProvider app-owned data bootstrap', () => {
   });
 
   it('renders an accessible loading state while bootstrap is pending', () => {
-    render(<AuthProvider><div>APP_CONTENT</div></AuthProvider>);
+    render(<AppBootstrapBoundary><div>APP_CONTENT</div></AppBootstrapBoundary>);
 
     expect(screen.getByTestId('parentos-bootstrap-loading')).toBeTruthy();
     expect(screen.queryByText('APP_CONTENT')).toBeNull();
@@ -46,7 +39,6 @@ describe('AuthProvider app-owned data bootstrap', () => {
     'app-data-repair-required',
   ] as const)('renders the %s state without opening local product data', (state) => {
     useAppStore.setState({
-      auth: { status: 'unauthenticated', user: null },
       bootstrapFailure: {
         state,
         reasonCode: `test-${state}`,
@@ -56,12 +48,10 @@ describe('AuthProvider app-owned data bootstrap', () => {
       bootstrapError: `message-${state}`,
     });
 
-    render(<AuthProvider><div>APP_CONTENT</div></AuthProvider>);
+    render(<AppBootstrapBoundary><div>APP_CONTENT</div></AppBootstrapBoundary>);
 
     const failure = screen.getByTestId('parentos-bootstrap-failure');
     expect(failure.getAttribute('data-bootstrap-state')).toBe(state);
-    // Machine codes stay out of the primary alert; they live in the collapsed
-    // technical-details region only.
     expect(screen.getByRole('alert').textContent).not.toContain(`test-${state}`);
     expect(failure.querySelector('details')?.textContent).toContain(`test-${state}`);
     expect((screen.getByTestId('parentos-app-data-locked') as HTMLButtonElement).disabled).toBe(true);
@@ -70,7 +60,6 @@ describe('AuthProvider app-owned data bootstrap', () => {
 
   it('retries app-data bootstrap without claiming success', () => {
     useAppStore.setState({
-      auth: { status: 'unauthenticated', user: null },
       bootstrapFailure: {
         state: 'app-data-unavailable',
         reasonCode: 'parentos-electron-sidecar-binary-unavailable',
@@ -80,22 +69,19 @@ describe('AuthProvider app-owned data bootstrap', () => {
       bootstrapError: 'ParentOS app data unavailable',
     });
 
-    render(<AuthProvider><div>APP_CONTENT</div></AuthProvider>);
+    render(<AppBootstrapBoundary><div>APP_CONTENT</div></AppBootstrapBoundary>);
     fireEvent.click(screen.getByTestId('parentos-bootstrap-retry'));
 
     expect(runParentOSBootstrapMock).toHaveBeenLastCalledWith({ force: true });
   });
 
-  it('opens the launch screen after app-owned local data is ready without Nimi login', () => {
+  it('opens product content immediately after app-owned local data is ready', () => {
     useAppStore.setState({
       bootstrapReady: true,
       bootstrapFailure: null,
-      auth: { status: 'unauthenticated', user: null },
     });
 
-    render(<AuthProvider><div>APP_CONTENT</div></AuthProvider>);
-    expect(screen.getByText('LAUNCH_SCREEN')).toBeTruthy();
-    fireEvent.click(screen.getByText('LAUNCH_SCREEN'));
+    render(<AppBootstrapBoundary><div>APP_CONTENT</div></AppBootstrapBoundary>);
     expect(screen.getByText('APP_CONTENT')).toBeTruthy();
   });
 });

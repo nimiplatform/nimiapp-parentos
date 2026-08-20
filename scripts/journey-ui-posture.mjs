@@ -89,7 +89,6 @@ async function main() {
     assert.ok(page, 'CDP must attach only to the ParentOS renderer target');
 
     await page.waitForFunction(() => Boolean(window.__NIMI_ELECTRON_RUNTIME__?.invoke), null, { timeout: 30_000 });
-    await page.getByTestId('parentos-launch-trigger').click();
     await page.waitForSelector('[data-testid="parentos-app-routed-surface"]', { timeout: 30_000 });
 
     // In-app SPA navigation (BrowserRouter in dev): pushState + popstate is

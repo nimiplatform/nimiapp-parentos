@@ -22,14 +22,6 @@ describe('ShellLayout', () => {
       bootstrapReady: true,
       familyId: 'family-1',
       activeChildId: 'child-1',
-      auth: {
-        status: 'authenticated',
-        user: {
-          id: 'user-1',
-          displayName: 'Parent User',
-          email: 'parent@example.com',
-        },
-      },
       children: [
         {
           childId: 'child-1',
@@ -74,7 +66,6 @@ describe('ShellLayout', () => {
   afterEach(() => {
     useAppStore.setState({
       bootstrapReady: false,
-      auth: { status: 'unauthenticated', user: null },
       familyId: null,
       activeChildId: null,
       children: [],
@@ -160,7 +151,7 @@ describe('ShellLayout', () => {
     expect(screen.getByTestId('shell-main-drag-region')).toBeTruthy();
   });
 
-  it('does not expose logout from the account avatar menu', async () => {
+  it('exposes profile and settings navigation without an app-owned account identity', async () => {
     render(
       <MemoryRouter>
         <ShellLayout>
@@ -169,10 +160,10 @@ describe('ShellLayout', () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '打开账号菜单' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开应用菜单' }));
 
-    expect(await screen.findByText('Parent User')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '退出登录' })).toBeNull();
-    expect(screen.queryByText(/退出登录/)).toBeNull();
+    expect(await screen.findByRole('button', { name: '档案' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '设置' })).toBeTruthy();
+    expect(screen.queryByText('Parent User')).toBeNull();
   });
 });
