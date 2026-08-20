@@ -2,8 +2,10 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import ReportsPage from './reports-page.js';
 import { useAppStore } from '../../app-shell/app-store.js';
+import { getRollingReportPeriod } from './report-cycle.js';
 
 const reportStore: Array<{
   reportId: string;
@@ -169,8 +171,8 @@ describe('ReportsPage', () => {
           allergies: null,
           medicalNotes: null,
           recorderProfiles: [{ id: 'mom', name: 'Mom' }],
-          createdAt: '2026-01-01T00:00:00.000Z',
-          updatedAt: '2026-01-01T00:00:00.000Z',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         },
       ],
     });
@@ -185,12 +187,76 @@ describe('ReportsPage', () => {
     });
   });
 
-  it('generates and persists a structured local report', async () => {
-    render(<ReportsPage />);
+  const renderPage = () => render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+
+  function setClosedFirstCycle() {
+    const child = useAppStore.getState().children[0];
+    if (!child) throw new Error('Missing test child');
+    const createdAt = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
+    useAppStore.setState({ children: [{ ...child, createdAt, updatedAt: createdAt }] });
+    return getRollingReportPeriod(createdAt, 1);
+  }
+
+  it('shows an explicit accumulation state before the first rolling month closes', async () => {
+    renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText(/还没有成长报告/i)).toBeTruthy();
+      expect(screen.getByText('正在积累Mimi的成长报告')).toBeTruthy();
+      expect(screen.getByText('记录满一个月后，将自动生成第一份成长报告')).toBeTruthy();
     });
+
+    expect(screen.getByRole('link', { name: /记录一个瞬间/i }).getAttribute('href')).toBe('/journal');
+    expect(screen.queryByRole('button', { name: /高级选项/i })).toBeNull();
+    expect(insertGrowthReportMock).not.toHaveBeenCalled();
+  });
+
+  it('automatically persists the first report after the rolling month closes', async () => {
+    const firstCycle = setClosedFirstCycle();
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(insertGrowthReportMock).toHaveBeenCalledTimes(1);
+    });
+
+    const firstCall = insertGrowthReportMock.mock.calls[0]?.[0];
+    expect(firstCall?.periodStart).toBe(firstCycle.periodStart);
+    expect(JSON.parse(firstCall?.content ?? '{}')).toMatchObject({ format: 'structured-local', reportType: 'monthly' });
+    await waitFor(() => expect(screen.queryByText('正在积累Mimi的成长报告')).toBeNull());
+  });
+
+  it('generates and persists a structured local report', async () => {
+    const firstCycle = setClosedFirstCycle();
+    const now = firstCycle.generationAt;
+    reportStore.unshift({
+      reportId: 'existing-report',
+      childId: 'child-1',
+      reportType: 'monthly',
+      periodStart: firstCycle.periodStart,
+      periodEnd: firstCycle.periodEnd,
+      ageMonthsStart: 30,
+      ageMonthsEnd: 30,
+      content: JSON.stringify({
+        version: 1,
+        format: 'structured-local',
+        reportType: 'monthly',
+        title: 'Mimi 的首份成长报告',
+        subtitle: '本地记录',
+        generatedAt: now,
+        overview: [],
+        metrics: [],
+        trendSignals: [],
+        sections: [],
+        sources: [],
+        safetyNote: '仅供记录。',
+      }),
+      generatedAt: now,
+      createdAt: now,
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Mimi 的首份成长报告')).toBeTruthy());
 
     fireEvent.click(screen.getByRole('button', { name: /高级选项/i }));
     fireEvent.click(screen.getByRole('button', { name: /生成综合报告/i }));
@@ -210,13 +276,53 @@ describe('ReportsPage', () => {
     });
   });
 
+  it('keeps parent-selected calendar months out of the automatic monthly contract', async () => {
+    const firstCycle = setClosedFirstCycle();
+    reportStore.unshift({
+      reportId: 'existing-report',
+      childId: 'child-1',
+      reportType: 'monthly',
+      periodStart: firstCycle.periodStart,
+      periodEnd: firstCycle.periodEnd,
+      ageMonthsStart: 30,
+      ageMonthsEnd: 30,
+      content: JSON.stringify({
+        version: 1,
+        format: 'structured-local',
+        reportType: 'monthly',
+        title: 'Mimi 的首份成长报告',
+        subtitle: '本地记录',
+        generatedAt: firstCycle.generationAt,
+        overview: [],
+        metrics: [],
+        trendSignals: [],
+        sections: [],
+        sources: [],
+        safetyNote: '仅供记录。',
+      }),
+      generatedAt: firstCycle.generationAt,
+      createdAt: firstCycle.generationAt,
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Mimi 的首份成长报告')).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: /高级选项/i }));
+    fireEvent.click(screen.getByRole('button', { name: '本月' }));
+    fireEvent.click(screen.getByRole('button', { name: /生成综合报告/i }));
+
+    await waitFor(() => expect(insertGrowthReportMock).toHaveBeenCalledTimes(1));
+    expect(insertGrowthReportMock.mock.calls[0]?.[0]?.reportType).toBe('custom');
+  });
+
   it('renders persisted narrative-ai reports from the unified reports store', async () => {
+    const firstCycle = setClosedFirstCycle();
     reportStore.unshift({
       reportId: 'report-1',
       childId: 'child-1',
       reportType: 'monthly',
-      periodStart: '2026-04-01T00:00:00.000Z',
-      periodEnd: '2026-04-30T23:59:59.999Z',
+      periodStart: firstCycle.periodStart,
+      periodEnd: firstCycle.periodEnd,
       ageMonthsStart: 26,
       ageMonthsEnd: 27,
       content: JSON.stringify({
@@ -237,16 +343,76 @@ describe('ReportsPage', () => {
         sources: ['local measurements'],
         safetyNote: '如需详细解读，建议咨询专业人士。',
       }),
-      generatedAt: '2026-04-30T23:59:59.999Z',
-      createdAt: '2026-04-30T23:59:59.999Z',
+      generatedAt: firstCycle.generationAt,
+      createdAt: firstCycle.generationAt,
     });
 
-    render(<ReportsPage />);
+    renderPage();
 
     await waitFor(() => {
       expect(screen.getByText('Mimi 的四月成长报告')).toBeTruthy();
       expect(screen.getByText('AI 撰写')).toBeTruthy();
       expect(screen.getByText('本月继续稳步成长。')).toBeTruthy();
     });
+  });
+
+  it('fails closed instead of adapting a persisted monthly row outside the rolling contract', async () => {
+    const child = useAppStore.getState().children[0];
+    if (!child) throw new Error('Missing test child');
+    reportStore.unshift({
+      reportId: 'invalid-half-month',
+      childId: child.childId,
+      reportType: 'monthly',
+      periodStart: '2026-08-01T00:00:00.000Z',
+      periodEnd: child.createdAt,
+      ageMonthsStart: 30,
+      ageMonthsEnd: 30,
+      content: JSON.stringify({
+        version: 2,
+        format: 'narrative-ai',
+        reportType: 'monthly',
+        title: '不应展示的半月报告',
+        subtitle: '',
+        teaser: '',
+        generatedAt: child.createdAt,
+        narrativeSections: [],
+        actionItems: [],
+        trendSignals: [],
+        metrics: [],
+        sources: [],
+        safetyNote: '',
+      }),
+      generatedAt: child.createdAt,
+      createdAt: child.createdAt,
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByText('本地数据不符合当前报告合同，成长报告未加载。')).toBeTruthy();
+    expect(screen.queryByText('不应展示的半月报告')).toBeNull();
+    expect(insertGrowthReportMock).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when persisted report content is malformed', async () => {
+    const firstCycle = setClosedFirstCycle();
+    reportStore.unshift({
+      reportId: 'malformed-report',
+      childId: 'child-1',
+      reportType: 'monthly',
+      periodStart: firstCycle.periodStart,
+      periodEnd: firstCycle.periodEnd,
+      ageMonthsStart: 30,
+      ageMonthsEnd: 30,
+      content: '{}',
+      generatedAt: firstCycle.generationAt,
+      createdAt: firstCycle.generationAt,
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByText('本地数据不符合当前报告合同，成长报告未加载。')).toBeTruthy();
+    expect(insertGrowthReportMock).not.toHaveBeenCalled();
   });
 });

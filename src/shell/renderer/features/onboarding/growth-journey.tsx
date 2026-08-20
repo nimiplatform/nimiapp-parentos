@@ -12,11 +12,11 @@ type MilestoneSpec = {
 };
 
 const MILESTONES: readonly MilestoneSpec[] = [
-  { key: 'vaccine', icon: Syringe, tint: 'blue', positionClassName: 'left-[0%] top-[13%]' },
-  { key: 'checkup', icon: Stethoscope, tint: 'teal', positionClassName: 'right-[1%] top-[5%]' },
-  { key: 'milestone', icon: Footprints, tint: 'violet', positionClassName: 'left-[6%] top-[44%]' },
-  { key: 'sensitive', icon: Sparkles, tint: 'violet', positionClassName: 'right-[0%] top-[46%]' },
-  { key: 'journal', icon: Heart, tint: 'blue', positionClassName: 'left-[36%] bottom-[1%]' },
+  { key: 'vaccine', icon: Syringe, tint: 'blue', positionClassName: 'bottom-[-6%] left-[3%]' },
+  { key: 'checkup', icon: Stethoscope, tint: 'teal', positionClassName: 'right-[-2%] top-[5%] lg:right-[-6%] xl:right-[-8%]' },
+  { key: 'milestone', icon: Footprints, tint: 'violet', positionClassName: 'left-[25%] top-[26%]' },
+  { key: 'sensitive', icon: Sparkles, tint: 'violet', positionClassName: 'right-[-2%] top-[46%] lg:right-[-6%] xl:right-[-8%]' },
+  { key: 'journal', icon: Heart, tint: 'blue', positionClassName: 'bottom-[1%] left-[44%]' },
 ] as const;
 
 /**
@@ -26,7 +26,7 @@ const MILESTONES: readonly MilestoneSpec[] = [
  */
 export function GrowthJourney() {
   return (
-    <div className="parentos-onboarding-enter-visual relative mx-auto w-full max-w-[660px] lg:ml-0">
+    <div className="parentos-onboarding-enter-visual relative mx-auto w-full max-w-[760px] lg:ml-0">
       <div aria-hidden="true" className="parentos-onboarding-glow" />
       <GrowthPath />
       <GrowthCharacters />

@@ -116,6 +116,11 @@
   outline: 1px solid var(--nimi-border-subtle);
 }
 
+.parentos-child-birth-date:focus {
+  border-color: var(--nimi-field-focus);
+  box-shadow: 0 0 0 var(--nimi-focus-ring-width) var(--nimi-focus-ring-color);
+}
+
 .parentos-journal-hero-title {
   font-family:
     "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong",
@@ -1279,6 +1284,262 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   margin: 0 auto;
 }
 
+/* First monthly report — rolling one-month accumulation state */
+.report-accumulating-page {
+  min-height: 620px;
+  padding-bottom: 56px;
+  overflow: hidden;
+}
+
+.report-accumulating-header {
+  margin-bottom: 55px;
+}
+
+.report-accumulating-badge {
+  width: 64px;
+  height: 64px;
+}
+
+.report-accumulating-hero {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+}
+
+.report-accumulating-title {
+  margin: 0;
+  color: var(--nimi-text-primary);
+  font-family: var(--report-monthly-serif);
+  font-size: clamp(30px, 4.4vw, 40px);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.28;
+}
+
+.report-accumulating-subtitle {
+  margin: 16px 0 0;
+  color: var(--nimi-text-secondary);
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.report-accumulating-summary {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 28px;
+  margin-top: 24px;
+  padding: 22px 0;
+  border-top: 1px dashed color-mix(in srgb, var(--nimi-border-subtle) 78%, transparent);
+}
+
+.report-accumulating-stat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.report-accumulating-stat span {
+  color: var(--nimi-text-muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.report-accumulating-stat strong {
+  color: var(--nimi-text-primary);
+  font-family: var(--report-monthly-serif);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.report-accumulating-stat:first-child strong {
+  color: var(--nimi-action-primary-bg);
+  font-size: 26px;
+}
+
+.report-accumulating-divider {
+  width: 1px;
+  background: var(--nimi-border-subtle);
+}
+
+.report-accumulating-progress-block {
+  position: relative;
+  z-index: 1;
+  margin-top: 42px;
+}
+
+.report-accumulating-progress {
+  position: relative;
+  height: 16px;
+}
+
+.report-accumulating-progress::before,
+.report-accumulating-progress-fill {
+  position: absolute;
+  top: 7px;
+  left: 0;
+  height: 2px;
+  border-radius: var(--nimi-radius-full);
+  content: "";
+}
+
+.report-accumulating-progress::before {
+  width: 100%;
+  background: color-mix(in srgb, var(--nimi-border-subtle) 88%, var(--nimi-surface-panel));
+}
+
+.report-accumulating-progress-fill {
+  width: var(--report-accumulating-progress);
+  background: linear-gradient(90deg, var(--nimi-status-info), var(--nimi-action-primary-bg));
+}
+
+.report-accumulating-progress::after,
+.report-accumulating-progress-today,
+.report-accumulating-progress-end {
+  position: absolute;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--nimi-surface-card);
+  border-radius: var(--nimi-radius-full);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--nimi-action-primary-bg) 28%, transparent);
+  content: "";
+}
+
+.report-accumulating-progress::after {
+  left: 0;
+  background: var(--nimi-surface-card);
+  border-color: var(--nimi-action-primary-bg);
+}
+
+.report-accumulating-progress-today {
+  left: var(--report-accumulating-progress);
+  background: var(--nimi-action-primary-bg);
+  transform: translateX(-50%);
+}
+
+.report-accumulating-progress-end {
+  right: 0;
+  background: var(--nimi-surface-card);
+  border-color: var(--nimi-border-strong);
+  box-shadow: none;
+}
+
+.report-accumulating-progress-label {
+  position: absolute;
+  bottom: 18px;
+  left: clamp(20px, var(--report-accumulating-progress), calc(100% - 20px));
+  padding: 2px 7px;
+  border-radius: var(--nimi-radius-full);
+  background: color-mix(in srgb, var(--nimi-action-primary-bg) 9%, var(--nimi-surface-card));
+  color: var(--nimi-action-primary-bg);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.4;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.report-accumulating-milestones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--nimi-text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.report-accumulating-milestones span:last-child {
+  text-align: right;
+}
+
+.report-accumulating-cta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  width: fit-content;
+  min-width: 250px;
+  margin: 76px auto 0;
+  padding: 12px 22px;
+  border: 1px solid var(--nimi-action-primary-bg);
+  border-radius: var(--nimi-radius-full);
+  background: linear-gradient(135deg, var(--nimi-action-primary-bg), color-mix(in srgb, var(--nimi-status-info) 74%, var(--nimi-action-primary-bg)));
+  color: var(--nimi-text-inverse);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color var(--nimi-motion-fast), transform var(--nimi-motion-fast);
+}
+
+.report-accumulating-cta:hover {
+  background: linear-gradient(135deg, var(--nimi-action-primary-bg-hover), color-mix(in srgb, var(--nimi-status-info) 68%, var(--nimi-action-primary-bg-hover)));
+  box-shadow: var(--nimi-elevation-base);
+  transform: translateY(-1px);
+}
+
+.report-accumulating-cta:focus-visible {
+  outline: 2px solid var(--nimi-action-primary-bg);
+  outline-offset: 3px;
+}
+
+.report-accumulating-error {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 36px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--nimi-status-warning) 42%, transparent);
+  border-radius: var(--nimi-radius-lg);
+  background: color-mix(in srgb, var(--nimi-status-warning) 8%, var(--nimi-surface-card));
+}
+
+.report-accumulating-error p {
+  margin: 0;
+  color: var(--nimi-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .report-monthly-page {
+    padding: 36px 24px 56px;
+  }
+
+  .report-accumulating-header {
+    margin-bottom: 52px;
+  }
+
+  .report-accumulating-summary {
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 42px;
+  }
+
+  .report-accumulating-divider {
+    width: 100%;
+    height: 1px;
+  }
+
+  .report-accumulating-milestones {
+    font-size: 10px;
+  }
+
+  .report-accumulating-error {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 /* Report domain styles */
 .report-radius-sm {
   border-radius: var(--nimi-radius-sm);
@@ -1291,7 +1552,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .report-page-container {
   margin-inline: auto;
   max-width: 48rem;
-  padding: 16px 24px 0;
+  padding: 48px 24px 0;
 }
 
 .report-page-title,

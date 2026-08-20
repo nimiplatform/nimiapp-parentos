@@ -322,6 +322,7 @@ tables:
       - { name: createdAt, type: TEXT, nullable: false, description: "ISO 8601 datetime" }
     indexes:
       - { columns: [childId, reportType, periodStart] }
+      - { columns: [childId, periodStart], unique: true, where: "reportType = 'monthly'", description: "At most one rolling monthly report per child and period start (PO-TIME-006 invariant)" }
 
   # ── 口腔发育 ─────────────────────────────────────────────
 
@@ -716,6 +717,7 @@ constraints:
   - "JSON payloads are stored as TEXT and must remain valid JSON on read/write."
   - "childId is the primary filter field for child-scoped tables."
   - "growth_reports.reportType is limited to monthly | quarterly | quarterly-letter | custom."
+  - "growth_reports enforces at most one monthly row per (childId, periodStart); automatic generation is idempotent across report and timeline surfaces."
   - "Child deletion cascades through all child-scoped current-baseline tables: milestone_records, reminder_states, vaccine_records, posture_assessments, journal_entries, ai_conversations, growth_reports, dental_records, allergy_records, sleep_records, medical_events, tanner_assessments, fitness_assessments, outdoor_records, vision_followup_settings, health_record_events, health_record_values, attachments, custom_todos, orthodontic_cases, orthodontic_appliances, orthodontic_checkins, orthodontic_unwear_intervals, orthodontic_photo_sessions."
   - "Child deletion also purges every child-scoped user-generated file path under storage_layout.files and clears any legacy renderer journal draft key parentos:journal-draft:{childId}; durable journal draft bodies are not admitted in browser localStorage."
   - "vision_followup_settings.cadenceMonths is constrained to the integer range 1..36 at the bridge boundary; values outside this range must fail-close. customNextDate must be ISO 8601 YYYY-MM-DD when present."

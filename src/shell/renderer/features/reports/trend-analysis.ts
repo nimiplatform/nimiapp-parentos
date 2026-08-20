@@ -170,7 +170,6 @@ export interface MeasurementComparison {
   unit: string;
   currentValue: number;
   currentDate: string;
-  currentPercentile: number | null;
   previousValue: number | null;
   previousDate: string | null;
   delta: number | null;
@@ -204,7 +203,6 @@ export function buildMeasurementComparisons(
       unit: gs?.unit ?? '',
       currentValue: latestInPeriod.value,
       currentDate: latestInPeriod.measuredAt,
-      currentPercentile: latestInPeriod.percentile ?? null,
       previousValue: previous ? previous.value : null,
       previousDate: previous ? previous.measuredAt : null,
       delta: previous ? Math.round((latestInPeriod.value - previous.value) * 10) / 10 : null,

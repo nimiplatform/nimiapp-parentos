@@ -436,7 +436,7 @@ export default function ChildrenSettingsPage() {
               <div>
                 <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.birthDate')}</label>
                 <DatePicker value={form.birthDate} onChange={(v) => setForm({ ...form, birthDate: v })}
-                  maxDate={new Date().toISOString().slice(0, 10)} size="small" />
+                  maxDate={new Date().toISOString().slice(0, 10)} size="small" className="parentos-child-birth-date" />
               </div>
               <div>
                 <label className="mb-1.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.field.nurtureMode')}</label>

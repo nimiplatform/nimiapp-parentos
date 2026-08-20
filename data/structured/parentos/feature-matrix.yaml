@@ -297,9 +297,9 @@ features: &parentos_feature_matrix_entries
     phase: 1
     priority: P2
     contract: timeline-contract
-    description: "Trigger monthly report generation from the timeline surface when local prerequisites are available."
+    description: "Show first-report accumulation until the rolling calendar-month window anchored to child creation closes, then trigger one idempotent monthly report from the reports or timeline surface."
     tables: [data/structured/parentos/local-storage.yaml#growth_reports]
-    runtimeDependency: "runtime.ai.text.generate"
+    runtimeDependency: "optional runtime.ai.text.generate for narrative enrichment; deterministic local generation otherwise"
 
   - featureId: PO-FEAT-047
     name: "Weekly outdoor goal"

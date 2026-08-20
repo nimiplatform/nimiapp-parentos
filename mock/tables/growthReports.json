@@ -15,13 +15,13 @@
     "reportId": "gr-muchen-q1-2026",
     "childId": "child-lin-muchen",
     "reportType": "monthly",
-    "periodStart": "2026-03-01T00:00:00.000Z",
-    "periodEnd": "2026-03-31T23:59:59.000Z",
-    "ageMonthsStart": 6,
-    "ageMonthsEnd": 7,
-    "content": "{\"version\":1,\"format\":\"structured-local\",\"reportType\":\"monthly\",\"title\":\"林沐宸 2026 年 3 月成长摘要\",\"subtitle\":\"辅食、化验与睡眠观察\",\"generatedAt\":\"2026-04-01T08:30:00+08:00\",\"overview\":[\"本月开始稳定引入辅食。\",\"化验指标整体可继续观察趋势。\",\"夜醒次数较 2 月略有下降。\"],\"metrics\":[{\"id\":\"weight\",\"label\":\"体重\",\"value\":\"7.52 kg\"},{\"id\":\"vitamin-d\",\"label\":\"维生素D\",\"value\":\"28 ng/mL\"},{\"id\":\"hemoglobin\",\"label\":\"血红蛋白\",\"value\":\"118 g/L\"}],\"trendSignals\":[],\"sections\":[{\"id\":\"nutrition\",\"title\":\"喂养\",\"items\":[\"米粉接受度良好。\",\"暂未见明显过敏或腹泻。\"]},{\"id\":\"sleep\",\"title\":\"睡眠\",\"items\":[\"夜间入睡较稳定。\",\"白天小睡维持 3 次左右。\"]}],\"sources\":[\"儿保记录\",\"化验单 OCR\",\"辅食日记\"],\"safetyNote\":\"如出现持续食欲差、体重停滞或反复低热，应及时就医。\"}",
-    "generatedAt": "2026-04-01T08:30:00+08:00",
-    "createdAt": "2026-04-01T08:30:00+08:00"
+    "periodStart": "2026-03-03T07:00:00.000Z",
+    "periodEnd": "2026-04-03T06:59:59.999Z",
+    "ageMonthsStart": 7,
+    "ageMonthsEnd": 8,
+    "content": "{\"version\":1,\"format\":\"structured-local\",\"reportType\":\"monthly\",\"title\":\"林沐宸第八个成长月报\",\"subtitle\":\"2026-03-03 至 2026-04-03\",\"generatedAt\":\"2026-04-03T15:00:00+08:00\",\"overview\":[\"本周期记录了辅食引入。\",\"本地化验指标已归档。\",\"夜醒次数记录较前一周期减少。\"],\"metrics\":[{\"id\":\"weight\",\"label\":\"体重\",\"value\":\"7.52 kg\"},{\"id\":\"vitamin-d\",\"label\":\"维生素D\",\"value\":\"28 ng/mL\"},{\"id\":\"hemoglobin\",\"label\":\"血红蛋白\",\"value\":\"118 g/L\"}],\"trendSignals\":[],\"sections\":[{\"id\":\"nutrition\",\"title\":\"喂养\",\"items\":[\"记录了米粉摄入。\",\"本周期未记录过敏或腹泻事件。\"]},{\"id\":\"sleep\",\"title\":\"睡眠\",\"items\":[\"已记录夜间入睡时间。\",\"白天小睡记录约 3 次。\"]}],\"sources\":[\"儿保记录\",\"本地化验记录\",\"辅食日记\"],\"safetyNote\":\"本报告仅整理本地记录，不提供诊断或治疗建议。\"}",
+    "generatedAt": "2026-04-03T15:00:00+08:00",
+    "createdAt": "2026-04-03T15:00:00+08:00"
   },
   {
     "reportId": "gr-zhiyao-q1-2026",

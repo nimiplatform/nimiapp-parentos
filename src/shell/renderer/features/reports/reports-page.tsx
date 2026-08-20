@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, DatePicker, NimiText, nimiToast, StatusBadge, Surface, TextareaField } from '@nimiplatform/kit/ui';
 import { ArrowRight, ChevronDown, Eye, Pencil, Star } from 'lucide-react';
-import { useAppStore } from '../../app-shell/app-store.js';
+import { computeAgeMonthsAt, formatAge, useAppStore } from '../../app-shell/app-store.js';
 import {
   getAllergyRecords, getDentalRecords, getFitnessAssessments, getGrowthReports,
   getJournalEntries, getMeasurements, getMedicalEvents, getMilestoneRecords,
@@ -20,11 +20,27 @@ import {
   type StructuredGrowthReportContent,
 } from './structured-report.js';
 import { i18nText } from '../../i18n/index.js';
+import { autoGenerateMonthlyReport } from './auto-report.js';
+import { ReportAccumulatingState } from './report-accumulating-state.js';
+import { getFirstReportAccumulation, requireValidGrowthReports } from './report-cycle.js';
 
 
 type PersistedReport = Awaited<ReturnType<typeof getGrowthReports>>[number];
 type GenerateState = 'idle' | 'saving' | 'error';
+type AutoGenerationState = 'idle' | 'generating' | 'error';
+type ReportLoadState = 'loading' | 'ready' | 'error';
 type PeriodPreset = 'this-month' | 'last-month' | 'this-quarter' | 'last-quarter' | 'custom';
+
+function requireValidPersistedReports(createdAt: string, reports: PersistedReport[]): PersistedReport[] {
+  requireValidGrowthReports(createdAt, reports);
+  for (const report of reports) {
+    const content = parseReportContent(report.content);
+    if (content.reportType !== report.reportType) {
+      throw new Error(`Growth report type mismatch: ${report.reportId}`);
+    }
+  }
+  return reports;
+}
 
 const PRESET_OPTIONS: Array<{ id: PeriodPreset; labelKey: string }> = [
   { id: 'this-month', labelKey: 'Reports.page.preset.thisMonth' },
@@ -48,7 +64,9 @@ function computePresetDates(preset: PeriodPreset) {
 }
 
 function deriveReportType(preset: PeriodPreset): GrowthReportType {
-  if (preset === 'this-month' || preset === 'last-month') return 'monthly';
+  // `monthly` is reserved for the rolling automatic cycle anchored to the
+  // child profile. Parent-selected calendar windows are custom reports.
+  if (preset === 'this-month' || preset === 'last-month') return 'custom';
   if (preset === 'this-quarter' || preset === 'last-quarter') return 'quarterly-letter';
   return 'custom';
 }
@@ -269,22 +287,70 @@ export default function ReportsPage() {
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [generateState, setGenerateState] = useState<GenerateState>('idle');
+  const [autoGenerationState, setAutoGenerationState] = useState<AutoGenerationState>('idle');
+  const [reportLoadState, setReportLoadState] = useState<ReportLoadState>('loading');
+  const [reloadKey, setReloadKey] = useState(0);
   const viewerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { const d = computePresetDates('this-quarter'); setPeriodStart(d.start); setPeriodEnd(d.end); }, []);
   useEffect(() => {
-    if (!child) { setReports([]); setExpandedReportId(null); return; }
-    const cid = child.childId; let cancelled = false;
-    getGrowthReports(cid).then((rows) => { if (!cancelled) setReports(rows); }).catch(catchLog('reports', 'action:load-growth-reports-failed'));
+    if (!child) {
+      setReports([]);
+      setExpandedReportId(null);
+      setReportLoadState('ready');
+      return;
+    }
+
+    let cancelled = false;
+    setReports([]);
+    setExpandedReportId(null);
+    setReportLoadState('loading');
+    setAutoGenerationState('idle');
+
+    void (async () => {
+      let rows: PersistedReport[];
+      try {
+        rows = requireValidPersistedReports(child.createdAt, await getGrowthReports(child.childId));
+        if (cancelled) return;
+        setReports(rows);
+      } catch (error) {
+        if (cancelled) return;
+        catchLog('reports', 'action:load-growth-reports-failed')(error);
+        setReportLoadState('error');
+        return;
+      }
+
+      const firstCycle = getFirstReportAccumulation(child.createdAt);
+      if (rows.length === 0 && firstCycle.isEligible) {
+        setAutoGenerationState('generating');
+      }
+
+      try {
+        const generatedReportId = await autoGenerateMonthlyReport(child);
+        if (cancelled) return;
+        if (generatedReportId) {
+          rows = requireValidPersistedReports(child.createdAt, await getGrowthReports(child.childId));
+          if (cancelled) return;
+          setReports(rows);
+        }
+        setAutoGenerationState('idle');
+      } catch (error) {
+        if (cancelled) return;
+        catchLog('reports', 'action:auto-generate-monthly-report-failed')(error);
+        setAutoGenerationState('error');
+      }
+      if (!cancelled) setReportLoadState('ready');
+    })();
+
     return () => { cancelled = true; };
-  }, [child]);
+  }, [child, reloadKey]);
 
   if (!child) return <div className="report-page-shell"><div className="report-page-container"><p className="report-muted-text">{i18nText('Reports.page.noChild')}</p></div></div>;
 
   const activeChild = child;
+  const firstAccumulation = getFirstReportAccumulation(activeChild.createdAt);
   const latestReport = reports[0] ?? null;
-  let latestContent: ParsedReportContent | null = null;
-  if (latestReport) { try { latestContent = parseReportContent(latestReport.content); } catch { /* */ } }
+  const latestContent = latestReport ? parseReportContent(latestReport.content) : null;
 
   const handlePresetChange = (p: PeriodPreset) => { setPeriodPreset(p); if (p !== 'custom') { const d = computePresetDates(p); setPeriodStart(d.start); setPeriodEnd(d.end); } };
   const handleDateChange = (field: 'start' | 'end', value: string) => {
@@ -298,7 +364,7 @@ export default function ReportsPage() {
   const handleContentUpdate = async (reportId: string, updated: NarrativeReportContent) => {
     try {
       await updateGrowthReportContent({ reportId, content: JSON.stringify(updated), now: isoNow() });
-      setReports(await getGrowthReports(activeChild.childId));
+      setReports(requireValidPersistedReports(activeChild.createdAt, await getGrowthReports(activeChild.childId)));
     } catch (error) {
       nimiToast.danger(i18nText('Reports.page.contentSaveFailed', {
         message: error instanceof Error ? error.message : String(error),
@@ -380,7 +446,7 @@ export default function ReportsPage() {
       }
       const reportId = ulid();
       await insertGrowthReport({ reportId, childId: activeChild.childId, reportType: report.reportType, periodStart: report.periodStart, periodEnd: report.periodEnd, ageMonthsStart: report.ageMonthsStart, ageMonthsEnd: report.ageMonthsEnd, content: JSON.stringify(report.content), generatedAt: now, now });
-      setReports(await getGrowthReports(activeChild.childId)); setExpandedReportId(reportId); setGenerateState('idle');
+      setReports(requireValidPersistedReports(activeChild.createdAt, await getGrowthReports(activeChild.childId))); setExpandedReportId(reportId); setGenerateState('idle');
       setTimeout(() => { if (typeof viewerRef.current?.scrollIntoView === 'function') viewerRef.current.scrollIntoView({ behavior: 'smooth' }); }, 100);
     } catch (error) {
       catchLog('reports', 'action:generate-report-failed')(error);
@@ -409,37 +475,50 @@ export default function ReportsPage() {
           <div className="mb-6">
             <ReportViewer content={latestContent} reportId={latestReport.reportId} persisted={latestReport} childName={activeChild.displayName} selfRoleName={activeChild.recorderProfiles?.[0]?.name} onContentUpdate={latestContent.version === 2 ? (u) => void handleContentUpdate(latestReport.reportId, u) : undefined} />
           </div>
-        ) : (
-          <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="report-empty-state">
-            <p className="report-empty-title">{i18nText('Reports.page.emptyTitle')}</p>
-            <p className="report-empty-subtitle">{i18nText('Reports.page.emptySubtitle')}</p>
+        ) : reportLoadState === 'error' ? (
+          <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="report-empty-state" role="alert">
+            <p className="report-empty-title">{i18nText('Reports.page.loadError')}</p>
           </Surface>
+        ) : reportLoadState === 'loading' && autoGenerationState !== 'generating' ? (
+          <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="report-empty-state">
+            <p className="report-empty-title">{i18nText('Reports.page.loading')}</p>
+          </Surface>
+        ) : (
+          <div className="mb-6">
+            <ReportAccumulatingState
+              childName={activeChild.displayName}
+              badgeLabel={formatAge(computeAgeMonthsAt(activeChild.birthDate, firstAccumulation.periodStart))}
+              accumulation={firstAccumulation}
+              autoGenerationState={autoGenerationState}
+              onRetry={() => setReloadKey((value) => value + 1)}
+            />
+          </div>
         )}
 
         {reports.length > 1 && (<div className="mb-6">
           <p className="report-section-label">{i18nText('Reports.page.historyTitle')}</p>
           <div className="space-y-2">{reports.slice(1).map((report) => {
             const isExpanded = expandedReportId === report.reportId;
-            let parsed: ParsedReportContent | null = null; let title = i18nText('Reports.page.heroReports');
-            try { parsed = parseReportContent(report.content); title = parsed.title; } catch { /* */ }
+            const parsed = parseReportContent(report.content);
+            const title = parsed.title;
             return (<div key={report.reportId}>
               <button onClick={() => setExpandedReportId((prev) => prev === report.reportId ? null : report.reportId)}
                 className={`report-history-button ${isExpanded ? 'report-history-button--active' : ''}`}>
                 <div className="flex items-center gap-2">
                   <span className="report-history-title">{title}</span>
-                  {parsed && <StatusBadge tone="neutral" className="shrink-0">{reportBadgeLabel(parsed)}</StatusBadge>}
+                  <StatusBadge tone="neutral" className="shrink-0">{reportBadgeLabel(parsed)}</StatusBadge>
                   <ChevronDown size={12} className={`report-icon-muted shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} strokeWidth={2} />
                 </div>
                 <p className="report-history-date">{i18nText('Reports.page.periodRange', { start: report.periodStart.slice(0, 10), end: report.periodEnd.slice(0, 10) })}</p>
               </button>
-              {isExpanded && parsed && (<div ref={viewerRef} className="mt-2 pb-4">
+              {isExpanded && (<div ref={viewerRef} className="mt-2 pb-4">
                 <ReportViewer content={parsed} reportId={report.reportId} persisted={report} childName={activeChild.displayName} selfRoleName={activeChild.recorderProfiles?.[0]?.name} onContentUpdate={parsed.version === 2 ? (u) => void handleContentUpdate(report.reportId, u) : undefined} />
               </div>)}
             </div>);
           })}</div>
         </div>)}
 
-        <div className="mb-8">
+        {reports.length > 0 && <div className="mb-8">
           <button onClick={() => setShowAdvanced(!showAdvanced)} className="report-advanced-toggle">
             <ChevronDown size={12} strokeWidth={2} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
             {i18nText('Reports.page.advancedToggle')}
@@ -468,7 +547,7 @@ export default function ReportsPage() {
               {generateState === 'saving' ? i18nText('Reports.page.generating') : i18nText('Reports.page.generate')}
             </Button>
           </Surface>)}
-        </div>
+        </div>}
       </div>
     </div>
   );

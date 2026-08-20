@@ -47,8 +47,8 @@ vi.mock('../../app-shell/app-select.js', () => ({
 
 vi.mock('@nimiplatform/kit/ui', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nimiplatform/kit/ui')>()),
-  DatePicker: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
-    <input type="date" value={value} onChange={(event) => onChange(event.target.value)} />
+  DatePicker: ({ value, onChange, className }: { value: string; onChange: (value: string) => void; className?: string }) => (
+    <input type="date" value={value} className={className} onChange={(event) => onChange(event.target.value)} />
   ),
 }));
 
@@ -157,10 +157,11 @@ describe('ChildrenSettingsPage', () => {
   });
 
   it('opens the add child form directly from the welcome create-profile intent', () => {
-    renderPage([{ pathname: '/settings/children', state: { intent: 'add-child' } }]);
+    const { container } = renderPage([{ pathname: '/settings/children', state: { intent: 'add-child' } }]);
 
     expect(screen.getByRole('heading', { name: '添加孩子' })).toBeTruthy();
     expect(screen.queryByText('还没有添加孩子')).toBeNull();
+    expect(container.querySelector('input[type="date"]')?.classList.contains('parentos-child-birth-date')).toBe(true);
   });
 
   it('deletes a child with confirmation', async () => {

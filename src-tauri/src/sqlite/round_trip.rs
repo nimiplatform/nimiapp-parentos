@@ -339,6 +339,26 @@ fn growth_reports_round_trip_and_cascade_with_child_delete() {
 }
 
 #[test]
+fn growth_reports_enforce_one_monthly_row_per_child_and_period() {
+    let conn = Connection::open_in_memory().expect("open in-memory db");
+    conn.execute_batch("PRAGMA foreign_keys=ON;")
+        .expect("enable foreign keys");
+    run_migrations(&conn).expect("run migrations");
+    seed_family_and_child(&conn);
+
+    let insert_monthly = |report_id: &str| {
+        conn.execute(
+            "INSERT INTO growth_reports (reportId, childId, reportType, periodStart, periodEnd, ageMonthsStart, ageMonthsEnd, content, generatedAt, createdAt) VALUES (?1, 'child-1', 'monthly', '2026-01-17T00:00:00.000Z', '2026-02-16T23:59:59.999Z', 24, 25, '{\"format\":\"structured-local\",\"version\":1}', '2026-02-17T00:00:00.000Z', '2026-02-17T00:00:00.000Z')",
+            params![report_id],
+        )
+    };
+
+    insert_monthly("report-monthly-1").expect("insert first monthly report");
+    let duplicate = insert_monthly("report-monthly-2");
+    assert!(duplicate.is_err(), "duplicate monthly period must be rejected");
+}
+
+#[test]
 fn dental_record_round_trip_and_cascade_with_child_delete() {
     let conn = Connection::open_in_memory().expect("open in-memory db");
     conn.execute_batch("PRAGMA foreign_keys=ON;")

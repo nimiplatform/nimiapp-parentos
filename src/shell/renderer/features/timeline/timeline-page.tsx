@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { WelcomePage } from './welcome-page.js';
 import { SENSITIVE_PERIODS } from '../../knowledge-base/index.js';
@@ -19,6 +19,7 @@ import {
   VisionCard,
 } from './timeline-cards.js';
 import { autoGenerateMonthlyReport } from '../reports/auto-report.js';
+import { isValidRollingMonthlyReport } from '../reports/report-cycle.js';
 import { FrequencyModal } from '../reminders/frequency-modal.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { ReminderPanel } from './timeline-page-panels.js';
@@ -37,7 +38,15 @@ export default function TimelinePage() {
     useReminderPanelController(child);
 
   const [freqModalReminder, setFreqModalReminder] = useState<ActiveReminder | null>(null);
-  const autoGenTriggered = useRef(false);
+  const latestMonthlyReport = d.latestMonthlyReport;
+  if (child && latestMonthlyReport && !isValidRollingMonthlyReport(child.createdAt, {
+    reportType: 'monthly',
+    periodStart: latestMonthlyReport.periodStart,
+    periodEnd: latestMonthlyReport.periodEnd,
+    generatedAt: latestMonthlyReport.generatedAt,
+  })) {
+    throw new Error(`Invalid rolling monthly report window: ${latestMonthlyReport.periodStart}`);
+  }
 
   const periods = useMemo(
     () => SENSITIVE_PERIODS.filter((period) => ageMonths >= period.ageRange.startMonths && ageMonths <= period.ageRange.endMonths),
@@ -50,14 +59,13 @@ export default function TimelinePage() {
   );
 
   useEffect(() => {
-    if (!child || loading || d.latestMonthlyReport || autoGenTriggered.current) return;
-    autoGenTriggered.current = true;
+    if (!child || loading) return;
     autoGenerateMonthlyReport(child)
       .then((id) => {
         if (id) void reload();
       })
       .catch(catchLog('timeline', 'action:auto-generate-monthly-report-failed', 'warn'));
-  }, [child, loading, d.latestMonthlyReport, reload]);
+  }, [child, loading, reload]);
 
   if (!child) {
     return <WelcomePage />;
@@ -127,7 +135,7 @@ export default function TimelinePage() {
           <MilestoneTimelineCard summary={homeVm.milestoneTimeline} />
           <RecentLinesCard lines={homeVm.recentLines} />
           <ObservationDistributionCard summary={homeVm.observationDistribution} />
-          {d.latestMonthlyReport ? <MonthlyReportCard report={d.latestMonthlyReport} /> : null}
+          {latestMonthlyReport ? <MonthlyReportCard report={latestMonthlyReport} /> : null}
         </div>
       </div>
 

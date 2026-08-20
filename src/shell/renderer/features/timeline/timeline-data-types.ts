@@ -15,6 +15,7 @@ export interface MonthlyReportSummary {
   reportId: string;
   content: string;
   periodStart: string;
+  periodEnd: string;
   generatedAt: string;
 }
 

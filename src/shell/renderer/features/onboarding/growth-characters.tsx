@@ -11,7 +11,9 @@ export function GrowthCharacters() {
       src={growthJourneyUrl}
       alt=""
       aria-hidden="true"
+      data-testid="parentos-onboarding-growth-journey"
       draggable={false}
+      fetchPriority="high"
       className="relative z-10 h-auto w-full select-none object-contain"
     />
   );

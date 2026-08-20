@@ -112,10 +112,8 @@ export function useDash(childId: string | null) {
       getOrthodonticDashboard(childId),
     ]);
 
-    const now = new Date();
-    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
     const allReports = rp.status === 'fulfilled' ? rp.value : [];
-    const thisMonthReport = allReports.find((report) => report.periodStart >= monthStart) ?? null;
+    const latestPersistedMonthlyReport = allReports.find((report) => report.reportType === 'monthly') ?? null;
     const vaccineRecords = vs.status === 'fulfilled' ? vs.value : [];
 
     // Active clear-aligner cycle summary (calendar-based) for the right-rail
@@ -173,12 +171,13 @@ export function useDash(childId: string | null) {
       outdoorGoalMinutes: og.status === 'fulfilled' ? og.value : null,
       orthoCycle,
       latestMonthlyReport:
-        thisMonthReport
+        latestPersistedMonthlyReport
           ? {
-              reportId: thisMonthReport.reportId,
-              content: thisMonthReport.content,
-              periodStart: thisMonthReport.periodStart,
-              generatedAt: thisMonthReport.generatedAt,
+              reportId: latestPersistedMonthlyReport.reportId,
+              content: latestPersistedMonthlyReport.content,
+              periodStart: latestPersistedMonthlyReport.periodStart,
+              periodEnd: latestPersistedMonthlyReport.periodEnd,
+              generatedAt: latestPersistedMonthlyReport.generatedAt,
             }
           : null,
     });

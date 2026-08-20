@@ -175,6 +175,9 @@ pub(super) const V1_SCHEMA_SQL: &str = r#"
             createdAt      TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_report_child_type_period ON growth_reports (childId, reportType, periodStart);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_report_monthly_unique_period
+          ON growth_reports (childId, periodStart)
+          WHERE reportType = 'monthly';
 
         -- App Settings
         CREATE TABLE IF NOT EXISTS app_settings (

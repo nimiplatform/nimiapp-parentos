@@ -151,8 +151,9 @@ export function buildReportSystemPrompt(childName: string): string {
 
 叙事规则：
 - 用具体数据讲 ${childName} 的故事：引用具体日期、时间、${childName} 做了什么、测到了什么
+- 缺少数据的模块必须明确写"本期未记录"，不得把缺少数据或只有一条记录解释为平稳、稳定、正常、改善或下降
 - 里程碑写成 ${childName} 的小故事瞬间，不只是列表
-- 百分位数翻译成自然语言："P75"说"同龄孩子中处于较高水平"，"P50"说"同龄平均水平"，"P25"说"偏瘦/偏矮一些，但仍在正常范围"
+- 不输出百分位排名、同龄定位或正常/异常判断；只描述本地记录中的具体测量值与日期
 - 先肯定再引导，"待观察"的内容用温和语气
 - 如数据存在需要关注的变化，只说"可以多留意"或"建议咨询专业人士"
 
@@ -168,7 +169,7 @@ export function buildReportSystemPrompt(childName: string): string {
   "keywordSub": "关键词副标（6-16字，对 keyword 做一句具体展开，用动词/描述式语言，引用本月一个具体场景；主语仍是 ${childName} 或省略；不要称呼记录者。好例：在数学课主动举手了三次、晨起节奏趋于稳定、夜里十点前就肯合眼）",
   "opening": "开场：用一两句话点出 ${childName} 本月的主题或最显著的变化，引用具体细节（1-3句，不要称呼记录者，不要感谢语）",
   "sections": [
-    { "id": "growth", "title": "生长发育", "narrative": "讲 ${childName} 在这个领域本月的故事", "dataPoints": [{ "label": "身高", "value": "98.4 cm", "detail": "+1.2cm · P75" }] },
+    { "id": "growth", "title": "生长发育", "narrative": "讲 ${childName} 在这个领域本月的故事", "dataPoints": [{ "label": "身高", "value": "98.4 cm", "detail": "较上次 +1.2cm" }] },
     更多sections根据有数据的模块动态生成
   ],
   "milestoneReplay": "${childName} 本月里程碑时刻的小故事回放（如无里程碑则为null）",
@@ -178,7 +179,7 @@ export function buildReportSystemPrompt(childName: string): string {
   "professionalSummary": {
     "childSummary": "一句话基本信息行：${childName}，年龄，性别，记录周期（例：${childName}，9岁5个月，女，2026-04-01 至 2026-04-30）",
     "sections": [
-      { "id": "growth",      "title": "生长发育测量", "body": "客观描述本期身高/体重/BMI/头围的测量值、百分位、与上一次测量的对比；引用具体测量日期；无数据时写「本期未记录」" },
+      { "id": "growth",      "title": "生长发育测量", "body": "客观描述本期身高/体重/BMI/头围的测量值与上一次测量的数值差；引用具体测量日期；不输出百分位排名或同龄定位；无数据时写「本期未记录」" },
       { "id": "health",      "title": "健康事件",     "body": "本期就医、过敏、口腔、皮肤等客观记录的摘要，含日期、事件类型、严重程度；无数据写「本期未记录」" },
       { "id": "vaccine",     "title": "疫苗接种",     "body": "本期新增的疫苗记录，含疫苗名称、接种日期；如有累计总数可一并说明；无数据写「本期未记录」" },
       { "id": "sleep",       "title": "睡眠与作息",   "body": "本期平均就寝/起床时间、平均睡眠时长、与上一周期的分钟级差值；无数据写「本期未记录」" },
@@ -389,8 +390,7 @@ function buildFallbackProfessionalBody(id: string, snap: Snapshot): string {
       if (snap.growthComparisons.length === 0) return '本期未记录生长测量数据。';
       return snap.growthComparisons.map((c) => {
         const delta = c.delta != null ? `（较上次 ${c.delta >= 0 ? '+' : ''}${c.delta}${c.unit ?? ''}）` : '';
-        const pct = c.currentPercentile != null ? ` · P${c.currentPercentile}` : '';
-        return `${c.label}：${c.currentValue}${c.unit ?? ''}${pct}，测量于 ${c.currentDate.slice(0, 10)}${delta}`;
+        return `${c.label}：${c.currentValue}${c.unit ?? ''}，测量于 ${c.currentDate.slice(0, 10)}${delta}`;
       }).join('；') + '。';
     }
     case 'health': {
@@ -463,6 +463,77 @@ function buildFallbackProfessionalBody(id: string, snap: Snapshot): string {
   }
 }
 
+function countPeriodEvidence(period: ReportPeriod, data: AllDomainData) {
+  return [
+    data.measurements.filter((item) => inPeriod(item.measuredAt, period.start, period.end)).length,
+    data.milestones.filter((item) => inPeriod(item.achievedAt, period.start, period.end)).length,
+    data.vaccines.filter((item) => inPeriod(item.vaccinatedAt, period.start, period.end)).length,
+    data.journalEntries.filter((item) => inPeriod(item.recordedAt, period.start, period.end)).length,
+    data.sleepRecords.filter((item) => inPeriod(item.sleepDate, period.start, period.end)).length,
+    data.dentalRecords.filter((item) => inPeriod(item.eventDate, period.start, period.end)).length,
+    data.medicalEvents.filter((item) => inPeriod(item.eventDate, period.start, period.end)).length,
+    data.fitnessAssessments.filter((item) => inPeriod(item.assessedAt, period.start, period.end)).length,
+    data.tannerAssessments.filter((item) => inPeriod(item.assessedAt, period.start, period.end)).length,
+  ].reduce((total, count) => total + count, 0);
+}
+
+function buildSparseNarrativeReport(input: {
+  child: ChildProfile;
+  period: ReportPeriod;
+  data: AllDomainData;
+  reportType: GrowthReportType;
+  now: string;
+  ageMonthsStart: number;
+  ageMonthsEnd: number;
+  evidenceCount: number;
+}): BuiltStructuredGrowthReport {
+  const { child, period, data, reportType, now, ageMonthsStart, ageMonthsEnd, evidenceCount } = input;
+  const opening = evidenceCount === 0
+    ? i18nText('Reports.sparseNarrative.noEvidence', { childName: child.displayName })
+    : i18nText('Reports.sparseNarrative.oneEvidence', { childName: child.displayName });
+  const trendSignals = buildStructuredTrendSignals({
+    measurements: data.measurements,
+    journalEntries: data.journalEntries,
+    periodStart: period.start,
+    periodEnd: period.end,
+  });
+  const professionalSummary = buildProfessionalSummaryFromData({ child, period, data, ageMonthsEnd, now });
+  const titleKey = reportType === 'monthly'
+    ? 'Reports.page.narrativeTitle.monthly'
+    : reportType === 'quarterly'
+      ? 'Reports.page.narrativeTitle.quarterly'
+      : reportType === 'quarterly-letter'
+        ? 'Reports.page.narrativeTitle.quarterlyLetter'
+        : 'Reports.page.narrativeTitle.custom';
+
+  const content: NarrativeReportContent = {
+    version: 2,
+    format: 'narrative',
+    reportType,
+    title: i18nText(titleKey, { childName: child.displayName }),
+    subtitle: i18nText('Reports.page.periodSubtitle', { start: period.start.slice(0, 10), end: period.end.slice(0, 10) }),
+    teaser: opening,
+    generatedAt: now,
+    opening,
+    narrativeSections: [],
+    milestoneReplay: null,
+    highlights: [],
+    watchNext: [],
+    closingMessage: i18nText('Reports.sparseNarrative.closing'),
+    actionItems: buildNarrativeActionItems(data.reminderStates),
+    trendSignals,
+    metrics: [
+      { id: 'age', label: i18nText('Reports.narrative.metrics.age'), value: i18nText('Reports.narrative.metrics.ageMonths', { months: ageMonthsEnd }) },
+      { id: 'evidence', label: i18nText('Reports.sparseNarrative.evidenceLabel'), value: String(evidenceCount) },
+    ],
+    professionalSummary,
+    sources: [i18nText('Reports.sparseNarrative.localSources')],
+    safetyNote: i18nText('Reports.sparseNarrative.safetyNote'),
+  };
+
+  return { reportType, periodStart: period.start, periodEnd: period.end, ageMonthsStart, ageMonthsEnd, content };
+}
+
 /* ── Full Generation Pipeline ── */
 
 export async function generateNarrativeReportForPeriod(input: {
@@ -480,6 +551,20 @@ export async function generateNarrativeReportForPeriod(input: {
   const snapshot = buildReportDataSnapshot(child, period, data);
   const periodLabel = buildReportLabel(reportType, period);
   const monthLabel = periodLabel;
+  const evidenceCount = countPeriodEvidence(period, data);
+
+  if (evidenceCount <= 1) {
+    return buildSparseNarrativeReport({
+      child,
+      period,
+      data,
+      reportType,
+      now,
+      ageMonthsStart,
+      ageMonthsEnd,
+      evidenceCount,
+    });
+  }
 
   const generated = await runParentosTextGenerate({
     surfaceId: 'parentos.report',
@@ -496,8 +581,8 @@ export async function generateNarrativeReportForPeriod(input: {
 
   const aiOutput = parseAiReportResponse(generated.text);
   const filteredSections = safetyFilterSections(aiOutput.sections);
-  const opening = safetyFilterString(aiOutput.opening, `${child.displayName}这个月在稳稳地长大。`);
-  const closingMessage = safetyFilterString(aiOutput.closingMessage, `${child.displayName}的本月在持续积累，值得被看见。`);
+  const opening = safetyFilterString(aiOutput.opening, i18nText('Reports.sparseNarrative.filteredFallback'));
+  const closingMessage = safetyFilterString(aiOutput.closingMessage, i18nText('Reports.sparseNarrative.closing'));
   const milestoneReplay = aiOutput.milestoneReplay ? safetyFilterString(aiOutput.milestoneReplay, null as unknown as string) || null : null;
 
   const trendSignals = buildStructuredTrendSignals({ measurements: data.measurements, journalEntries: data.journalEntries, periodStart: period.start, periodEnd: period.end });

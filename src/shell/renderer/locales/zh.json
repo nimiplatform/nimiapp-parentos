@@ -9,10 +9,28 @@
   "Onboarding": {
     "title": {
       "line1": "科学陪伴每一步",
-      "line2": "成长更有方向"
+      "line2": "孩子全周期成长助手"
     },
-    "subtitle": "疫苗、体检、里程碑、敏感期——按孩子的年龄与阶段，主动提醒当下最值得关注的事。",
-    "tagline": "从出生到青春期，为孩子的成长留一份看得懂的底稿。",
+    "description": "ParentOS 基于循证成长知识库，覆盖从婴幼儿到青春期的每一个阶段，让育儿更安心、更有方向。",
+    "features": {
+      "ariaLabel": "ParentOS 核心能力",
+      "reminder": {
+        "title": "主动提醒",
+        "description": "疫苗接种、体检、发育里程碑，一个不漏"
+      },
+      "evidence": {
+        "title": "循证支持",
+        "description": "基于权威指南与研究，提供科学建议"
+      },
+      "journal": {
+        "title": "成长记录",
+        "description": "珍藏每一个成长瞬间，见证改变"
+      },
+      "personalized": {
+        "title": "个性化定制",
+        "description": "根据宝贝信息，智能定制专属成长计划"
+      }
+    },
     "cta": "建立宝贝档案",
     "milestone": {
       "vaccine": "疫苗接种",
@@ -4810,6 +4828,15 @@
         "milestones": "里程碑"
       }
     },
+    "sparseNarrative": {
+      "noEvidence": "{{childName}}本周期暂未记录具体的成长数据或日常观察，因此本报告不推断整体状态或变化趋势。",
+      "oneEvidence": "{{childName}}本周期留下了 1 条记录。本报告仅保留这条已记录事实，不据此推断整体状态或变化趋势。",
+      "closing": "本期报告仅汇总已记录事实，未记录的部分不作推断。",
+      "filteredFallback": "本期已记录的数据见下方明细，未记录的部分不作推断。",
+      "evidenceLabel": "本期记录",
+      "localSources": "本地儿童档案与本地记录",
+      "safetyNote": "本报告仅整理本地记录，不提供诊断、比较或治疗建议。"
+    },
     "history": {
       "title": "单据记录",
       "summary": "共 {{count}} 份已识别的医疗报告",
@@ -4931,6 +4958,27 @@
       "heroGrowth": "成长",
       "heroReports": "报告",
       "heroSubtitle": "基于本地数据自动生成，每月更新",
+      "loading": "正在读取成长报告…",
+      "loadError": "本地数据不符合当前报告合同，成长报告未加载。",
+      "accumulating": {
+        "issue": "LETTER № {{issueNo}}",
+        "period": "{{start}} → {{end}} · 已积累 {{days}} 天",
+        "title": "正在积累{{childName}}的成长报告",
+        "subtitle": "记录满一个月后，将自动生成第一份成长报告",
+        "generatingSubtitle": "一个月的记录周期已经完成，正在整理本地记录…",
+        "summaryLabel": "首份报告生成进度",
+        "expectedLabel": "预计",
+        "expectedValue": "{{date}} 生成",
+        "elapsedLabel": "已积累",
+        "elapsedValue": "{{days}} 天",
+        "progressLabel": "成长报告积累进度",
+        "startMilestone": "开始记录 · {{date}}",
+        "todayMilestone": "今天",
+        "endMilestone": "自动生成 · {{date}}",
+        "captureAction": "记录一个瞬间",
+        "error": "本周期已经满足生成条件，但报告暂未完成。你的本地记录不会丢失。",
+        "retry": "重新生成"
+      },
       "emptyTitle": "还没有成长报告",
       "emptySubtitle": "报告会在首页自动生成，也可以在下方手动创建",
       "historyTitle": "历史报告",

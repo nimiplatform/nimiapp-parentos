@@ -611,7 +611,7 @@ pub fn insert_growth_report(
 
     let conn = get_conn()?.lock().map_err(|e| e.to_string())?;
     conn.execute(
-        "INSERT INTO growth_reports (reportId, childId, reportType, periodStart, periodEnd, ageMonthsStart, ageMonthsEnd, content, generatedAt, createdAt) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
+        "INSERT INTO growth_reports (reportId, childId, reportType, periodStart, periodEnd, ageMonthsStart, ageMonthsEnd, content, generatedAt, createdAt) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ON CONFLICT(childId, periodStart) WHERE reportType = 'monthly' DO NOTHING",
         params![report_id, child_id, report_type, period_start, period_end, age_months_start, age_months_end, content, generated_at, now],
     ).map_err(|e| format!("insert_growth_report: {e}"))?;
     Ok(())

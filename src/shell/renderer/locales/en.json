@@ -8,11 +8,29 @@
   },
   "Onboarding": {
     "title": {
-      "line1": "Guided by science,",
-      "line2": "growing with direction"
+      "line1": "Science beside every step",
+      "line2": "Your child's growth companion"
     },
-    "subtitle": "Vaccines, checkups, milestones, sensitive periods — surfaced proactively for your child's age and stage.",
-    "tagline": "From newborn to teen, keep a clear record of how your child grows.",
+    "description": "Built on an evidence-based child development knowledge base, ParentOS supports every stage from infancy through adolescence, helping families feel calmer and more confident.",
+    "features": {
+      "ariaLabel": "ParentOS core capabilities",
+      "reminder": {
+        "title": "Proactive reminders",
+        "description": "Vaccinations, checkups, and developmental milestones—nothing gets missed"
+      },
+      "evidence": {
+        "title": "Evidence-based support",
+        "description": "Clear guidance grounded in authoritative research"
+      },
+      "journal": {
+        "title": "Growth journal",
+        "description": "Preserve each meaningful moment and see how things change"
+      },
+      "personalized": {
+        "title": "Personalized planning",
+        "description": "A growth plan tailored to your child's information"
+      }
+    },
     "cta": "Create Child Profile",
     "milestone": {
       "vaccine": "Vaccinations",
@@ -4810,6 +4828,15 @@
         "milestones": "Milestones"
       }
     },
+    "sparseNarrative": {
+      "noEvidence": "No specific growth data or daily observations were recorded for {{childName}} in this period, so this report does not infer an overall state or trend.",
+      "oneEvidence": "One record was saved for {{childName}} in this period. This report keeps that fact without inferring an overall state or trend.",
+      "closing": "This report only summarizes recorded facts. It does not infer from missing information.",
+      "filteredFallback": "Recorded facts appear below. Missing information is not interpreted.",
+      "evidenceLabel": "Period records",
+      "localSources": "Local child profile and local records",
+      "safetyNote": "This report organizes local records only and does not provide diagnosis, comparison, or treatment advice."
+    },
     "history": {
       "title": "Document records",
       "summary": "{{count}} recognized medical reports",
@@ -4931,6 +4958,27 @@
       "heroGrowth": "Growth",
       "heroReports": "Reports",
       "heroSubtitle": "Generated automatically from local data and updated monthly",
+      "loading": "Loading growth reports…",
+      "loadError": "Growth reports could not be loaded because the local data did not satisfy the current report contract.",
+      "accumulating": {
+        "issue": "LETTER № {{issueNo}}",
+        "period": "{{start}} → {{end}} · {{days}} days collected",
+        "title": "Building {{childName}}'s growth report",
+        "subtitle": "The first growth report will be generated automatically after one full month",
+        "generatingSubtitle": "The first full month is complete. ParentOS is organizing the local records…",
+        "summaryLabel": "First report generation progress",
+        "expectedLabel": "Expected",
+        "expectedValue": "Generates {{date}}",
+        "elapsedLabel": "Collected",
+        "elapsedValue": "{{days}} days",
+        "progressLabel": "Growth report accumulation progress",
+        "startMilestone": "Started · {{date}}",
+        "todayMilestone": "Today",
+        "endMilestone": "Auto-generate · {{date}}",
+        "captureAction": "Record a moment",
+        "error": "This cycle is ready, but the report has not finished generating. Your local records are safe.",
+        "retry": "Try again"
+      },
       "emptyTitle": "No growth reports yet",
       "emptySubtitle": "Reports are generated automatically on the home page, or you can create one manually below",
       "historyTitle": "Report history",

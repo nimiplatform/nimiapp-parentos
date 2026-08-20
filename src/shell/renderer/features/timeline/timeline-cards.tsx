@@ -218,23 +218,24 @@ export function ObservationDistributionCard({ summary }: { summary: ObservationD
 /* ── Monthly Report ── */
 
 export function MonthlyReportCard({ report }: { report: MonthlyReportSummary }) {
-  try {
-    const content = parseReportContent(report.content);
-    const teaser = content.version === 2 ? content.teaser : content.overview?.slice(0, 2).join(' ') ?? '';
-    const actionText = content.version === 2 ? content.actionItems[0]?.text : null;
-    return (
-      <Cd cls="col-span-4">
-        <Hdr title={i18nText('Timeline.card.monthlyReport.title')} to="/reports" link={i18nText('Timeline.action.viewFullReport')} />
-        <p className="text-[14px] leading-[1.8]" style={{ color: textMain }}>{teaser}</p>
-        {actionText ? (
-          <div className="dashboard-inset mt-4 rounded-[14px] p-4">
-            <p className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: textMuted }}>{i18nText('Timeline.card.monthlyReport.todoTitle')}</p>
-            <p className="mt-1.5 text-[14px] font-medium" style={{ color: textMain }}>{actionText}</p>
-          </div>
-        ) : null}
-      </Cd>
-    );
-  } catch { return null; }
+  const content = parseReportContent(report.content);
+  if (content.reportType !== 'monthly') {
+    throw new Error(`Monthly report content type mismatch: ${report.reportId}`);
+  }
+  const teaser = content.version === 2 ? content.teaser : content.overview?.slice(0, 2).join(' ') ?? '';
+  const actionText = content.version === 2 ? content.actionItems[0]?.text : null;
+  return (
+    <Cd cls="col-span-4">
+      <Hdr title={i18nText('Timeline.card.monthlyReport.title')} to="/reports" link={i18nText('Timeline.action.viewFullReport')} />
+      <p className="text-[14px] leading-[1.8]" style={{ color: textMain }}>{teaser}</p>
+      {actionText ? (
+        <div className="dashboard-inset mt-4 rounded-[14px] p-4">
+          <p className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: textMuted }}>{i18nText('Timeline.card.monthlyReport.todoTitle')}</p>
+          <p className="mt-1.5 text-[14px] font-medium" style={{ color: textMain }}>{actionText}</p>
+        </div>
+      ) : null}
+    </Cd>
+  );
 }
 
 /* ── Growth trends ── */

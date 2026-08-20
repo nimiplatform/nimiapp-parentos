@@ -58,9 +58,9 @@ units:
         target: definition.parentos.timeline.contract
   - id: rule.parentos.time.r006
     kind: rule
-    title: Monthly Report Trigger
+    title: Rolling Monthly Report Trigger
     modality: must
-    statement: The timeline may trigger automatic monthly report generation for the active child. the trigger is monthly and local-child scoped generated reports must persist through growth_reports generated content must obey the reports authority in definition.parentos.advisor.contract missing runtime, missing local inputs, or generation failure must not fabricate placeholder reports
+    statement: "The reports surface and timeline may initiate the same idempotent automatic monthly report trigger for the active child. Monthly periods are contiguous rolling calendar-month windows anchored to children.createdAt: boundary n is createdAt plus n calendar months, clamped to the last valid day when the anchor day is absent. While the first window remains open, the reports surface must project accumulation progress and must not persist a growth_reports row. On the first eligible evaluation after a window closes, the trigger must generate exactly one report for that closed window and persist it through growth_reports; repeated evaluation must not create a duplicate for the same child and period. When the Nimi runtime is available, the report may use runtime-assisted narration; when runtime generation is unavailable or fails, the trigger must persist a deterministic structured report assembled from the same local inputs. Missing or malformed local inputs must fail closed and must not fabricate placeholder reports. Generated content must obey definition.parentos.advisor.contract."
     condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-TIME-006.
     failure: Fail closed and report PO-TIME-006 when the governed behavior does not satisfy this rule.
     relations:
