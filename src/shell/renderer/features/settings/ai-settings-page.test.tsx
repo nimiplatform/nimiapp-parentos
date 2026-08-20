@@ -67,8 +67,11 @@ describe('AiSettingsPage', () => {
     });
     await waitFor(() => {
       expect(container.textContent).toContain('已连接');
+      expect(container.textContent).toContain('文本生成');
       expect(container.textContent).toContain('text.generate');
       expect(container.textContent).toContain('本地路由');
+      expect(container.textContent).toContain('已配置');
+      expect(container.textContent).toContain('已配置 1 项能力意图');
     });
   });
 

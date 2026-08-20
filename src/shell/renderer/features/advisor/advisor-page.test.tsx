@@ -404,6 +404,7 @@ describe('AdvisorPage', () => {
 
     const userCall = insertAiMessageMock.mock.calls.find((call) => call[0].role === 'user')?.[0];
     expect(userCall?.contextSnapshot).toBeTruthy();
+    expect(screen.getByRole('button', { name: /最近怎么样？/ })).toBeTruthy();
     const snapshot = JSON.parse(String(userCall?.contextSnapshot)) as {
       child: { childId: string; displayName: string };
       measurements: unknown[];

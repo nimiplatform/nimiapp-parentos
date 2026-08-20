@@ -84,7 +84,7 @@
       "addFamilyMember": "添加家庭成员"
     },
     "appMenu": {
-      "openMenu": "打开应用菜单"
+      "openMenu": "孩子与应用菜单"
     }
   },
   "Settings": {
@@ -646,7 +646,7 @@
     },
     "declared": {
       "title": "AI 能力声明",
-      "description": "Nimi 平台为 ParentOS 配置的只读能力意图。",
+      "description": "Nimi 平台为 ParentOS 配置的 AI 能力意图（只读声明）。",
       "empty": "尚未配置任何能力。",
       "platformManaged": "能力声明与路由由 Nimi 平台管理；ParentOS 只读取当前配置，并跳转到 Nimi 完成修改。",
       "openOwnerConfiguration": "在 Nimi 中配置",
@@ -654,7 +654,15 @@
       "loadFailed": "AI 配置读取失败",
       "ownerHandoffFailed": "未能打开 Nimi 配置页",
       "routeLocal": "本地路由",
-      "routeCloud": "云端路由"
+      "routeCloud": "云端路由",
+      "statusConfigured": "已配置",
+      "configuredCount": "已配置 {{count}} 项能力意图",
+      "capabilities": {
+        "textGenerate": "文本生成",
+        "audioTranscribe": "语音转写",
+        "audioSynthesize": "语音合成",
+        "imageGenerate": "图像生成"
+      }
     },
     "features": {
       "title": "功能可用性",

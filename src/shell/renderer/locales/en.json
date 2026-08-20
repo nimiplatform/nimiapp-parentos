@@ -84,7 +84,7 @@
       "addFamilyMember": "Add family member"
     },
     "appMenu": {
-      "openMenu": "Open app menu"
+      "openMenu": "Child and app menu"
     }
   },
   "Settings": {
@@ -646,7 +646,7 @@
     },
     "declared": {
       "title": "AI Capability Declarations",
-      "description": "Read-only capability intents configured for ParentOS by the Nimi platform.",
+      "description": "AI capability intents configured for ParentOS by the Nimi platform (read-only declarations).",
       "empty": "No capabilities are configured yet.",
       "platformManaged": "Capability declarations and routes are managed by Nimi. ParentOS reads the current configuration and hands changes to Nimi.",
       "openOwnerConfiguration": "Configure in Nimi",
@@ -654,7 +654,15 @@
       "loadFailed": "AI configuration could not be read",
       "ownerHandoffFailed": "Nimi configuration could not be opened",
       "routeLocal": "Local route",
-      "routeCloud": "Cloud route"
+      "routeCloud": "Cloud route",
+      "statusConfigured": "Configured",
+      "configuredCount": "Configured capability intents: {{count}}",
+      "capabilities": {
+        "textGenerate": "Text generation",
+        "audioTranscribe": "Speech-to-text",
+        "audioSynthesize": "Speech synthesis",
+        "imageGenerate": "Image generation"
+      }
     },
     "features": {
       "title": "Feature Availability",

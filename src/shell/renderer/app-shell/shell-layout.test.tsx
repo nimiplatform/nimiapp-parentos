@@ -84,7 +84,7 @@ describe('ShellLayout', () => {
     expect(container.querySelector('a[href="/reports"]')).toBeTruthy();
     expect(screen.getByTestId('shell-main-drag-region')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: '切换孩子' }));
+    fireEvent.click(screen.getByRole('button', { name: '孩子与应用菜单' }));
     fireEvent.click(await screen.findByRole('menuitemradio', { name: /Niko/i }));
 
     await waitFor(() => {
@@ -112,7 +112,7 @@ describe('ShellLayout', () => {
     expect(main?.className).toContain('z-0');
   });
 
-  it('places the ParentOS logo before the topbar title', () => {
+  it('places the ParentOS logo at the top of the sidebar and the child/app menu at its bottom', () => {
     render(
       <MemoryRouter>
         <ShellLayout>
@@ -121,13 +121,15 @@ describe('ShellLayout', () => {
       </MemoryRouter>,
     );
 
+    const nav = document.querySelector('nav');
     const logo = screen.getByRole('img', { name: 'ParentOS 标志' });
-    const title = screen.getByRole('heading', { name: 'ParentOS' });
+    const menuButton = screen.getByRole('button', { name: '孩子与应用菜单' });
 
     expect(logo.getAttribute('src')).toContain('/src-tauri/icons/icon.png');
-    expect(title.parentElement?.firstElementChild).toBe(logo);
-    expect(title.closest('header')?.className).toContain('pl-2');
-    expect(title.closest('header')?.className).toContain('pr-6');
+    expect(nav?.firstElementChild?.contains(logo)).toBe(true);
+    expect(nav?.lastElementChild?.contains(menuButton)).toBe(true);
+    expect(screen.queryByRole('heading', { name: 'ParentOS' })).toBeNull();
+    expect(document.querySelector('header')).toBeNull();
   });
 
   it('hides shell navigation until a child profile is active', () => {
@@ -160,10 +162,10 @@ describe('ShellLayout', () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '打开应用菜单' }));
+    fireEvent.click(screen.getByRole('button', { name: '孩子与应用菜单' }));
 
-    expect(await screen.findByRole('button', { name: '档案' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '设置' })).toBeTruthy();
+    expect(await screen.findByRole('menuitem', { name: '档案' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: '设置' })).toBeTruthy();
     expect(screen.queryByText('Parent User')).toBeNull();
   });
 });

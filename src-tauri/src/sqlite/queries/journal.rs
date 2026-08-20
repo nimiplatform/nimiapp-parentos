@@ -5,6 +5,15 @@ use super::super::get_conn;
 use super::reminders::apply_reminder_consultation_writeback;
 use super::validate_observation_selection;
 
+const GET_CONVERSATIONS_SQL: &str = "SELECT conversationId, childId, \
+     COALESCE(title, ( \
+         SELECT message.content FROM ai_messages AS message \
+         WHERE message.conversationId = ai_conversations.conversationId AND message.role = 'user' \
+         ORDER BY message.createdAt ASC, message.rowid ASC LIMIT 1 \
+     )) AS title, \
+     startedAt, lastMessageAt, messageCount, createdAt \
+     FROM ai_conversations WHERE childId = ?1 ORDER BY lastMessageAt DESC";
+
 fn normalize_keepsake_metadata(
     keepsake: i32,
     keepsake_title: Option<String>,
@@ -431,7 +440,8 @@ pub fn get_journal_tags(entry_id: String) -> Result<Vec<JournalTag>, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::validate_journal_content_type;
+    use super::{validate_journal_content_type, GET_CONVERSATIONS_SQL};
+    use rusqlite::{params, Connection};
 
     #[test]
     fn accepts_content_type_matching_the_supplied_payload_channels() {
@@ -486,6 +496,97 @@ mod tests {
 
         assert!(error.contains("invalid journal photoPaths"));
     }
+
+    #[test]
+    fn projects_the_first_user_message_only_when_the_conversation_has_no_title() {
+        let conn = Connection::open_in_memory().expect("open in-memory database");
+        conn.execute_batch(
+            "CREATE TABLE ai_conversations (
+                conversationId TEXT PRIMARY KEY NOT NULL,
+                childId TEXT NOT NULL,
+                title TEXT,
+                startedAt TEXT NOT NULL,
+                lastMessageAt TEXT NOT NULL,
+                messageCount INTEGER NOT NULL,
+                createdAt TEXT NOT NULL
+            );
+            CREATE TABLE ai_messages (
+                messageId TEXT PRIMARY KEY NOT NULL,
+                conversationId TEXT NOT NULL,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                createdAt TEXT NOT NULL
+            );",
+        )
+        .expect("create conversation tables");
+        conn.execute(
+            "INSERT INTO ai_conversations VALUES (?1, ?2, ?3, ?4, ?4, 2, ?4)",
+            params![
+                "derived",
+                "child-1",
+                Option::<String>::None,
+                "2026-08-20T09:00:00Z"
+            ],
+        )
+        .expect("insert untitled conversation");
+        conn.execute(
+            "INSERT INTO ai_messages VALUES (?1, ?2, 'assistant', ?3, ?4)",
+            params![
+                "assistant-first",
+                "derived",
+                "assistant opening",
+                "2026-08-20T09:01:00Z"
+            ],
+        )
+        .expect("insert assistant message");
+        conn.execute(
+            "INSERT INTO ai_messages VALUES (?1, ?2, 'user', ?3, ?4)",
+            params![
+                "user-first",
+                "derived",
+                "How is sleep changing?",
+                "2026-08-20T09:02:00Z"
+            ],
+        )
+        .expect("insert user message");
+        conn.execute(
+            "INSERT INTO ai_conversations VALUES (?1, ?2, ?3, ?4, ?4, 1, ?4)",
+            params![
+                "explicit",
+                "child-1",
+                "Journal follow-up",
+                "2026-08-20T10:00:00Z"
+            ],
+        )
+        .expect("insert titled conversation");
+        conn.execute(
+            "INSERT INTO ai_messages VALUES (?1, ?2, 'user', ?3, ?4)",
+            params![
+                "explicit-user",
+                "explicit",
+                "This must not replace the title",
+                "2026-08-20T10:01:00Z"
+            ],
+        )
+        .expect("insert titled conversation message");
+
+        let mut stmt = conn
+            .prepare(GET_CONVERSATIONS_SQL)
+            .expect("prepare conversation projection");
+        let titles = stmt
+            .query_map(params!["child-1"], |row| row.get::<_, Option<String>>(2))
+            .expect("query conversation projection")
+            .collect::<Result<Vec<_>, _>>()
+            .expect("collect conversation titles");
+
+        assert_eq!(
+            titles,
+            vec![
+                Some("Journal follow-up".to_string()),
+                Some("How is sleep changing?".to_string())
+            ]
+        );
+    }
 }
 
 // ── AI Conversations ───────────────────────────────────────
@@ -520,7 +621,10 @@ pub struct Conversation {
 #[tauri::command]
 pub fn get_conversations(child_id: String) -> Result<Vec<Conversation>, String> {
     let conn = get_conn()?.lock().map_err(|e| e.to_string())?;
-    let mut stmt = conn.prepare("SELECT conversationId, childId, title, startedAt, lastMessageAt, messageCount, createdAt FROM ai_conversations WHERE childId = ?1 ORDER BY lastMessageAt DESC").map_err(|e| format!("get_conversations: {e}"))?;
+    // @nimi-authority: rule.parentos.advs.r006
+    let mut stmt = conn
+        .prepare(GET_CONVERSATIONS_SQL)
+        .map_err(|e| format!("get_conversations: {e}"))?;
     let rows = stmt
         .query_map(params![child_id], |row| {
             Ok(Conversation {

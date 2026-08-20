@@ -29,6 +29,13 @@ type ParentosAIFeatureRow = {
 
 const PARENTOS_APP_ID = 'nimi.parentos';
 
+const CAPABILITY_LABEL_KEYS: Readonly<Record<string, string>> = {
+  'text.generate': 'AISettings.declared.capabilities.textGenerate',
+  'audio.transcribe': 'AISettings.declared.capabilities.audioTranscribe',
+  'audio.synthesize': 'AISettings.declared.capabilities.audioSynthesize',
+  'image.generate': 'AISettings.declared.capabilities.imageGenerate',
+};
+
 const PARENTOS_AI_FEATURE_ROWS: readonly ParentosAIFeatureRow[] = [
   { labelKey: 'AISettings.features.advisor', supported: isParentosAISurfaceExecutable('parentos.advisor'), capabilityContract: 'text.generate' },
   { labelKey: 'AISettings.features.report', supported: isParentosAISurfaceExecutable('parentos.report'), capabilityContract: 'text.generate' },
@@ -197,26 +204,50 @@ export default function AiSettingsPage() {
         </Surface>
 
         <Surface tone="card" material="solid" elevation="base" padding="lg" className="mb-5 parentos-radius-xl p-5">
-          <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{i18nText('AISettings.declared.title')}</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{i18nText('AISettings.declared.title')}</h2>
+            {aiConfigLoaded && declaredCapabilities.length > 0 ? (
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--nimi-status-success)_26%,transparent)] bg-[color-mix(in_srgb,var(--nimi-status-success)_9%,var(--nimi-surface-card))] px-3 py-1 text-[12px] font-semibold text-[var(--nimi-status-success)]">
+                <CheckCircle2 size={13} aria-hidden="true" />
+                {t('AISettings.declared.configuredCount', { count: declaredCapabilities.length })}
+              </span>
+            ) : null}
+          </div>
           <p className="mt-0.5 text-[13px] leading-[1.6] text-[var(--nimi-text-muted)]">
             {i18nText('AISettings.declared.description')}
           </p>
           <div className="mt-4 space-y-2">
-            {declaredCapabilities.map((capability) => (
-              <div
-                key={capability.capabilityContract}
-                className="flex items-center justify-between rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3"
-              >
-                <span className="text-[13px] font-medium text-[var(--nimi-text-primary)]">
-                  {capability.capabilityContract}
-                </span>
-                <span className="text-[12px] text-[var(--nimi-text-muted)]">
-                  {capability.route.oneofKind === 'local'
-                    ? t('AISettings.declared.routeLocal')
-                    : t('AISettings.declared.routeCloud')}
-                </span>
-              </div>
-            ))}
+            {declaredCapabilities.map((capability) => {
+              const labelKey = CAPABILITY_LABEL_KEYS[capability.capabilityContract];
+              return (
+                <div
+                  key={capability.capabilityContract}
+                  className="flex items-center justify-between gap-3 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-[var(--nimi-text-primary)]">
+                      {labelKey ? t(labelKey) : capability.capabilityContract}
+                    </p>
+                    {labelKey ? (
+                      <p className="mt-0.5 font-mono text-[11px] text-[var(--nimi-text-muted)]">
+                        {capability.capabilityContract}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2.5">
+                    <span className="text-[12px] text-[var(--nimi-text-muted)]">
+                      {capability.route.oneofKind === 'local'
+                        ? t('AISettings.declared.routeLocal')
+                        : t('AISettings.declared.routeCloud')}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[color-mix(in_srgb,var(--nimi-status-success)_26%,transparent)] bg-[color-mix(in_srgb,var(--nimi-status-success)_9%,var(--nimi-surface-card))] px-2.5 py-0.5 text-[12px] font-semibold text-[var(--nimi-status-success)]">
+                      <CheckCircle2 size={12} aria-hidden="true" />
+                      {t('AISettings.declared.statusConfigured')}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
             {aiConfigLoaded
               && declaredCapabilities.length === 0
               && (!aiConfigReasonCode || aiConfigReasonCode === 'ai-config-not-found') ? (

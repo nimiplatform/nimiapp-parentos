@@ -1,7 +1,7 @@
-import { lazy, Suspense, useState, useRef, useEffect, type MouseEvent as ReactMouseEvent, type ReactNode, type ComponentType } from 'react';
+import { lazy, Suspense, useState, useRef, useEffect, type ReactNode, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, User, BookText, MessageCircle, TrendingUp, Settings, ChevronDown, Check, UserPlus, type LucideProps } from 'lucide-react';
+import { Home, User, BookText, MessageCircle, TrendingUp, Settings, Check, Plus, type LucideProps } from 'lucide-react';
 import { AmbientBackground, Surface, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths, type ChildProfile } from './app-store.js';
 import { startParentosWindowDrag } from '../bridge/window-drag.js';
@@ -23,9 +23,15 @@ const navItems: Array<{ to: string; labelKey: string; Icon: ComponentType<Lucide
   { to: '/settings', labelKey: 'Shell.navigation.settings', Icon: Settings },
 ];
 
-/* ── Child Switcher Breadcrumb ─────────────────────────────── */
+/* ── Child/App Menu (child switcher + app entries) ─────────── */
 
-function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
+const appMenuItems = [
+  { id: 'profile', labelKey: 'Shell.navigation.profile', icon: User, route: '/profile' },
+  { id: 'settings', labelKey: 'Shell.navigation.settings', icon: Settings, route: '/settings' },
+] as const;
+
+// @nimi-authority: rule.parentos.shell.r005
+function ChildAppMenu({ childList, activeChildId, onSwitchChild }: {
   childList: ChildProfile[];
   activeChildId: string | null;
   onSwitchChild: (id: string) => void;
@@ -51,7 +57,6 @@ function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
   }, [open]);
 
   const activeChild = childList.find((c) => c.childId === activeChildId) ?? null;
-  if (!activeChild) return null;
 
   const formatChildAge = (ageMonths: number): string => {
     const years = Math.floor(ageMonths / 12);
@@ -68,14 +73,16 @@ function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
         onClick={() => open ? closeMenu() : openMenu()}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={t('Shell.childSwitcher.ariaLabel')}
-        className="flex min-w-0 max-w-[150px] items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--nimi-action-ghost-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nimi-focus-ring-color)] sm:max-w-[240px]"
+        aria-label={t('Shell.appMenu.openMenu')}
+        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full shadow-[var(--nimi-elevation-base)] ring-1 ring-[var(--nimi-border-subtle)] transition-all hover:-translate-y-0.5"
       >
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-[var(--nimi-border-subtle)]">
+        {activeChild ? (
           <ChildAvatar child={activeChild} className="h-full w-full object-cover" />
-        </span>
-        <span className="block min-w-0 flex-1 truncate text-[14px] font-medium text-[var(--nimi-text-primary)]">{activeChild.displayName}</span>
-        <ChevronDown size={13} strokeWidth={2} className="text-[var(--nimi-text-muted)]" />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center bg-[var(--nimi-text-primary)] text-[var(--nimi-text-inverse)]">
+            <Settings size={17} aria-hidden="true" />
+          </span>
+        )}
       </button>
 
       {mounted && (
@@ -86,11 +93,15 @@ function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
           tone="card"
           role="menu"
           className={cn(
-            'absolute left-0 top-12 z-50 w-60 origin-top-left overflow-hidden rounded-xl border-[var(--nimi-material-glass-thick-border)] py-1.5 shadow-[var(--nimi-elevation-floating)] transition-all duration-[var(--nimi-motion-fast)]',
+            'absolute bottom-12 left-0 z-50 max-h-[calc(100vh-5rem)] w-64 origin-bottom-left overflow-y-auto rounded-xl border-[var(--nimi-material-glass-thick-border)] py-2 shadow-[var(--nimi-elevation-floating)] transition-all duration-[var(--nimi-motion-fast)]',
             open ? 'pointer-events-auto translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-1 scale-95 opacity-0',
           )}
           onTransitionEnd={() => { if (!open) setMounted(false); }}
         >
+          {/* ── Child switcher ── */}
+          <div className="px-3.5 pb-1 pt-1 text-[12px] font-medium text-[var(--nimi-text-muted)]">
+            {t('Shell.childSwitcher.ariaLabel')}
+          </div>
           <div className="px-1.5">
             {childList.map((c) => {
               const isActive = c.childId === activeChildId;
@@ -128,83 +139,32 @@ function ChildSwitcherBreadcrumb({ childList, activeChildId, onSwitchChild }: {
                 </button>
               );
             })}
-          </div>
 
-          <div className="mx-3 my-1 border-t border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_20%,transparent)]" />
-
-          <div className="px-1.5 pb-0.5">
+            {/* Dashed placeholder row — add family member */}
             <button
               type="button"
               role="menuitem"
               onClick={() => { closeMenu(); navigate('/settings/children'); }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[14px] text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
+              className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
             >
-              <UserPlus size={16} strokeWidth={1.8} className="text-[var(--nimi-text-muted)]" />
-              {t('Shell.childSwitcher.addFamilyMember')}
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--nimi-border-strong)] text-[var(--nimi-text-muted)]">
+                <Plus size={16} strokeWidth={1.8} aria-hidden="true" />
+              </span>
+              <span className="text-[14px] font-medium text-[var(--nimi-text-muted)]">
+                {t('Shell.childSwitcher.addFamilyMember')}
+              </span>
             </button>
           </div>
-        </Surface>
-      )}
-    </div>
-  );
-}
 
-/* ── App Menu ──────────────────────────────────────────────── */
+          <div className="mx-3 my-1 border-t border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_20%,transparent)]" />
 
-const appMenuItems = [
-  { id: 'profile', labelKey: 'Shell.navigation.profile', icon: User, route: '/profile' },
-  { id: 'settings', labelKey: 'Shell.navigation.settings', icon: Settings, route: '/settings' },
-] as const;
-
-function AppMenu() {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const openMenu = () => { setMounted(true); requestAnimationFrame(() => setOpen(true)); };
-  const closeMenu = () => setOpen(false);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: globalThis.MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) closeMenu();
-    };
-    const escHandler = (e: KeyboardEvent) => { if (e.key === 'Escape') closeMenu(); };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('keydown', escHandler);
-    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', escHandler); };
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative z-40">
-      <button
-        onClick={() => open ? closeMenu() : openMenu()}
-        aria-expanded={open}
-        aria-label={t('Shell.appMenu.openMenu')}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--nimi-text-primary)] text-[14px] font-semibold text-[var(--nimi-text-inverse)] shadow-[var(--nimi-elevation-base)] transition-all hover:-translate-y-0.5"
-      >
-        <Settings size={17} aria-hidden="true" />
-      </button>
-
-      {mounted && (
-        <Surface
-          as="div"
-          material="glass-thick"
-          padding="none"
-          tone="card"
-          className={cn(
-            'absolute right-0 top-12 z-50 w-64 origin-top-right overflow-hidden rounded-xl border-[var(--nimi-material-glass-thick-border)] py-2 shadow-[var(--nimi-elevation-floating)] transition-all duration-[var(--nimi-motion-fast)]',
-            open ? 'pointer-events-auto translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-1 scale-95 opacity-0',
-          )}
-          onTransitionEnd={() => { if (!open) setMounted(false); }}
-        >
           {/* ── Menu items ── */}
           <div className="px-1.5 py-1.5">
             {appMenuItems.map((item) => (
               <button
                 key={item.id}
+                type="button"
+                role="menuitem"
                 onClick={() => { closeMenu(); navigate(item.route); }}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] text-[var(--nimi-text-secondary)] transition-all hover:bg-[var(--nimi-action-ghost-hover)] hover:text-[var(--nimi-text-primary)]"
               >
@@ -235,82 +195,58 @@ export function ShellLayout({ children }: { children: ReactNode }) {
     ]).catch(() => {});
   }, [activeChildId]);
 
-  const handleWindowDragMouseDown = (event: ReactMouseEvent<HTMLElement>) => {
-    if (event.button !== 0) return;
-    const tag = (event.target as HTMLElement).tagName;
-    const interactive = (event.target as HTMLElement).closest('a, button, input, select, textarea, [role="button"], [tabindex]');
-    if (interactive || tag === 'A' || tag === 'BUTTON' || tag === 'INPUT') return;
-    void startParentosWindowDrag();
-  };
-
   return (
     <AmbientBackground variant="mesh" className="isolate flex h-full overflow-hidden">
       {/* Sidebar — transparent, shares global bg */}
       {hasActiveChild ? (
         <nav
-          className="relative z-30 flex w-[62px] shrink-0 flex-col items-center overflow-visible bg-transparent pt-32 pb-5"
+          className="relative z-30 flex w-[62px] shrink-0 flex-col items-center overflow-visible bg-transparent pb-5"
         >
-        <div className="flex flex-1 flex-col items-center gap-1">
-          {navItems.map((item) => {
-            const label = t(item.labelKey);
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                aria-label={label}
-                className={({ isActive }) =>
-                  `group relative flex items-center justify-center w-[40px] h-[40px] rounded-xl transition-all duration-150 ${
-                    isActive
-                      ? 'bg-[var(--nimi-text-primary)] text-[var(--nimi-text-inverse)] shadow-[var(--nimi-elevation-base)]'
-                      : 'text-[var(--nimi-text-muted)] hover:bg-[var(--nimi-action-ghost-hover)] hover:text-[var(--nimi-text-primary)]'
-                  }`
-                }
-              >
-                <item.Icon size={19} strokeWidth={1.8} />
-                <span
-                  className="pointer-events-none absolute left-[52px] z-50 whitespace-nowrap rounded-2xl border border-[var(--nimi-material-glass-thick-border)] bg-[var(--nimi-material-glass-thick-bg)] px-3 py-1.5 text-[13px] font-medium text-[var(--nimi-text-primary)] opacity-0 shadow-[var(--nimi-elevation-floating)] backdrop-blur-[var(--nimi-backdrop-blur-strong)] transition-opacity duration-100 group-hover:opacity-100 nimi-material-glass-thick"
+          <div className="flex h-[60px] w-full shrink-0 items-center justify-center">
+            <img
+              src={parentosLogoUrl}
+              alt={t('App.logoAlt')}
+              className="h-7 w-7 shrink-0 rounded-[7px] object-contain"
+            />
+          </div>
+          <div className="flex flex-1 flex-col items-center gap-1 pt-4">
+            {navItems.map((item) => {
+              const label = t(item.labelKey);
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  aria-label={label}
+                  className={({ isActive }) =>
+                    `group relative flex items-center justify-center w-[40px] h-[40px] rounded-xl transition-all duration-150 ${
+                      isActive
+                        ? 'bg-[var(--nimi-text-primary)] text-[var(--nimi-text-inverse)] shadow-[var(--nimi-elevation-base)]'
+                        : 'text-[var(--nimi-text-muted)] hover:bg-[var(--nimi-action-ghost-hover)] hover:text-[var(--nimi-text-primary)]'
+                    }`
+                  }
                 >
-                  {label}
-                </span>
-              </NavLink>
-            );
-          })}
-        </div>
+                  <item.Icon size={19} strokeWidth={1.8} />
+                  <span
+                    className="pointer-events-none absolute left-[52px] z-50 whitespace-nowrap rounded-2xl border border-[var(--nimi-material-glass-thick-border)] bg-[var(--nimi-material-glass-thick-bg)] px-3 py-1.5 text-[13px] font-medium text-[var(--nimi-text-primary)] opacity-0 shadow-[var(--nimi-elevation-floating)] backdrop-blur-[var(--nimi-backdrop-blur-strong)] transition-opacity duration-100 group-hover:opacity-100 nimi-material-glass-thick"
+                  >
+                    {label}
+                  </span>
+                </NavLink>
+              );
+            })}
+          </div>
 
-          <div className="mt-auto" />
+          <div className="mt-auto">
+            <ChildAppMenu
+              childList={childList}
+              activeChildId={activeChildId}
+              onSwitchChild={setActiveChildId}
+            />
+          </div>
         </nav>
       ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top bar */}
-        <header
-          className="z-20 flex h-[60px] shrink-0 items-center gap-2 bg-transparent pl-2 pr-3 sm:gap-4 sm:pr-6"
-          onMouseDown={handleWindowDragMouseDown}
-        >
-          <div className="flex min-w-0 items-center gap-2">
-            {hasActiveChild ? (
-              <>
-                <img
-                  src={parentosLogoUrl}
-                  alt={t('App.logoAlt')}
-                  className="h-6 w-6 shrink-0 rounded-[6px] object-contain"
-                />
-                <h1 className="hidden text-[18px] font-semibold text-[var(--nimi-text-primary)] sm:block">ParentOS</h1>
-                <span className="select-none text-[var(--nimi-border-strong)]" aria-hidden="true">/</span>
-                <ChildSwitcherBreadcrumb
-                  childList={childList}
-                  activeChildId={activeChildId}
-                  onSwitchChild={setActiveChildId}
-                />
-              </>
-            ) : null}
-          </div>
-
-          <div className="ml-auto flex items-center gap-3">
-            <AppMenu />
-          </div>
-        </header>
-
         <main className="relative z-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden"
           onMouseDown={(e) => {
             if (e.button !== 0) return;

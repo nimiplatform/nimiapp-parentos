@@ -426,6 +426,7 @@ export default function AdvisorPage() {
     });
   };
 
+  // @nimi-authority: rule.parentos.advs.r006
   const runAdvisorTurn = async (params: {
     conversationId: string;
     question: string;
@@ -458,15 +459,21 @@ export default function AdvisorPage() {
     const snapshotJson = serializeAdvisorSnapshot(snapshot);
 
     try {
+      const userMessageCreatedAt = isoNow();
       await insertAiMessage({
         messageId: ulid(),
         conversationId: params.conversationId,
         role: 'user',
         content: params.question,
         contextSnapshot: snapshotJson,
-        now: isoNow(),
+        now: userMessageCreatedAt,
       });
       setMessages(await getAiMessages(params.conversationId));
+      setConversations((current) => current.map((conversation) => (
+        conversation.conversationId === params.conversationId && conversation.title === null
+          ? { ...conversation, title: params.question, lastMessageAt: userMessageCreatedAt }
+          : conversation
+      )));
     } catch (err) {
       catchLog('advisor', 'action:persist-user-message-failed')(err);
       const fallbackContent = buildStructuredAdvisorFallback(params.question, domains, snapshot, {
