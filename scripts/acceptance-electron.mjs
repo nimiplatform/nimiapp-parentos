@@ -98,7 +98,6 @@ async function main() {
     const desktopOverflow = await assertNoVisibleOverflow(page, 'electron-desktop');
     const desktopScreenshot = path.join(screenshotDir, 'desktop.png');
     await page.screenshot({ path: desktopScreenshot, fullPage: true });
-    const hmrResult = await verifyRendererHmr(page, consoleEvents);
 
     const sessionStatusResult = await invokeBridge(
       page,
@@ -236,6 +235,10 @@ async function main() {
     const narrowScreenshot = path.join(screenshotDir, 'narrow.png');
     await page.screenshot({ path: narrowScreenshot, fullPage: true });
 
+    // Run the HMR probe only after bridge and layout assertions. The supervised
+    // development host may replace the renderer execution context while
+    // applying the update, so no product bridge call should race that handoff.
+    const hmrResult = await verifyRendererHmr(page, consoleEvents);
     await delay(250);
     assert.deepEqual(pageErrors, [], 'Electron page must not emit page errors');
     assert.deepEqual(
