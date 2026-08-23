@@ -71,10 +71,10 @@ describe('ParentOS portable AIConfig projection', () => {
     });
   });
 
-  it('reads the platform-owned text capability without invoking the mutation method', async () => {
+  it('reads the canonical self-owner text capability without mutating during read', async () => {
     const config = {
       owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
-      capabilities: [{ capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: { loadoutRef: 'text-local' } } }],
+      capabilities: [{ capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: {} } }],
     };
     const projected = { config, revision: '1', effectiveSelections: [readyLocal('text.generate', 'text-local')] };
     const get = vi.fn().mockResolvedValue(projected);
@@ -93,14 +93,15 @@ describe('ParentOS portable AIConfig projection', () => {
     await expect(readParentosAIConfig()).resolves.toEqual({
       state: 'not-configured',
       reasonCode: 'ai-config-not-found',
+      snapshot: snapshot(null),
     });
   });
 
-  it('checks exact configured capabilities from the read-only projection', async () => {
+  it('checks configured capabilities from route intent and current effective projection', async () => {
     const get = vi.fn().mockResolvedValue({
       ...snapshot([{
         capabilityContract: 'audio.transcribe', requiredFeatures: [],
-        route: { oneofKind: 'local', local: { loadoutRef: 'audio-local' } },
+        route: { oneofKind: 'local', local: {} },
       }], [readyLocal('audio.transcribe', 'audio-local')]),
     });
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
@@ -108,7 +109,7 @@ describe('ParentOS portable AIConfig projection', () => {
     await expect(hasParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).resolves.toBe(true);
   });
 
-  it('does not admit a cloud intent across the ParentOS local-only privacy boundary', async () => {
+  it('reports a Cloud intent as non-executable across the ParentOS local-only privacy boundary', async () => {
     const get = vi.fn().mockResolvedValue(snapshot([{
         capabilityContract: 'audio.transcribe',
         requiredFeatures: [],
@@ -122,6 +123,9 @@ describe('ParentOS portable AIConfig projection', () => {
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
 
     await expect(hasParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).resolves.toBe(false);
+    await expect(requireParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).rejects.toMatchObject({
+      reasonCode: 'parentos-ai-cloud-route-not-admitted',
+    });
   });
 
   it('maps typed failures to a bounded unavailable projection', async () => {
@@ -152,15 +156,16 @@ describe('ParentOS portable AIConfig projection', () => {
     });
   });
 
-  it('does not report a blocked effective selection as executable', async () => {
+  it('keeps a blocked Local intent configured so Runtime admission owns the typed failure', async () => {
     const get = vi.fn().mockResolvedValue(snapshot([{
       capabilityContract: 'text.generate', requiredFeatures: [],
-      route: { oneofKind: 'local', local: { loadoutRef: 'text-local' } },
+      route: { oneofKind: 'local', local: {} },
     }], [{
       capabilityContract: 'text.generate', state: 'blocked', resource: null, reasons: ['AI_LOADOUT_INVALID'],
     }]));
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
 
-    await expect(hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)).resolves.toBe(false);
+    await expect(hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)).resolves.toBe(true);
+    await expect(requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)).resolves.toBeUndefined();
   });
 });

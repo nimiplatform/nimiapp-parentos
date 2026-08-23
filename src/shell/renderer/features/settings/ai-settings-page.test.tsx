@@ -10,6 +10,10 @@ import AiSettingsPage from './ai-settings-page.js';
 const probeParentosNimiAccessMock = vi.fn();
 const readParentosAIConfigMock = vi.fn();
 const openDesktopIntentMock = vi.fn();
+const parentosAIConfigManagerMock = {
+  overwrite: vi.fn(),
+  listOptions: vi.fn(),
+};
 
 vi.mock('../../infra/runtime-status.js', () => ({
   probeParentosNimiAccess: () => probeParentosNimiAccessMock(),
@@ -18,6 +22,7 @@ vi.mock('../../infra/runtime-status.js', () => ({
 vi.mock('./parentos-ai-config.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./parentos-ai-config.js')>()),
   readParentosAIConfig: () => readParentosAIConfigMock(),
+  getParentosAIConfigManager: () => parentosAIConfigManagerMock,
 }));
 
 vi.mock('@nimiplatform/kit/shell/renderer/bridge', () => ({
@@ -27,7 +32,7 @@ vi.mock('@nimiplatform/kit/shell/renderer/bridge', () => ({
 const DECLARED_CONFIG = {
   owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
   capabilities: [
-    { capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: { loadoutRef: 'text-local' } } },
+    { capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: {} } },
   ],
 };
 
@@ -63,6 +68,8 @@ describe('AiSettingsPage', () => {
       retryable: true,
     });
     readParentosAIConfigMock.mockReset().mockResolvedValue({ state: 'ready', snapshot: DECLARED_SNAPSHOT });
+    parentosAIConfigManagerMock.overwrite.mockReset();
+    parentosAIConfigManagerMock.listOptions.mockReset();
     openDesktopIntentMock.mockReset().mockResolvedValue({
       status: 'accepted',
       confirmation: 'desktop-accepted',
@@ -115,6 +122,66 @@ describe('AiSettingsPage', () => {
     });
   });
 
+  it('shows a committed but missing Local route as unavailable instead of unconfigured', async () => {
+    readParentosAIConfigMock.mockResolvedValue({
+      state: 'ready',
+      snapshot: {
+        ...DECLARED_SNAPSHOT,
+        effectiveSelections: [{
+          capabilityContract: 'text.generate',
+          state: 'missing',
+          resource: null,
+          reasons: ['AI_LOCAL_SELECTION_NOT_FOUND'],
+        }],
+      },
+    });
+    renderPage();
+
+    const advisor = await screen.findByText('成长顾问');
+    expect(advisor.parentElement?.textContent).toContain('暂不可用');
+    expect(advisor.parentElement?.textContent).not.toContain('需在 Nimi 中配置');
+  });
+
+  it('narrows the ParentOS editor to Local under its privacy boundary', async () => {
+    readParentosAIConfigMock.mockResolvedValue({
+      state: 'not-configured',
+      reasonCode: 'ai-config-not-found',
+      snapshot: { config: null, revision: '0', effectiveSelections: [] },
+    });
+    const { container } = renderPage();
+    await waitFor(() => expect(container.querySelector('button[data-nimi-model-config-capability="text.generate"]')).toBeTruthy());
+    const textCapability = container.querySelector('button[data-nimi-model-config-capability="text.generate"]') as HTMLButtonElement;
+    fireEvent.click(textCapability);
+    const trigger = container.querySelector('[data-testid="model-config-model-trigger:text.generate"]') as HTMLButtonElement;
+    fireEvent.click(trigger);
+
+    await waitFor(() => expect(screen.getByText(/Select Model|选择模型/u)).toBeTruthy());
+    expect(screen.queryByText('云端')).toBeNull();
+    expect(screen.queryByText('Cloud')).toBeNull();
+  });
+
+  it('uses the mutation acknowledgement revision before background effective refresh completes', async () => {
+    readParentosAIConfigMock
+      .mockReset()
+      .mockResolvedValueOnce({ state: 'ready', snapshot: DECLARED_SNAPSHOT })
+      .mockResolvedValue({ state: 'unavailable', reasonCode: 'runtime-service-unavailable' });
+    parentosAIConfigManagerMock.overwrite.mockImplementation(async (input) => ({
+      outcome: 'committed',
+      config: { ...DECLARED_CONFIG, capabilities: [...input.capabilities] },
+      revision: String(Number(input.expectedRevision) + 1),
+    }));
+    const { container } = renderPage();
+
+    await waitFor(() => expect(container.querySelector('button[data-nimi-model-config-capability="text.generate"]')).toBeTruthy());
+    fireEvent.click(container.querySelector('button[data-nimi-model-config-capability="text.generate"]') as HTMLButtonElement);
+    const save = container.querySelector('[data-testid="model-config-save:text.generate"]') as HTMLButtonElement;
+    fireEvent.click(save);
+    await waitFor(() => expect(parentosAIConfigManagerMock.overwrite).toHaveBeenCalledTimes(1));
+    fireEvent.click(save);
+    await waitFor(() => expect(parentosAIConfigManagerMock.overwrite).toHaveBeenCalledTimes(2));
+    expect(parentosAIConfigManagerMock.overwrite.mock.calls[1]?.[0].expectedRevision).toBe('2');
+  });
+
   it('keeps machine codes inside the collapsed technical details when unavailable', async () => {
     probeParentosNimiAccessMock.mockResolvedValue({
       state: 'unavailable',
@@ -137,10 +204,11 @@ describe('AiSettingsPage', () => {
     expect(screen.getAllByRole('button', { name: /在 Nimi 中配置/ }).length).toBeGreaterThan(0);
   });
 
-  it('keeps missing capability configuration read-only and hands changes to Nimi', async () => {
+  it('offers direct self-owner configuration with an optional Nimi handoff', async () => {
     readParentosAIConfigMock.mockResolvedValue({
       state: 'not-configured',
       reasonCode: 'ai-config-not-found',
+      snapshot: { config: null, revision: '0', effectiveSelections: [] },
     });
 
     const { container } = renderPage();
@@ -162,6 +230,7 @@ describe('AiSettingsPage', () => {
     readParentosAIConfigMock.mockResolvedValue({
       state: 'not-configured',
       reasonCode: 'ai-config-not-found',
+      snapshot: { config: null, revision: '0', effectiveSelections: [] },
     });
     openDesktopIntentMock.mockResolvedValue({
       status: 'rejected',

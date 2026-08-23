@@ -15,6 +15,10 @@ export const PARENTOS_AI_CAPABILITY_CONTRACTS: readonly ParentosAIConfigCapabili
   PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT,
 ];
 
+export function getParentosAIConfigManager(): NimiLocalAppClient['aiConfig'] {
+  return getParentOSNimiClient().aiConfig;
+}
+
 type ParentosAIConfigCapabilityError = Error & { readonly reasonCode: string };
 
 function reasonCodeFromUnknownError(error: unknown): string {
@@ -27,12 +31,11 @@ function reasonCodeFromUnknownError(error: unknown): string {
   return code || 'runtime-service-unavailable';
 }
 
-// ParentOS chooses a read-only settings composition with an optional Desktop
-// handoff. The covered self-owner manager still owns canonical get/options/CAS
-// semantics; this UI choice is not an authorization boundary.
+// ParentOS edits its covered self-owner through the canonical manager. Desktop
+// handoff remains an optional resource-management convenience.
 export async function readParentosAIConfig(): Promise<
   | { readonly state: 'ready'; readonly snapshot: ParentosAIConfigSnapshot }
-  | { readonly state: 'not-configured'; readonly reasonCode: 'ai-config-not-found' }
+  | { readonly state: 'not-configured'; readonly reasonCode: 'ai-config-not-found'; readonly snapshot: ParentosAIConfigSnapshot }
   | { readonly state: 'unavailable'; readonly reasonCode: string }
 > {
   if (!hasParentOSNimiClient()) {
@@ -41,7 +44,7 @@ export async function readParentosAIConfig(): Promise<
   try {
     const snapshot = await getParentOSNimiClient().aiConfig.get();
     if (!snapshot.config) {
-      return { state: 'not-configured', reasonCode: 'ai-config-not-found' };
+      return { state: 'not-configured', reasonCode: 'ai-config-not-found', snapshot };
     }
     requireParentosAIConfigOwner(snapshot);
     return { state: 'ready', snapshot };
@@ -64,15 +67,21 @@ export function hasReadyParentosLocalCapability(
   );
   return selection?.state === 'ready'
     && selection.resource?.oneofKind === 'local'
-    && selection.resource.local.loadoutRef === intent.route.local.loadoutRef;
+    && selection.resource.local.capabilityContract === capabilityContract;
 }
 
 export async function hasParentosAIConfigCapability(
   capabilityContract: ParentosAIConfigCapabilityContract,
 ): Promise<boolean> {
   const result = await readParentosAIConfig();
-  return result.state === 'ready'
-    && hasReadyParentosLocalCapability(result.snapshot, capabilityContract);
+  if (result.state !== 'ready') return false;
+  const intent = result.snapshot.config?.capabilities.find(
+    (capability) => capability.capabilityContract === capabilityContract,
+  );
+  // ParentOS's current protected execution surfaces are device-local by
+  // product privacy authority. Effective readiness belongs to Runtime
+  // admission and must not be collapsed into an App-level "unconfigured".
+  return intent?.route.oneofKind === 'local';
 }
 
 export async function requireParentosAIConfigCapability(
@@ -85,11 +94,26 @@ export async function requireParentosAIConfigCapability(
       { reasonCode: result.reasonCode },
     ) as ParentosAIConfigCapabilityError;
   }
-  const configured = result.state === 'ready'
-    && hasReadyParentosLocalCapability(result.snapshot, capabilityContract);
-  if (!configured) {
+  const intent = result.state === 'ready'
+    ? result.snapshot.config?.capabilities.find(
+      (capability) => capability.capabilityContract === capabilityContract,
+    )
+    : undefined;
+  if (!intent) {
     throw Object.assign(
-      new Error(`ParentOS requires a Nimi-owned local ${capabilityContract} AIConfig intent.`),
+      new Error(`ParentOS requires a Nimi-owned ${capabilityContract} AIConfig intent.`),
+      { reasonCode: 'parentos-ai-capability-not-configured' },
+    ) as ParentosAIConfigCapabilityError;
+  }
+  if (intent.route.oneofKind === 'cloud') {
+    throw Object.assign(
+      new Error(`ParentOS does not send protected ${capabilityContract} inputs to Cloud providers.`),
+      { reasonCode: 'parentos-ai-cloud-route-not-admitted' },
+    ) as ParentosAIConfigCapabilityError;
+  }
+  if (intent.route.oneofKind !== 'local') {
+    throw Object.assign(
+      new Error(`ParentOS requires a canonical ${capabilityContract} AIConfig route.`),
       { reasonCode: 'parentos-ai-capability-not-configured' },
     ) as ParentosAIConfigCapabilityError;
   }

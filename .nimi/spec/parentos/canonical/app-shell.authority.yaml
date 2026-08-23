@@ -70,7 +70,7 @@ units:
     kind: rule
     title: Settings Surfaces
     modality: must
-    statement: "Current settings authority includes: /settings/children for child CRUD /settings/nurture-mode for nurture-mode and per-domain overrides /settings/reminders for reminder frequency override management /settings/ai for ParentOS model/runtime preferences /settings for app language preference, persisted in app_settings Settings state must round-trip through children or app_settings. The shell must not invent shadow config stores outside those admitted persistence paths."
+    statement: "Current settings authority includes: /settings/children for child CRUD /settings/nurture-mode for nurture-mode and per-domain overrides /settings/reminders for reminder frequency override management /settings/ai for ParentOS model/runtime preferences /settings for app language preference, persisted in app_settings Settings state must round-trip through children or app_settings. ParentOS declares ai_config_ui.allowed_routes as exactly [local], and both its in-App editor and Desktop centralized editor offer only Local as a new AIConfig route choice while continuing to show and permit clearing or changing any already committed route; this is a presentation constraint derived from the product privacy boundary, not AppAccess, permission, owner eligibility, Runtime validation, execution admission, or a second AIConfig truth. The shell must not invent shadow config stores outside those admitted persistence paths."
     condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-SHELL-006.
     failure: Fail closed and report PO-SHELL-006 when the governed behavior does not satisfy this rule.
     relations:

@@ -11,10 +11,13 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Button, Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
+import { ModelConfigAIConfigSurface } from '@nimiplatform/kit/features/model-config';
 import { openDesktopIntent } from '@nimiplatform/kit/shell/renderer/bridge';
 import {
   readParentosAIConfig,
+  getParentosAIConfigManager,
   hasReadyParentosLocalCapability,
+  PARENTOS_AI_CAPABILITY_CONTRACTS,
   type ParentosAIConfigSnapshot,
 } from './parentos-ai-config.js';
 import {
@@ -33,6 +36,7 @@ type ParentosAIFeatureRow = {
 type ParentosAIFeatureStatus =
   | 'checking'
   | 'available'
+  | 'unavailable'
   | 'needs-access'
   | 'needs-configuration'
   | 'not-supported';
@@ -91,6 +95,8 @@ function featureStatusLabelKey(status: ParentosAIFeatureStatus): string {
       return 'AISettings.features.needsAccess';
     case 'needs-configuration':
       return 'AISettings.features.needsConfiguration';
+    case 'unavailable':
+      return 'AISettings.features.unavailable';
     case 'not-supported':
       return 'AISettings.features.notSupported';
     default:
@@ -116,7 +122,7 @@ export default function AiSettingsPage() {
         readParentosAIConfig(),
       ]);
       setPosture(nextPosture);
-      setAiConfig(nextConfig.state === 'ready' ? nextConfig.snapshot : null);
+      setAiConfig((current) => nextConfig.state === 'unavailable' ? current : nextConfig.snapshot);
       setAiConfigReasonCode(nextConfig.state === 'ready' ? null : nextConfig.reasonCode);
       setAiConfigLoaded(true);
     } finally {
@@ -166,20 +172,24 @@ export default function AiSettingsPage() {
 
   const postureReady = posture?.state === 'ready';
   const declaredCapabilities = aiConfig?.config?.capabilities ?? [];
+  const editorCapabilities = aiConfig?.config?.capabilities
+    ?? (aiConfigLoaded && (!aiConfigReasonCode || aiConfigReasonCode === 'ai-config-not-found') ? null : undefined);
   const configuredLocalCapabilities = new Set(aiConfig ? declaredCapabilities
     .filter((capability) => (
       (capability.capabilityContract === 'text.generate' || capability.capabilityContract === 'audio.transcribe')
       && hasReadyParentosLocalCapability(aiConfig, capability.capabilityContract)
     ))
     .map((capability) => capability.capabilityContract) : []);
+  const configuredCapabilities = new Set(declaredCapabilities.map(
+    (capability) => capability.capabilityContract,
+  ));
 
   const featureStatus = (row: ParentosAIFeatureRow): ParentosAIFeatureStatus => {
     if (!row.supported || row.capabilityContract === null) return 'not-supported';
     if (!posture || !aiConfigLoaded) return 'checking';
     if (!postureReady) return 'needs-access';
-    return configuredLocalCapabilities.has(row.capabilityContract)
-      ? 'available'
-      : 'needs-configuration';
+    if (!configuredCapabilities.has(row.capabilityContract)) return 'needs-configuration';
+    return configuredLocalCapabilities.has(row.capabilityContract) ? 'available' : 'unavailable';
   };
 
   return (
@@ -290,6 +300,34 @@ export default function AiSettingsPage() {
           <p className="mt-0.5 text-[13px] leading-[1.6] text-[var(--nimi-text-muted)]">
             {i18nText('AISettings.declared.description')}
           </p>
+          <ModelConfigAIConfigSurface
+            className="mt-4"
+            context={{ owner: 'app-ai-config', appId: PARENTOS_APP_ID }}
+            capabilityContracts={PARENTOS_AI_CAPABILITY_CONTRACTS}
+            allowedRoutes={['local']}
+            capabilities={editorCapabilities}
+            revision={aiConfig?.revision}
+            effectiveSelections={aiConfig?.effectiveSelections}
+            listOptions={(query) => getParentosAIConfigManager().listOptions(query)}
+            onOverwrite={async (input) => {
+              const result = await getParentosAIConfigManager().overwrite(input);
+              setAiConfig({
+                config: result.config,
+                revision: result.revision,
+                effectiveSelections: [],
+              });
+              setAiConfigLoaded(true);
+              setAiConfigReasonCode(null);
+              void refresh();
+              return result;
+            }}
+            onOpenOwnerConfiguration={() => { void openOwnerConfiguration(); }}
+            loadError={aiConfigReasonCode && aiConfigReasonCode !== 'ai-config-not-found'
+              ? t('AISettings.declared.loadFailed')
+              : null}
+            onRetry={() => { void refresh(); }}
+            disabled={!postureReady}
+          />
           <div className="mt-4 space-y-2">
             {declaredCapabilities.map((capability) => {
               const labelKey = CAPABILITY_LABEL_KEYS[capability.capabilityContract];
