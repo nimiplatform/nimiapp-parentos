@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button, DatePicker, TextField } from '@nimiplatform/kit/ui';
 import {
@@ -81,8 +83,14 @@ describe('HealthRecordModalShell', () => {
     await waitFor(() => {
       const panel = document.body.querySelector('.nimi-date-picker-panel');
       expect(panel).toBeTruthy();
-      expect(panel?.className).toContain('z-[120]');
+      expect(panel?.className).toContain('z-[var(--nimi-z-popover)]');
     });
+
+    const stylesSource = readFileSync(
+      join(process.cwd(), 'src/shell/renderer/styles.css'),
+      'utf8',
+    );
+    expect(stylesSource).toMatch(/\.nimi-date-picker-panel\s*\{[^}]*z-index:\s*calc\(var\(--nimi-z-dialog\) \+ 1\)/u);
   });
 
   it.each([

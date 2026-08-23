@@ -145,12 +145,12 @@ function ChildAppMenu({ childList, activeChildId, onSwitchChild }: {
               type="button"
               role="menuitem"
               onClick={() => { closeMenu(); navigate('/settings/children'); }}
-              className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
+              className="group flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--nimi-border-strong)] text-[var(--nimi-text-muted)]">
-                <Plus size={16} strokeWidth={1.8} aria-hidden="true" />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--nimi-border-strong)] text-[var(--nimi-text-muted)] transition-colors duration-[var(--nimi-motion-fast)] group-hover:border-[var(--nimi-action-primary-bg)] group-hover:text-[var(--nimi-action-primary-bg)]">
+                <Plus size={16} strokeWidth={1.8} aria-hidden="true" className="transition-transform duration-300 ease-out group-hover:rotate-90" />
               </span>
-              <span className="text-[14px] font-medium text-[var(--nimi-text-muted)]">
+              <span className="text-[14px] font-medium text-[var(--nimi-text-muted)] transition-colors duration-[var(--nimi-motion-fast)] group-hover:text-[var(--nimi-action-primary-bg)]">
                 {t('Shell.childSwitcher.addFamilyMember')}
               </span>
             </button>
@@ -200,7 +200,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
       {/* Sidebar — transparent, shares global bg */}
       {hasActiveChild ? (
         <nav
-          className="relative z-30 flex w-[62px] shrink-0 flex-col items-center overflow-visible bg-transparent pb-5"
+          className="relative z-30 flex w-[62px] shrink-0 flex-col items-center overflow-visible bg-transparent pt-6 pb-5"
         >
           <div className="flex h-[60px] w-full shrink-0 items-center justify-center">
             <img

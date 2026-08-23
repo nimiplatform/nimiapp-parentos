@@ -1,6 +1,7 @@
 import type { ChildProfile, NurtureMode } from '../../app-shell/app-store.js';
 import type { ReminderAgenda } from '../../engine/reminder-engine.js';
-import { MILESTONE_CATALOG, OBSERVATION_DIMENSIONS } from '../../knowledge-base/index.js';
+import { MILESTONE_CATALOG, OBSERVATION_DIMENSIONS, REMINDER_RULES } from '../../knowledge-base/index.js';
+import type { ReminderPriority, ReminderRule } from '../../knowledge-base/index.js';
 import { getKeepsakeReasonLabel } from '../journal/journal-page-helpers.js';
 import type { MeasurementRow } from '../../bridge/sqlite-bridge.js';
 import type {
@@ -16,6 +17,8 @@ import type {
   RecentLineItem,
   SleepTrendPoint,
   SleepTrendSummary,
+  StageInsightItem,
+  StageInsightSummary,
   TimelineHomeViewModel,
   VisionSnapshotSummary,
 } from './timeline-data-types.js';
@@ -597,13 +600,55 @@ function buildRecentLines(journalEntries: DashData['journalEntries']): RecentLin
     });
 }
 
+export function isColdStart(d: DashData): boolean {
+  return d.measurements.length === 0
+    && d.sleepRecords.length === 0
+    && d.vaccineRecords.length === 0
+    && d.journalEntries.length === 0
+    && d.outdoorRecords.length === 0
+    && !d.milestoneRecords.some((record) => Boolean(record.achievedAt));
+}
+
+const STAGE_INSIGHT_PRIORITY_ORDER: Record<ReminderPriority, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
+
+// @nimi-authority: rule.parentos.time.r011
+export function buildStageInsight(
+  ageMonths: number,
+  nurtureMode: NurtureMode,
+  rules: readonly ReminderRule[] = REMINDER_RULES,
+): StageInsightSummary | null {
+  const eligible = rules
+    .filter((rule) => rule.triggerAge.startMonths <= ageMonths
+      && (rule.triggerAge.endMonths === -1 || rule.triggerAge.endMonths >= ageMonths)
+      && (rule.category === 'rigid' || rule.category === 'stage')
+      && rule.nurtureMode[nurtureMode] !== 'hidden')
+    .sort((left, right) => STAGE_INSIGHT_PRIORITY_ORDER[left.priority] - STAGE_INSIGHT_PRIORITY_ORDER[right.priority]
+      || left.triggerAge.startMonths - right.triggerAge.startMonths
+      || left.ruleId.localeCompare(right.ruleId));
+  const toItem = (rule: ReminderRule): StageInsightItem => ({
+    ruleId: rule.ruleId,
+    title: rule.title,
+    description: rule.description,
+    domain: rule.domain,
+    priority: rule.priority,
+  });
+  const health = eligible.filter((rule) => rule.kind === 'task' || rule.kind === 'consult').map(toItem);
+  const development = eligible.filter((rule) => rule.kind === 'guide' || rule.kind === 'practice').map(toItem);
+  if (health.length === 0 && development.length === 0) return null;
+
+  return { ageLabel: formatAgeLabel(ageMonths), health, development };
+}
+
 export function buildTimelineHomeViewModel(params: {
   child: ChildProfile;
   d: DashData;
   ageMonths: number;
   agenda: ReminderAgenda;
 }): TimelineHomeViewModel {
+  const coldStart = isColdStart(params.d);
   return {
+    coldStart,
+    stageInsight: coldStart ? buildStageInsight(params.ageMonths, params.child.nurtureMode) : null,
     recentChanges: buildRecentChanges(params.d),
     dataGapAlert: buildDataGapAlert(params.d, params.ageMonths, params.agenda),
     growthSnapshot: buildGrowthSnapshot(params.d.measurements),

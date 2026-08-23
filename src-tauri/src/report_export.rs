@@ -24,7 +24,8 @@ pub struct ReportSaveTarget {
     display_path: String,
 }
 
-static REPORT_SAVE_TARGETS: OnceLock<Mutex<HashMap<String, PendingReportSaveTarget>>> = OnceLock::new();
+static REPORT_SAVE_TARGETS: OnceLock<Mutex<HashMap<String, PendingReportSaveTarget>>> =
+    OnceLock::new();
 
 fn save_targets() -> &'static Mutex<HashMap<String, PendingReportSaveTarget>> {
     REPORT_SAVE_TARGETS.get_or_init(|| Mutex::new(HashMap::new()))
@@ -318,8 +319,9 @@ mod tests {
         .expect("register report save target");
 
         let payload = BASE64_STANDARD.encode(b"%PDF-1.7 one shot");
-        let first = report_export_write_save_target(registered.save_target_id.clone(), payload.clone())
-            .expect("first save-target write succeeds");
+        let first =
+            report_export_write_save_target(registered.save_target_id.clone(), payload.clone())
+                .expect("first save-target write succeeds");
         let second = report_export_write_save_target(registered.save_target_id, payload)
             .expect_err("report save target must be consumed after the first write");
 
@@ -365,13 +367,16 @@ mod tests {
             "parentos-oversized-report-{}.pdf",
             std::process::id()
         ));
-        let registered = register_report_save_target(target_id, target.clone(), "pdf".to_string(), None)
-            .expect("register report save target");
+        let registered =
+            register_report_save_target(target_id, target.clone(), "pdf".to_string(), None)
+                .expect("register report save target");
         let payload = BASE64_STANDARD.encode(vec![b'a'; MAX_REPORT_EXPORT_BYTES + 1]);
 
         let result = report_export_write_save_target(registered.save_target_id.clone(), payload);
-        let second_try =
-            report_export_write_save_target(registered.save_target_id, BASE64_STANDARD.encode(b"%PDF-1.7"));
+        let second_try = report_export_write_save_target(
+            registered.save_target_id,
+            BASE64_STANDARD.encode(b"%PDF-1.7"),
+        );
 
         assert!(result
             .expect_err("oversized payload must fail")

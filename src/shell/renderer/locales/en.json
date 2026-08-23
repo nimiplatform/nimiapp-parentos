@@ -642,7 +642,13 @@
     "access": {
       "title": "Nimi Access",
       "description": "AI capabilities are provided through the Nimi runtime; losing access never affects local data.",
-      "technicalDetails": "Technical details"
+      "technicalDetails": "Technical details",
+      "recovery": {
+        "title": "Restore AI features",
+        "bridgeAbsent": "Open ParentOS from Apps in the Nimi desktop app. Supported AI features will recover after the connection is restored.",
+        "actionRequired": "Go to Nimi desktop > Apps > ParentOS > AI Capabilities, finish access or model setup, then return and refresh.",
+        "unavailable": "Make sure Nimi desktop is running, then check Apps > ParentOS > AI Capabilities. Return here and refresh afterward."
+      }
     },
     "declared": {
       "title": "AI Capability Declarations",
@@ -652,7 +658,9 @@
       "openOwnerConfiguration": "Configure in Nimi",
       "openingOwnerConfiguration": "Opening…",
       "loadFailed": "AI configuration could not be read",
+      "loadFailedGuidance": "Restore the Nimi connection or confirm the setup under Nimi > Apps > ParentOS > AI Capabilities, then return and refresh.",
       "ownerHandoffFailed": "Nimi configuration could not be opened",
+      "ownerHandoffFallback": "Open Nimi desktop manually, then go to Apps > ParentOS > AI Capabilities.",
       "routeLocal": "Local route",
       "routeCloud": "Cloud route",
       "statusConfigured": "Configured",
@@ -667,8 +675,14 @@
     "features": {
       "title": "Feature Availability",
       "description": "Feature status under the current platform contract.",
+      "configurationHint": "For features marked “Configure in Nimi,” go to Nimi desktop > Apps > ParentOS > AI Capabilities.",
+      "checking": "Checking…",
       "available": "Available",
       "unavailable": "Unavailable",
+      "needsAccess": "Available after connecting Nimi",
+      "needsConfiguration": "Configure in Nimi",
+      "notSupported": "Not supported in this version",
+      "notSupportedHint": "No configurable image-understanding capability is available yet, so this cannot be enabled manually.",
       "advisor": "Growth advisor",
       "report": "Report narrative",
       "journalTagging": "Journal smart tagging",
@@ -732,6 +746,7 @@
     "settings": {
       "backToProfile": "Back to profile",
       "backToSettings": "Back to settings",
+      "backToTimeline": "Back to home",
       "title": "Child management",
       "subtitle": "Manage child profiles and basic information",
       "emptyTitle": "No children added yet",
@@ -1003,7 +1018,7 @@
       "noChildDescription": "Select a child to view their reminder center.",
       "unknownRuleTitle": "Reminder catalog incomplete",
       "unknownRuleIds": "Unregistered ruleIds were found in the database: {{ruleIds}}",
-      "unknownRuleFailClose": "To prevent data from being misread, the reminders page has failed closed under PO-TIME-007. Restart ParentOS to trigger schema v17 cleanup for these orphaned records. If unregistered ruleIds remain after restart, contact development to repair the rule catalog.",
+      "unknownRuleFailClose": "To prevent data from being misread, the reminders page has failed closed under PO-TIME-007. ParentOS will not delete these records silently; reconcile the persisted ruleIds with the compiled reminder catalog before retrying.",
       "restoreTodoFailed": "Failed to restore the to-do: {{message}}",
       "deleteTodoFailed": "Failed to delete the to-do: {{message}}",
       "loading": "Loading...",
@@ -2344,9 +2359,6 @@
     "category": {
       "standard": "National fitness test"
     },
-    "field": {
-      "recordType": "Record type"
-    },
     "form": {
       "addTitle": "Add fitness record",
       "editTitle": "Edit fitness record",
@@ -2365,13 +2377,16 @@
       "saving": "Saving...",
       "save": "Save",
       "saveChanges": "Save changes",
-      "standardBanner": "📋 {{tier}} · Fill in items as needed based on the national student fitness standard.",
+      "standardBanner": "📋 {{tier}} · National student fitness standard items — only fill in events that were actually tested; leave the rest empty.",
       "durationLabel": "Duration (minutes)",
       "durationPlaceholder": "Example: 30",
       "distanceLabel": "Distance (meters)",
       "distanceHint": "Optional, useful for running, swimming, cycling, and similar activities",
       "distancePlaceholder": "Example: 800",
-      "intensityLabel": "Intensity"
+      "intensityLabel": "Intensity",
+      "labelWithUnit": "{{label}} ({{unit}})",
+      "examplePlaceholder": "e.g. {{value}}",
+      "runSecondsHint": "Enter seconds, e.g. 4:05 = 245"
     },
     "page": {
       "title": "Fitness assessment",
@@ -2848,7 +2863,7 @@
     "error": {
       "unknownRuleTitle": "Reminder catalog is incomplete",
       "unknownRuleIds": "Unregistered rule IDs found: {{ruleIds}}",
-      "unknownRuleBody": "The reminder flow fails closed under PO-TIME-007. Restart ParentOS to trigger schema v17 cleanup for these orphan records. If unregistered rule IDs remain after restart, fix data/structured/parentos/reminder-rules.yaml or data/structured/parentos/orthodontic-protocols.yaml.",
+      "unknownRuleBody": "The reminder flow fails closed under PO-TIME-007 and will not delete these records silently. Reconcile the persisted rule IDs with data/structured/parentos/reminder-rules.yaml or data/structured/parentos/orthodontic-protocols.yaml before retrying.",
       "unknownCaptureProtocol": "Unrecognized captureProtocolId: {{captureProtocolId}}",
       "missingBoundAppliance": "The appliance bound to this reminder was not found (applianceId={{applianceId}})."
     },
@@ -3070,7 +3085,18 @@
       "setGoal": "Set goal",
       "noOutdoorGoalTitle": "No outdoor goal set yet",
       "noOutdoorGoalBody": "More than 2 hours of outdoor activity per day can help protect vision. Set a weekly goal to track outdoor time.",
-      "minutesUnit": "min"
+      "minutesUnit": "min",
+      "stageInsightTitle": "{{ageLabel}}",
+      "stageInsightHealthGroup": "Health windows",
+      "stageInsightDevGroup": "Development focus",
+      "coldStartGuideTitle": "Start with these three — the home page grows from here",
+      "coldStartStep1Title": "Log the first growth measurement",
+      "coldStartStep1Body": "Enter one height or weight and a WHO-referenced trend curve appears here.",
+      "coldStartStep2Title": "Log one night of sleep",
+      "coldStartStep2Body": "Record bedtime and wake time; after two weeks, sleep trends appear here.",
+      "coldStartStep3Title": "Write a growth journal entry",
+      "coldStartStep3Body": "Text or voice — observations become material for the monthly growth report.",
+      "coldStartStepCta": "Record now"
     },
     "nurtureMode": {
       "relaxed": "Relaxed mode",
@@ -4961,6 +4987,7 @@
       "aiFallback": "The AI comprehensive report is temporarily unavailable, so a local structured report was generated instead.",
       "localFallback": "AI is not connected, so a local structured report was generated.",
       "generateFailed": "Report generation failed. Please try again.",
+      "generateSuccess": "Your comprehensive report was generated and saved locally.",
       "contentSaveFailed": "Failed to save the report content: {{message}}",
       "heroGrowth": "Growth",
       "heroReports": "Reports",
@@ -4990,7 +5017,9 @@
       "emptySubtitle": "Reports are generated automatically on the home page, or you can create one manually below",
       "historyTitle": "Report history",
       "periodRange": "{{start}} to {{end}}",
-      "advancedToggle": "Advanced options · Generate a report manually",
+      "advancedToggleLabel": "Advanced options",
+      "advancedToggle": "Advanced options · Generate a comprehensive report",
+      "advancedDescription": "Generate an independent report for the selected date range without affecting monthly accumulation or automatic generation.",
       "periodField": "Date range",
       "startDate": "Start date",
       "endDate": "End date",

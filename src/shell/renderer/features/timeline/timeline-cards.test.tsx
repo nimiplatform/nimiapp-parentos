@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import { GrowthSnapshotCard, MilestoneTimelineCard, ObservationDistributionCard, QuickLinksStrip, RecentChangesHeroCard, RecentLinesCard, SleepTrendCard } from './timeline-cards.js';
+import { GettingStartedCard, GrowthSnapshotCard, MilestoneTimelineCard, ObservationDistributionCard, QuickLinksStrip, RecentChangesHeroCard, RecentLinesCard, SleepTrendCard, StageInsightCard } from './timeline-cards.js';
 
 vi.mock('@tauri-apps/api/core', () => ({
   convertFileSrc: (value: string) => value,
@@ -171,5 +171,63 @@ describe('timeline dashboard cards', () => {
     expect(screen.getByText('读完第一本桥梁书')).toBeTruthy();
     expect(screen.getByText('珍藏')).toBeTruthy();
     expect(screen.getByText('取得成果')).toBeTruthy();
+  });
+
+  it('renders stage insight groups without exposing internal rule identifiers', () => {
+    renderInRouter(
+      <StageInsightCard
+        summary={{
+          ageLabel: '10个月',
+          health: [
+            { ruleId: 'PO-TEST-TASK', title: '乙肝疫苗（第3剂）', description: '按程序完成接种。', domain: 'vaccine', priority: 'P0' },
+          ],
+          development: [
+            { ruleId: 'PO-TEST-GUIDE', title: '语言互动窗口', description: '多回应孩子的发声。', domain: 'language', priority: 'P1' },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText('10个月')).toBeTruthy();
+    expect(screen.queryByText(/这个阶段/)).toBeNull();
+    expect(screen.getByText('健康窗口')).toBeTruthy();
+    expect(screen.getByText('发展关注')).toBeTruthy();
+    expect(screen.getByText('乙肝疫苗（第3剂）')).toBeTruthy();
+    expect(screen.queryByText(/PO-TEST-TASK/)).toBeNull();
+    expect(screen.queryByText(/PO-TEST-GUIDE/)).toBeNull();
+  });
+
+  it('omits empty stage insight groups and links to the reminders surface', () => {
+    const { container } = renderInRouter(
+      <StageInsightCard
+        summary={{
+          ageLabel: '10个月',
+          health: [],
+          development: [
+            { ruleId: 'PO-TEST-GUIDE', title: '语言互动窗口', description: '多回应孩子的发声。', domain: 'language', priority: 'P1' },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.queryByText('健康窗口')).toBeNull();
+    expect(screen.getByText('发展关注')).toBeTruthy();
+    const hrefs = Array.from(container.querySelectorAll('a')).map((link) => link.getAttribute('href'));
+    expect(hrefs).toContain('/reminders');
+  });
+
+  it('renders the getting-started guide with three linked steps', () => {
+    const { container } = renderInRouter(<GettingStartedCard />);
+
+    expect(screen.getByText('先从这三件事开始，记录孩子的成长')).toBeTruthy();
+    expect(screen.getByText('记录第一次成长测量')).toBeTruthy();
+    expect(screen.getByText('记录一次睡眠')).toBeTruthy();
+    expect(screen.getByText('写一篇成长随记')).toBeTruthy();
+    const hrefs = Array.from(container.querySelectorAll('a')).map((link) => link.getAttribute('href'));
+    expect(hrefs).toEqual([
+      '/profile?capture=manual&group=growth',
+      '/profile?capture=manual&group=sleep',
+      '/journal',
+    ]);
   });
 });

@@ -9,6 +9,8 @@ import {
   formatAgeLabel,
   type RecentChangeIconName,
   type RecentChangeItem,
+  type StageInsightItem,
+  type StageInsightSummary,
 } from './timeline-data.js';
 import { Cd, Hdr, textMain, textMuted, textSoft } from './timeline-card-primitives.js';
 import growthIcon from '../profile/assets/archive-icons/growth.png';
@@ -188,7 +190,7 @@ function RecentChangeLeadCell({ item }: { item: RecentChangeItem }) {
   return (
     <Link
       to={item.to}
-      className="dashboard-inset dashboard-inset--interactive col-span-1 flex flex-col rounded-[22px] p-5 transition-all duration-200 hover:-translate-y-0.5 sm:col-span-3 sm:p-6"
+      className="dashboard-inset dashboard-inset--interactive col-span-1 flex flex-col justify-center rounded-[22px] p-5 transition-all duration-200 hover:-translate-y-0.5 sm:col-span-3 sm:p-6"
     >
       <div className="flex items-center gap-3">
         <RecentChangeIcon item={item} size={20} />
@@ -208,7 +210,7 @@ function RecentChangeLeadCell({ item }: { item: RecentChangeItem }) {
           {item.summary}
         </p>
       ) : null}
-      <p className="mt-auto pt-4 text-[13px] font-medium tabular-nums" style={{ color: textSoft }}>{item.subtitle ?? item.detail}</p>
+      <p className="mt-4 text-[13px] font-medium tabular-nums" style={{ color: textSoft }}>{item.subtitle ?? item.detail}</p>
     </Link>
   );
 }
@@ -236,7 +238,7 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
   const secondary = items.slice(1);
 
   return (
-    <Cd cls="min-w-0 flex-1" material="glass-thick">
+    <Cd cls="min-w-0 flex-1 flex flex-col" material="glass-thick">
       <div className="mb-6 flex items-start justify-between gap-3">
         <div>
           <p className="text-[13px] font-medium tracking-[0.08em]" style={{ color: textSoft }}>{i18nText('Timeline.home.recentWindow')}</p>
@@ -250,12 +252,12 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
       </div>
 
       {lead ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
+        <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-5">
           <RecentChangeLeadCell item={lead} />
-          <div className="col-span-1 space-y-3 sm:col-span-2">
+          <div className="col-span-1 flex flex-col justify-center gap-3 sm:col-span-2">
             {secondary.map((item) => <RecentChangeSecondaryCell key={item.id} item={item} />)}
             {secondary.length === 0 ? (
-              <div className="dashboard-inset rounded-[18px] p-4">
+              <div className="dashboard-inset flex flex-1 flex-col justify-center rounded-[18px] p-4">
                 <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.recentNeedsMoreTitle')}</p>
                 <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>
                   {i18nText('Timeline.home.recentNeedsMoreBody')}
@@ -265,7 +267,7 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
           </div>
         </div>
       ) : (
-        <div className="dashboard-inset rounded-[22px] p-7">
+        <div className="dashboard-inset flex flex-1 flex-col justify-center rounded-[22px] p-7">
           <p className="text-[16px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.noRecentTitle')}</p>
           <p className="mt-2 text-[14px] leading-relaxed" style={{ color: textMuted }}>
             {i18nText('Timeline.home.noRecentBody')}
@@ -275,6 +277,84 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
           </Link>
         </div>
       )}
+    </Cd>
+  );
+}
+
+function StageInsightGroup({ title, items }: { title: string; items: StageInsightItem[] }) {
+  return (
+    <div className="dashboard-inset rounded-[18px] p-5">
+      <p className="text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: textSoft }}>{title}</p>
+      <div className="mt-3 space-y-4">
+        {items.map((item) => (
+          <div key={item.ruleId}>
+            <p className="text-[14px] font-semibold" style={{ color: textMain }}>{item.title}</p>
+            <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {item.description}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// @nimi-authority: rule.parentos.time.r011
+export function StageInsightCard({ summary }: { summary: StageInsightSummary }) {
+  return (
+    <Cd cls="min-w-0 flex-1" material="glass-thick">
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[13px] font-medium tracking-[0.08em]" style={{ color: textSoft }}>{i18nText('Timeline.home.stageFocusTitle')}</p>
+          <h2 className="mt-1.5 text-[24px] font-semibold tracking-tight" style={{ color: textMain, letterSpacing: '-0.5px' }}>
+            {i18nText('Timeline.home.stageInsightTitle', { ageLabel: summary.ageLabel })}
+          </h2>
+        </div>
+        <Link to="/reminders" className="text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>
+          {i18nText('Timeline.home.viewAllReminders')}
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {summary.health.length > 0 ? <StageInsightGroup title={i18nText('Timeline.home.stageInsightHealthGroup')} items={summary.health} /> : null}
+        {summary.development.length > 0 ? <StageInsightGroup title={i18nText('Timeline.home.stageInsightDevGroup')} items={summary.development} /> : null}
+      </div>
+    </Cd>
+  );
+}
+
+// @nimi-authority: rule.parentos.time.r008
+const GETTING_STARTED_STEPS = [
+  { id: 'growth', titleKey: 'Timeline.home.coldStartStep1Title', bodyKey: 'Timeline.home.coldStartStep1Body', to: '/profile?capture=manual&group=growth' },
+  { id: 'sleep', titleKey: 'Timeline.home.coldStartStep2Title', bodyKey: 'Timeline.home.coldStartStep2Body', to: '/profile?capture=manual&group=sleep' },
+  { id: 'journal', titleKey: 'Timeline.home.coldStartStep3Title', bodyKey: 'Timeline.home.coldStartStep3Body', to: '/journal' },
+] as const;
+
+export function GettingStartedCard() {
+  return (
+    <Cd cls="col-span-8">
+      <Hdr title={i18nText('Timeline.home.coldStartGuideTitle')} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        {GETTING_STARTED_STEPS.map((step, index) => (
+          <div key={step.id} className="dashboard-inset flex flex-col rounded-[18px] p-5">
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-semibold"
+              style={{ background: 'rgba(78,204,163,0.16)', color: '#059669' }}
+              aria-hidden="true"
+            >
+              {index + 1}
+            </span>
+            <p className="mt-3 text-[14px] font-semibold" style={{ color: textMain }}>{i18nText(step.titleKey)}</p>
+            <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText(step.bodyKey)}</p>
+            <Link
+              to={step.to}
+              className="mt-3 inline-flex self-start rounded-full px-4 py-1.5 text-[13px] font-medium text-white hover:-translate-y-0.5"
+              style={{ background: textMain, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+            >
+              {i18nText('Timeline.home.coldStartStepCta')}
+            </Link>
+          </div>
+        ))}
+      </div>
     </Cd>
   );
 }

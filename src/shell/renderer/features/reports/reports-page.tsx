@@ -324,7 +324,10 @@ export default function ReportsPage() {
       }
 
       const firstCycle = getFirstReportAccumulation(child.createdAt);
-      if (rows.length === 0 && firstCycle.isEligible) {
+      const hasFirstMonthlyReport = rows.some((report) => (
+        report.reportType === 'monthly' && report.periodStart === firstCycle.periodStart
+      ));
+      if (!hasFirstMonthlyReport && firstCycle.isEligible) {
         setAutoGenerationState('generating');
       }
 
@@ -352,8 +355,11 @@ export default function ReportsPage() {
 
   const activeChild = child;
   const firstAccumulation = getFirstReportAccumulation(activeChild.createdAt);
-  const latestReport = reports[0] ?? null;
+  const latestReport = reports.find((report) => report.reportType === 'monthly') ?? null;
   const latestContent = latestReport ? parseReportContent(latestReport.content) : null;
+  const historyReports = latestReport
+    ? reports.filter((report) => report.reportId !== latestReport.reportId)
+    : reports;
 
   const handlePresetChange = (p: PeriodPreset) => { setPeriodPreset(p); if (p !== 'custom') { const d = computePresetDates(p); setPeriodStart(d.start); setPeriodEnd(d.end); } };
   const handleDateChange = (field: 'start' | 'end', value: string) => {
@@ -450,6 +456,7 @@ export default function ReportsPage() {
       const reportId = ulid();
       await insertGrowthReport({ reportId, childId: activeChild.childId, reportType: report.reportType, periodStart: report.periodStart, periodEnd: report.periodEnd, ageMonthsStart: report.ageMonthsStart, ageMonthsEnd: report.ageMonthsEnd, content: JSON.stringify(report.content), generatedAt: now, now });
       setReports(requireValidPersistedReports(activeChild.createdAt, await getGrowthReports(activeChild.childId))); setExpandedReportId(reportId); setGenerateState('idle');
+      nimiToast.success(i18nText('Reports.page.generateSuccess'));
       setTimeout(() => { if (typeof viewerRef.current?.scrollIntoView === 'function') viewerRef.current.scrollIntoView({ behavior: 'smooth' }); }, 100);
     } catch (error) {
       catchLog('reports', 'action:generate-report-failed')(error);
@@ -458,6 +465,7 @@ export default function ReportsPage() {
     }
   };
 
+  // @nimi-authority: rule.parentos.advs.r009
   return (
     <div className="report-page-shell hide-scrollbar overflow-y-auto">
       <div className="report-page-container">
@@ -498,9 +506,9 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {reports.length > 1 && (<div className="mb-6">
+        {historyReports.length > 0 && (<div className="mb-6">
           <p className="report-section-label">{i18nText('Reports.page.historyTitle')}</p>
-          <div className="space-y-2">{reports.slice(1).map((report) => {
+          <div className="space-y-2">{historyReports.map((report) => {
             const isExpanded = expandedReportId === report.reportId;
             const parsed = parseReportContent(report.content);
             const title = parsed.title;
@@ -521,12 +529,20 @@ export default function ReportsPage() {
           })}</div>
         </div>)}
 
-        {reports.length > 0 && <div className="mb-8">
-          <button onClick={() => setShowAdvanced(!showAdvanced)} className="report-advanced-toggle">
+        {reportLoadState === 'ready' && <div className="mb-8">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="report-advanced-toggle"
+            aria-label={i18nText('Reports.page.advancedToggleLabel')}
+            aria-expanded={showAdvanced}
+            aria-controls="report-advanced-panel"
+          >
             <ChevronDown size={12} strokeWidth={2} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
             {i18nText('Reports.page.advancedToggle')}
           </button>
-          {showAdvanced && (<Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="report-advanced-panel">
+          {showAdvanced && (<Surface id="report-advanced-panel" tone="card" material="glass-regular" elevation="raised" padding="none" className="report-advanced-panel">
+            <p className="report-advanced-description">{i18nText('Reports.page.advancedDescription')}</p>
             <div className="mb-3">
               <p className="report-field-label">{i18nText('Reports.page.periodField')}</p>
               <div className="flex flex-wrap gap-2">{PRESET_OPTIONS.map((p) => (
@@ -545,7 +561,7 @@ export default function ReportsPage() {
               <div className="flex-1"><label className="report-date-label">{i18nText('Reports.page.startDate')}</label><DatePicker value={periodStart} onChange={(v) => handleDateChange('start', v)} size="small" /></div>
               <div className="flex-1"><label className="report-date-label">{i18nText('Reports.page.endDate')}</label><DatePicker value={periodEnd} onChange={(v) => handleDateChange('end', v)} size="small" /></div>
             </div>
-            <Button onClick={() => void handleGenerate()} disabled={generateState === 'saving'}
+            <Button onClick={() => void handleGenerate()} loading={generateState === 'saving'}
               fullWidth tone="primary" className="report-generate-button">
               {generateState === 'saving' ? i18nText('Reports.page.generating') : i18nText('Reports.page.generate')}
             </Button>

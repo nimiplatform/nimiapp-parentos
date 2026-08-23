@@ -75,7 +75,7 @@ describe('AiSettingsPage', () => {
     });
   });
 
-  it('lists text and STT as supported while keeping vision OCR unavailable', async () => {
+  it('distinguishes configured, configurable, and unsupported features', async () => {
     const { container } = renderPage();
 
     await waitFor(() => {
@@ -85,7 +85,10 @@ describe('AiSettingsPage', () => {
       expect(container.textContent).toContain('成长顾问');
       expect(container.textContent).toContain('报告图片识别');
       expect(container.textContent).toContain('语音转写');
-      expect(container.textContent).toContain('暂不可用');
+      expect(container.textContent).toContain('可用');
+      expect(container.textContent).toContain('需在 Nimi 中配置');
+      expect(container.textContent).toContain('当前版本暂不支持');
+      expect(container.textContent).toContain('暂时无法手动开启');
     });
   });
 
@@ -101,11 +104,14 @@ describe('AiSettingsPage', () => {
     const { container } = renderPage();
 
     await waitFor(() => {
-      expect(container.textContent).toContain('暂不可用');
+      expect(container.textContent).toContain('让 AI 功能恢复可用');
+      expect(container.textContent).toContain('应用 > ParentOS > AI 能力');
+      expect(container.textContent).toContain('连接 Nimi 后可用');
     });
     const details = container.querySelector('details');
     expect(details).toBeTruthy();
     expect(details?.textContent).toContain('runtime-service-unavailable');
+    expect(screen.getAllByRole('button', { name: /在 Nimi 中配置/ }).length).toBeGreaterThan(0);
   });
 
   it('keeps missing capability configuration read-only and hands changes to Nimi', async () => {
@@ -126,6 +132,28 @@ describe('AiSettingsPage', () => {
       expect(openDesktopIntentMock).toHaveBeenCalledWith({
         intent: { kind: 'open-apps', appId: 'nimi.parentos', section: 'ai-models' },
       });
+    });
+  });
+
+  it('shows a manual path when the Nimi configuration handoff fails', async () => {
+    readParentosAIConfigMock.mockResolvedValue({
+      state: 'not-configured',
+      reasonCode: 'ai-config-not-found',
+    });
+    openDesktopIntentMock.mockResolvedValue({
+      status: 'rejected',
+      reasonCode: 'desktop-open-host-unavailable',
+      actionHint: 'check_desktop_runtime_bridge',
+      retryable: true,
+    });
+
+    renderPage();
+
+    const configureButton = await screen.findByRole('button', { name: '在 Nimi 中配置' });
+    fireEvent.click(configureButton);
+    await waitFor(() => {
+      expect(screen.getByText('未能自动打开 Nimi 配置页')).toBeTruthy();
+      expect(screen.getByText('请手动打开 Nimi 桌面端，进入「应用 > ParentOS > AI 能力」。')).toBeTruthy();
     });
   });
 });

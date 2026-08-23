@@ -1,5 +1,6 @@
 import type * as React from 'react';
 import type { ReminderState } from '../../engine/reminder-engine.js';
+import type { ReminderPriority } from '../../knowledge-base/index.js';
 import type { CustomTodoRow, MeasurementRow, OutdoorRecordRow, SleepRecordRow, VaccineRecordRow } from '../../bridge/sqlite-bridge.js';
 import type { KeepsakeReason } from '../journal/journal-page-helpers.js';
 
@@ -178,7 +179,23 @@ export interface VisionSnapshotSummary {
   measuredLabel: string;
 }
 
+export interface StageInsightItem {
+  ruleId: string;
+  title: string;
+  description: string;
+  domain: string;
+  priority: ReminderPriority;
+}
+
+export interface StageInsightSummary {
+  ageLabel: string;
+  health: StageInsightItem[];
+  development: StageInsightItem[];
+}
+
 export interface TimelineHomeViewModel {
+  coldStart: boolean;
+  stageInsight: StageInsightSummary | null;
   recentChanges: RecentChangeItem[];
   dataGapAlert: DataGapAlertItem | null;
   growthSnapshot: {

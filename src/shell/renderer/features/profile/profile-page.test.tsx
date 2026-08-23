@@ -78,4 +78,18 @@ describe('ProfilePage capture entry', () => {
     });
     expect(dialog.getAttribute('data-initial-metric-id')).toBe('');
   });
+
+  it.each(['growth', 'sleep'])('opens manual health-data capture with the %s group selected', async (groupId) => {
+    render(
+      <MemoryRouter initialEntries={[`/profile?capture=manual&group=${groupId}`]}>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'health-capture-modal' });
+    await waitFor(() => {
+      expect(dialog.getAttribute('data-initial-group-id')).toBe(groupId);
+    });
+    expect(dialog.getAttribute('data-initial-metric-id')).toBe('');
+  });
 });

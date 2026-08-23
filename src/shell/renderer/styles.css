@@ -403,6 +403,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   opacity: 0.5;
 }
+/* Kit DatePickerPanel portals to document.body at the popover layer
+ * (--nimi-z-popover: 80), which sits below dialogs (--nimi-z-dialog: 90), so
+ * the panel opens invisibly behind any modal. Raise it above the dialog
+ * layer; unlayered app rules win over Tailwind utility layers. */
+.nimi-date-picker-panel {
+  z-index: calc(var(--nimi-z-dialog) + 1);
+}
+
 input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   opacity: 0.5;
@@ -1878,6 +1886,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border-radius: var(--nimi-radius-lg);
   margin-top: 12px;
   padding: 20px;
+}
+
+.report-advanced-description {
+  color: var(--nimi-text-muted);
+  font-size: 12px;
+  line-height: 1.65;
+  margin: 0 0 16px;
 }
 
 .report-field-label {

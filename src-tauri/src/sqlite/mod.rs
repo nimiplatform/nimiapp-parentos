@@ -147,7 +147,10 @@ pub fn get_conn() -> Result<&'static DbConnectionHandle, String> {
 }
 
 #[tauri::command]
-pub fn db_init(app_account_id: Option<String>) -> Result<String, String> {
+pub fn db_init(
+    app_account_id: Option<String>,
+    admitted_reminder_rule_ids: Vec<String>,
+) -> Result<String, String> {
     let _operation_guard = db_operation_barrier()
         .lock()
         .map_err(|error| error.to_string())?;
@@ -165,6 +168,15 @@ pub fn db_init(app_account_id: Option<String>) -> Result<String, String> {
         let _ = DB_CONN.set(conn);
         *current_scope = requested_scope.clone();
     }
+
+    let conn_mutex = DB_CONN
+        .get()
+        .ok_or_else(|| "parentos sqlite connection is not initialized".to_string())?;
+    let conn = conn_mutex.lock().map_err(|error| error.to_string())?;
+    migrations::validate_persisted_reminder_states_for_rule_ids(
+        &conn,
+        &admitted_reminder_rule_ids,
+    )?;
 
     Ok(resolve_db_path_for_scope(&requested_scope)?
         .display()
@@ -215,7 +227,8 @@ mod tests {
             .expect("lock sqlite test mutex");
         install_test_storage("device-local");
 
-        let db_path = db_init(None).expect("init device-local db");
+        let db_path =
+            db_init(None, vec!["PO-REM-VAC-001".to_string()]).expect("init device-local db");
         assert!(
             is_device_local_sqlite_path(&db_path),
             "unexpected path: {db_path}"
@@ -233,8 +246,13 @@ mod tests {
             .expect("lock sqlite test mutex");
         install_test_storage("account");
 
-        let device_local_path = db_init(None).expect("init device-local db");
-        let account_path = db_init(Some("user-123".to_string())).expect("init scoped db");
+        let device_local_path =
+            db_init(None, vec!["PO-REM-VAC-001".to_string()]).expect("init device-local db");
+        let account_path = db_init(
+            Some("user-123".to_string()),
+            vec!["PO-REM-VAC-001".to_string()],
+        )
+        .expect("init scoped db");
 
         assert!(is_device_local_sqlite_path(&device_local_path));
         assert_ne!(device_local_path, account_path);

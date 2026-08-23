@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, IconButton, OverlayShell, TextField, cn } from '@nimiplatform/kit/ui';
+import { Button, DatePicker, IconButton, OverlayShell, TextField, cn } from '@nimiplatform/kit/ui';
 import { computeAgeMonths, type NurtureMode } from '../../app-shell/app-store.js';
 import { getReminderStates } from '../../bridge/sqlite-bridge.js';
 import { REMINDER_RULES } from '../../knowledge-base/index.js';
@@ -280,13 +280,10 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
       <label className="mb-1.5 block text-[13px] font-medium text-[var(--nimi-text-primary)]">
         {i18nText('GrowthCurve.nextCheckModal.nextDate')}
       </label>
-      <div data-testid="growth-next-check-date">
-        <TextField
-          type="date"
+      <div data-testid="growth-next-check-date" className="mb-4 w-[180px]">
+        <DatePicker
           value={dateValue}
-          onChange={(event) => setDateValue(event.target.value)}
-          className="mb-4 w-[180px]"
-          inputClassName="text-[14px]"
+          onValueChange={setDateValue}
         />
       </div>
 

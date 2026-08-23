@@ -281,10 +281,19 @@ export default function ChildrenSettingsPage() {
   return (
     <div className="min-h-full bg-transparent p-6">
       <div className="mx-auto max-w-3xl">
-        {/* Back link */}
-        <Link to={fromProfile ? '/profile' : '/settings'} className="mb-5 inline-flex items-center gap-1 text-[14px] text-[var(--nimi-text-muted)] hover:underline">
+        {/* Back link — with no child profile the shell hides the sidebar, so
+            point back to the onboarding landing (/timeline) instead of trapping
+            the user on the settings pages. */}
+        <Link
+          to={fromProfile ? '/profile' : children.length === 0 ? '/timeline' : '/settings'}
+          className="mb-5 inline-flex items-center gap-1 text-[14px] text-[var(--nimi-text-muted)] hover:underline"
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
-          {fromProfile ? i18nText('Children.settings.backToProfile') : i18nText('Children.settings.backToSettings')}
+          {fromProfile
+            ? i18nText('Children.settings.backToProfile')
+            : children.length === 0
+              ? i18nText('Children.settings.backToTimeline')
+              : i18nText('Children.settings.backToSettings')}
         </Link>
 
         {/* Header */}

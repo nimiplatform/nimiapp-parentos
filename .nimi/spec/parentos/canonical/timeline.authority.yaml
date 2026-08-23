@@ -106,6 +106,16 @@ units:
     relations:
       - type: applies_to
         target: definition.parentos.timeline.contract
+  - id: rule.parentos.time.r011
+    kind: rule
+    title: Cold-Start Home Composition
+    modality: must
+    statement: "Cold start is defined for the active child as: no measurement rows, no sleep records, no vaccine records, no achieved milestone records, no journal entries, and no outdoor records. In cold start the timeline home must not stack per-card empty placeholder panels. The cold-start home composes exactly: the child context card, a stage guidance card in the hero position (the empty recentChanges hero is not rendered), the quick-links strip, and a getting-started guide card. It does not render additional compact empty entries for growth, sleep, or vision. Cards whose content derives only from absent records (milestone timeline, outdoor goal, recent lines, observation distribution) are not rendered in cold start. Getting-started guide card: static table-of-contents copy with navigation links into admitted capture surfaces; it must not summarize, infer, or fabricate child data. Stage guidance card projection: source rows only from the compiled reminder catalog admitted by PO-TIME-001; select rows whose triggerAge window covers the current ageMonths and whose category is rigid or stage; personalized rows are excluded because they require structured trigger data; rows whose nurtureMode visibility for the active child's mode is hidden are excluded; the heading renders the current ageLabel without a \"This stage\" or \"这个阶段\" prefix; rendered item copy is limited to the table-backed rule title and description, and the internal ruleId must not be displayed to the user; no generated text, no diagnosis, treatment, or causal interpretation; the card is display-only, persists nothing, and must not mutate reminder_states. The stage guidance card is an orientation projection, not an action surface: it must not render per-item action state (completion, snooze, due badges); agenda actionability stays on the PO-TIME-002/PO-REMI-* surfaces. When the stage guidance projection yields no eligible rows, the stage guidance card is not rendered and the recentChanges hero keeps the hero position with its existing empty copy. Outside cold start, the home keeps the non-cold-start composition; this unit admits no change to populated-state cards."
+    condition: Whenever the timeline home renders for an active child in cold start.
+    failure: Fail closed and report PO-TIME-011; omit the stage guidance card rather than rendering uncompiled or interpreted content.
+    relations:
+      - type: applies_to
+        target: definition.parentos.timeline.contract
   - id: rule.parentos.time.r010a
     kind: rule
     title: Ranking Function

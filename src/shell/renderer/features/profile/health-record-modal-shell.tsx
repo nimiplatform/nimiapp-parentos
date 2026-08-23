@@ -161,7 +161,7 @@ export function HealthRecordSidebar({ items, selected, onSelect, title, footer }
               onClick={() => onSelect(item.id)}
               className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 text-left text-[13.5px] font-medium transition-colors disabled:opacity-40 ${
                 isSelected
-                  ? 'bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)]'
+                  ? 'bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_12%,transparent)] font-semibold text-[var(--nimi-action-primary-bg)]'
                   : 'bg-transparent text-[var(--nimi-text-primary)] hover:bg-[var(--nimi-action-ghost-hover)]'
               }`}
             >
@@ -493,7 +493,7 @@ export function ChipGroup<V extends string = string>({
             }}
             className={`${heightCls} inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border font-medium transition-all disabled:opacity-40 ${
               layout === 'fill' ? 'flex-1' : ''
-            } ${isSelected ? 'border-[var(--parentos-chip-active)] bg-[var(--parentos-chip-active)] text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)]' : 'border-[var(--nimi-field-border)] bg-[var(--nimi-surface-panel)] text-[var(--nimi-text-muted)]'}`}
+            } ${isSelected ? 'border-[color-mix(in_srgb,var(--parentos-chip-active)_45%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--parentos-chip-active)_10%,var(--nimi-surface-card))] font-semibold text-[var(--parentos-chip-active)]' : 'border-[var(--nimi-field-border)] bg-[var(--nimi-surface-panel)] text-[var(--nimi-text-muted)]'}`}
             style={{ '--parentos-chip-active': accent } as CSSProperties}
           >
             {Icon ? <Icon size={14} strokeWidth={1.75} /> : option.emoji ? <span>{option.emoji}</span> : null}

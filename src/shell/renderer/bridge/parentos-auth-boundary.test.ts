@@ -27,7 +27,7 @@ describe('ParentOS local-app authority hardcut', () => {
     expect(bridgeSource).toContain('createNimiLocalAppStandardShellSurface');
     expect(bridgeSource).not.toContain('readInstalledNimiAppLaunchBinding');
     expect(bridgeSource).not.toContain('InstalledNimiAppLaunchBinding');
-    expect(bootstrapSource).toContain('await dbInit(null)');
+    expect(bootstrapSource).toContain('await dbInit(null, ADMITTED_REMINDER_RULE_IDS)');
     expect(bootstrapSource).toContain("authorityClass: 'app_owned_authority'");
     expect(bootstrapSource).not.toMatch(/\bcreateNimiClient\b|\bnew Runtime\b|readInstalledNimiAppLaunchBinding|createInstalledNimiAppBootstrap/);
     expect(bootstrapSource).not.toMatch(/createNimiAppRuntimePlatformClient|getAccountSessionStatus|accountCaller|realmBaseUrl|releaseDescriptorRef/);

@@ -96,6 +96,7 @@ export function VaccineCaptureContent({ child, onSaved, onClose }: VaccineCaptur
                   onValueChange={setSelectedRuleId}
                   options={VACCINE_RULES.map((rule) => ({ value: rule.ruleId, label: rule.title }))}
                   placeholder={i18nText('Vaccine.capture.field.rulePlaceholder')}
+                  contentLayer="dialog"
                   className="w-full min-h-12"
                 />
               </FormField>

@@ -355,7 +355,10 @@ fn growth_reports_enforce_one_monthly_row_per_child_and_period() {
 
     insert_monthly("report-monthly-1").expect("insert first monthly report");
     let duplicate = insert_monthly("report-monthly-2");
-    assert!(duplicate.is_err(), "duplicate monthly period must be rejected");
+    assert!(
+        duplicate.is_err(),
+        "duplicate monthly period must be rejected"
+    );
 }
 
 #[test]

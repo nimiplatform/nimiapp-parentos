@@ -642,7 +642,13 @@
     "access": {
       "title": "Nimi 访问",
       "description": "AI 能力通过 Nimi 运行时提供；访问丢失不会影响本地数据。",
-      "technicalDetails": "技术详情"
+      "technicalDetails": "技术详情",
+      "recovery": {
+        "title": "让 AI 功能恢复可用",
+        "bridgeAbsent": "请从 Nimi 桌面端的「应用」中打开 ParentOS。连接成功后，支持的 AI 功能会自动恢复。",
+        "actionRequired": "请前往 Nimi 桌面端「应用 > ParentOS > AI 能力」完成访问或模型配置，返回后刷新状态。",
+        "unavailable": "请确认 Nimi 桌面端正在运行，再前往「应用 > ParentOS > AI 能力」检查配置；返回后刷新状态。"
+      }
     },
     "declared": {
       "title": "AI 能力声明",
@@ -652,7 +658,9 @@
       "openOwnerConfiguration": "在 Nimi 中配置",
       "openingOwnerConfiguration": "正在打开…",
       "loadFailed": "AI 配置读取失败",
-      "ownerHandoffFailed": "未能打开 Nimi 配置页",
+      "loadFailedGuidance": "恢复 Nimi 连接或在 Nimi 的「应用 > ParentOS > AI 能力」确认配置后，返回本页刷新。",
+      "ownerHandoffFailed": "未能自动打开 Nimi 配置页",
+      "ownerHandoffFallback": "请手动打开 Nimi 桌面端，进入「应用 > ParentOS > AI 能力」。",
       "routeLocal": "本地路由",
       "routeCloud": "云端路由",
       "statusConfigured": "已配置",
@@ -667,8 +675,14 @@
     "features": {
       "title": "功能可用性",
       "description": "基于当前平台契约的功能状态。",
+      "configurationHint": "显示“需在 Nimi 中配置”的功能，请前往 Nimi 桌面端「应用 > ParentOS > AI 能力」完成配置。",
+      "checking": "检测中…",
       "available": "可用",
       "unavailable": "暂不可用",
+      "needsAccess": "连接 Nimi 后可用",
+      "needsConfiguration": "需在 Nimi 中配置",
+      "notSupported": "当前版本暂不支持",
+      "notSupportedHint": "目前没有可配置的图片理解能力，暂时无法手动开启。",
       "advisor": "成长顾问",
       "report": "成长报告叙述",
       "journalTagging": "日记智能标记",
@@ -732,6 +746,7 @@
     "settings": {
       "backToProfile": "返回档案",
       "backToSettings": "返回设置",
+      "backToTimeline": "返回首页",
       "title": "孩子管理",
       "subtitle": "管理孩子档案和基本信息",
       "emptyTitle": "还没有添加孩子",
@@ -1003,7 +1018,7 @@
       "noChildDescription": "选择孩子后即可查看对应的提醒中心。",
       "unknownRuleTitle": "提醒目录不完整",
       "unknownRuleIds": "发现数据库中存在未登记的 ruleId：{{ruleIds}}",
-      "unknownRuleFailClose": "为保护数据不被误读，提醒页面已按 PO-TIME-007 fail-close。重启 ParentOS 即可触发 schema v17 自动清理这些游离记录；如果重启后仍有未登记的 ruleId，请联系开发修复规则目录。",
+      "unknownRuleFailClose": "为保护数据不被误读，提醒页面已按 PO-TIME-007 fail-close。ParentOS 不会静默删除这些记录；请先让持久化 ruleId 与编译后的提醒目录重新一致，再重试。",
       "restoreTodoFailed": "恢复待办失败：{{message}}",
       "deleteTodoFailed": "删除待办失败：{{message}}",
       "loading": "加载中...",
@@ -2344,9 +2359,6 @@
     "category": {
       "standard": "国标体测"
     },
-    "field": {
-      "recordType": "记录类型"
-    },
     "form": {
       "addTitle": "添加体能记录",
       "editTitle": "编辑体能记录",
@@ -2365,13 +2377,16 @@
       "saving": "保存中...",
       "save": "保存",
       "saveChanges": "保存修改",
-      "standardBanner": "📋 {{tier}} · 依据《国家学生体质健康标准》测试项目，按需填写",
+      "standardBanner": "📋 {{tier}} · 依据《国家学生体质健康标准》测试项目，测过的才填，其余留空即可",
       "durationLabel": "时长 (分钟)",
       "durationPlaceholder": "例如 30",
       "distanceLabel": "距离 (米)",
       "distanceHint": "可选 — 适用于跑步、游泳、骑行等",
       "distancePlaceholder": "例如 800",
-      "intensityLabel": "强度"
+      "intensityLabel": "强度",
+      "labelWithUnit": "{{label}}（{{unit}}）",
+      "examplePlaceholder": "例如 {{value}}",
+      "runSecondsHint": "按秒填写，如 4分05秒 = 245"
     },
     "page": {
       "title": "体能评估",
@@ -2848,7 +2863,7 @@
     "error": {
       "unknownRuleTitle": "提醒目录不完整",
       "unknownRuleIds": "发现未登记的 ruleId：{{ruleIds}}",
-      "unknownRuleBody": "提醒流按 PO-TIME-007 fail-close。重启 ParentOS 即可触发 schema v17 自动清理这些游离记录；如果重启后仍有未登记的 ruleId，请修复 data/structured/parentos/reminder-rules.yaml 或 data/structured/parentos/orthodontic-protocols.yaml。",
+      "unknownRuleBody": "提醒流已按 PO-TIME-007 fail-close，且不会静默删除这些记录。请先让持久化 ruleId 与 data/structured/parentos/reminder-rules.yaml 或 data/structured/parentos/orthodontic-protocols.yaml 重新一致，再重试。",
       "unknownCaptureProtocol": "未识别的 captureProtocolId: {{captureProtocolId}}",
       "missingBoundAppliance": "找不到提醒绑定的矫治器（applianceId={{applianceId}}）"
     },
@@ -3070,7 +3085,18 @@
       "setGoal": "设定目标",
       "noOutdoorGoalTitle": "还没有设定户外目标",
       "noOutdoorGoalBody": "每天 2 小时以上的户外活动有助于保护视力。设定每周目标，追踪孩子的户外时间。",
-      "minutesUnit": "分钟"
+      "minutesUnit": "分钟",
+      "stageInsightTitle": "{{ageLabel}}",
+      "stageInsightHealthGroup": "健康窗口",
+      "stageInsightDevGroup": "发展关注",
+      "coldStartGuideTitle": "先从这三件事开始，记录孩子的成长",
+      "coldStartStep1Title": "记录第一次成长测量",
+      "coldStartStep1Body": "输入一次身高或体重，这里会自动生成对照 WHO 标准的趋势曲线。",
+      "coldStartStep2Title": "记录一次睡眠",
+      "coldStartStep2Body": "记录入睡和起床时间，两周后这里会显示睡眠趋势和规律。",
+      "coldStartStep3Title": "写一篇成长随记",
+      "coldStartStep3Body": "文字或语音都可以，观察线索会沉淀为月度成长报告的材料。",
+      "coldStartStepCta": "去记录"
     },
     "nurtureMode": {
       "relaxed": "轻松模式",
@@ -4961,6 +4987,7 @@
       "aiFallback": "AI 综合报告暂时不可用，已回退为本地结构化报告。",
       "localFallback": "当前未连通 AI，已生成本地结构化报告。",
       "generateFailed": "报告生成失败，请重试。",
+      "generateSuccess": "综合报告已生成，并保存在本地。",
       "contentSaveFailed": "保存报告内容失败：{{message}}",
       "heroGrowth": "成长",
       "heroReports": "报告",
@@ -4990,7 +5017,9 @@
       "emptySubtitle": "报告会在首页自动生成，也可以在下方手动创建",
       "historyTitle": "历史报告",
       "periodRange": "{{start}} 至 {{end}}",
-      "advancedToggle": "高级选项 · 手动生成报告",
+      "advancedToggleLabel": "高级选项",
+      "advancedToggle": "高级选项 · 生成综合报告",
+      "advancedDescription": "按所选时间范围生成一份独立报告，不影响月度报告的积累与自动生成。",
       "periodField": "时间范围",
       "startDate": "开始日期",
       "endDate": "结束日期",

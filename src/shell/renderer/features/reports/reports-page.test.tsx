@@ -206,12 +206,53 @@ describe('ReportsPage', () => {
     });
 
     expect(screen.getByRole('link', { name: /记录一个瞬间/i }).getAttribute('href')).toBe('/journal');
-    expect(screen.queryByRole('button', { name: /高级选项/i })).toBeNull();
+    const advancedToggle = screen.getByRole('button', { name: /高级选项/i });
+    expect(advancedToggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(advancedToggle);
+    expect(screen.getByText('按所选时间范围生成一份独立报告，不影响月度报告的积累与自动生成。')).toBeTruthy();
     expect(insertGrowthReportMock).not.toHaveBeenCalled();
+  });
+
+  it('generates an independent report during accumulation without suppressing the monthly cycle', async () => {
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('正在积累Mimi的成长报告')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /高级选项/i }));
+    fireEvent.click(screen.getByRole('button', { name: /生成综合报告/i }));
+
+    await waitFor(() => expect(insertGrowthReportMock).toHaveBeenCalledTimes(1));
+    expect(insertGrowthReportMock.mock.calls[0]?.[0]?.reportType).toBe('quarterly-letter');
+    expect(screen.getByText('正在积累Mimi的成长报告')).toBeTruthy();
+    expect(reportStore.some((report) => report.reportType === 'monthly')).toBe(false);
   });
 
   it('automatically persists the first report after the rolling month closes', async () => {
     const firstCycle = setClosedFirstCycle();
+    reportStore.unshift({
+      reportId: 'existing-custom-report',
+      childId: 'child-1',
+      reportType: 'custom',
+      periodStart: firstCycle.periodStart,
+      periodEnd: firstCycle.periodEnd,
+      ageMonthsStart: 30,
+      ageMonthsEnd: 30,
+      content: JSON.stringify({
+        version: 1,
+        format: 'structured-local',
+        reportType: 'custom',
+        title: 'Mimi 的综合成长报告',
+        subtitle: '本地记录',
+        generatedAt: firstCycle.periodEnd,
+        overview: [],
+        metrics: [],
+        trendSignals: [],
+        sections: [],
+        sources: [],
+        safetyNote: '仅供记录。',
+      }),
+      generatedAt: firstCycle.periodEnd,
+      createdAt: firstCycle.periodEnd,
+    });
 
     renderPage();
 

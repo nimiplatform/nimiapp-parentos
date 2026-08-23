@@ -9,6 +9,7 @@ import {
 } from '../bridge/sqlite-bridge.js';
 import { mapChildRow } from '../bridge/mappers.js';
 import { loadAndApplyPersistedAppLanguage } from '../i18n/app-language.js';
+import { REMINDER_RULES } from '../knowledge-base/index.js';
 import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
 import { createParentOSNimiClient, setParentOSNimiClient } from './parentos-nimi-client.js';
 
@@ -16,6 +17,7 @@ import { createParentOSNimiClient, setParentOSNimiClient } from './parentos-nimi
 // host binds those surfaces to fixed OS app-data roots and the exact renderer;
 // Nimi App Access posture never participates in local hydration.
 const ACTIVE_CHILD_SETTING_KEYS = ['activeChildId', 'inspection:last-active-child-id'] as const;
+const ADMITTED_REMINDER_RULE_IDS = REMINDER_RULES.map((rule) => rule.ruleId);
 
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -109,7 +111,7 @@ async function loadLocalData(): Promise<void> {
 
   // The current ParentOS product is local-first. Its database is scoped to the
   // OS app-data root, not to a Nimi account or App Access decision.
-  await dbInit(null);
+  await dbInit(null, ADMITTED_REMINDER_RULE_IDS);
   await loadAndApplyPersistedAppLanguage();
 
   const persistedActiveChildId = await loadPersistedActiveChildId();

@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
+  AlertCircle,
   Bot,
   CheckCircle2,
   ChevronLeft,
   CircleDashed,
+  ExternalLink,
   RefreshCw,
 } from 'lucide-react';
 import { Button, Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
@@ -26,6 +28,13 @@ type ParentosAIFeatureRow = {
   readonly supported: boolean;
   readonly capabilityContract: 'text.generate' | 'audio.transcribe' | null;
 };
+
+type ParentosAIFeatureStatus =
+  | 'checking'
+  | 'available'
+  | 'needs-access'
+  | 'needs-configuration'
+  | 'not-supported';
 
 const PARENTOS_APP_ID = 'nimi.parentos';
 
@@ -59,6 +68,32 @@ function postureLabelKey(posture: ParentosNimiAccessPosture | null): string {
       return 'AISettings.posture.bridgeAbsent';
     default:
       return 'AISettings.posture.unavailable';
+  }
+}
+
+function postureRecoveryKey(posture: ParentosNimiAccessPosture): string {
+  switch (posture.state) {
+    case 'bridge-absent':
+      return 'AISettings.access.recovery.bridgeAbsent';
+    case 'action-required':
+      return 'AISettings.access.recovery.actionRequired';
+    default:
+      return 'AISettings.access.recovery.unavailable';
+  }
+}
+
+function featureStatusLabelKey(status: ParentosAIFeatureStatus): string {
+  switch (status) {
+    case 'available':
+      return 'AISettings.features.available';
+    case 'needs-access':
+      return 'AISettings.features.needsAccess';
+    case 'needs-configuration':
+      return 'AISettings.features.needsConfiguration';
+    case 'not-supported':
+      return 'AISettings.features.notSupported';
+    default:
+      return 'AISettings.features.checking';
   }
 }
 
@@ -134,6 +169,15 @@ export default function AiSettingsPage() {
     .filter((capability) => capability.route.oneofKind === 'local')
     .map((capability) => capability.capabilityContract));
 
+  const featureStatus = (row: ParentosAIFeatureRow): ParentosAIFeatureStatus => {
+    if (!row.supported || row.capabilityContract === null) return 'not-supported';
+    if (!posture || !aiConfigLoaded) return 'checking';
+    if (!postureReady) return 'needs-access';
+    return configuredLocalCapabilities.has(row.capabilityContract)
+      ? 'available'
+      : 'needs-configuration';
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-transparent">
       <div className="mx-auto max-w-4xl px-6 pb-8 pt-[72px]">
@@ -192,14 +236,40 @@ export default function AiSettingsPage() {
             </div>
           </div>
           {posture && !postureReady ? (
-            <details className="mt-4 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
-              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
-                {t('AISettings.access.technicalDetails')}
-              </summary>
-              <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">
-                {posture.reasonCode} · {posture.actionHint}
-              </p>
-            </details>
+            <div className="mt-4 rounded-[var(--nimi-radius-md)] border border-[color-mix(in_srgb,var(--nimi-status-warning)_28%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-warning)_7%,var(--nimi-surface-panel))] p-4" role="status">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="mt-0.5 shrink-0 text-[var(--nimi-status-warning)]" size={18} aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">
+                    {t('AISettings.access.recovery.title')}
+                  </p>
+                  <p className="mt-1 text-[12px] leading-5 text-[var(--nimi-text-secondary)]">
+                    {t(postureRecoveryKey(posture))}
+                  </p>
+                  <Button
+                    type="button"
+                    tone="secondary"
+                    size="sm"
+                    className="mt-3"
+                    disabled={ownerHandoffPending}
+                    onClick={() => void openOwnerConfiguration()}
+                  >
+                    {t(ownerHandoffPending
+                      ? 'AISettings.declared.openingOwnerConfiguration'
+                      : 'AISettings.declared.openOwnerConfiguration')}
+                    <ExternalLink size={13} aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
+              <details className="mt-3 border-t border-[var(--nimi-border-subtle)] pt-3">
+                <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
+                  {t('AISettings.access.technicalDetails')}
+                </summary>
+                <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">
+                  {posture.reasonCode} · {posture.actionHint}
+                </p>
+              </details>
+            </div>
           ) : null}
         </Surface>
 
@@ -254,7 +324,7 @@ export default function AiSettingsPage() {
                 <p className="text-[13px] text-[var(--nimi-text-muted)]">{t('AISettings.declared.empty')}</p>
               ) : null}
           </div>
-          {postureReady && aiConfigLoaded ? (
+          {aiConfigLoaded ? (
             <div className="mt-4 flex flex-col gap-3 border-t border-[var(--nimi-border-subtle)] pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[12px] leading-5 text-[var(--nimi-text-muted)]">
                 {t('AISettings.declared.platformManaged')}
@@ -273,20 +343,36 @@ export default function AiSettingsPage() {
             </div>
           ) : null}
           {aiConfigLoaded && aiConfigReasonCode && aiConfigReasonCode !== 'ai-config-not-found' ? (
-            <details className="mt-3 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
-              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
+            <div className="mt-3 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3" role="status">
+              <p className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">
                 {t('AISettings.declared.loadFailed')}
-              </summary>
-              <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">{aiConfigReasonCode}</p>
-            </details>
+              </p>
+              <p className="mt-1 text-[12px] leading-5 text-[var(--nimi-text-muted)]">
+                {t('AISettings.declared.loadFailedGuidance')}
+              </p>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs font-semibold text-[var(--nimi-text-muted)]">
+                  {t('AISettings.access.technicalDetails')}
+                </summary>
+                <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">{aiConfigReasonCode}</p>
+              </details>
+            </div>
           ) : null}
           {ownerHandoffFailure ? (
-            <details className="mt-3 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3">
-              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--nimi-text-muted)]">
+            <div className="mt-3 rounded-[var(--nimi-radius-md)] border border-[color-mix(in_srgb,var(--nimi-status-warning)_28%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-warning)_7%,var(--nimi-surface-panel))] px-4 py-3" role="alert">
+              <p className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">
                 {t('AISettings.declared.ownerHandoffFailed')}
-              </summary>
-              <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">{ownerHandoffFailure}</p>
-            </details>
+              </p>
+              <p className="mt-1 text-[12px] leading-5 text-[var(--nimi-text-secondary)]">
+                {t('AISettings.declared.ownerHandoffFallback')}
+              </p>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs font-semibold text-[var(--nimi-text-muted)]">
+                  {t('AISettings.access.technicalDetails')}
+                </summary>
+                <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">{ownerHandoffFailure}</p>
+              </details>
+            </div>
           ) : null}
         </Surface>
 
@@ -295,25 +381,34 @@ export default function AiSettingsPage() {
           <p className="mt-0.5 text-[13px] leading-[1.6] text-[var(--nimi-text-muted)]">
             {i18nText('AISettings.features.description')}
           </p>
+          <p className="mt-2 text-[12px] leading-5 text-[var(--nimi-text-muted)]">
+            {t('AISettings.features.configurationHint')}
+          </p>
           <div className="mt-4 space-y-2">
             {PARENTOS_AI_FEATURE_ROWS.map((row) => {
-              const available = row.supported
-                && row.capabilityContract !== null
-                && configuredLocalCapabilities.has(row.capabilityContract);
+              const status = featureStatus(row);
+              const available = status === 'available';
               return (
               <div
                 key={row.labelKey}
-                className="flex items-center justify-between rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3"
+                className="flex items-start justify-between gap-4 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3"
               >
                 <span className="text-[13px] font-medium text-[var(--nimi-text-primary)]">{t(row.labelKey)}</span>
-                <span
-                  className={cn(
-                    'text-[12px] font-semibold',
-                    available ? 'text-[var(--nimi-status-success)]' : 'text-[var(--nimi-text-muted)]',
-                  )}
-                >
-                  {available ? t('AISettings.features.available') : t('AISettings.features.unavailable')}
-                </span>
+                <div className="max-w-[52%] shrink-0 text-right">
+                  <span
+                    className={cn(
+                      'text-[12px] font-semibold',
+                      available ? 'text-[var(--nimi-status-success)]' : 'text-[var(--nimi-text-muted)]',
+                    )}
+                  >
+                    {t(featureStatusLabelKey(status))}
+                  </span>
+                  {status === 'not-supported' ? (
+                    <p className="mt-0.5 text-[11px] leading-4 text-[var(--nimi-text-muted)]">
+                      {t('AISettings.features.notSupportedHint')}
+                    </p>
+                  ) : null}
+                </div>
               </div>
               );
             })}

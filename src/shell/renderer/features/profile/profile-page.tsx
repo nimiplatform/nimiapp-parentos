@@ -16,6 +16,7 @@ import {
 } from '../../engine/health-record-domain.js';
 import type { TFunction } from 'i18next';
 import { HealthCaptureModal } from './health-capture-modal.js';
+import { getHealthRecordEventCaptureProtocolOptions } from './health-capture-orchestrator.js';
 import { eventRowToDomain, valueRowToDomain } from './health-record-row-mappers.js';
 import { ProfileHero } from './profile-page-hero.js';
 import { AISummaryCard } from './ai-summary-card.js';
@@ -25,6 +26,10 @@ import { ProfilePostureCard } from './profile-page-posture-card.js';
 
 const PROFILE_CAPTURE_SEARCH_PARAM = 'capture';
 const PROFILE_CAPTURE_MANUAL_VALUE = 'manual';
+const PROFILE_CAPTURE_GROUP_SEARCH_PARAM = 'group';
+const PROFILE_CAPTURE_GROUP_IDS = new Set<string>(
+  getHealthRecordEventCaptureProtocolOptions().map((option) => option.group.groupId),
+);
 
 function profileCompleteness(child: {
   birthWeightKg: number | null;
@@ -83,6 +88,7 @@ export default function ProfilePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const focusGroupId = searchParams.get('focus');
   const captureMode = searchParams.get(PROFILE_CAPTURE_SEARCH_PARAM);
+  const requestedCaptureGroupId = searchParams.get(PROFILE_CAPTURE_GROUP_SEARCH_PARAM);
   const activeChildId = useAppStore((state) => state.activeChildId);
   const children = useAppStore((state) => state.children);
   const activeChild = children.find((child) => child.childId === activeChildId);
@@ -121,16 +127,21 @@ export default function ProfilePage() {
     void loadRecords(activeChildId);
   }, [activeChildId, loadRecords]);
 
+  // @nimi-authority: rule.parentos.capt.r001
   useEffect(() => {
     if (captureMode !== PROFILE_CAPTURE_MANUAL_VALUE || !activeChild) return;
-    setCaptureGroupId(null);
+    const captureGroupId = requestedCaptureGroupId && PROFILE_CAPTURE_GROUP_IDS.has(requestedCaptureGroupId)
+      ? requestedCaptureGroupId
+      : null;
+    setCaptureGroupId(captureGroupId);
     setCaptureMetricId(null);
     setCaptureOpen(true);
 
     const nextSearchParams = new URLSearchParams(searchParams);
     nextSearchParams.delete(PROFILE_CAPTURE_SEARCH_PARAM);
+    nextSearchParams.delete(PROFILE_CAPTURE_GROUP_SEARCH_PARAM);
     setSearchParams(nextSearchParams, { replace: true });
-  }, [activeChild, captureMode, searchParams, setSearchParams]);
+  }, [activeChild, captureMode, requestedCaptureGroupId, searchParams, setSearchParams]);
 
   // ?focus=<groupId> is set when the user records data from the timeline
   // dashboard; after the group card mounts we scroll it into view and clear

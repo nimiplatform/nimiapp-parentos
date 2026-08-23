@@ -14,6 +14,30 @@ const child = {
 };
 
 describe('ProfileHero', () => {
+  it('renders add health data as a soft primary action', () => {
+    const onAddRecord = vi.fn();
+    render(
+      <MemoryRouter>
+        <ProfileHero
+          child={child}
+          ageMonths={72}
+          completeness={80}
+          recordCount={3}
+          lastRecordedDaysAgo={2}
+          onAddRecord={onAddRecord}
+        />
+      </MemoryRouter>,
+    );
+
+    const addButton = screen.getByRole('button', { name: /添加健康数据/ });
+    expect(addButton.classList.contains('bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_20%,var(--nimi-surface-card))]')).toBe(true);
+    expect(addButton.classList.contains('text-[var(--nimi-text-primary)]')).toBe(true);
+    expect(addButton.classList.contains('bg-[var(--nimi-action-primary-bg)]')).toBe(false);
+
+    fireEvent.click(addButton);
+    expect(onAddRecord).toHaveBeenCalledOnce();
+  });
+
   it('renders edit action with icon without violating single-child slot constraints', () => {
     render(
       <MemoryRouter initialEntries={['/profile']}>

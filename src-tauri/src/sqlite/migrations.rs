@@ -57,6 +57,7 @@ use migrations_v14::apply_v14;
 use migrations_v15::apply_v15;
 use migrations_v16::apply_v16;
 use migrations_v17::apply_v17;
+pub(super) use migrations_v17::validate_persisted_reminder_states_for_rule_ids;
 use migrations_v18::apply_v18;
 use migrations_v19::apply_v19;
 use migrations_v2::apply_v2;

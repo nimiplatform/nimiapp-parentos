@@ -114,11 +114,17 @@ fn load_reminder_rule_priorities() -> Result<HashMap<String, String>, String> {
     let mut catalog: ReminderRuleCatalog = serde_yaml::from_str(include_str!(
         "../../../data/structured/parentos/reminder-rules.yaml",
     ))
-    .map_err(|e| format!("migration v3 parse data/structured/parentos/reminder-rules.yaml failed: {e}"))?;
+    .map_err(|e| {
+        format!("migration v3 parse data/structured/parentos/reminder-rules.yaml failed: {e}")
+    })?;
     let extended: ReminderRuleCatalog = serde_yaml::from_str(include_str!(
         "../../../data/structured/parentos/reminder-rules-extended.yaml",
     ))
-    .map_err(|e| format!("migration v3 parse data/structured/parentos/reminder-rules-extended.yaml failed: {e}"))?;
+    .map_err(|e| {
+        format!(
+            "migration v3 parse data/structured/parentos/reminder-rules-extended.yaml failed: {e}"
+        )
+    })?;
     catalog.rules.extend(extended.rules);
 
     Ok(catalog

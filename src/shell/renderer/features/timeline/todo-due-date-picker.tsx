@@ -39,7 +39,11 @@ export function TodoDueDatePicker({ value, onChange, maxDate = '2100-12-31' }: T
   const wrapRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const parsedMax = maxDate ? parseDateValue(maxDate) : null;
-  const active = Boolean(value) && value !== getLocalToday();
+  const today = getLocalToday();
+  const active = Boolean(value) && value !== today;
+  // Empty value means "today" (see formatChipLabel); DatePickerPanel would
+  // otherwise default its draft selection to maxDate.
+  const panelValue = value || today;
 
   useEffect(() => {
     if (!mounted || open) return;
@@ -100,14 +104,14 @@ export function TodoDueDatePicker({ value, onChange, maxDate = '2100-12-31' }: T
             ref={panelRef}
             anchorRef={wrapRef}
             open={open}
-            value={value}
+            value={panelValue}
             maxDate={parsedMax}
             onChange={(next) => {
               const clamped = clampToMax(parseDateValue(next), parsedMax);
               onChange(formatDateValue(clamped));
               setOpen(false);
             }}
-            onClear={() => { onChange(''); setOpen(false); }}
+            onClear={active ? () => { onChange(''); setOpen(false); } : undefined}
             onClose={() => setOpen(false)}
           />
         </div>,

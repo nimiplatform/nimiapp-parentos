@@ -1403,6 +1403,7 @@ struct ClearVisionFollowupSettingsArgs {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct DbInitArgs {
     app_account_id: Option<String>,
+    admitted_reminder_rule_ids: Vec<String>,
 }
 
 pub fn initialize_parentos_sidecar(
@@ -1475,7 +1476,10 @@ pub fn dispatch_parentos_sidecar_command(
             let args: ReportExportWriteSaveTargetArgs = parse_args(command, payload)?;
             serialize_result(
                 command,
-                report_export::report_export_write_save_target(args.save_target_id, args.base64_data),
+                report_export::report_export_write_save_target(
+                    args.save_target_id,
+                    args.base64_data,
+                ),
             )
         }
         "create_family" => {
@@ -2742,7 +2746,10 @@ pub fn dispatch_parentos_sidecar_command(
         }
         "db_init" => {
             let args: DbInitArgs = parse_args(command, payload)?;
-            serialize_result(command, sqlite::db_init(args.app_account_id))
+            serialize_result(
+                command,
+                sqlite::db_init(args.app_account_id, args.admitted_reminder_rule_ids),
+            )
         }
         "report_export_register_save_target" => {
             let args: ReportExportRegisterSaveTargetArgs = parse_args(command, payload)?;
@@ -2859,8 +2866,14 @@ mod tests {
         let _temp_dir = install_test_roots();
         let now = "2026-07-08T12:00:00.000Z";
 
-        dispatch_parentos_sidecar_command("db_init", serde_json::json!({"appAccountId": null}))
-            .expect("db_init");
+        dispatch_parentos_sidecar_command(
+            "db_init",
+            serde_json::json!({
+                "appAccountId": null,
+                "admittedReminderRuleIds": ["PO-REM-VAC-001"],
+            }),
+        )
+        .expect("db_init");
         dispatch_parentos_sidecar_command(
             "create_family",
             serde_json::json!({

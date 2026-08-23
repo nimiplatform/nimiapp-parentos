@@ -34,6 +34,8 @@ function progressBarClassName(progress: number, review: ReviewStatusPiece[]): st
 }
 
 const PREVIEW_LIMIT = 3;
+const CATEGORY_ACTION_BUTTON_COLOR_CLASS_NAME =
+  'border border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_28%,transparent)] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)] text-[var(--nimi-action-primary-bg)] hover:border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_42%,transparent)] hover:bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_16%,transparent)]';
 
 // Sport-activity metrics (category/duration/distance/intensity) are sub-fields
 // of a single `fitness-sport-activity` log event, not individually tracked
@@ -206,6 +208,7 @@ function ExpandedRows({
 }
 
 function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; onCapture?: () => void }) {
+  // @nimi-authority: rule.parentos.hrec.r007
   const { t } = useTranslation();
   const route = metricDetailRoute(snapshot.metric);
   const hasValue = snapshot.latestValue != null;
@@ -248,7 +251,7 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
                 event.stopPropagation();
                 onCapture?.();
               }}
-              className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)] px-2.5 py-1 text-[12px] font-medium text-[var(--nimi-action-primary-bg)] transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_18%,transparent)]"
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors ${CATEGORY_ACTION_BUTTON_COLOR_CLASS_NAME}`}
             >
               <Plus size={12} />
               {t('Profile.group.update')}
@@ -261,7 +264,7 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
                 event.stopPropagation();
                 onCapture?.();
               }}
-              className="inline-flex items-center gap-1 rounded-full bg-[var(--nimi-action-primary-bg)] px-3 py-1 text-[12px] font-semibold text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)] transition-transform hover:brightness-110"
+              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold shadow-[var(--nimi-elevation-base)] transition-colors ${CATEGORY_ACTION_BUTTON_COLOR_CLASS_NAME}`}
             >
               <Plus size={12} />
               {t('Profile.group.record')}
@@ -293,7 +296,7 @@ function SportActivityRow({ onCapture }: { onCapture?: () => void }) {
             {t('Profile.fitness.sportActivityHint')}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--nimi-action-primary-bg)] px-3 py-1 text-[12px] font-semibold text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)]">
+        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold shadow-[var(--nimi-elevation-base)] transition-colors ${CATEGORY_ACTION_BUTTON_COLOR_CLASS_NAME}`}>
           <Plus size={12} />
           {t('Profile.group.record')}
         </span>

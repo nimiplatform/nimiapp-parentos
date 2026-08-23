@@ -6,6 +6,7 @@ import type { ActiveReminder } from '../../engine/reminder-engine.js';
 import { buildTimelineHomeViewModel, C } from './timeline-data.js';
 import {
   ChildContextCard,
+  GettingStartedCard,
   GrowthSnapshotCard,
   MilestoneTimelineCard,
   MonthlyReportCard,
@@ -16,6 +17,7 @@ import {
   RecentLinesCard,
   SleepTrendCard,
   StageFocusCard,
+  StageInsightCard,
   VisionCard,
 } from './timeline-cards.js';
 import { autoGenerateMonthlyReport } from '../reports/auto-report.js';
@@ -27,6 +29,7 @@ import { useReminderPanelController } from './reminder-panel-controller.js';
 import { i18nText } from '../../i18n/index.js';
 
 
+// @nimi-authority: rule.parentos.time.r011
 export default function TimelinePage() {
   const { activeChildId, children: childList } = useAppStore();
   const child = childList.find((item) => item.childId === activeChildId);
@@ -112,30 +115,40 @@ export default function TimelinePage() {
       <div className="hide-scrollbar relative z-[1] min-w-0 flex-1 overflow-y-auto px-3 pb-8 sm:px-6" style={{ paddingTop: 28 }}>
         <div className="mb-4 flex min-w-0 flex-col gap-4 lg:mb-6 lg:flex-row lg:gap-6">
           <ChildContextCard child={child} ageMonths={ageMonths} />
-          <RecentChangesHeroCard items={homeVm.recentChanges} />
+          {homeVm.stageInsight ? (
+            <StageInsightCard summary={homeVm.stageInsight} />
+          ) : (
+            <RecentChangesHeroCard items={homeVm.recentChanges} />
+          )}
         </div>
         <div className="grid auto-rows-min grid-cols-8 gap-4 md:gap-6">
           <QuickLinksStrip ageMonths={ageMonths} />
-          {/* Growth snapshot (left) + Sleep trend & Vision (right, stacked) */}
-          <div className="col-span-8 flex min-w-0 flex-col gap-4 lg:flex-row lg:gap-6">
-            <div className="min-w-0 flex-1 [&>div]:h-full">
-              <GrowthSnapshotCard snapshot={homeVm.growthSnapshot} />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-4 lg:gap-6">
-              <div className="flex-1 [&>div]:h-full">
-                <SleepTrendCard summary={homeVm.sleepTrend} />
+          {homeVm.coldStart ? (
+            <GettingStartedCard />
+          ) : (
+            <>
+              {/* Growth snapshot (left) + Sleep trend & Vision (right, stacked) */}
+              <div className="col-span-8 flex min-w-0 flex-col gap-4 lg:flex-row lg:gap-6">
+                <div className="min-w-0 flex-1 [&>div]:h-full">
+                  <GrowthSnapshotCard snapshot={homeVm.growthSnapshot} />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-4 lg:gap-6">
+                  <div className="flex-1 [&>div]:h-full">
+                    <SleepTrendCard summary={homeVm.sleepTrend} />
+                  </div>
+                  <div className="flex-1 [&>div]:h-full">
+                    <VisionCard snapshot={homeVm.visionSnapshot} />
+                  </div>
+                </div>
               </div>
-              <div className="flex-1 [&>div]:h-full">
-                <VisionCard snapshot={homeVm.visionSnapshot} />
-              </div>
-            </div>
-          </div>
-          <OutdoorGoalCard records={d.outdoorRecords} goalMinutes={d.outdoorGoalMinutes} />
-          {periods.length > 0 ? <StageFocusCard periods={periods} /> : null}
-          <MilestoneTimelineCard summary={homeVm.milestoneTimeline} />
-          <RecentLinesCard lines={homeVm.recentLines} />
-          <ObservationDistributionCard summary={homeVm.observationDistribution} />
-          {latestMonthlyReport ? <MonthlyReportCard report={latestMonthlyReport} /> : null}
+              <OutdoorGoalCard records={d.outdoorRecords} goalMinutes={d.outdoorGoalMinutes} />
+              {periods.length > 0 ? <StageFocusCard periods={periods} /> : null}
+              <MilestoneTimelineCard summary={homeVm.milestoneTimeline} />
+              <RecentLinesCard lines={homeVm.recentLines} />
+              <ObservationDistributionCard summary={homeVm.observationDistribution} />
+              {latestMonthlyReport ? <MonthlyReportCard report={latestMonthlyReport} /> : null}
+            </>
+          )}
         </div>
       </div>
 

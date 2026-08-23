@@ -22,7 +22,7 @@ function MiniTrendRow({ trend }: { trend: GrowthTrendItem }) {
   const deltaArrow = isUp ? '↑' : isDown ? '↓' : '';
 
   return (
-    <div className="dashboard-inset rounded-[16px] p-5">
+    <div className="dashboard-inset flex flex-1 flex-col justify-center rounded-[16px] p-5">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[13px] font-medium" style={{ color: textMuted }}>{trend.label}</p>
@@ -60,16 +60,16 @@ function MiniTrendRow({ trend }: { trend: GrowthTrendItem }) {
 
 export function GrowthSnapshotCard({ snapshot }: { snapshot: { updatedAt: string | null; updatedLabel: string; metrics: GrowthSnapshotMetric[]; trends: GrowthTrendItem[] } }) {
   return (
-    <Cd cls="col-span-4">
+    <Cd cls="col-span-4 flex flex-col">
       <Hdr title={i18nText('Timeline.home.growthSnapshotTitle')} to="/profile" link={i18nText('Timeline.home.viewCurves')} />
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.latestGrowthMeasurement')}</p>
         <span className="text-[12px]" style={{ color: '#64748b' }}>{snapshot.updatedLabel}</span>
       </div>
       {snapshot.trends.length > 0 ? (
-        <div className="space-y-3">{snapshot.trends.map((trend) => <MiniTrendRow key={trend.id} trend={trend} />)}</div>
+        <div className="flex flex-1 flex-col gap-3">{snapshot.trends.map((trend) => <MiniTrendRow key={trend.id} trend={trend} />)}</div>
       ) : (
-        <div className="dashboard-inset rounded-[16px] p-5">
+        <div className="dashboard-inset flex flex-1 flex-col justify-center rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.noGrowthSnapshotTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText('Timeline.home.noGrowthSnapshotBody')}</p>
         </div>

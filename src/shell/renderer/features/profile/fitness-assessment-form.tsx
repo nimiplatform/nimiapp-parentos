@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, cn, DashedAddButton, DatePicker, PillTabs, TextField, TextareaField } from '@nimiplatform/kit/ui';
+import { Button, cn, DashedAddButton, DatePicker, TextField, TextareaField } from '@nimiplatform/kit/ui';
 import { AppSelect } from '../../app-shell/app-select.js';
 import { computeAgeMonthsAt } from '../../app-shell/app-store.js';
 import { insertFitnessAssessment, replaceHealthRecordCapture, saveHealthRecordCapture } from '../../bridge/sqlite-bridge.js';
@@ -122,6 +122,12 @@ type StandardFieldGroup = 'speed' | 'strength' | 'flex';
 interface StandardFieldDef {
   key: StandardFieldKey;
   label: string;
+  /** Display unit shown next to the label so parents know what to enter. */
+  unit: string;
+  /** Sample value used as the input placeholder. */
+  example: string;
+  /** Optional extra guidance rendered under the input. */
+  hint?: string;
   group: StandardFieldGroup;
   step?: string;
   min?: string;
@@ -144,21 +150,28 @@ export const FITNESS_STANDARD_METRIC_LABELS: Record<StandardFieldKey, string> = 
   vitalCapacity: i18nText('Fitness.metric.vitalCapacity'),
 };
 
+const UNIT_SECOND = i18nText('Common.unit.second');
+const UNIT_METER = i18nText('Common.unit.meter');
+const UNIT_CENTIMETER = i18nText('Common.unit.centimeter');
+const UNIT_MILLILITER = i18nText('Common.unit.milliliter');
+const UNIT_PER_MINUTE = i18nText('Common.unit.perMinute');
+const UNIT_COUNT = i18nText('Common.unit.count');
+
 const STANDARD_FIELDS: StandardFieldDef[] = [
-  { key: 'run10mShuttle', label: FITNESS_STANDARD_METRIC_LABELS.run10mShuttle, group: 'speed', step: '0.1', min: '0' },
-  { key: 'run50m', label: FITNESS_STANDARD_METRIC_LABELS.run50m, group: 'speed', step: '0.1', min: '0' },
-  { key: 'run800m', label: FITNESS_STANDARD_METRIC_LABELS.run800m, group: 'speed', step: '1', min: '0' },
-  { key: 'run1000m', label: FITNESS_STANDARD_METRIC_LABELS.run1000m, group: 'speed', step: '1', min: '0' },
-  { key: 'run50x8', label: FITNESS_STANDARD_METRIC_LABELS.run50x8, group: 'speed', step: '0.1', min: '0' },
-  { key: 'standingLongJump', label: FITNESS_STANDARD_METRIC_LABELS.standingLongJump, group: 'strength', step: '1', min: '0' },
-  { key: 'tennisBallThrow', label: FITNESS_STANDARD_METRIC_LABELS.tennisBallThrow, group: 'strength', step: '0.1', min: '0' },
-  { key: 'doubleFootJump', label: FITNESS_STANDARD_METRIC_LABELS.doubleFootJump, group: 'strength', step: '0.1', min: '0' },
-  { key: 'sitUps', label: FITNESS_STANDARD_METRIC_LABELS.sitUps, group: 'strength', step: '1', min: '0' },
-  { key: 'pullUps', label: FITNESS_STANDARD_METRIC_LABELS.pullUps, group: 'strength', step: '1', min: '0' },
-  { key: 'sitAndReach', label: FITNESS_STANDARD_METRIC_LABELS.sitAndReach, group: 'flex', step: '0.1' },
-  { key: 'balanceBeam', label: FITNESS_STANDARD_METRIC_LABELS.balanceBeam, group: 'flex', step: '0.1', min: '0' },
-  { key: 'ropeSkipping', label: FITNESS_STANDARD_METRIC_LABELS.ropeSkipping, group: 'flex', step: '1', min: '0' },
-  { key: 'vitalCapacity', label: FITNESS_STANDARD_METRIC_LABELS.vitalCapacity, group: 'flex', step: '1', min: '0' },
+  { key: 'run10mShuttle', label: FITNESS_STANDARD_METRIC_LABELS.run10mShuttle, unit: UNIT_SECOND, example: '9.5', group: 'speed', step: '0.1', min: '0' },
+  { key: 'run50m', label: FITNESS_STANDARD_METRIC_LABELS.run50m, unit: UNIT_SECOND, example: '11.2', group: 'speed', step: '0.1', min: '0' },
+  { key: 'run800m', label: FITNESS_STANDARD_METRIC_LABELS.run800m, unit: UNIT_SECOND, example: '245', hint: i18nText('Fitness.form.runSecondsHint'), group: 'speed', step: '1', min: '0' },
+  { key: 'run1000m', label: FITNESS_STANDARD_METRIC_LABELS.run1000m, unit: UNIT_SECOND, example: '280', hint: i18nText('Fitness.form.runSecondsHint'), group: 'speed', step: '1', min: '0' },
+  { key: 'run50x8', label: FITNESS_STANDARD_METRIC_LABELS.run50x8, unit: UNIT_SECOND, example: '105', group: 'speed', step: '0.1', min: '0' },
+  { key: 'standingLongJump', label: FITNESS_STANDARD_METRIC_LABELS.standingLongJump, unit: UNIT_CENTIMETER, example: '160', group: 'strength', step: '1', min: '0' },
+  { key: 'tennisBallThrow', label: FITNESS_STANDARD_METRIC_LABELS.tennisBallThrow, unit: UNIT_METER, example: '6.5', group: 'strength', step: '0.1', min: '0' },
+  { key: 'doubleFootJump', label: FITNESS_STANDARD_METRIC_LABELS.doubleFootJump, unit: UNIT_SECOND, example: '7.0', group: 'strength', step: '0.1', min: '0' },
+  { key: 'sitUps', label: FITNESS_STANDARD_METRIC_LABELS.sitUps, unit: UNIT_PER_MINUTE, example: '32', group: 'strength', step: '1', min: '0' },
+  { key: 'pullUps', label: FITNESS_STANDARD_METRIC_LABELS.pullUps, unit: UNIT_COUNT, example: '5', group: 'strength', step: '1', min: '0' },
+  { key: 'sitAndReach', label: FITNESS_STANDARD_METRIC_LABELS.sitAndReach, unit: UNIT_CENTIMETER, example: '12.5', group: 'flex', step: '0.1' },
+  { key: 'balanceBeam', label: FITNESS_STANDARD_METRIC_LABELS.balanceBeam, unit: UNIT_SECOND, example: '12', group: 'flex', step: '0.1', min: '0' },
+  { key: 'ropeSkipping', label: FITNESS_STANDARD_METRIC_LABELS.ropeSkipping, unit: UNIT_PER_MINUTE, example: '120', group: 'flex', step: '1', min: '0' },
+  { key: 'vitalCapacity', label: FITNESS_STANDARD_METRIC_LABELS.vitalCapacity, unit: UNIT_MILLILITER, example: '1800', group: 'flex', step: '1', min: '0' },
 ];
 
 const STANDARD_GROUP_LABELS: Record<StandardFieldGroup, string> = {
@@ -520,15 +533,15 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
                   <div className="mt-2 space-y-3" onClick={(event) => event.stopPropagation()}>
                     <FormField label={i18nText('Fitness.form.type')}>
                       <div className="space-y-2.5">
-                        <PillTabs
+                        <ChipGroup
                           size="sm"
-                          ariaLabel={i18nText('Fitness.field.recordType')}
-                          items={[
+                          layout="fill"
+                          options={[
                             { value: STANDARD_CATEGORY, label: i18nText('Fitness.form.tabStandard') },
                             { value: ACTIVITY_TAB, label: i18nText('Fitness.form.tabActivity') },
                           ]}
                           value={entry.category === STANDARD_CATEGORY ? STANDARD_CATEGORY : ACTIVITY_TAB}
-                          onValueChange={(tab) => {
+                          onChange={(tab) => {
                             if (tab === STANDARD_CATEGORY) {
                               updateEntry(idx, { category: STANDARD_CATEGORY });
                             } else if (entry.category === STANDARD_CATEGORY) {
@@ -620,12 +633,16 @@ function StandardEventFields({
             </p>
             <FormGrid cols={3}>
               {groupFields.map((f) => (
-                <FormField key={f.key} label={f.label}>
+                <FormField
+                  key={f.key}
+                  label={i18nText('Fitness.form.labelWithUnit', { label: f.label, unit: f.unit })}
+                  hint={f.hint}
+                >
                   <TextField
                     type="number"
                     step={f.step}
                     min={f.min}
-                    placeholder="--"
+                    placeholder={i18nText('Fitness.form.examplePlaceholder', { value: f.example })}
                     value={values[f.key] ?? ''}
                     onChange={(event) => onChange(f.key, event.target.value)}
                     className="w-full min-h-12"

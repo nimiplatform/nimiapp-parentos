@@ -23,6 +23,7 @@ export interface ProfileHeroProps {
   onAddRecord: () => void;
 }
 
+// @nimi-authority: rule.parentos.hrec.r007
 export function ProfileHero({ child, ageMonths, completeness, recordCount, lastRecordedDaysAgo, onAddRecord }: ProfileHeroProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -82,6 +83,7 @@ export function ProfileHero({ child, ageMonths, completeness, recordCount, lastR
             tone="primary"
             size="md"
             leadingIcon={<Plus size={15} />}
+            className="border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_45%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_20%,var(--nimi-surface-card))] text-[var(--nimi-text-primary)] shadow-[var(--nimi-elevation-base)] hover:border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_65%,var(--nimi-border-subtle))] hover:bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_28%,var(--nimi-surface-card))]"
           >
             {t('Profile.actions.addHealthData')}
           </Button>

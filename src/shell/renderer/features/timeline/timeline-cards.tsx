@@ -7,7 +7,7 @@ import { Cd, Hdr, textMain, textMuted } from './timeline-card-primitives.js';
 import { i18nText } from '../../i18n/index.js';
 
 
-export { ChildContextCard, QuickLinksStrip, RecentChangesHeroCard, StageFocusCard } from './timeline-card-overview.js';
+export { ChildContextCard, GettingStartedCard, QuickLinksStrip, RecentChangesHeroCard, StageFocusCard, StageInsightCard } from './timeline-card-overview.js';
 export { GrowthSnapshotCard, OutdoorGoalCard, RecentLinesCard } from './timeline-card-summary.js';
 
 /* ── Sleep Trend ── */

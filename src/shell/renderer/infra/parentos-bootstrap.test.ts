@@ -53,7 +53,13 @@ describe('ParentOS app-owned data bootstrap', () => {
     await runParentOSBootstrap();
 
     expect(dbInitMock).toHaveBeenCalledTimes(1);
-    expect(dbInitMock).toHaveBeenCalledWith(null);
+    expect(dbInitMock).toHaveBeenCalledWith(
+      null,
+      expect.arrayContaining(['PO-REM-VAC-001']),
+    );
+    const admittedRuleIds = dbInitMock.mock.calls[0]?.[1] as string[];
+    expect(admittedRuleIds).toContain('PO-REM-VAC-052');
+    expect(admittedRuleIds).toContain('PO-REM-VIS-003');
     expect(loadAndApplyPersistedAppLanguageMock).toHaveBeenCalledOnce();
     expect(useAppStore.getState()).toMatchObject({
       bootstrapReady: true,

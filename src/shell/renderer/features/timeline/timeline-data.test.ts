@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ChildProfile } from '../../app-shell/app-store.js';
 import type { ActiveReminder, ReminderAgenda } from '../../engine/reminder-engine.js';
+import type { ReminderRule } from '../../knowledge-base/index.js';
 import type { DashData } from './timeline-data.js';
 import {
   buildDataGapAlert,
@@ -8,7 +9,9 @@ import {
   buildObservationDistribution,
   buildRecentChanges,
   buildSleepTrend,
+  buildStageInsight,
   buildTimelineHomeViewModel,
+  isColdStart,
 } from './timeline-data.js';
 
 function makeChild(overrides: Partial<ChildProfile> = {}): ChildProfile {
@@ -563,5 +566,221 @@ describe('timeline home view model helpers', () => {
     });
 
     expect(homeVm.recentLines.map((line) => line.id)).toEqual(['j-newest', 'j-newer', 'j-middle', 'j-cut']);
+  });
+});
+
+function makeRule(overrides: Partial<ReminderRule> = {}): ReminderRule {
+  return {
+    ruleId: 'PO-TEST-001',
+    domain: 'growth',
+    category: 'stage',
+    kind: 'task',
+    title: 'Test rule',
+    description: 'Test description',
+    triggerAge: { startMonths: 0, endMonths: -1 },
+    priority: 'P1',
+    nurtureMode: { relaxed: 'push', balanced: 'push', advanced: 'push' },
+    actionType: 'record_data',
+    ...overrides,
+  };
+}
+
+describe('isColdStart', () => {
+  it('treats a child with no records at all as cold start', () => {
+    expect(isColdStart(makeDash())).toBe(true);
+  });
+
+  it('ends cold start as soon as any record exists', () => {
+    const child = makeChild();
+    expect(isColdStart(makeDash({
+      measurements: [
+        {
+          measurementId: 'm-1',
+          childId: child.childId,
+          typeId: 'height',
+          value: 82,
+          measuredAt: '2026-04-11T08:00:00.000Z',
+          ageMonths: 10,
+          percentile: null,
+          source: 'manual',
+          notes: null,
+          createdAt: '2026-04-11T08:00:00.000Z',
+        },
+      ],
+    }))).toBe(false);
+    expect(isColdStart(makeDash({
+      sleepRecords: [
+        {
+          recordId: 'sleep-1',
+          childId: child.childId,
+          sleepDate: '2026-04-14',
+          bedtime: '21:00',
+          wakeTime: '07:00',
+          durationMinutes: 600,
+          napCount: null,
+          napMinutes: null,
+          quality: 'good',
+          ageMonths: 10,
+          notes: null,
+          createdAt: '2026-04-14T08:00:00.000Z',
+        },
+      ],
+    }))).toBe(false);
+    expect(isColdStart(makeDash({
+      vaccineRecords: [
+        {
+          recordId: 'vac-1',
+          childId: child.childId,
+          ruleId: 'rule-vac',
+          vaccineName: 'Hepatitis B',
+          vaccinatedAt: '2026-04-12T12:00:00.000Z',
+          ageMonths: 10,
+          batchNumber: null,
+          hospital: null,
+          adverseReaction: null,
+          photoPath: null,
+          createdAt: '2026-04-12T12:00:00.000Z',
+        },
+      ],
+    }))).toBe(false);
+    expect(isColdStart(makeDash({
+      journalEntries: [
+        {
+          entryId: 'j-1',
+          contentType: 'text',
+          textContent: 'Note',
+          recordedAt: '2026-04-14T08:00:00.000Z',
+          observationMode: null,
+          keepsake: 0,
+          keepsakeTitle: null,
+          keepsakeReason: null,
+          dimensionId: null,
+        },
+      ],
+    }))).toBe(false);
+    expect(isColdStart(makeDash({
+      outdoorRecords: [
+        {
+          recordId: 'outdoor-1',
+          childId: child.childId,
+          activityDate: '2026-04-14',
+          durationMinutes: 60,
+          note: null,
+          createdAt: '2026-04-14T08:00:00.000Z',
+          updatedAt: '2026-04-14T08:00:00.000Z',
+        },
+      ],
+    }))).toBe(false);
+  });
+
+  it('ignores milestone records without achievedAt but ends cold start on achieved milestones', () => {
+    expect(isColdStart(makeDash({
+      milestoneRecords: [{ milestoneId: 'PO-MS-GMOT-001', achievedAt: null }],
+    }))).toBe(true);
+    expect(isColdStart(makeDash({
+      milestoneRecords: [{ milestoneId: 'PO-MS-GMOT-001', achievedAt: '2026-04-10T08:00:00.000Z' }],
+    }))).toBe(false);
+  });
+
+  it('marks the home view model as cold start only when no records exist', () => {
+    const child = makeChild();
+    const coldVm = buildTimelineHomeViewModel({ child, ageMonths: 10, d: makeDash(), agenda: makeAgenda() });
+    expect(coldVm.coldStart).toBe(true);
+
+    const warmVm = buildTimelineHomeViewModel({
+      child,
+      ageMonths: 10,
+      d: makeDash({
+        journalEntries: [
+          {
+            entryId: 'j-1',
+            contentType: 'text',
+            textContent: 'Note',
+            recordedAt: '2026-04-14T08:00:00.000Z',
+            observationMode: null,
+            keepsake: 0,
+            keepsakeTitle: null,
+            keepsakeReason: null,
+            dimensionId: null,
+          },
+        ],
+      }),
+      agenda: makeAgenda(),
+    });
+    expect(warmVm.coldStart).toBe(false);
+    expect(warmVm.stageInsight).toBeNull();
+  });
+});
+
+describe('buildStageInsight', () => {
+  it('selects rules whose trigger window covers the current age, including open-ended windows', () => {
+    const summary = buildStageInsight(10, 'balanced', [
+      makeRule({ ruleId: 'PO-TEST-OPEN', triggerAge: { startMonths: 0, endMonths: -1 } }),
+      makeRule({ ruleId: 'PO-TEST-RANGE', triggerAge: { startMonths: 6, endMonths: 12 } }),
+      makeRule({ ruleId: 'PO-TEST-FUTURE', triggerAge: { startMonths: 11, endMonths: 24 } }),
+      makeRule({ ruleId: 'PO-TEST-PAST', triggerAge: { startMonths: 0, endMonths: 9 } }),
+    ]);
+
+    expect(summary?.health.map((item) => item.ruleId)).toEqual(['PO-TEST-OPEN', 'PO-TEST-RANGE']);
+  });
+
+  it('excludes personalized rules and rules hidden in the active nurture mode', () => {
+    const summary = buildStageInsight(10, 'balanced', [
+      makeRule({ ruleId: 'PO-TEST-KEEP' }),
+      makeRule({ ruleId: 'PO-TEST-PERSONALIZED', category: 'personalized', triggerCondition: { dataField: 'flag', operator: '=', value: 1 } }),
+      makeRule({ ruleId: 'PO-TEST-HIDDEN', nurtureMode: { relaxed: 'push', balanced: 'hidden', advanced: 'push' } }),
+    ]);
+
+    expect(summary?.health.map((item) => item.ruleId)).toEqual(['PO-TEST-KEEP']);
+
+    const relaxed = buildStageInsight(10, 'relaxed', [
+      makeRule({ ruleId: 'PO-TEST-HIDDEN', nurtureMode: { relaxed: 'push', balanced: 'hidden', advanced: 'push' } }),
+    ]);
+    expect(relaxed?.health.map((item) => item.ruleId)).toEqual(['PO-TEST-HIDDEN']);
+  });
+
+  it('groups task and consult kinds into health and guide/practice kinds into development', () => {
+    const summary = buildStageInsight(10, 'balanced', [
+      makeRule({ ruleId: 'PO-TEST-TASK', kind: 'task' }),
+      makeRule({ ruleId: 'PO-TEST-CONSULT', kind: 'consult', actionType: 'ai_consult' }),
+      makeRule({ ruleId: 'PO-TEST-GUIDE', kind: 'guide' }),
+      makeRule({ ruleId: 'PO-TEST-PRACTICE', kind: 'practice' }),
+    ]);
+
+    expect(summary?.health.map((item) => item.ruleId)).toEqual(['PO-TEST-CONSULT', 'PO-TEST-TASK']);
+    expect(summary?.development.map((item) => item.ruleId)).toEqual(['PO-TEST-GUIDE', 'PO-TEST-PRACTICE']);
+  });
+
+  it('keeps every eligible row instead of truncating the authority-backed projection', () => {
+    const summary = buildStageInsight(10, 'balanced', [
+      makeRule({ ruleId: 'PO-TEST-T0' }),
+      makeRule({ ruleId: 'PO-TEST-T1' }),
+      makeRule({ ruleId: 'PO-TEST-T2' }),
+      makeRule({ ruleId: 'PO-TEST-T3' }),
+    ]);
+
+    expect(summary?.health).toHaveLength(4);
+  });
+
+  it('sorts deterministically by priority, start age, then ruleId', () => {
+    const summary = buildStageInsight(10, 'balanced', [
+      makeRule({ ruleId: 'PO-TEST-B', priority: 'P2' }),
+      makeRule({ ruleId: 'PO-TEST-D', priority: 'P1', triggerAge: { startMonths: 6, endMonths: -1 } }),
+      makeRule({ ruleId: 'PO-TEST-C', priority: 'P1' }),
+      makeRule({ ruleId: 'PO-TEST-A', priority: 'P0', triggerAge: { startMonths: 9, endMonths: -1 } }),
+    ]);
+
+    expect(summary?.health.map((item) => item.ruleId)).toEqual(['PO-TEST-A', 'PO-TEST-C', 'PO-TEST-D', 'PO-TEST-B']);
+  });
+
+  it('returns null when no rule is eligible', () => {
+    expect(buildStageInsight(10, 'balanced', [])).toBeNull();
+    expect(buildStageInsight(10, 'balanced', [makeRule({ category: 'personalized' })])).toBeNull();
+    expect(buildStageInsight(10, 'balanced', [makeRule({ triggerAge: { startMonths: 24, endMonths: 36 } })])).toBeNull();
+  });
+
+  it('labels the summary with the formatted current age', () => {
+    const summary = buildStageInsight(10, 'balanced', [makeRule()]);
+    expect(summary?.ageLabel).toBe('10个月');
   });
 });

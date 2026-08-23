@@ -250,7 +250,10 @@ test('parentos_host sidecar protocol reaches sqlite host core and rejects unsafe
   await withSidecarSession(async ({ storageRoot, expectResult, expectErr, commandBody }) => {
     const now = '2026-07-08T12:00:00.000Z';
 
-    await expectResult(commandBody('db_init', { appAccountId: null }));
+    await expectResult(commandBody('db_init', {
+      appAccountId: null,
+      admittedReminderRuleIds: ['PO-REM-VAC-001'],
+    }));
     await expectResult(commandBody('create_family', {
       familyId: 'fam_sidecar',
       displayName: 'Sidecar Test Family',

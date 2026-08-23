@@ -39,6 +39,7 @@ import {
 } from '../bridge/sqlite-bridge.js';
 import { mapChildRow } from '../bridge/mappers.js';
 import { useAppStore } from '../app-shell/app-store.js';
+import { REMINDER_RULES } from '../knowledge-base/index.js';
 import type { SaveHealthRecordCaptureInput } from '../bridge/sqlite-bridge.js';
 
 const mockData = {
@@ -595,7 +596,7 @@ export async function seedMockData(
   const results: string[] = [];
 
   try {
-    await dbInit();
+    await dbInit(null, REMINDER_RULES.map((rule) => rule.ruleId));
 
     // Family
     try {

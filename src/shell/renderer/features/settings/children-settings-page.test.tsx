@@ -164,6 +164,33 @@ describe('ChildrenSettingsPage', () => {
     expect(container.querySelector('input[type="date"]')?.classList.contains('parentos-child-birth-date')).toBe(true);
   });
 
+  it('links back to the onboarding landing when no child profile exists', () => {
+    renderPage();
+
+    const backLink = screen.getByRole('link', { name: '返回首页' });
+    expect(backLink.getAttribute('href')).toBe('/timeline');
+  });
+
+  it('links back to settings when a child profile exists', () => {
+    useAppStore.setState({
+      bootstrapReady: true,
+      familyId: 'fam-1',
+      activeChildId: 'child-1',
+      children: [{
+        childId: 'child-1', familyId: 'fam-1', displayName: 'Mimi', gender: 'female' as const,
+        birthDate: '2024-01-15', birthWeightKg: null, birthHeightCm: null, birthHeadCircCm: null,
+        avatarPath: null, nurtureMode: 'balanced' as const, nurtureModeOverrides: null,
+        allergies: null, medicalNotes: null, recorderProfiles: [{ id: 'r1', name: '妈妈' }],
+        createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+      }],
+    });
+
+    renderPage();
+
+    const backLink = screen.getByRole('link', { name: '返回设置' });
+    expect(backLink.getAttribute('href')).toBe('/settings');
+  });
+
   it('deletes a child with confirmation', async () => {
     useAppStore.setState({
       bootstrapReady: true,
