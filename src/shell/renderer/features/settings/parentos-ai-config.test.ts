@@ -23,6 +23,40 @@ function clientWithAIConfig(aiConfig: {
   return { aiConfig };
 }
 
+function snapshot(
+  capabilities: readonly Record<string, unknown>[] | null,
+  effectiveSelections: readonly Record<string, unknown>[] = [],
+) {
+  return {
+    config: capabilities === null ? null : {
+      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
+      capabilities,
+    },
+    revision: capabilities === null ? '0' : '1',
+    effectiveSelections,
+  };
+}
+
+function readyLocal(capabilityContract: string, loadoutRef: string) {
+  return {
+    capabilityContract,
+    state: 'ready',
+    resource: {
+      oneofKind: 'local',
+      local: {
+        loadoutRef,
+        label: loadoutRef,
+        capabilityContract,
+        implementation: { implementationId: loadoutRef, driverId: 'local', driverDialect: 'test/local/v1' },
+        supportedFeatures: [],
+        state: 'ready',
+        reasons: [],
+      },
+    },
+    reasons: [],
+  };
+}
+
 describe('ParentOS portable AIConfig projection', () => {
   beforeEach(() => {
     getParentOSNimiClientMock.mockReset();
@@ -40,21 +74,20 @@ describe('ParentOS portable AIConfig projection', () => {
   it('reads the platform-owned text capability without invoking the mutation method', async () => {
     const config = {
       owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
-      capabilities: [{ capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: {} } }],
+      capabilities: [{ capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: { loadoutRef: 'text-local' } } }],
     };
-    const get = vi.fn().mockResolvedValue({
-      ...config,
-    });
+    const projected = { config, revision: '1', effectiveSelections: [readyLocal('text.generate', 'text-local')] };
+    const get = vi.fn().mockResolvedValue(projected);
     const overwrite = vi.fn();
     const client = clientWithAIConfig({ get, overwrite });
     getParentOSNimiClientMock.mockReturnValue(client);
 
-    await expect(readParentosAIConfig()).resolves.toEqual({ state: 'ready', config });
+    await expect(readParentosAIConfig()).resolves.toEqual({ state: 'ready', snapshot: projected });
     expect(overwrite).not.toHaveBeenCalled();
   });
 
   it('distinguishes an absent owner configuration from a transport failure', async () => {
-    const get = vi.fn().mockRejectedValue(Object.assign(new Error('missing'), { reasonCode: 'ai-config-not-found' }));
+    const get = vi.fn().mockResolvedValue(snapshot(null));
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
 
     await expect(readParentosAIConfig()).resolves.toEqual({
@@ -65,8 +98,10 @@ describe('ParentOS portable AIConfig projection', () => {
 
   it('checks exact configured capabilities from the read-only projection', async () => {
     const get = vi.fn().mockResolvedValue({
-      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
-      capabilities: [{ capabilityContract: 'audio.transcribe', requiredFeatures: [], route: { oneofKind: 'local', local: {} } }],
+      ...snapshot([{
+        capabilityContract: 'audio.transcribe', requiredFeatures: [],
+        route: { oneofKind: 'local', local: { loadoutRef: 'audio-local' } },
+      }], [readyLocal('audio.transcribe', 'audio-local')]),
     });
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
 
@@ -74,9 +109,7 @@ describe('ParentOS portable AIConfig projection', () => {
   });
 
   it('does not admit a cloud intent across the ParentOS local-only privacy boundary', async () => {
-    const get = vi.fn().mockResolvedValue({
-      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
-      capabilities: [{
+    const get = vi.fn().mockResolvedValue(snapshot([{
         capabilityContract: 'audio.transcribe',
         requiredFeatures: [],
         route: {
@@ -85,8 +118,7 @@ describe('ParentOS portable AIConfig projection', () => {
             implementation: { implementationId: 'cloud.stt', driverId: 'driver.stt', driverDialect: 'stt/v1' },
           },
         },
-      }],
-    });
+      }]));
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
 
     await expect(hasParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).resolves.toBe(false);
@@ -112,14 +144,23 @@ describe('ParentOS portable AIConfig projection', () => {
   });
 
   it('uses the product-level not-configured error only when the local intent is absent', async () => {
-    const get = vi.fn().mockResolvedValue({
-      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
-      capabilities: [],
-    });
+    const get = vi.fn().mockResolvedValue(snapshot([]));
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
 
     await expect(requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)).rejects.toMatchObject({
       reasonCode: 'parentos-ai-capability-not-configured',
     });
+  });
+
+  it('does not report a blocked effective selection as executable', async () => {
+    const get = vi.fn().mockResolvedValue(snapshot([{
+      capabilityContract: 'text.generate', requiredFeatures: [],
+      route: { oneofKind: 'local', local: { loadoutRef: 'text-local' } },
+    }], [{
+      capabilityContract: 'text.generate', state: 'blocked', resource: null, reasons: ['AI_LOADOUT_INVALID'],
+    }]));
+    getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
+
+    await expect(hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)).resolves.toBe(false);
   });
 });

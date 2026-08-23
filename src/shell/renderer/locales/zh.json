@@ -652,9 +652,9 @@
     },
     "declared": {
       "title": "AI 能力声明",
-      "description": "Nimi 平台为 ParentOS 配置的 AI 能力意图（只读声明）。",
+      "description": "Runtime 为 ParentOS 保存的 AI 能力意图和有效状态（本页只读）。",
       "empty": "尚未配置任何能力。",
-      "platformManaged": "能力声明与路由由 Nimi 平台管理；ParentOS 只读取当前配置，并跳转到 Nimi 完成修改。",
+      "platformManaged": "Runtime 拥有 canonical 配置；ParentOS 当前选择只读查看，并使用 Nimi Desktop 集中编辑。",
       "openOwnerConfiguration": "在 Nimi 中配置",
       "openingOwnerConfiguration": "正在打开…",
       "loadFailed": "AI 配置读取失败",

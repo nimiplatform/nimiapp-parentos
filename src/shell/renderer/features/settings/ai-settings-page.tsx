@@ -14,7 +14,8 @@ import { Button, Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
 import { openDesktopIntent } from '@nimiplatform/kit/shell/renderer/bridge';
 import {
   readParentosAIConfig,
-  type ParentosPortableAIConfig,
+  hasReadyParentosLocalCapability,
+  type ParentosAIConfigSnapshot,
 } from './parentos-ai-config.js';
 import {
   probeParentosNimiAccess,
@@ -100,7 +101,7 @@ function featureStatusLabelKey(status: ParentosAIFeatureStatus): string {
 export default function AiSettingsPage() {
   const { t } = useTranslation();
   const [posture, setPosture] = useState<ParentosNimiAccessPosture | null>(null);
-  const [aiConfig, setAiConfig] = useState<ParentosPortableAIConfig | null>(null);
+  const [aiConfig, setAiConfig] = useState<ParentosAIConfigSnapshot | null>(null);
   const [aiConfigLoaded, setAiConfigLoaded] = useState(false);
   const [aiConfigReasonCode, setAiConfigReasonCode] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -115,7 +116,7 @@ export default function AiSettingsPage() {
         readParentosAIConfig(),
       ]);
       setPosture(nextPosture);
-      setAiConfig(nextConfig.state === 'ready' ? nextConfig.config : null);
+      setAiConfig(nextConfig.state === 'ready' ? nextConfig.snapshot : null);
       setAiConfigReasonCode(nextConfig.state === 'ready' ? null : nextConfig.reasonCode);
       setAiConfigLoaded(true);
     } finally {
@@ -164,10 +165,13 @@ export default function AiSettingsPage() {
   }, [ownerHandoffPending]);
 
   const postureReady = posture?.state === 'ready';
-  const declaredCapabilities = aiConfig?.capabilities ?? [];
-  const configuredLocalCapabilities = new Set(declaredCapabilities
-    .filter((capability) => capability.route.oneofKind === 'local')
-    .map((capability) => capability.capabilityContract));
+  const declaredCapabilities = aiConfig?.config?.capabilities ?? [];
+  const configuredLocalCapabilities = new Set(aiConfig ? declaredCapabilities
+    .filter((capability) => (
+      (capability.capabilityContract === 'text.generate' || capability.capabilityContract === 'audio.transcribe')
+      && hasReadyParentosLocalCapability(aiConfig, capability.capabilityContract)
+    ))
+    .map((capability) => capability.capabilityContract) : []);
 
   const featureStatus = (row: ParentosAIFeatureRow): ParentosAIFeatureStatus => {
     if (!row.supported || row.capabilityContract === null) return 'not-supported';

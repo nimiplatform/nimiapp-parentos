@@ -652,9 +652,9 @@
     },
     "declared": {
       "title": "AI Capability Declarations",
-      "description": "AI capability intents configured for ParentOS by the Nimi platform (read-only declarations).",
+      "description": "Runtime-owned AI capability intents and effective state for ParentOS (read-only on this page).",
       "empty": "No capabilities are configured yet.",
-      "platformManaged": "Capability declarations and routes are managed by Nimi. ParentOS reads the current configuration and hands changes to Nimi.",
+      "platformManaged": "Runtime owns the canonical configuration. ParentOS currently chooses a read-only view and uses Nimi Desktop for centralized editing.",
       "openOwnerConfiguration": "Configure in Nimi",
       "openingOwnerConfiguration": "Opening…",
       "loadFailed": "AI configuration could not be read",

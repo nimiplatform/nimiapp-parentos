@@ -15,7 +15,8 @@ vi.mock('../../infra/runtime-status.js', () => ({
   probeParentosNimiAccess: () => probeParentosNimiAccessMock(),
 }));
 
-vi.mock('./parentos-ai-config.js', () => ({
+vi.mock('./parentos-ai-config.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./parentos-ai-config.js')>()),
   readParentosAIConfig: () => readParentosAIConfigMock(),
 }));
 
@@ -26,8 +27,30 @@ vi.mock('@nimiplatform/kit/shell/renderer/bridge', () => ({
 const DECLARED_CONFIG = {
   owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
   capabilities: [
-    { capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: {} } },
+    { capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: { loadoutRef: 'text-local' } } },
   ],
+};
+
+const DECLARED_SNAPSHOT = {
+  config: DECLARED_CONFIG,
+  revision: '1',
+  effectiveSelections: [{
+    capabilityContract: 'text.generate',
+    state: 'ready',
+    resource: {
+      oneofKind: 'local',
+      local: {
+        loadoutRef: 'text-local',
+        label: 'Text local',
+        capabilityContract: 'text.generate',
+        implementation: { implementationId: 'text-local', driverId: 'local', driverDialect: 'test/local/v1' },
+        supportedFeatures: [],
+        state: 'ready',
+        reasons: [],
+      },
+    },
+    reasons: [],
+  }],
 };
 
 describe('AiSettingsPage', () => {
@@ -39,7 +62,7 @@ describe('AiSettingsPage', () => {
       actionHint: 'continue_local_app_session',
       retryable: true,
     });
-    readParentosAIConfigMock.mockReset().mockResolvedValue({ state: 'ready', config: DECLARED_CONFIG });
+    readParentosAIConfigMock.mockReset().mockResolvedValue({ state: 'ready', snapshot: DECLARED_SNAPSHOT });
     openDesktopIntentMock.mockReset().mockResolvedValue({
       status: 'accepted',
       confirmation: 'desktop-accepted',
@@ -124,7 +147,7 @@ describe('AiSettingsPage', () => {
 
     await waitFor(() => {
       expect(container.textContent).toContain('尚未配置任何能力');
-      expect(container.textContent).toContain('由 Nimi 平台管理');
+      expect(container.textContent).toContain('Runtime 拥有 canonical 配置');
     });
     const configureButton = screen.getByRole('button', { name: '在 Nimi 中配置' });
     fireEvent.click(configureButton);
