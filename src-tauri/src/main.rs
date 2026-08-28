@@ -68,6 +68,8 @@ fn main() {
                 sqlite::queries::delete_custom_todo,
                 sqlite::queries::get_custom_todos,
                 sqlite::queries::insert_vaccine_record,
+                sqlite::queries::update_vaccine_record,
+                sqlite::queries::delete_vaccine_record,
                 sqlite::queries::get_vaccine_records,
                 sqlite::queries::insert_journal_entry,
                 sqlite::queries::insert_journal_entry_with_tags,

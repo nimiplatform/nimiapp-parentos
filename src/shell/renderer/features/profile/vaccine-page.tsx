@@ -1,21 +1,21 @@
 import { Button, DatePicker, StatusBadge, Surface, TextareaField, TextField } from '@nimiplatform/kit/ui';
 import {
   HealthRecordModalShell,
+  InlineError,
   ModalContent,
   ModalFooter,
   ModalHeader,
 } from './health-record-modal-shell.js';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAppStore, computeAgeMonths, computeAgeMonthsAt, formatAge } from '../../app-shell/app-store.js';
 import { REMINDER_RULES } from '../../knowledge-base/index.js';
 import type { ReminderRule } from '../../knowledge-base/gen/reminder-rules.gen.js';
-import { getVaccineRecords, insertVaccineRecord } from '../../bridge/sqlite-bridge.js';
+import { deleteVaccineRecord, getVaccineRecords, insertVaccineRecord, updateVaccineRecord } from '../../bridge/sqlite-bridge.js';
 import type { VaccineRecordRow } from '../../bridge/sqlite-bridge.js';
 import { ulid, isoNow } from '../../bridge/ulid.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { AISummaryCard } from './ai-summary-card.js';
-import { completeReminderByRule } from '../../engine/reminder-actions.js';
 import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.js';
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
 import { VaccineCaptureModal } from './vaccine-capture-form.js';
@@ -24,7 +24,7 @@ import { i18nText } from '../../i18n/index.js';
 
 /* ── helpers ──────────────────────────────────────────────── */
 
-function fmtDate(d: string) { return d.split('T')[0]; }
+function fmtDate(d: string) { return d.split('T')[0] ?? d; }
 
 /* Optional-tagged vaccines are self-paid non-program vaccines; all others are program vaccines. */
 function isOptionalVaccine(rule: ReminderRule) {
@@ -44,30 +44,59 @@ function VaccineClassBadge({ rule }: { rule: ReminderRule }) {
    RECORD MODAL
    ================================================================ */
 
-function VaccineRecordModal({ rule, childId, birthDate, onSave, onClose }: {
+function VaccineRecordModal({ rule, childId, birthDate, existing, onSave, onClose }: {
   rule: ReminderRule; childId: string; birthDate: string;
-  onSave: (ruleId: string) => void; onClose: () => void;
+  existing?: VaccineRecordRow | null;
+  onSave: () => void | Promise<void>; onClose: () => void;
 }) {
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [batch, setBatch] = useState('');
-  const [hospital, setHospital] = useState('');
-  const [reaction, setReaction] = useState('');
+  const [date, setDate] = useState(existing ? fmtDate(existing.vaccinatedAt) : new Date().toISOString().slice(0, 10));
+  const [batch, setBatch] = useState(existing?.batchNumber ?? '');
+  const [hospital, setHospital] = useState(existing?.hospital ?? '');
+  const [reaction, setReaction] = useState(existing?.adverseReaction ?? '');
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSave = async () => {
+    if (!date) {
+      setErrorMsg(i18nText('Vaccine.error.missingDate'));
+      return;
+    }
+    if (date < birthDate.slice(0, 10)) {
+      setErrorMsg(i18nText('Vaccine.error.dateBeforeBirth'));
+      return;
+    }
+    if (date > new Date().toISOString().slice(0, 10)) {
+      setErrorMsg(i18nText('Vaccine.error.dateInFuture'));
+      return;
+    }
     setSaving(true);
+    setErrorMsg(null);
     try {
-      await insertVaccineRecord({
-        recordId: ulid(), childId, ruleId: rule.ruleId,
-        vaccineName: rule.title, vaccinatedAt: date,
-        ageMonths: computeAgeMonthsAt(birthDate, date),
-        batchNumber: batch || null, hospital: hospital || null,
-        adverseReaction: reaction || null, photoPath: null, now: isoNow(),
-      });
-      onSave(rule.ruleId);
+      if (existing) {
+        await updateVaccineRecord({
+          recordId: existing.recordId,
+          vaccinatedAt: date,
+          ageMonths: computeAgeMonthsAt(birthDate, date),
+          batchNumber: batch || null, hospital: hospital || null,
+          adverseReaction: reaction || null,
+        });
+      } else {
+        await insertVaccineRecord({
+          recordId: ulid(), reminderStateId: ulid(), childId, ruleId: rule.ruleId,
+          vaccineName: rule.title, vaccinatedAt: date,
+          ageMonths: computeAgeMonthsAt(birthDate, date),
+          batchNumber: batch || null, hospital: hospital || null,
+          adverseReaction: reaction || null, photoPath: null, now: isoNow(),
+        });
+      }
+      await onSave();
       onClose();
-    } catch { /* bridge unavailable */ }
-    setSaving(false);
+    } catch (error) {
+      catchLog('vaccine', 'action:save-vaccine-record-failed')(error);
+      setErrorMsg(i18nText('Vaccine.error.saveFailed'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -96,6 +125,7 @@ function VaccineRecordModal({ rule, childId, birthDate, onSave, onClose }: {
               placeholder={i18nText('Vaccine.recordModal.adverseReactionPlaceholder')}
               className="w-full" rows={2} />
           </div>
+          {errorMsg ? <InlineError>{errorMsg}</InlineError> : null}
         </div>
       </ModalContent>
       <ModalFooter>
@@ -112,19 +142,10 @@ function VaccineRecordModal({ rule, childId, birthDate, onSave, onClose }: {
    HISTORICAL COLLAPSIBLE SECTION
    ================================================================ */
 
-function HistoricalSection({ rules, onRecord, onMarkAll, onQuickMark }: {
-  rules: ReminderRule[]; onRecord: (ruleId: string) => void; onMarkAll: () => void; onQuickMark: (ruleId: string) => void;
+function HistoricalSection({ rules, onRecord }: {
+  rules: ReminderRule[]; onRecord: (ruleId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [markedIds, setMarkedIds] = useState<Set<string>>(new Set());
-
-  const handleQuickMark = (ruleId: string) => {
-    setMarkedIds((prev) => new Set([...prev, ruleId]));
-    onQuickMark(ruleId);
-  };
-
-  const remaining = rules.filter((r) => !markedIds.has(r.ruleId));
-  const marked = rules.filter((r) => markedIds.has(r.ruleId));
 
   return (
     <Surface tone="card" material="glass-regular" elevation="base" padding="none" className="mb-5 overflow-hidden rounded-3xl">
@@ -134,8 +155,7 @@ function HistoricalSection({ rules, onRecord, onMarkAll, onQuickMark }: {
         <div className="flex items-center gap-2">
           <span className="text-[16px]">📋</span>
           <span className="text-[14px] font-medium text-[var(--nimi-text-muted)]">
-            {i18nText('Vaccine.history.pendingTitle', { count: remaining.length })}
-            {marked.length > 0 && <span className="ml-1 text-[12px] text-[var(--nimi-action-primary-bg)]">{i18nText('Vaccine.history.markedCount', { count: marked.length })}</span>}
+            {i18nText('Vaccine.history.pendingTitle', { count: rules.length })}
           </span>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={'var(--nimi-text-muted)'} strokeWidth="2" strokeLinecap="round"
@@ -149,26 +169,9 @@ function HistoricalSection({ rules, onRecord, onMarkAll, onQuickMark }: {
           <p className="text-[12px] mb-3 text-[var(--nimi-text-muted)]">
             {i18nText('Vaccine.history.hint')}
           </p>
-          {/* Mark all button */}
-          {remaining.length > 0 && (
-            <Button
-              onClick={() => { remaining.forEach((r) => handleQuickMark(r.ruleId)); onMarkAll(); }}
-              tone="primary"
-              size="md"
-              fullWidth
-              className="mb-3"
-            >
-              {i18nText('Vaccine.history.markAll', { count: remaining.length })}
-            </Button>
-          )}
-          {/* Remaining items */}
           <div className="space-y-1.5">
-            {remaining.map((r) => (
+            {rules.map((r) => (
               <div key={r.ruleId} className="group flex items-center gap-2.5 rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)] p-2.5">
-                {/* Quick-mark circle */}
-                <button onClick={() => handleQuickMark(r.ruleId)}
-                  className="w-[20px] h-[20px] rounded-full border-[1.5px] border-[var(--nimi-border-strong)] flex items-center justify-center shrink-0 transition-all hover:border-[var(--nimi-text-primary)] hover:bg-[var(--nimi-action-ghost-hover)]"
-                  title={i18nText('Vaccine.history.quickMark')} />
                 <span className="flex-1 text-[13px] text-[var(--nimi-text-primary)]">{r.title}</span>
                 <VaccineClassBadge rule={r} />
                 <Button onClick={() => onRecord(r.ruleId)} tone="ghost" size="sm">
@@ -177,26 +180,6 @@ function HistoricalSection({ rules, onRecord, onMarkAll, onQuickMark }: {
               </div>
             ))}
           </div>
-          {/* Already marked items */}
-          {marked.length > 0 && (
-            <>
-              <p className="text-[12px] mt-4 mb-2 font-medium text-[var(--nimi-action-primary-bg)]">{i18nText('Vaccine.history.markedHeader')}</p>
-              <div className="space-y-1">
-                {marked.map((r) => (
-                  <div key={r.ruleId} className="flex items-center gap-2.5 rounded-2xl border border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_34%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,var(--nimi-surface-card))] p-2">
-                    <div className="w-[20px] h-[20px] rounded-full flex items-center justify-center shrink-0 bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]">
-                      <svg viewBox="0 0 12 12" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" fill="none" /></svg>
-                    </div>
-                    <span className="flex-1 text-[13px] line-through text-[var(--nimi-text-muted)]">{r.title}</span>
-                    <VaccineClassBadge rule={r} />
-                    <Button onClick={() => onRecord(r.ruleId)} tone="ghost" size="sm">
-                      {i18nText('Vaccine.history.backfillDetails')}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
         </div>
       )}
     </Surface>
@@ -231,15 +214,43 @@ export default function VaccinePage() {
   const ageMonths = computeAgeMonths(child.birthDate);
   const vaccineRules = REMINDER_RULES.filter((r) => r.domain === 'vaccine');
   const recordedRuleIds = new Set(records.map((r) => r.ruleId));
-  const completedCount = vaccineRules.filter((r) => recordedRuleIds.has(r.ruleId)).length;
-  const pct = vaccineRules.length > 0 ? Math.round((completedCount / vaccineRules.length) * 100) : 0;
+  /* Progress is measured against vaccines whose window has already opened
+     (startMonths <= current age), not against the full 0-18y catalog — the
+     all-rules denominator made the bar meaningless for infants and capped
+     families skipping optional class-2 vaccines below 100% forever. */
+  const dueRules = vaccineRules.filter((r) => r.triggerAge.startMonths <= ageMonths);
+  const dueDone = dueRules.filter((r) => recordedRuleIds.has(r.ruleId)).length;
+  const pct = dueRules.length > 0 ? Math.round((dueDone / dueRules.length) * 100) : 0;
 
+  const dueClass1Rules = dueRules.filter((r) => !isOptionalVaccine(r));
+  const dueClass2Rules = dueRules.filter((r) => isOptionalVaccine(r));
+  const class1Done = dueClass1Rules.filter((r) => recordedRuleIds.has(r.ruleId)).length;
+  const class2Done = dueClass2Rules.filter((r) => recordedRuleIds.has(r.ruleId)).length;
+
+  /* List view still groups the full catalog by vaccine class. */
   const class1Rules = vaccineRules.filter((r) => !isOptionalVaccine(r));
   const class2Rules = vaccineRules.filter((r) => isOptionalVaccine(r));
-  const class1Done = class1Rules.filter((r) => recordedRuleIds.has(r.ruleId)).length;
-  const class2Done = class2Rules.filter((r) => recordedRuleIds.has(r.ruleId)).length;
+  const class1Total = class1Rules.filter((r) => recordedRuleIds.has(r.ruleId)).length;
+  const class2Total = class2Rules.filter((r) => recordedRuleIds.has(r.ruleId)).length;
 
   const reload = () => { getVaccineRecords(child.childId).then(setRecords).catch(catchLog('vaccine', 'action:reload-vaccine-records-failed')); };
+
+  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteRecord = async (ruleId: string) => {
+    const rec = records.find((x) => x.ruleId === ruleId);
+    if (!rec) return;
+    setDeleteError(null);
+    try {
+      await deleteVaccineRecord(rec.recordId, isoNow());
+      setDeletingRuleId(null);
+      reload();
+    } catch (error) {
+      catchLog('vaccine', 'action:delete-vaccine-record-failed')(error);
+      setDeleteError(i18nText('Vaccine.error.deleteFailed'));
+    }
+  };
 
   const clearRuleSearch = () => {
     if (!searchParams.has('ruleId')) return;
@@ -288,8 +299,16 @@ export default function VaccinePage() {
       const rs = vaccineRules.filter((r) => r.triggerAge.startMonths >= s && r.triggerAge.startMonths <= e);
       if (rs.length > 0) buckets.push({ startMonth: s, endMonth: e, label: lbl, rules: rs });
     }
-    return buckets.reverse(); // newest first
+    return buckets; // chronological: birth first, so the child's current stage is never buried below future stages
   }, [vaccineRules]);
+
+  /* Auto-scroll the timeline so the current stage is visible on entry. */
+  const currentBucketRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (activeTab === 'timeline') {
+      currentBucketRef.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [activeTab, activeChildId]);
 
   const recordingRule = recordingRuleId ? vaccineRules.find((r) => r.ruleId === recordingRuleId) : null;
 
@@ -335,7 +354,7 @@ export default function VaccinePage() {
             {i18nText('Vaccine.page.addRecord')}
           </Button>
           <span className="text-[14px] px-3 py-1 rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,var(--nimi-surface-card))] text-[var(--nimi-action-primary-bg)]">
-            {completedCount}/{vaccineRules.length} · {pct}%
+            {dueDone}/{dueRules.length} · {pct}%
           </span>
         </>
       }
@@ -345,9 +364,9 @@ export default function VaccinePage() {
             years: Math.floor(ageMonths / 12),
             months: ageMonths % 12,
           })} gender={child.gender}
-          dataContext={completedCount > 0 ? i18nText('Vaccine.summary.context', {
-            completed: completedCount,
-            total: vaccineRules.length,
+          dataContext={dueDone > 0 ? i18nText('Vaccine.summary.context', {
+            completed: dueDone,
+            total: dueRules.length,
             pct,
             pending: upcoming.length > 0
               ? i18nText('Vaccine.summary.pending', { items: upcoming.map((r) => r.title).join(i18nText('Common.list.separator')) })
@@ -367,11 +386,11 @@ export default function VaccinePage() {
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
           <span className="flex items-center gap-1.5 text-[12px] text-[var(--nimi-text-muted)]">
             <span className="w-2 h-2 rounded-full bg-[var(--nimi-status-info)]" />
-            {i18nText('Vaccine.page.classOneProgress')}<span className="font-medium text-[var(--nimi-text-primary)]">{class1Done}/{class1Rules.length}</span>
+            {i18nText('Vaccine.page.classOneProgress')}<span className="font-medium text-[var(--nimi-text-primary)]">{class1Done}/{dueClass1Rules.length}</span>
           </span>
           <span className="flex items-center gap-1.5 text-[12px] text-[var(--nimi-text-muted)]">
             <span className="w-2 h-2 rounded-full bg-[var(--nimi-status-warning)]" />
-            {i18nText('Vaccine.page.classTwoProgress')}<span className="font-medium text-[var(--nimi-text-primary)]">{class2Done}/{class2Rules.length}</span>
+            {i18nText('Vaccine.page.classTwoProgress')}<span className="font-medium text-[var(--nimi-text-primary)]">{class2Done}/{dueClass2Rules.length}</span>
           </span>
         </div>
       </Surface>
@@ -411,41 +430,13 @@ export default function VaccinePage() {
       {/* ── Historical unrecorded — collapsible ──────────── */}
       {historicalUnrecorded.length > 0 && (
         <HistoricalSection rules={historicalUnrecorded}
-          onRecord={(id) => setRecordingRuleId(id)}
-          onQuickMark={(ruleId) => {
-            const rule = historicalUnrecorded.find((r) => r.ruleId === ruleId);
-            if (!rule) return;
-            const now = isoNow();
-            insertVaccineRecord({
-              recordId: ulid(), childId: child.childId, ruleId,
-              vaccineName: rule.title, vaccinatedAt: now.split('T')[0] ?? now,
-              ageMonths: computeAgeMonthsAt(child.birthDate, now),
-              batchNumber: null, hospital: null, adverseReaction: null, photoPath: null, now,
-            }).then(async () => {
-              await completeReminderByRule({ childId: child.childId, ruleId });
-              reload();
-            }).catch(catchLog('vaccine', 'action:quick-record-vaccine-failed'));
-          }}
-          onMarkAll={() => {
-            (async () => {
-              const now = isoNow();
-              for (const r of historicalUnrecorded) {
-                try {
-                  await insertVaccineRecord({
-                    recordId: ulid(), childId: child.childId, ruleId: r.ruleId,
-                    vaccineName: r.title, vaccinatedAt: now.split('T')[0] ?? now,
-                    ageMonths: computeAgeMonthsAt(child.birthDate, now),
-                    batchNumber: null, hospital: null, adverseReaction: null, photoPath: null, now,
-                  });
-                  await completeReminderByRule({ childId: child.childId, ruleId: r.ruleId });
-                } catch { /* skip duplicates */ }
-              }
-              reload();
-            })();
-          }} />
+          onRecord={(id) => setRecordingRuleId(id)} />
       )}
 
       {/* ── View toggle ──────────────────────────────────────── */}
+      {deleteError ? (
+        <p className="text-[12px] mb-3 text-[var(--nimi-status-danger)]">{deleteError}</p>
+      ) : null}
       <div className="flex gap-1 rounded-full bg-[var(--nimi-action-ghost-hover)] p-1 mb-5 w-fit">
         {([['timeline', i18nText('Vaccine.tab.timeline')], ['list', i18nText('Vaccine.tab.list')]] as const).map(([k, l]) => (
           <button key={k} onClick={() => setActiveTab(k)}
@@ -466,7 +457,7 @@ export default function VaccinePage() {
             const bucketComplete = bucket.rules.every((r) => recordedRuleIds.has(r.ruleId));
 
             return (
-              <div key={bucket.label} className={`relative pl-10 pb-6 ${isFuture ? 'opacity-40' : ''}`}>
+              <div key={bucket.label} ref={isCurrent ? currentBucketRef : undefined} className={`relative pl-10 pb-6 ${isFuture ? 'opacity-40' : ''}`}>
                 <div className={`absolute left-[11px] top-1 w-[16px] h-[16px] rounded-full border-[2px] flex items-center justify-center ${bucketComplete ? 'border-[var(--nimi-action-primary-bg)] bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]' : isCurrent ? 'border-[var(--nimi-action-primary-bg)] bg-[var(--nimi-surface-card)]' : 'border-[var(--nimi-border-subtle)] bg-[var(--nimi-action-ghost-hover)]'}`}>
                   {bucketComplete && <svg viewBox="0 0 12 12" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" fill="none" /></svg>}
                   {isCurrent && !bucketComplete && <div className="w-[6px] h-[6px] rounded-full bg-[var(--nimi-action-primary-bg)]" />}
@@ -501,9 +492,25 @@ export default function VaccinePage() {
                           <p className="text-[12px] truncate text-[var(--nimi-text-muted)]">
                             {done && rec ? i18nText('Vaccine.page.vaccinatedRecord', { date: fmtDate(rec.vaccinatedAt), hospital: rec.hospital ? ` · ${rec.hospital}` : '' }) : r.description}
                           </p>
+                          {done && rec?.adverseReaction ? (
+                            <p className="text-[12px] truncate text-[var(--nimi-status-warning)]">
+                              {i18nText('Vaccine.page.reactionLabel', { text: rec.adverseReaction })}
+                            </p>
+                          ) : null}
                         </div>
                         {done ? (
-                          <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm" className="shrink-0">{i18nText('Vaccine.page.change')}</Button>
+                          deletingRuleId === r.ruleId ? (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-[12px] text-[var(--nimi-status-danger)]">{i18nText('Vaccine.page.deletePrompt')}</span>
+                              <Button onClick={() => void handleDeleteRecord(r.ruleId)} tone="danger" size="sm">{i18nText('Vaccine.page.deleteConfirm')}</Button>
+                              <Button onClick={() => { setDeletingRuleId(null); setDeleteError(null); }} tone="ghost" size="sm">{i18nText('Vaccine.recordModal.cancel')}</Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm">{i18nText('Vaccine.page.change')}</Button>
+                              <Button onClick={() => { setDeletingRuleId(r.ruleId); setDeleteError(null); }} tone="ghost" size="sm">{i18nText('Vaccine.page.delete')}</Button>
+                            </div>
+                          )
                         ) : (
                           <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm" className="shrink-0">{i18nText('Vaccine.page.record')}</Button>
                         )}
@@ -521,8 +528,8 @@ export default function VaccinePage() {
       {activeTab === 'list' && (
         <div className="space-y-6">
           {([
-            { label: i18nText('Vaccine.page.classOneTitle'), sub: i18nText('Vaccine.classOneSub'), rules: class1Rules, done: class1Done },
-            { label: i18nText('Vaccine.page.classTwoTitle'), sub: i18nText('Vaccine.classTwoSub'), rules: class2Rules, done: class2Done },
+            { label: i18nText('Vaccine.page.classOneTitle'), sub: i18nText('Vaccine.classOneSub'), rules: class1Rules, done: class1Total },
+            { label: i18nText('Vaccine.page.classTwoTitle'), sub: i18nText('Vaccine.classTwoSub'), rules: class2Rules, done: class2Total },
           ] as const).map((group) => (
             <div key={group.label}>
               <div className="flex items-baseline gap-2 mb-2">
@@ -551,12 +558,28 @@ export default function VaccinePage() {
                           <VaccineClassBadge rule={r} />
                         </div>
                         <p className="text-[12px] text-[var(--nimi-text-muted)]">
-                          {done && rec ? fmtDate(rec.vaccinatedAt) : `${formatAge(r.triggerAge.startMonths)}-${r.triggerAge.endMonths === -1 ? '∞' : formatAge(r.triggerAge.endMonths)}`}
+                          {done && rec ? fmtDate(rec.vaccinatedAt) : `${formatAge(r.triggerAge.startMonths)}-${r.triggerAge.endMonths === -1 ? i18nText('Vaccine.page.noUpperLimit') : formatAge(r.triggerAge.endMonths)}`}
                           {isOverdue && i18nText('Vaccine.page.expiredSuffix')}
                         </p>
+                        {done && rec?.adverseReaction ? (
+                          <p className="text-[12px] truncate text-[var(--nimi-status-warning)]">
+                            {i18nText('Vaccine.page.reactionLabel', { text: rec.adverseReaction })}
+                          </p>
+                        ) : null}
                       </div>
                       {done ? (
-                        <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm">{i18nText('Vaccine.page.change')}</Button>
+                        deletingRuleId === r.ruleId ? (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[12px] text-[var(--nimi-status-danger)]">{i18nText('Vaccine.page.deletePrompt')}</span>
+                            <Button onClick={() => void handleDeleteRecord(r.ruleId)} tone="danger" size="sm">{i18nText('Vaccine.page.deleteConfirm')}</Button>
+                            <Button onClick={() => { setDeletingRuleId(null); setDeleteError(null); }} tone="ghost" size="sm">{i18nText('Vaccine.recordModal.cancel')}</Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="ghost" size="sm">{i18nText('Vaccine.page.change')}</Button>
+                            <Button onClick={() => { setDeletingRuleId(r.ruleId); setDeleteError(null); }} tone="ghost" size="sm">{i18nText('Vaccine.page.delete')}</Button>
+                          </div>
+                        )
                       ) : (
                         <Button onClick={() => setRecordingRuleId(r.ruleId)} tone="primary" size="sm">{i18nText('Vaccine.page.record')}</Button>
                       )}
@@ -575,11 +598,10 @@ export default function VaccinePage() {
           rule={recordingRule}
           childId={child.childId}
           birthDate={child.birthDate}
-          onSave={(ruleId) => {
-            void completeReminderByRule({ childId: child.childId, ruleId }).then(() => {
-              reload();
-              clearRuleSearch();
-            });
+          existing={records.find((x) => x.ruleId === recordingRule.ruleId) ?? null}
+          onSave={async () => {
+            await getVaccineRecords(child.childId).then(setRecords);
+            clearRuleSearch();
           }}
           onClose={() => {
             setRecordingRuleId(null);

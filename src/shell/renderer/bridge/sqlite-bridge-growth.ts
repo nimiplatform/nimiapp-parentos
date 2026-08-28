@@ -96,6 +96,7 @@ export interface VaccineRecordRow {
 
 export function insertVaccineRecord(params: {
   recordId: string;
+  reminderStateId: string;
   childId: string;
   ruleId: string;
   vaccineName: string;
@@ -112,6 +113,21 @@ export function insertVaccineRecord(params: {
 
 export function getVaccineRecords(childId: string) {
   return invoke<VaccineRecordRow[]>('get_vaccine_records', { childId });
+}
+
+export function updateVaccineRecord(params: {
+  recordId: string;
+  vaccinatedAt: string;
+  ageMonths: number;
+  batchNumber: string | null;
+  hospital: string | null;
+  adverseReaction: string | null;
+}) {
+  return invoke<void>('update_vaccine_record', params);
+}
+
+export function deleteVaccineRecord(recordId: string, now: string) {
+  return invoke<void>('delete_vaccine_record', { recordId, now });
 }
 
 export interface PostureAssessmentRow {

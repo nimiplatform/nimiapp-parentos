@@ -2208,13 +2208,15 @@
     },
     "history": {
       "pendingTitle": "{{count}} historical vaccines need backfill",
-      "markedCount": "({{count}} marked)",
-      "hint": "Click the circle on the left to quickly mark as vaccinated. Click Backfill to enter details such as batch number and provider.",
-      "markAll": "Mark all as vaccinated ({{count}})",
-      "quickMark": "Click to mark as vaccinated",
-      "backfill": "Backfill",
-      "markedHeader": "Marked vaccinated ✓",
-      "backfillDetails": "Backfill details"
+      "hint": "Click Backfill to enter the actual vaccination date and details such as batch number and provider.",
+      "backfill": "Backfill"
+    },
+    "error": {
+      "missingDate": "Select vaccination date",
+      "dateBeforeBirth": "Vaccination date cannot be earlier than the birth date",
+      "dateInFuture": "Vaccination date cannot be later than today",
+      "saveFailed": "Save failed. Try again",
+      "deleteFailed": "Delete failed. Try again"
     },
     "ageBucket": {
       "birth": "At birth",
@@ -2263,7 +2265,11 @@
       "currentStage": "Current stage",
       "stageComplete": "All complete",
       "vaccinatedRecord": "Vaccinated on {{date}}{{hospital}}",
+      "reactionLabel": "Adverse reaction: {{text}}",
       "change": "Change",
+      "delete": "Delete",
+      "deletePrompt": "Delete this record?",
+      "deleteConfirm": "Delete",
       "classOneTitle": "Class I vaccines",
       "classTwoTitle": "Class II vaccines",
       "expiredSuffix": " · overdue"

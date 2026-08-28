@@ -32,6 +32,7 @@ export type VaccineCaptureProps = {
   onClose: () => void;
 };
 
+// @nimi-authority: rule.parentos.prof.r006
 /**
  * Rule-backed vaccine capture form. Vaccines are a retained-owner stateful
  * domain (rule.parentos.hrec.r007): actual vaccination
@@ -56,12 +57,21 @@ export function VaccineCaptureContent({ child, onSaved, onClose }: VaccineCaptur
       setErrorMsg(i18nText('Vaccine.capture.error.missingDate'));
       return;
     }
+    if (date < child.birthDate.slice(0, 10)) {
+      setErrorMsg(i18nText('Vaccine.error.dateBeforeBirth'));
+      return;
+    }
+    if (date > new Date().toISOString().slice(0, 10)) {
+      setErrorMsg(i18nText('Vaccine.error.dateInFuture'));
+      return;
+    }
     setSaving(true);
     setErrorMsg(null);
     try {
       const now = isoNow();
       await insertVaccineRecord({
         recordId: ulid(),
+        reminderStateId: ulid(),
         childId: child.childId,
         ruleId: selectedRule.ruleId,
         vaccineName: selectedRule.title,

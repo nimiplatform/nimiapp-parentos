@@ -27,6 +27,7 @@ import reminderStates from '../../../../mock/tables/reminderStates.json';
 import sleepRecords from '../../../../mock/tables/sleepRecords.json';
 import tannerAssessments from '../../../../mock/tables/tannerAssessments.json';
 import vaccineRecords from '../../../../mock/tables/vaccineRecords.json';
+import { ulid } from '../bridge/ulid.js';
 import {
   dbInit,
   createFamily,
@@ -691,8 +692,17 @@ export async function seedMockData(
     results.push(`reminders: ${n4}/${tables.reminderStates.length}`);
 
     // Vaccines
-    const n5 = await insertAll('vaccines', tables.vaccineRecords, (r) =>
-      insertVaccineRecord({ ...stripFixtureMeta(r), now: r.createdAt }), report);
+    const vaccineReminderStateIds = new Map(
+      tables.reminderStates.map((state) => [`${state.childId}:${state.ruleId}:${state.repeatIndex}`, state.stateId]),
+    );
+    const n5 = await insertAll('vaccines', tables.vaccineRecords, (r) => {
+      const reminderStateId = vaccineReminderStateIds.get(`${r.childId}:${r.ruleId}:0`) ?? ulid();
+      return insertVaccineRecord({
+        ...stripFixtureMeta(r),
+        reminderStateId,
+        now: r.createdAt,
+      });
+    }, report);
     results.push(`vaccines: ${n5}/${tables.vaccineRecords.length}`);
 
     // Journal entries

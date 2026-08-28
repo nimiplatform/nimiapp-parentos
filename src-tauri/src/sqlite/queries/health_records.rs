@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
@@ -674,8 +674,10 @@ pub fn get_profile_section_summaries(child_id: String) -> Result<Vec<SectionSumm
 // ── Vaccine Records ────────────────────────────────────────
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub fn insert_vaccine_record(
     record_id: String,
+    reminder_state_id: String,
     child_id: String,
     rule_id: String,
     vaccine_name: String,
@@ -688,18 +690,172 @@ pub fn insert_vaccine_record(
     now: String,
 ) -> Result<(), String> {
     validate_vaccine_rule_id(&rule_id)?;
-    let conn = get_conn()?.lock().map_err(|e| e.to_string())?;
-    conn.execute(
+    let mut conn = get_conn()?.lock().map_err(|e| e.to_string())?;
+    insert_vaccine_record_with_conn(
+        &mut conn,
+        record_id,
+        reminder_state_id,
+        child_id,
+        rule_id,
+        vaccine_name,
+        vaccinated_at,
+        age_months,
+        batch_number,
+        hospital,
+        adverse_reaction,
+        photo_path,
+        now,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn insert_vaccine_record_with_conn(
+    conn: &mut Connection,
+    record_id: String,
+    reminder_state_id: String,
+    child_id: String,
+    rule_id: String,
+    vaccine_name: String,
+    vaccinated_at: String,
+    age_months: i32,
+    batch_number: Option<String>,
+    hospital: Option<String>,
+    adverse_reaction: Option<String>,
+    photo_path: Option<String>,
+    now: String,
+) -> Result<(), String> {
+    validate_vaccine_rule_id(&rule_id)?;
+    let tx = conn
+        .transaction()
+        .map_err(|e| format!("insert_vaccine_record begin transaction: {e}"))?;
+    let duplicate_count: i64 = tx
+        .query_row(
+            "SELECT COUNT(*) FROM vaccine_records WHERE childId = ?1 AND ruleId = ?2",
+            params![child_id, rule_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("insert_vaccine_record duplicate check: {e}"))?;
+    if duplicate_count != 0 {
+        return Err(format!(
+            "insert_vaccine_record: vaccine rule already recorded for child (PO-PROF-006): {rule_id}"
+        ));
+    }
+    tx.execute(
         "INSERT INTO vaccine_records (recordId, childId, ruleId, vaccineName, vaccinatedAt, ageMonths, batchNumber, hospital, adverseReaction, photoPath, createdAt) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
         params![record_id, child_id, rule_id, vaccine_name, vaccinated_at, age_months, batch_number, hospital, adverse_reaction, photo_path, now],
     )
     .map_err(|e| format!("insert_vaccine_record: {e}"))?;
-    Ok(())
+    tx.execute(
+        "INSERT INTO reminder_states (
+            stateId, childId, ruleId, status, activatedAt, completedAt, dismissedAt,
+            dismissReason, repeatIndex, nextTriggerAt, snoozedUntil, scheduledDate,
+            notApplicable, plannedForDate, surfaceRank, lastSurfacedAt, surfaceCount,
+            notes, acknowledgedAt, reflectedAt, practiceStartedAt, practiceLastAt,
+            practiceCount, practiceHabituatedAt, consultedAt, consultationConversationId,
+            createdAt, updatedAt
+         ) VALUES (?1, ?2, ?3, 'completed', NULL, ?4, NULL, NULL, 0, NULL, NULL,
+            NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, 0, NULL,
+            NULL, NULL, ?4, ?4)
+         ON CONFLICT(childId, ruleId, repeatIndex) DO UPDATE SET
+            status='completed', activatedAt=NULL, completedAt=?4, dismissedAt=NULL,
+            dismissReason=NULL, nextTriggerAt=NULL, snoozedUntil=NULL, scheduledDate=NULL,
+            notApplicable=0, plannedForDate=NULL, surfaceRank=NULL, lastSurfacedAt=NULL,
+            surfaceCount=0, notes=NULL, acknowledgedAt=NULL, reflectedAt=NULL,
+            practiceStartedAt=NULL, practiceLastAt=NULL, practiceCount=0,
+            practiceHabituatedAt=NULL, consultedAt=NULL,
+            consultationConversationId=NULL, updatedAt=?4",
+        params![reminder_state_id, child_id, rule_id, now],
+    )
+    .map_err(|e| format!("insert_vaccine_record complete reminder: {e}"))?;
+    tx.commit()
+        .map_err(|e| format!("insert_vaccine_record commit: {e}"))
 }
 
 #[cfg(test)]
 mod vaccine_record_tests {
-    use super::validate_vaccine_rule_id;
+    use super::{
+        delete_vaccine_record_with_conn, insert_vaccine_record_with_conn, validate_vaccine_rule_id,
+    };
+    use rusqlite::Connection;
+
+    fn setup_vaccine_tables(reminder_status_constraint: bool) -> Connection {
+        let conn = Connection::open_in_memory().expect("open in-memory db");
+        conn.execute_batch(
+            "CREATE TABLE vaccine_records (
+                recordId TEXT PRIMARY KEY,
+                childId TEXT NOT NULL,
+                ruleId TEXT NOT NULL,
+                vaccineName TEXT NOT NULL,
+                vaccinatedAt TEXT NOT NULL,
+                ageMonths INTEGER NOT NULL,
+                batchNumber TEXT,
+                hospital TEXT,
+                adverseReaction TEXT,
+                photoPath TEXT,
+                createdAt TEXT NOT NULL,
+                UNIQUE(childId, ruleId)
+            );",
+        )
+        .expect("create vaccine table");
+        let status_definition = if reminder_status_constraint {
+            "TEXT NOT NULL CHECK(status = 'pending')"
+        } else {
+            "TEXT NOT NULL"
+        };
+        conn.execute_batch(&format!(
+            "CREATE TABLE reminder_states (
+                stateId TEXT PRIMARY KEY,
+                childId TEXT NOT NULL,
+                ruleId TEXT NOT NULL,
+                status {status_definition},
+                activatedAt TEXT,
+                completedAt TEXT,
+                dismissedAt TEXT,
+                dismissReason TEXT,
+                repeatIndex INTEGER NOT NULL,
+                nextTriggerAt TEXT,
+                snoozedUntil TEXT,
+                scheduledDate TEXT,
+                notApplicable INTEGER NOT NULL,
+                plannedForDate TEXT,
+                surfaceRank INTEGER,
+                lastSurfacedAt TEXT,
+                surfaceCount INTEGER NOT NULL,
+                notes TEXT,
+                acknowledgedAt TEXT,
+                reflectedAt TEXT,
+                practiceStartedAt TEXT,
+                practiceLastAt TEXT,
+                practiceCount INTEGER NOT NULL,
+                practiceHabituatedAt TEXT,
+                consultedAt TEXT,
+                consultationConversationId TEXT,
+                createdAt TEXT NOT NULL,
+                updatedAt TEXT NOT NULL,
+                UNIQUE(childId, ruleId, repeatIndex)
+            );"
+        ))
+        .expect("create reminder table");
+        conn
+    }
+
+    fn insert_vaccine(conn: &mut Connection) -> Result<(), String> {
+        insert_vaccine_record_with_conn(
+            conn,
+            "01J6E5YB3W0000000000000002".to_string(),
+            "01J6E5YB3W0000000000000003".to_string(),
+            "01J6E5YB3W0000000000000001".to_string(),
+            "PO-REM-VAC-001".to_string(),
+            "乙肝疫苗".to_string(),
+            "2026-08-28".to_string(),
+            0,
+            None,
+            None,
+            None,
+            None,
+            "2026-08-28T10:00:00+08:00".to_string(),
+        )
+    }
 
     #[test]
     fn rejects_placeholder_or_custom_vaccine_rule_ids() {
@@ -710,6 +866,56 @@ mod vaccine_record_tests {
     #[test]
     fn accepts_generated_vaccine_rule_ids() {
         assert!(validate_vaccine_rule_id("PO-REM-VAC-001").is_ok());
+    }
+
+    #[test]
+    fn insert_and_delete_keep_vaccine_and_reminder_state_atomic() {
+        let mut conn = setup_vaccine_tables(false);
+        insert_vaccine(&mut conn).expect("insert vaccine and complete reminder");
+
+        let vaccine_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM vaccine_records", [], |row| row.get(0))
+            .expect("count vaccines");
+        let reminder_status: (String, Option<String>) = conn
+            .query_row(
+                "SELECT status, completedAt FROM reminder_states",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .expect("read reminder state");
+        assert_eq!(vaccine_count, 1);
+        assert_eq!(reminder_status.0, "completed");
+        assert!(reminder_status.1.is_some());
+
+        delete_vaccine_record_with_conn(
+            &mut conn,
+            "01J6E5YB3W0000000000000002".to_string(),
+            "2026-08-28T11:00:00+08:00".to_string(),
+        )
+        .expect("delete vaccine and restore reminder");
+
+        let vaccine_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM vaccine_records", [], |row| row.get(0))
+            .expect("count vaccines after delete");
+        let reminder_status: (String, Option<String>) = conn
+            .query_row(
+                "SELECT status, completedAt FROM reminder_states",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .expect("read restored reminder state");
+        assert_eq!(vaccine_count, 0);
+        assert_eq!(reminder_status, ("pending".to_string(), None));
+    }
+
+    #[test]
+    fn reminder_failure_rolls_back_vaccine_insert() {
+        let mut conn = setup_vaccine_tables(true);
+        assert!(insert_vaccine(&mut conn).is_err());
+        let vaccine_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM vaccine_records", [], |row| row.get(0))
+            .expect("count vaccines after rollback");
+        assert_eq!(vaccine_count, 0);
     }
 }
 
@@ -727,6 +933,112 @@ pub struct VaccineRecord {
     pub adverse_reaction: Option<String>,
     pub photo_path: Option<String>,
     pub created_at: String,
+}
+
+#[tauri::command]
+pub fn update_vaccine_record(
+    record_id: String,
+    vaccinated_at: String,
+    age_months: i32,
+    batch_number: Option<String>,
+    hospital: Option<String>,
+    adverse_reaction: Option<String>,
+) -> Result<(), String> {
+    let mut conn = get_conn()?.lock().map_err(|e| e.to_string())?;
+    let tx = conn
+        .transaction()
+        .map_err(|e| format!("update_vaccine_record begin transaction: {e}"))?;
+    let pairing: Option<(String, String)> = tx
+        .query_row(
+            "SELECT vr.childId, vr.ruleId
+             FROM vaccine_records vr
+             JOIN reminder_states rs
+               ON rs.childId = vr.childId AND rs.ruleId = vr.ruleId AND rs.repeatIndex = 0
+             WHERE vr.recordId = ?1 AND rs.status = 'completed' AND rs.completedAt IS NOT NULL",
+            params![record_id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()
+        .map_err(|e| format!("update_vaccine_record validate reminder pairing: {e}"))?;
+    if pairing.is_none() {
+        return Err(format!(
+            "update_vaccine_record: missing completed reminder pairing for record {record_id} (PO-PROF-006)"
+        ));
+    }
+    let affected = tx
+        .execute(
+            "UPDATE vaccine_records SET vaccinatedAt = ?2, ageMonths = ?3, batchNumber = ?4, hospital = ?5, adverseReaction = ?6 WHERE recordId = ?1",
+            params![record_id, vaccinated_at, age_months, batch_number, hospital, adverse_reaction],
+        )
+        .map_err(|e| format!("update_vaccine_record: {e}"))?;
+    if affected == 0 {
+        return Err(format!(
+            "update_vaccine_record: no vaccine record found with id {record_id}"
+        ));
+    }
+    tx.commit()
+        .map_err(|e| format!("update_vaccine_record commit: {e}"))
+}
+
+#[tauri::command]
+pub fn delete_vaccine_record(record_id: String, now: String) -> Result<(), String> {
+    let mut conn = get_conn()?.lock().map_err(|e| e.to_string())?;
+    delete_vaccine_record_with_conn(&mut conn, record_id, now)
+}
+
+pub(crate) fn delete_vaccine_record_with_conn(
+    conn: &mut Connection,
+    record_id: String,
+    now: String,
+) -> Result<(), String> {
+    let tx = conn
+        .transaction()
+        .map_err(|e| format!("delete_vaccine_record begin transaction: {e}"))?;
+    let pairing: Option<(String, String)> = tx
+        .query_row(
+            "SELECT childId, ruleId FROM vaccine_records WHERE recordId = ?1",
+            params![record_id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()
+        .map_err(|e| format!("delete_vaccine_record locate record: {e}"))?;
+    let Some((child_id, rule_id)) = pairing else {
+        return Err(format!(
+            "delete_vaccine_record: no vaccine record found with id {record_id}"
+        ));
+    };
+    let affected = tx
+        .execute(
+            "DELETE FROM vaccine_records WHERE recordId = ?1",
+            params![record_id],
+        )
+        .map_err(|e| format!("delete_vaccine_record: {e}"))?;
+    if affected == 0 {
+        return Err(format!(
+            "delete_vaccine_record: no vaccine record found with id {record_id}"
+        ));
+    }
+    let reminder_affected = tx
+        .execute(
+            "UPDATE reminder_states SET
+                status='pending', activatedAt=NULL, completedAt=NULL, dismissedAt=NULL,
+                dismissReason=NULL, nextTriggerAt=NULL, snoozedUntil=NULL,
+                scheduledDate=NULL, notApplicable=0, plannedForDate=NULL,
+                surfaceRank=NULL, lastSurfacedAt=NULL, surfaceCount=0, notes=NULL,
+                acknowledgedAt=NULL, reflectedAt=NULL, practiceStartedAt=NULL,
+                practiceLastAt=NULL, practiceCount=0, practiceHabituatedAt=NULL,
+                consultedAt=NULL, consultationConversationId=NULL, updatedAt=?1
+             WHERE childId=?2 AND ruleId=?3 AND repeatIndex=0",
+            params![now, child_id, rule_id],
+        )
+        .map_err(|e| format!("delete_vaccine_record restore reminder: {e}"))?;
+    if reminder_affected != 1 {
+        return Err(format!(
+            "delete_vaccine_record: expected one reminder pairing for child={child_id} rule={rule_id}, found {reminder_affected} (PO-PROF-006)"
+        ));
+    }
+    tx.commit()
+        .map_err(|e| format!("delete_vaccine_record commit: {e}"))
 }
 
 #[tauri::command]

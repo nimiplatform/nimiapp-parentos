@@ -43,6 +43,8 @@ pub const PARENTOS_DIRECT_SIDECAR_COMMANDS: &[&str] = &[
     "delete_custom_todo",
     "get_custom_todos",
     "insert_vaccine_record",
+    "update_vaccine_record",
+    "delete_vaccine_record",
     "get_vaccine_records",
     "insert_journal_entry",
     "insert_journal_entry_with_tags",
@@ -475,6 +477,7 @@ struct GetCustomTodosArgs {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct InsertVaccineRecordArgs {
     record_id: String,
+    reminder_state_id: String,
     child_id: String,
     rule_id: String,
     vaccine_name: String,
@@ -484,6 +487,24 @@ struct InsertVaccineRecordArgs {
     hospital: Option<String>,
     adverse_reaction: Option<String>,
     photo_path: Option<String>,
+    now: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct UpdateVaccineRecordArgs {
+    record_id: String,
+    vaccinated_at: String,
+    age_months: i32,
+    batch_number: Option<String>,
+    hospital: Option<String>,
+    adverse_reaction: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct DeleteVaccineRecordArgs {
+    record_id: String,
     now: String,
 }
 
@@ -1750,6 +1771,7 @@ pub fn dispatch_parentos_sidecar_command(
                 command,
                 queries::insert_vaccine_record(
                     args.record_id,
+                    args.reminder_state_id,
                     args.child_id,
                     args.rule_id,
                     args.vaccine_name,
@@ -1761,6 +1783,27 @@ pub fn dispatch_parentos_sidecar_command(
                     args.photo_path,
                     args.now,
                 ),
+            )
+        }
+        "update_vaccine_record" => {
+            let args: UpdateVaccineRecordArgs = parse_args(command, payload)?;
+            serialize_result(
+                command,
+                queries::update_vaccine_record(
+                    args.record_id,
+                    args.vaccinated_at,
+                    args.age_months,
+                    args.batch_number,
+                    args.hospital,
+                    args.adverse_reaction,
+                ),
+            )
+        }
+        "delete_vaccine_record" => {
+            let args: DeleteVaccineRecordArgs = parse_args(command, payload)?;
+            serialize_result(
+                command,
+                queries::delete_vaccine_record(args.record_id, args.now),
             )
         }
         "get_vaccine_records" => {

@@ -2208,13 +2208,15 @@
     },
     "history": {
       "pendingTitle": "有 {{count}} 项历史疫苗待补录",
-      "markedCount": "（已标记 {{count}} 项）",
-      "hint": "点击左侧圆圈快速标记已接种，点击\"补录\"可填写详细接种信息（批号、机构等）。",
-      "markAll": "全部标记为已接种（{{count}} 项）",
-      "quickMark": "点击标记为已接种",
-      "backfill": "补录",
-      "markedHeader": "已标记为接种 ✓",
-      "backfillDetails": "补录详情"
+      "hint": "点击\"补录\"填写实际接种日期与详细信息（批号、机构等）。",
+      "backfill": "补录"
+    },
+    "error": {
+      "missingDate": "请选择接种日期",
+      "dateBeforeBirth": "接种日期不能早于出生日期",
+      "dateInFuture": "接种日期不能晚于今天",
+      "saveFailed": "保存失败，请重试",
+      "deleteFailed": "删除失败，请重试"
     },
     "ageBucket": {
       "birth": "出生时",
@@ -2263,7 +2265,11 @@
       "currentStage": "当前阶段",
       "stageComplete": "全部完成",
       "vaccinatedRecord": "{{date}} 接种{{hospital}}",
+      "reactionLabel": "不良反应：{{text}}",
       "change": "修改",
+      "delete": "删除",
+      "deletePrompt": "确认删除这条记录？",
+      "deleteConfirm": "删除",
       "classOneTitle": "一类疫苗",
       "classTwoTitle": "二类疫苗",
       "expiredSuffix": "· 已过期"

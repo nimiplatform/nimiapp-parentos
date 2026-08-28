@@ -38,6 +38,8 @@ const PARENTOS_SIDECAR_COMMANDS = [
   'delete_custom_todo',
   'get_custom_todos',
   'insert_vaccine_record',
+  'update_vaccine_record',
+  'delete_vaccine_record',
   'get_vaccine_records',
   'insert_journal_entry',
   'insert_journal_entry_with_tags',
