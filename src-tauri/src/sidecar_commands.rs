@@ -919,6 +919,8 @@ struct InsertTannerAssessmentArgs {
     now: String,
     linked_reminder_state_id: Option<String>,
     linked_reminder_rule_id: Option<String>,
+    menarche_status: Option<String>,
+    menarche_date: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2223,6 +2225,8 @@ pub fn dispatch_parentos_sidecar_command(
                     args.now,
                     args.linked_reminder_state_id,
                     args.linked_reminder_rule_id,
+                    args.menarche_status,
+                    args.menarche_date,
                 ),
             )
         }

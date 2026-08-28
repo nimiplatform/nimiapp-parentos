@@ -554,6 +554,30 @@ metrics: &parentos_health_metric_entries
     detailRoute: /profile/tanner
     sourceSupport: [manual, reminder]
     safetyClass: professional_review_prompt
+  - metricId: development.menarche_status
+    groupId: development
+    displayName: Menarche status
+    valueShape: enum
+    valueCardinality: single
+    recordKind: assessment
+    captureProtocolIds: [tanner-female-self-assessment]
+    freshnessPolicyRef: development.puberty-six-month-cadence
+    detailRoute: /profile/tanner
+    sourceSupport: [manual, reminder]
+    safetyClass: descriptive
+    applicableSex: female
+  - metricId: development.menarche_date
+    groupId: development
+    displayName: Menarche date
+    valueShape: date
+    valueCardinality: single
+    recordKind: assessment
+    captureProtocolIds: [tanner-female-self-assessment]
+    freshnessPolicyRef: development.puberty-six-month-cadence
+    detailRoute: /profile/tanner
+    sourceSupport: [manual, reminder]
+    safetyClass: descriptive
+    applicableSex: female
   - metricId: development.bone_age_years
     groupId: development
     displayName: Bone age

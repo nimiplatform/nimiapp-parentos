@@ -120,7 +120,7 @@ units:
     kind: rule
     title: Tanner Assessment Shape
     modality: must
-    statement: "Puberty staging is now captured through health_record_events / health_record_values. It must preserve: assessmentId childId assessedAt ageMonths optional breastOrGenitalStage (1-5), pubicHairStage (1-5), assessedBy, notes Stage values must be integers 1-5 following the Tanner scale. breastOrGenitalStage records breast development for female children and genital development for male children."
+    statement: "Puberty staging is now captured through health_record_events / health_record_values. It must preserve: assessmentId childId assessedAt ageMonths optional breastOrGenitalStage (1-5), pubicHairStage (1-5), assessedBy, notes Stage values must be integers 1-5 following the Tanner scale. breastOrGenitalStage records breast development for female children and genital development for male children. Female assessments may additionally record menarcheStatus (not_yet | occurred) and menarcheDate (ISO 8601 date) through metric ids development.menarche_status and development.menarche_date in data/structured/parentos/health-metric-registry.yaml. menarcheDate is required when and only when menarcheStatus is occurred. Male assessments must not carry menarche fields."
     condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-PROF-012.
     failure: Fail closed and report PO-PROF-012 when the governed behavior does not satisfy this rule.
     relations:

@@ -25,6 +25,8 @@ export interface StageGuidance {
 
 export type GuidanceSectionId = 'physical' | 'psychological' | 'nutrition' | 'checkups' | 'parentTips';
 
+export type MenarcheStatus = 'not_yet' | 'occurred';
+
 export interface GuidanceSection {
   id: GuidanceSectionId;
   icon: string;
@@ -45,7 +47,7 @@ const ASSESSED_BY_LABEL_KEYS: Record<string, string> = {
   physician: 'Tanner.assessedBy.physician',
 };
 
-function stageDesc(kind: 'breast' | 'genital' | 'pubicHair', stage: number): StageDesc {
+function stageDesc(kind: 'breast' | 'genital' | 'pubicHairFemale' | 'pubicHairMale', stage: number): StageDesc {
   const keyPrefix = `Tanner.stage.${kind}.${stage}`;
   return {
     stage,
@@ -79,7 +81,11 @@ function detail(id: string, steps: number, options: { resources?: number; when?:
 
 export const BREAST_STAGES: StageDesc[] = [1, 2, 3, 4, 5].map((stage) => stageDesc('breast', stage));
 export const GENITAL_STAGES: StageDesc[] = [1, 2, 3, 4, 5].map((stage) => stageDesc('genital', stage));
-export const PUBIC_HAIR_STAGES: StageDesc[] = [1, 2, 3, 4, 5].map((stage) => stageDesc('pubicHair', stage));
+
+// Pubic-hair stage descriptions are gender-specific (PH2/PH5 describe different anatomy).
+export function pubicHairStages(isFemale: boolean): StageDesc[] {
+  return [1, 2, 3, 4, 5].map((stage) => stageDesc(isFemale ? 'pubicHairFemale' : 'pubicHairMale', stage));
+}
 
 export const FEMALE_GUIDANCE: StageGuidance[] = [
   {
@@ -212,6 +218,12 @@ export const DETAIL_MAP: Record<string, GuidanceDetail> = {
   maleEarlyTestisCheck: detail('maleEarlyTestisCheck', 4, { when: true }),
   menarcheAfterB2: detail('menarcheAfterB2', 4, { resources: 1, when: true }),
   nocturnalEmissionNormal: detail('nocturnalEmissionNormal', 4, { when: true }),
+  menstrualIron: detail('menstrualIron', 4, { when: true }),
+  irregular2YearsSeekCare: detail('irregular2YearsSeekCare', 4, { when: true }),
+  hpvTiming: detail('hpvTiming', 3, { when: true }),
+  crampsWarmRest: detail('crampsWarmRest', 4),
+  growthVelocityWindow: detail('growthVelocityWindow', 4),
+  scoliosisRapidGrowth: detail('scoliosisRapidGrowth', 4, { when: true }),
 };
 
 export function buildGuidanceSections(guidance: StageGuidance): GuidanceSection[] {

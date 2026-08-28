@@ -2297,13 +2297,32 @@
       "normal": "正常",
       "flat": "扁平足",
       "highArch": "高弓足",
-      "monitoring": "观察中"
+      "monitoring": "观察中",
+      "other": "其他"
     },
     "source": {
       "schoolPe": "学校体育",
       "sportsClub": "体育俱乐部",
       "clinic": "医疗机构",
-      "self": "自测"
+      "self": "自测",
+      "other": "其他来源"
+    },
+    "grade": {
+      "excellent": "优秀",
+      "good": "良好",
+      "pass": "及格",
+      "belowPass": "未达及格"
+    },
+    "delta": {
+      "improved": "较上次进步",
+      "regressed": "较上次退步"
+    },
+    "trend": {
+      "title": "体能趋势",
+      "empty": "记录至少两次后展示趋势",
+      "lineExcellent": "优秀",
+      "lineGood": "良好",
+      "linePass": "及格"
     },
     "intensity": {
       "light": "轻松",
@@ -2386,7 +2405,14 @@
       "intensityLabel": "强度",
       "labelWithUnit": "{{label}}（{{unit}}）",
       "examplePlaceholder": "例如 {{value}}",
-      "runSecondsHint": "按秒填写，如 4分05秒 = 245"
+      "runSecondsHint": "可填 4:05 或 245 秒",
+      "tierLabel": "学段",
+      "tierAuto": "自动（按年龄）",
+      "standardMinOne": "体测记录至少填写一项指标",
+      "saveFailed": "保存失败，请重试",
+      "footArchLabel": "足弓",
+      "footArchUnset": "未记录",
+      "valueOutOfRange": "数值超出合理范围"
     },
     "page": {
       "title": "体能评估",
@@ -3811,7 +3837,12 @@
       "titleWithoutAssessment": "按年龄推荐",
       "subtitle": "{{stageTitle}} · 基于{{mode}}给出可执行建议",
       "modeStage": "评估分期",
-      "modeAge": "年龄"
+      "modeAge": "年龄",
+      "commonWindow": "该阶段常见窗口：{{primary}}；阴毛：{{pubicHair}}",
+      "menarcheOccurredWithDate": "已初潮 · {{date}}",
+      "progressionFast": "观察到近 12 个月分期进展较快（≥2 期），建议咨询专业人士",
+      "progressionStable": "近 12 个月分期进展平稳",
+      "nextStageTitle": "下一阶段预告"
     },
     "referenceNotes": {
       "title": "参考文献标注",
@@ -3831,6 +3862,10 @@
       "boneAgePlaceholder": "如：11.5",
       "bodyFat": "体脂率（可选）",
       "bodyFatPlaceholder": "如：18.5",
+      "menarcheStatus": "是否已初潮",
+      "menarcheNotYet": "未初潮",
+      "menarcheOccurred": "已初潮",
+      "menarcheDate": "初潮日期",
       "notes": "备注（选填）",
       "notesPlaceholder": "记录观察到的变化、孩子感受等...",
       "cancel": "取消",
@@ -3850,14 +3885,23 @@
       "genitalStage": "外生殖器分期",
       "pubicHairStage": "阴毛分期",
       "changed": "有变化",
+      "menarcheOccurred": "已初潮",
+      "menarcheOccurredWithDate": "已初潮 · {{date}}",
       "notesPrefix": "备注："
     },
     "overview": {
       "boneAgeMatched": "骨龄匹配",
       "boneAgeAhead": "骨龄提前 {{years}} 岁",
       "boneAgeBehind": "骨龄较实际年龄小 {{years}} 岁",
+      "boneAgeDeviationLarge": "骨龄偏差超过 ±2 年，建议咨询内分泌科",
+      "boneAgeCaption": "骨龄与实际年龄差 ±1 年内为常见范围，仅供参考",
       "boneAge": "骨龄",
-      "bodyFat": "体脂率"
+      "bodyFat": "体脂率",
+      "bodyFatDelta": "较上次 {{delta}}",
+      "height": "身高",
+      "heightVelocity": "记录显示近 {{months}} 个月身高增长 {{delta}} cm（年化约 {{annualized}} cm）",
+      "heightVelocityInsufficient": "身高记录不足，暂无法计算增速",
+      "heightGrowthCurveLink": "查看生长曲线"
     },
     "stage": {
       "breast": {
@@ -3914,7 +3958,7 @@
           "howToJudge": "📏 参照物：睾丸约\"大枣/鸽子蛋\"大小（长径约4.5-5cm，约15-25ml）。外生殖器整体外观与成人一致。"
         }
       },
-      "pubicHair": {
+      "pubicHairFemale": {
         "1": {
           "title": "PH1 · 无阴毛",
           "desc": "阴部区域无阴毛，仅有类似腹部的细绒毛。",
@@ -3922,8 +3966,8 @@
         },
         "2": {
           "title": "PH2 · 稀疏出现",
-          "desc": "出现少量略长的毛发，通常在阴唇边缘或阴茎根部，颜色略深。",
-          "howToJudge": "👀 观察：能看到几根到十几根比较长的、颜色稍深的毛发。通常是直的或微微弯曲，主要在会阴部或阴茎根部。"
+          "desc": "出现少量略长的毛发，通常在大阴唇边缘，颜色略深。",
+          "howToJudge": "👀 观察：能看到几根到十几根比较长的、颜色稍深的毛发。通常是直的或微微弯曲，主要在大阴唇边缘。"
         },
         "3": {
           "title": "PH3 · 增多变粗",
@@ -3937,7 +3981,34 @@
         },
         "5": {
           "title": "PH5 · 成人型",
-          "desc": "毛发呈成人分布型，延伸至大腿内侧，女性呈倒三角、男性呈菱形。",
+          "desc": "毛发呈成人分布型，延伸至大腿内侧，呈倒三角分布。",
+          "howToJudge": "👀 观察：毛发分布范围和密度与成人一致。已经延伸到大腿内侧根部。"
+        }
+      },
+      "pubicHairMale": {
+        "1": {
+          "title": "PH1 · 无阴毛",
+          "desc": "阴部区域无阴毛，仅有类似腹部的细绒毛。",
+          "howToJudge": "👀 观察：和小时候一样，只有细小的绒毛（\"胎毛\"），颜色很浅，肉眼几乎看不到。"
+        },
+        "2": {
+          "title": "PH2 · 稀疏出现",
+          "desc": "出现少量略长的毛发，通常在阴茎根部，颜色略深。",
+          "howToJudge": "👀 观察：能看到几根到十几根比较长的、颜色稍深的毛发。通常是直的或微微弯曲，主要在阴茎根部。"
+        },
+        "3": {
+          "title": "PH3 · 增多变粗",
+          "desc": "毛发明显变多变粗变卷，颜色加深，开始向耻骨联合（小腹下方正中）扩展。",
+          "howToJudge": "👀 观察：毛发已经够多，可以用\"一小撮\"来形容。开始卷曲，颜色明显是深色的。分布范围向小腹下方扩展。"
+        },
+        "4": {
+          "title": "PH4 · 接近成人",
+          "desc": "毛发质地接近成人，粗而卷曲，覆盖范围较大，但尚未达到大腿内侧。",
+          "howToJudge": "👀 观察：毛发已经很浓密，质感像成人的阴毛一样粗硬卷曲。但分布范围还没有到大腿根部内侧。"
+        },
+        "5": {
+          "title": "PH5 · 成人型",
+          "desc": "毛发呈成人分布型，延伸至大腿内侧，呈菱形分布。",
           "howToJudge": "👀 观察：毛发分布范围和密度与成人一致。已经延伸到大腿内侧根部。"
         }
       }
@@ -4211,6 +4282,57 @@
             "4": "如果孩子不好意思说，可以放一条干净内裤在床边"
           },
           "when": "G3之前就应该谈到，不要等孩子自己发现后恐慌"
+        },
+        "menstrualIron": {
+          "steps": {
+            "1": "月经期每周安排 2-3 次红肉（牛肉、猪瘦肉），每次约 50-75g",
+            "2": "动物肝脏每周 1 次（鸡肝/猪肝 25-50g），搭配深色蔬菜",
+            "3": "餐后搭配富含维 C 的水果（橙子、猕猴桃）促进铁吸收",
+            "4": "避免与浓茶、咖啡同餐，会影响铁吸收"
+          },
+          "when": "月经期间及月经后一周是补铁的重点时段"
+        },
+        "irregular2YearsSeekCare": {
+          "steps": {
+            "1": "初潮后 1-2 年周期不规律很常见，可先用日历记录每次月经日期",
+            "2": "观察到周期持续短于 21 天或长于 45 天、或经期超过 8 天时，做好记录",
+            "3": "若初潮满 2 年后观察到周期仍很不规律，建议咨询专业人士",
+            "4": "就诊时带上月经记录，便于医生了解情况"
+          },
+          "when": "初潮后持续观察，满 2 年仍不规律时"
+        },
+        "hpvTiming": {
+          "steps": {
+            "1": "HPV 疫苗通常建议 9-14 岁女孩尽早接种，越早保护效果越好",
+            "2": "可咨询社区卫生服务中心或儿保门诊，了解可接种的价型与程序",
+            "3": "接种前告知医生孩子的健康状况与既往接种史"
+          },
+          "when": "9 岁起即可规划，建议尽早咨询接种门诊"
+        },
+        "crampsWarmRest": {
+          "steps": {
+            "1": "经期下腹轻度不适很常见，可用热水袋隔衣热敷小腹（注意防烫）",
+            "2": "保证休息和睡眠，避免剧烈运动，温和散步可能有助于缓解",
+            "3": "喝温水、注意保暖，避免生冷饮食",
+            "4": "若疼痛影响到上学和日常活动，建议咨询专业人士"
+          }
+        },
+        "growthVelocityWindow": {
+          "steps": {
+            "1": "每 3-6 个月在同一时段测量身高，并记录到生长曲线",
+            "2": "青春期前观察到每年增长约 5-6 cm 是常见节奏，个体差异较大",
+            "3": "青春期启动后身高进入快速增长期，之后逐渐减慢",
+            "4": "若观察到连续一年增长明显偏少，建议咨询专业人士评估"
+          }
+        },
+        "scoliosisRapidGrowth": {
+          "steps": {
+            "1": "快速生长期可每月观察一次：让孩子自然站立，从背后看两肩是否等高",
+            "2": "前屈观察：双腿伸直向前弯腰 90°，看背部两侧是否对称",
+            "3": "观察到双肩不等高或背部一侧隆起时，建议咨询专业人士进一步检查",
+            "4": "日常注意坐姿，书包双肩交替背负，避免长期单侧负重"
+          },
+          "when": "身高快速增长期（女孩 B3 前后、男孩 G3 前后）每月观察"
         }
       }
     }

@@ -54,6 +54,7 @@ Before making any change:
 | `data/structured/parentos/local-storage.yaml` | SQLite schema (19 tables) |
 | `data/structured/parentos/routes.yaml` | Application routes |
 | `data/structured/parentos/feature-matrix.yaml` | Feature phasing (Phase 1-3) |
+| `data/structured/parentos/fitness-standard-tables.yaml` | China National Student Physical Fitness Standards grade thresholds (school-stage tier × sex × metric) backing the `fitness.standard-grade` evaluation policy and fitness page grade badges/trend reference lines |
 
 ### Sync Rules
 

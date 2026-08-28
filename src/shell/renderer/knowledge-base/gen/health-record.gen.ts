@@ -3,7 +3,7 @@
 
 
 export type HealthMetricGroupId = 'growth' | 'vision' | 'fitness' | 'sleep' | 'outdoor' | 'vaccine' | 'dental' | 'medical' | 'development';
-export type HealthMetricId = 'growth.height' | 'growth.weight' | 'growth.head_circumference' | 'growth.bmi' | 'vision.left_visual_acuity' | 'vision.right_visual_acuity' | 'vision.left_axial_length' | 'vision.right_axial_length' | 'vision.left_iop' | 'vision.right_iop' | 'fitness.run_50m' | 'fitness.vital_capacity' | 'fitness.run_800m' | 'fitness.run_1000m' | 'fitness.run_50x8' | 'fitness.sit_and_reach' | 'fitness.standing_long_jump' | 'fitness.sit_ups' | 'fitness.pull_ups' | 'fitness.rope_skipping' | 'fitness.run_10m_shuttle' | 'fitness.tennis_ball_throw' | 'fitness.double_foot_jump' | 'fitness.balance_beam' | 'fitness.foot_arch_status' | 'fitness.activity_category' | 'fitness.activity_duration' | 'fitness.activity_distance' | 'fitness.activity_intensity' | 'development.tanner_breast_stage' | 'development.tanner_genital_stage' | 'development.tanner_pubic_hair_stage' | 'development.bone_age_years' | 'development.body_fat_percentage' | 'sleep.duration_minutes' | 'outdoor.weekly_goal_minutes' | 'outdoor.activity_minutes' | 'vaccine.administration' | 'dental.event' | 'medical.event' | 'development.milestone';
+export type HealthMetricId = 'growth.height' | 'growth.weight' | 'growth.head_circumference' | 'growth.bmi' | 'vision.left_visual_acuity' | 'vision.right_visual_acuity' | 'vision.left_axial_length' | 'vision.right_axial_length' | 'vision.left_iop' | 'vision.right_iop' | 'fitness.run_50m' | 'fitness.vital_capacity' | 'fitness.run_800m' | 'fitness.run_1000m' | 'fitness.run_50x8' | 'fitness.sit_and_reach' | 'fitness.standing_long_jump' | 'fitness.sit_ups' | 'fitness.pull_ups' | 'fitness.rope_skipping' | 'fitness.run_10m_shuttle' | 'fitness.tennis_ball_throw' | 'fitness.double_foot_jump' | 'fitness.balance_beam' | 'fitness.foot_arch_status' | 'fitness.activity_category' | 'fitness.activity_duration' | 'fitness.activity_distance' | 'fitness.activity_intensity' | 'development.tanner_breast_stage' | 'development.tanner_genital_stage' | 'development.tanner_pubic_hair_stage' | 'development.menarche_status' | 'development.menarche_date' | 'development.bone_age_years' | 'development.body_fat_percentage' | 'sleep.duration_minutes' | 'outdoor.weekly_goal_minutes' | 'outdoor.activity_minutes' | 'vaccine.administration' | 'dental.event' | 'medical.event' | 'development.milestone';
 export type HealthEvaluationPolicyId = 'growth.percentile-band' | 'growth.bmi-percentile-band' | 'vision.age-reference-band' | 'vision.axial-reference-band' | 'vision.iop-reference-band' | 'fitness.standard-grade' | 'development.tanner-stage-reference' | 'sleep.age-reference-band' | 'outdoor.goal-presence' | 'outdoor.goal-progress' | 'vaccine.rule-completion' | 'dental.event-severity' | 'medical.result-projection' | 'development.catalog-window';
 export type HealthCaptureProtocolId = 'growth-infant-monthly' | 'growth-child-quarterly' | 'growth-school-biannual' | 'vision-basic' | 'vision-full-exam' | 'fitness-school-assessment' | 'fitness-sport-activity' | 'tanner-female-self-assessment' | 'tanner-male-self-assessment' | 'development-auxiliary-measurement' | 'outdoor-goal' | 'outdoor-activity' | 'sleep-night' | 'vaccine-administration' | 'dental-event' | 'medical-event' | 'milestone-achievement';
 export type HealthRecordDataRuleId = 'PO-REM-OUTD-001' | 'PO-REM-OUTD-002' | 'PO-REM-GRO-001' | 'PO-REM-GRO-002' | 'PO-REM-GRO-003' | 'PO-REM-FIT-001' | 'PO-REM-FIT-002' | 'PO-REM-TAN-001' | 'PO-REM-TAN-002';
@@ -924,6 +924,44 @@ export const HEALTH_METRICS: readonly HealthMetricDefinition[] = [
     "safetyClass": "professional_review_prompt"
   },
   {
+    "metricId": "development.menarche_status",
+    "groupId": "development",
+    "displayName": "Menarche status",
+    "valueShape": "enum",
+    "valueCardinality": "single",
+    "recordKind": "assessment",
+    "captureProtocolIds": [
+      "tanner-female-self-assessment"
+    ],
+    "freshnessPolicyRef": "development.puberty-six-month-cadence",
+    "detailRoute": "/profile/tanner",
+    "sourceSupport": [
+      "manual",
+      "reminder"
+    ],
+    "safetyClass": "descriptive",
+    "applicableSex": "female"
+  },
+  {
+    "metricId": "development.menarche_date",
+    "groupId": "development",
+    "displayName": "Menarche date",
+    "valueShape": "date",
+    "valueCardinality": "single",
+    "recordKind": "assessment",
+    "captureProtocolIds": [
+      "tanner-female-self-assessment"
+    ],
+    "freshnessPolicyRef": "development.puberty-six-month-cadence",
+    "detailRoute": "/profile/tanner",
+    "sourceSupport": [
+      "manual",
+      "reminder"
+    ],
+    "safetyClass": "descriptive",
+    "applicableSex": "female"
+  },
+  {
     "metricId": "development.bone_age_years",
     "groupId": "development",
     "displayName": "Bone age",
@@ -1290,11 +1328,24 @@ export const HEALTH_EVALUATION_POLICIES: readonly HealthEvaluationPolicy[] = [
   {
     "policyId": "fitness.standard-grade",
     "appliesTo": [
+      "fitness.run_10m_shuttle",
       "fitness.run_50m",
-      "fitness.vital_capacity"
+      "fitness.run_800m",
+      "fitness.run_1000m",
+      "fitness.run_50x8",
+      "fitness.sit_and_reach",
+      "fitness.standing_long_jump",
+      "fitness.sit_ups",
+      "fitness.pull_ups",
+      "fitness.rope_skipping",
+      "fitness.vital_capacity",
+      "fitness.tennis_ball_throw",
+      "fitness.double_foot_jump",
+      "fitness.balance_beam",
+      "fitness.foot_arch_status"
     ],
     "sourceRefs": [
-      "China National Student Physical Fitness Standards"
+      "data/structured/parentos/fitness-standard-tables.yaml"
     ],
     "outputRules": [
       {
@@ -1793,6 +1844,8 @@ export const HEALTH_CAPTURE_PROTOCOLS: readonly HealthCaptureProtocol[] = [
     "metricIds": [
       "development.tanner_breast_stage",
       "development.tanner_pubic_hair_stage",
+      "development.menarche_status",
+      "development.menarche_date",
       "development.bone_age_years",
       "development.body_fat_percentage"
     ],
@@ -1801,6 +1854,8 @@ export const HEALTH_CAPTURE_PROTOCOLS: readonly HealthCaptureProtocol[] = [
       "development.tanner_pubic_hair_stage"
     ],
     "optionalMetricIds": [
+      "development.menarche_status",
+      "development.menarche_date",
       "development.bone_age_years",
       "development.body_fat_percentage"
     ],
@@ -1809,7 +1864,7 @@ export const HEALTH_CAPTURE_PROTOCOLS: readonly HealthCaptureProtocol[] = [
       "reminder"
     ],
     "storageTarget": "health_record_event",
-    "completionPolicy": "One self-assessment event must contain breast stage and pubic hair stage, each constrained to Tanner stage 1..5."
+    "completionPolicy": "One self-assessment event must contain breast stage and pubic hair stage, each constrained to Tanner stage 1..5. menarche_status uses not_yet | occurred; menarche_date is required when and only when menarche_status is occurred."
   },
   {
     "protocolId": "tanner-male-self-assessment",
@@ -2127,7 +2182,370 @@ export const HEALTH_REMINDER_CAPTURE_TARGETS: readonly HealthReminderCaptureTarg
     "completionPolicy": "Complete only after one male Tanner self-assessment event persists genital stage and pubic hair stage for the target child."
   }
 ] ;
-export const HEALTH_METRIC_IDS = ["growth.height","growth.weight","growth.head_circumference","growth.bmi","vision.left_visual_acuity","vision.right_visual_acuity","vision.left_axial_length","vision.right_axial_length","vision.left_iop","vision.right_iop","fitness.run_50m","fitness.vital_capacity","fitness.run_800m","fitness.run_1000m","fitness.run_50x8","fitness.sit_and_reach","fitness.standing_long_jump","fitness.sit_ups","fitness.pull_ups","fitness.rope_skipping","fitness.run_10m_shuttle","fitness.tennis_ball_throw","fitness.double_foot_jump","fitness.balance_beam","fitness.foot_arch_status","fitness.activity_category","fitness.activity_duration","fitness.activity_distance","fitness.activity_intensity","development.tanner_breast_stage","development.tanner_genital_stage","development.tanner_pubic_hair_stage","development.bone_age_years","development.body_fat_percentage","sleep.duration_minutes","outdoor.weekly_goal_minutes","outdoor.activity_minutes","vaccine.administration","dental.event","medical.event","development.milestone"] as const;
+export const HEALTH_METRIC_IDS = ["growth.height","growth.weight","growth.head_circumference","growth.bmi","vision.left_visual_acuity","vision.right_visual_acuity","vision.left_axial_length","vision.right_axial_length","vision.left_iop","vision.right_iop","fitness.run_50m","fitness.vital_capacity","fitness.run_800m","fitness.run_1000m","fitness.run_50x8","fitness.sit_and_reach","fitness.standing_long_jump","fitness.sit_ups","fitness.pull_ups","fitness.rope_skipping","fitness.run_10m_shuttle","fitness.tennis_ball_throw","fitness.double_foot_jump","fitness.balance_beam","fitness.foot_arch_status","fitness.activity_category","fitness.activity_duration","fitness.activity_distance","fitness.activity_intensity","development.tanner_breast_stage","development.tanner_genital_stage","development.tanner_pubic_hair_stage","development.menarche_status","development.menarche_date","development.bone_age_years","development.body_fat_percentage","sleep.duration_minutes","outdoor.weekly_goal_minutes","outdoor.activity_minutes","vaccine.administration","dental.event","medical.event","development.milestone"] as const;
 export const HEALTH_CAPTURE_PROTOCOL_IDS = ["growth-infant-monthly","growth-child-quarterly","growth-school-biannual","vision-basic","vision-full-exam","fitness-school-assessment","fitness-sport-activity","tanner-female-self-assessment","tanner-male-self-assessment","development-auxiliary-measurement","outdoor-goal","outdoor-activity","sleep-night","vaccine-administration","dental-event","medical-event","milestone-achievement"] as const;
 export const HEALTH_EVALUATION_POLICY_IDS = ["growth.percentile-band","growth.bmi-percentile-band","vision.age-reference-band","vision.axial-reference-band","vision.iop-reference-band","fitness.standard-grade","development.tanner-stage-reference","sleep.age-reference-band","outdoor.goal-presence","outdoor.goal-progress","vaccine.rule-completion","dental.event-severity","medical.result-projection","development.catalog-window"] as const;
 export const HEALTH_RECORD_DATA_RULE_IDS = ["PO-REM-OUTD-001","PO-REM-OUTD-002","PO-REM-GRO-001","PO-REM-GRO-002","PO-REM-GRO-003","PO-REM-FIT-001","PO-REM-FIT-002","PO-REM-TAN-001","PO-REM-TAN-002"] as const;
+
+export type FitnessStandardTier = 'grade12' | 'grade34' | 'grade56' | 'grade7plus';
+export type FitnessStandardDirection = 'lower_better' | 'higher_better';
+export type FitnessStandardBand = 'excellent' | 'good' | 'pass' | 'below_pass';
+
+export interface FitnessStandardMetricThresholds {
+  metricId: HealthMetricId;
+  direction: FitnessStandardDirection;
+  pass: number;
+  good: number;
+  excellent: number;
+}
+
+export interface FitnessStandardTable {
+  tier: FitnessStandardTier;
+  sex: 'male' | 'female';
+  metrics: readonly FitnessStandardMetricThresholds[];
+}
+
+export const FITNESS_STANDARD_TABLES: readonly FitnessStandardTable[] = [
+  {
+    "tier": "grade12",
+    "sex": "male",
+    "metrics": [
+      {
+        "metricId": "fitness.run_50m",
+        "direction": "lower_better",
+        "pass": 12.6,
+        "good": 10.6,
+        "excellent": 10.4
+      },
+      {
+        "metricId": "fitness.sit_and_reach",
+        "direction": "higher_better",
+        "pass": 0,
+        "good": 11,
+        "excellent": 13
+      },
+      {
+        "metricId": "fitness.rope_skipping",
+        "direction": "higher_better",
+        "pass": 17,
+        "good": 87,
+        "excellent": 99
+      },
+      {
+        "metricId": "fitness.vital_capacity",
+        "direction": "higher_better",
+        "pass": 700,
+        "good": 1300,
+        "excellent": 1500
+      }
+    ]
+  },
+  {
+    "tier": "grade12",
+    "sex": "female",
+    "metrics": [
+      {
+        "metricId": "fitness.run_50m",
+        "direction": "lower_better",
+        "pass": 13.8,
+        "good": 11.8,
+        "excellent": 11.2
+      },
+      {
+        "metricId": "fitness.sit_and_reach",
+        "direction": "higher_better",
+        "pass": 2.4,
+        "good": 13.4,
+        "excellent": 16
+      },
+      {
+        "metricId": "fitness.rope_skipping",
+        "direction": "higher_better",
+        "pass": 17,
+        "good": 87,
+        "excellent": 103
+      },
+      {
+        "metricId": "fitness.vital_capacity",
+        "direction": "higher_better",
+        "pass": 600,
+        "good": 1000,
+        "excellent": 1200
+      }
+    ]
+  },
+  {
+    "tier": "grade34",
+    "sex": "male",
+    "metrics": [
+      {
+        "metricId": "fitness.run_50m",
+        "direction": "lower_better",
+        "pass": 11.5,
+        "good": 9.5,
+        "excellent": 9.3
+      },
+      {
+        "metricId": "fitness.sit_and_reach",
+        "direction": "higher_better",
+        "pass": -0.8,
+        "good": 10.2,
+        "excellent": 13.4
+      },
+      {
+        "metricId": "fitness.rope_skipping",
+        "direction": "higher_better",
+        "pass": 34,
+        "good": 104,
+        "excellent": 116
+      },
+      {
+        "metricId": "fitness.vital_capacity",
+        "direction": "higher_better",
+        "pass": 900,
+        "good": 1700,
+        "excellent": 2100
+      },
+      {
+        "metricId": "fitness.sit_ups",
+        "direction": "higher_better",
+        "pass": 16,
+        "good": 36,
+        "excellent": 42
+      }
+    ]
+  },
+  {
+    "tier": "grade34",
+    "sex": "female",
+    "metrics": [
+      {
+        "metricId": "fitness.run_50m",
+        "direction": "lower_better",
+        "pass": 12,
+        "good": 10,
+        "excellent": 9.4
+      },
+      {
+        "metricId": "fitness.sit_and_reach",
+        "direction": "higher_better",
+        "pass": 2.2,
+        "good": 13.2,
+        "excellent": 16.6
+      },
+      {
+        "metricId": "fitness.rope_skipping",
+        "direction": "higher_better",
+        "pass": 39,
+        "good": 109,
+        "excellent": 125
+      },
+      {
+        "metricId": "fitness.vital_capacity",
+        "direction": "higher_better",
+        "pass": 800,
+        "good": 1400,
+        "excellent": 1600
+      },
+      {
+        "metricId": "fitness.sit_ups",
+        "direction": "higher_better",
+        "pass": 16,
+        "good": 36,
+        "excellent": 42
+      }
+    ]
+  },
+  {
+    "tier": "grade56",
+    "sex": "male",
+    "metrics": [
+      {
+        "metricId": "fitness.run_50m",
+        "direction": "lower_better",
+        "pass": 10.8,
+        "good": 8.8,
+        "excellent": 8.6
+      },
+      {
+        "metricId": "fitness.sit_and_reach",
+        "direction": "higher_better",
+        "pass": -2.6,
+        "good": 9.4,
+        "excellent": 13.8
+      },
+      {
+        "metricId": "fitness.rope_skipping",
+        "direction": "higher_better",
+        "pass": 56,
+        "good": 126,
+        "excellent": 138
+      },
+      {
+        "metricId": "fitness.vital_capacity",
+        "direction": "higher_better",
+        "pass": 1300,
+        "good": 2200,
+        "excellent": 2700
+      },
+      {
+        "metricId": "fitness.sit_ups",
+        "direction": "higher_better",
+        "pass": 18,
+        "good": 38,
+        "excellent": 44
+      },
+      {
+        "metricId": "fitness.run_50x8",
+        "direction": "lower_better",
+        "pass": 138,
+        "good": 108,
+        "excellent": 102
+      }
+    ]
+  },
+  {
+    "tier": "grade56",
+    "sex": "female",
+    "metrics": [
+      {
+        "metricId": "fitness.run_50m",
+        "direction": "lower_better",
+        "pass": 11.1,
+        "good": 9.1,
+        "excellent": 8.5
+      },
+      {
+        "metricId": "fitness.sit_and_reach",
+        "direction": "higher_better",
+        "pass": 2,
+        "good": 13,
+        "excellent": 17.2
+      },
+      {
+        "metricId": "fitness.rope_skipping",
+        "direction": "higher_better",
+        "pass": 58,
+        "good": 128,
+        "excellent": 144
+      },
+      {
+        "metricId": "fitness.vital_capacity",
+        "direction": "higher_better",
+        "pass": 1050,
+        "good": 1850,
+        "excellent": 2050
+      },
+      {
+        "metricId": "fitness.sit_ups",
+        "direction": "higher_better",
+        "pass": 18,
+        "good": 38,
+        "excellent": 44
+      },
+      {
+        "metricId": "fitness.run_50x8",
+        "direction": "lower_better",
+        "pass": 143,
+        "good": 113,
+        "excellent": 107
+      }
+    ]
+  },
+  {
+    "tier": "grade7plus",
+    "sex": "male",
+    "metrics": [
+      {
+        "metricId": "fitness.run_50m",
+        "direction": "lower_better",
+        "pass": 10.2,
+        "good": 8.2,
+        "excellent": 8
+      },
+      {
+        "metricId": "fitness.sit_and_reach",
+        "direction": "higher_better",
+        "pass": -2.6,
+        "good": 10.4,
+        "excellent": 14.2
+      },
+      {
+        "metricId": "fitness.standing_long_jump",
+        "direction": "higher_better",
+        "pass": 155,
+        "good": 195,
+        "excellent": 211
+      },
+      {
+        "metricId": "fitness.vital_capacity",
+        "direction": "higher_better",
+        "pass": 1700,
+        "good": 2900,
+        "excellent": 3400
+      },
+      {
+        "metricId": "fitness.pull_ups",
+        "direction": "higher_better",
+        "pass": 4,
+        "good": 9,
+        "excellent": 11
+      },
+      {
+        "metricId": "fitness.run_1000m",
+        "direction": "lower_better",
+        "pass": 320,
+        "good": 270,
+        "excellent": 255
+      }
+    ]
+  },
+  {
+    "tier": "grade7plus",
+    "sex": "female",
+    "metrics": [
+      {
+        "metricId": "fitness.run_50m",
+        "direction": "lower_better",
+        "pass": 10.9,
+        "good": 8.9,
+        "excellent": 8.3
+      },
+      {
+        "metricId": "fitness.sit_and_reach",
+        "direction": "higher_better",
+        "pass": 2,
+        "good": 15,
+        "excellent": 18.4
+      },
+      {
+        "metricId": "fitness.standing_long_jump",
+        "direction": "higher_better",
+        "pass": 140,
+        "good": 170,
+        "excellent": 184
+      },
+      {
+        "metricId": "fitness.vital_capacity",
+        "direction": "higher_better",
+        "pass": 1350,
+        "good": 2350,
+        "excellent": 2550
+      },
+      {
+        "metricId": "fitness.sit_ups",
+        "direction": "higher_better",
+        "pass": 20,
+        "good": 40,
+        "excellent": 46
+      },
+      {
+        "metricId": "fitness.run_800m",
+        "direction": "lower_better",
+        "pass": 295,
+        "good": 245,
+        "excellent": 229
+      }
+    ]
+  }
+] ;

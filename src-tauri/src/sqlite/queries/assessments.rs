@@ -14,6 +14,8 @@ pub struct TannerAssessment {
     pub age_months: i32,
     pub breast_or_genital_stage: Option<i32>,
     pub pubic_hair_stage: Option<i32>,
+    pub menarche_status: Option<String>,
+    pub menarche_date: Option<String>,
     pub assessed_by: Option<String>,
     pub notes: Option<String>,
     pub created_at: String,
@@ -48,6 +50,51 @@ fn finite_optional_i32(value: Option<i32>) -> Option<f64> {
     value.map(f64::from)
 }
 
+fn normalize_menarche_fields(
+    gender: &str,
+    status: Option<String>,
+    date: Option<String>,
+) -> Result<(Option<String>, Option<String>), String> {
+    let status = status
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    let date = date
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    if gender != "female" && (status.is_some() || date.is_some()) {
+        return Err(format!(
+            "insert_tanner_assessment: menarche fields are female-only, child gender is \"{gender}\""
+        ));
+    }
+    if let Some(value) = status.as_deref() {
+        if value != "not_yet" && value != "occurred" {
+            return Err(format!(
+                "menarcheStatus must be \"not_yet\" or \"occurred\", got \"{value}\""
+            ));
+        }
+    }
+    if let Some(value) = date.as_deref() {
+        if chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").is_err() {
+            return Err(format!(
+                "menarcheDate must be an ISO 8601 date (YYYY-MM-DD), got \"{value}\""
+            ));
+        }
+    }
+    match (status.as_deref(), date.as_deref()) {
+        (Some("occurred"), None) => {
+            return Err("menarcheStatus \"occurred\" requires a non-empty menarcheDate".to_string())
+        }
+        (Some("not_yet"), Some(_)) => {
+            return Err("menarcheStatus \"not_yet\" must not carry a menarcheDate".to_string())
+        }
+        (None, Some(_)) => {
+            return Err("menarcheDate requires menarcheStatus \"occurred\"".to_string())
+        }
+        _ => {}
+    }
+    Ok((status, date))
+}
+
 #[tauri::command]
 pub fn insert_tanner_assessment(
     assessment_id: String,
@@ -61,6 +108,8 @@ pub fn insert_tanner_assessment(
     now: String,
     linked_reminder_state_id: Option<String>,
     linked_reminder_rule_id: Option<String>,
+    menarche_status: Option<String>,
+    menarche_date: Option<String>,
 ) -> Result<(), String> {
     if let Some(stage) = breast_or_genital_stage {
         if !(1..=5).contains(&stage) {
@@ -101,6 +150,8 @@ pub fn insert_tanner_assessment(
             ))
         }
     };
+    let (menarche_status, menarche_date) =
+        normalize_menarche_fields(&gender, menarche_status, menarche_date)?;
     let source_surface = if linked_reminder_state_id.is_some() || linked_reminder_rule_id.is_some()
     {
         "reminder"
@@ -164,6 +215,36 @@ pub fn insert_tanner_assessment(
         ],
     )
     .map_err(|e| format!("insert_tanner_assessment insert pubic hair stage: {e}"))?;
+    if let Some(status) = &menarche_status {
+        tx.execute(
+            "INSERT INTO health_record_values (
+                valueId, eventId, childId, metricId, valueText, recordKind, createdAt
+            ) VALUES (?1, ?2, ?3, 'development.menarche_status', ?4, 'measured', ?5)",
+            params![
+                format!("detail-tanner-value:{assessment_id}:menarche-status"),
+                &event_id,
+                &child_id,
+                status,
+                &now,
+            ],
+        )
+        .map_err(|e| format!("insert_tanner_assessment insert menarche status: {e}"))?;
+    }
+    if let Some(date) = &menarche_date {
+        tx.execute(
+            "INSERT INTO health_record_values (
+                valueId, eventId, childId, metricId, valueText, recordKind, createdAt
+            ) VALUES (?1, ?2, ?3, 'development.menarche_date', ?4, 'measured', ?5)",
+            params![
+                format!("detail-tanner-value:{assessment_id}:menarche-date"),
+                &event_id,
+                &child_id,
+                date,
+                &now,
+            ],
+        )
+        .map_err(|e| format!("insert_tanner_assessment insert menarche date: {e}"))?;
+    }
     tx.commit()
         .map_err(|e| format!("insert_tanner_assessment commit: {e}"))?;
     Ok(())
@@ -182,7 +263,9 @@ pub fn get_tanner_assessments(child_id: String) -> Result<Vec<TannerAssessment>,
             MAX(CASE WHEN v.metricId = 'development.tanner_pubic_hair_stage' THEN v.valueNumber END),
             json_extract(e.metadataJson, '$.assessedBy'),
             e.notes,
-            e.createdAt
+            e.createdAt,
+            MAX(CASE WHEN v.metricId = 'development.menarche_status' THEN v.valueText END),
+            MAX(CASE WHEN v.metricId = 'development.menarche_date' THEN v.valueText END)
          FROM health_record_events e
          JOIN health_record_values v ON v.eventId = e.eventId
          WHERE e.childId = ?1
@@ -203,6 +286,8 @@ pub fn get_tanner_assessments(child_id: String) -> Result<Vec<TannerAssessment>,
                 assessed_by: row.get(6)?,
                 notes: row.get(7)?,
                 created_at: row.get(8)?,
+                menarche_status: row.get(9)?,
+                menarche_date: row.get(10)?,
             })
         })
         .map_err(|e| format!("get_tanner_assessments: {e}"))?;
@@ -544,4 +629,57 @@ pub fn delete_fitness_event(event_id: String) -> Result<(), String> {
     )
     .map_err(|e| format!("delete_fitness_event: {e}"))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_menarche_fields;
+
+    #[test]
+    fn menarche_fields_normalize_and_enforce_pairing() {
+        assert_eq!(
+            normalize_menarche_fields(
+                "female",
+                Some(" occurred ".to_string()),
+                Some(" 2026-08-20 ".to_string()),
+            )
+            .expect("valid occurred pair"),
+            (Some("occurred".to_string()), Some("2026-08-20".to_string()),),
+        );
+        assert!(
+            normalize_menarche_fields("female", Some("occurred".to_string()), None)
+                .expect_err("occurred requires date")
+                .contains("requires")
+        );
+        assert!(normalize_menarche_fields(
+            "female",
+            Some("not_yet".to_string()),
+            Some("2026-08-20".to_string()),
+        )
+        .expect_err("not_yet forbids date")
+        .contains("must not"));
+    }
+
+    #[test]
+    fn menarche_fields_reject_invalid_or_male_payloads() {
+        assert!(
+            normalize_menarche_fields("male", Some("not_yet".to_string()), None)
+                .expect_err("male payload rejected")
+                .contains("female-only")
+        );
+        assert!(normalize_menarche_fields(
+            "female",
+            Some("unknown".to_string()),
+            Some("2026-08-20".to_string()),
+        )
+        .expect_err("unknown status rejected")
+        .contains("not_yet"));
+        assert!(normalize_menarche_fields(
+            "female",
+            Some("occurred".to_string()),
+            Some("2026-02-30".to_string()),
+        )
+        .expect_err("invalid date rejected")
+        .contains("ISO 8601"));
+    }
 }

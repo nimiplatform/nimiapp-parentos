@@ -562,6 +562,9 @@ function generateHealthRecordAuthority() {
   const reminderTargets = readYaml('reminder-capture-targets.yaml') as {
     targets: Array<Record<string, unknown>>;
   };
+  const fitnessStandardTables = readYaml('fitness-standard-tables.yaml') as {
+    tables: Array<Record<string, unknown>>;
+  };
 
   const groupIds = registry.groups.map((group) => group.groupId);
   const metricIds = registry.metrics.map((metric) => metric.metricId as string);
@@ -683,6 +686,26 @@ export const HEALTH_METRIC_IDS = ${JSON.stringify(metricIds)} as const;
 export const HEALTH_CAPTURE_PROTOCOL_IDS = ${JSON.stringify(protocolIds)} as const;
 export const HEALTH_EVALUATION_POLICY_IDS = ${JSON.stringify(policyIds)} as const;
 export const HEALTH_RECORD_DATA_RULE_IDS = ${JSON.stringify(targetRuleIds)} as const;
+
+export type FitnessStandardTier = 'grade12' | 'grade34' | 'grade56' | 'grade7plus';
+export type FitnessStandardDirection = 'lower_better' | 'higher_better';
+export type FitnessStandardBand = 'excellent' | 'good' | 'pass' | 'below_pass';
+
+export interface FitnessStandardMetricThresholds {
+  metricId: HealthMetricId;
+  direction: FitnessStandardDirection;
+  pass: number;
+  good: number;
+  excellent: number;
+}
+
+export interface FitnessStandardTable {
+  tier: FitnessStandardTier;
+  sex: 'male' | 'female';
+  metrics: readonly FitnessStandardMetricThresholds[];
+}
+
+export const FITNESS_STANDARD_TABLES: readonly FitnessStandardTable[] = ${JSON.stringify(fitnessStandardTables.tables, null, 2)} ;
 `;
 
   writeGen('health-record.gen.ts', ts);

@@ -1,7 +1,7 @@
 import { StatusBadge, Surface, Timeline, TimelineGroup } from '@nimiplatform/kit/ui';
 import type { TannerAssessmentRow } from '../../bridge/sqlite-bridge.js';
 import type { StageDesc } from './tanner-page-shared.js';
-import { PUBIC_HAIR_STAGES, fmtAge, formatAssessedBy } from './tanner-page-shared.js';
+import { pubicHairStages, fmtAge, formatAssessedBy } from './tanner-page-shared.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -32,7 +32,7 @@ export function TannerTimeline({
     <Timeline>
       {assessments.map((assessment, index) => {
         const bgInfo = bgStages.find((stage) => stage.stage === assessment.breastOrGenitalStage);
-        const phInfo = PUBIC_HAIR_STAGES.find((stage) => stage.stage === assessment.pubicHairStage);
+        const phInfo = pubicHairStages(isFemale).find((stage) => stage.stage === assessment.pubicHairStage);
         const previous = assessments[index + 1];
         const bgChanged = previous && previous.breastOrGenitalStage !== assessment.breastOrGenitalStage;
         const phChanged = previous && previous.pubicHairStage !== assessment.pubicHairStage;
@@ -64,7 +64,7 @@ export function TannerTimeline({
                     </span>
                     {bgChanged ? <StatusBadge tone="success" className="px-1.5 py-0.5 text-[12px]">{i18nText('Tanner.timeline.changed')}</StatusBadge> : null}
                   </div>
-                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{bgInfo?.desc.slice(0, 30) ?? ''}...</p>
+                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{bgInfo?.desc ?? ''}</p>
                 </div>
                 <div className={`rounded-2xl border p-3 ${phChanged ? 'border-[color-mix(in_srgb,var(--nimi-status-success)_35%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-success)_12%,var(--nimi-surface-card))]' : 'border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)]'}`}>
                   <div className="flex items-center gap-2 mb-1">
@@ -74,9 +74,18 @@ export function TannerTimeline({
                     <span className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Tanner.timeline.pubicHairStage')}</span>
                     {phChanged ? <StatusBadge tone="success" className="px-1.5 py-0.5 text-[12px]">{i18nText('Tanner.timeline.changed')}</StatusBadge> : null}
                   </div>
-                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{phInfo?.desc.slice(0, 30) ?? ''}...</p>
+                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{phInfo?.desc ?? ''}</p>
                 </div>
               </div>
+              {assessment.menarcheStatus === 'occurred' ? (
+                <div className="bg-[var(--nimi-surface-card)] px-4 pb-3">
+                  <StatusBadge tone="info" className="px-1.5 py-0.5 text-[12px]">
+                    {assessment.menarcheDate
+                      ? i18nText('Tanner.timeline.menarcheOccurredWithDate', { date: assessment.menarcheDate.split('T')[0] ?? assessment.menarcheDate })
+                      : i18nText('Tanner.timeline.menarcheOccurred')}
+                  </StatusBadge>
+                </div>
+              ) : null}
               {assessment.notes ? (
                 <div className="bg-[var(--nimi-surface-card)] px-4 pb-3 text-[12px] text-[var(--nimi-text-muted)]">
                   {i18nText('Tanner.timeline.notesPrefix')} {assessment.notes}

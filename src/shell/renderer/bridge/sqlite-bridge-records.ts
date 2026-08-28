@@ -368,6 +368,8 @@ export interface TannerAssessmentRow {
   ageMonths: number;
   breastOrGenitalStage: number | null;
   pubicHairStage: number | null;
+  menarcheStatus: string | null;
+  menarcheDate: string | null;
   assessedBy: string | null;
   notes: string | null;
   createdAt: string;
@@ -385,6 +387,8 @@ export function insertTannerAssessment(params: {
   now: string;
   linkedReminderStateId?: string | null;
   linkedReminderRuleId?: string | null;
+  menarcheStatus?: string | null;
+  menarcheDate?: string | null;
 }) {
   return invoke<void>('insert_tanner_assessment', params);
 }

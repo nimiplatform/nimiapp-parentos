@@ -5,6 +5,8 @@ import { computeAgeMonthsAt } from '../../app-shell/app-store.js';
 import { insertFitnessAssessment, replaceHealthRecordCapture, saveHealthRecordCapture } from '../../bridge/sqlite-bridge.js';
 import type { HealthRecordCaptureValueInput, SaveHealthRecordCaptureInput } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
+import { catchLog } from '../../infra/telemetry/catch-log.js';
+import { fitnessAgeTier, type FitnessAgeTier } from '../../engine/fitness-standard-grade.js';
 import type { LinkedHealthRecordReminder } from './health-capture-orchestrator.js';
 import {
   ChipGroup,
@@ -93,7 +95,8 @@ const ACTIVITY_CHIPS: ChipOption<string>[] = ACTIVITY_CATEGORIES.map((c) => ({
   emoji: c.emoji,
 }));
 
-export type AgeTier = 'preschool' | 'grade12' | 'grade34' | 'grade56' | 'grade7plus';
+export type AgeTier = FitnessAgeTier;
+export type { FitnessAgeTier };
 
 export const FITNESS_AGE_TIER_LABELS: Record<AgeTier, string> = {
   preschool: i18nText('Fitness.ageTier.preschool'),
@@ -103,12 +106,10 @@ export const FITNESS_AGE_TIER_LABELS: Record<AgeTier, string> = {
   grade7plus: i18nText('Fitness.ageTier.grade7plus'),
 };
 
+// Tier boundaries are owned by the engine (fitness-standard-grade.ts); this
+// export is kept as the form-facing alias so existing callers stay stable.
 export function ageTier(ageMonths: number): AgeTier {
-  if (ageMonths < 72) return 'preschool';
-  if (ageMonths < 96) return 'grade12';
-  if (ageMonths < 120) return 'grade34';
-  if (ageMonths < 144) return 'grade56';
-  return 'grade7plus';
+  return fitnessAgeTier(ageMonths);
 }
 
 type StandardFieldKey =
@@ -160,9 +161,9 @@ const UNIT_COUNT = i18nText('Common.unit.count');
 const STANDARD_FIELDS: StandardFieldDef[] = [
   { key: 'run10mShuttle', label: FITNESS_STANDARD_METRIC_LABELS.run10mShuttle, unit: UNIT_SECOND, example: '9.5', group: 'speed', step: '0.1', min: '0' },
   { key: 'run50m', label: FITNESS_STANDARD_METRIC_LABELS.run50m, unit: UNIT_SECOND, example: '11.2', group: 'speed', step: '0.1', min: '0' },
-  { key: 'run800m', label: FITNESS_STANDARD_METRIC_LABELS.run800m, unit: UNIT_SECOND, example: '245', hint: i18nText('Fitness.form.runSecondsHint'), group: 'speed', step: '1', min: '0' },
-  { key: 'run1000m', label: FITNESS_STANDARD_METRIC_LABELS.run1000m, unit: UNIT_SECOND, example: '280', hint: i18nText('Fitness.form.runSecondsHint'), group: 'speed', step: '1', min: '0' },
-  { key: 'run50x8', label: FITNESS_STANDARD_METRIC_LABELS.run50x8, unit: UNIT_SECOND, example: '105', group: 'speed', step: '0.1', min: '0' },
+  { key: 'run800m', label: FITNESS_STANDARD_METRIC_LABELS.run800m, unit: UNIT_SECOND, example: '4:05', hint: i18nText('Fitness.form.runSecondsHint'), group: 'speed', step: '1', min: '0' },
+  { key: 'run1000m', label: FITNESS_STANDARD_METRIC_LABELS.run1000m, unit: UNIT_SECOND, example: '4:40', hint: i18nText('Fitness.form.runSecondsHint'), group: 'speed', step: '1', min: '0' },
+  { key: 'run50x8', label: FITNESS_STANDARD_METRIC_LABELS.run50x8, unit: UNIT_SECOND, example: '1:45', hint: i18nText('Fitness.form.runSecondsHint'), group: 'speed', step: '0.1', min: '0' },
   { key: 'standingLongJump', label: FITNESS_STANDARD_METRIC_LABELS.standingLongJump, unit: UNIT_CENTIMETER, example: '160', group: 'strength', step: '1', min: '0' },
   { key: 'tennisBallThrow', label: FITNESS_STANDARD_METRIC_LABELS.tennisBallThrow, unit: UNIT_METER, example: '6.5', group: 'strength', step: '0.1', min: '0' },
   { key: 'doubleFootJump', label: FITNESS_STANDARD_METRIC_LABELS.doubleFootJump, unit: UNIT_SECOND, example: '7.0', group: 'strength', step: '0.1', min: '0' },
@@ -265,6 +266,84 @@ function parseIntNum(v: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/* ── Standard-field parsing & plausibility ────────────────────────────────
+ * Long runs accept either plain seconds ("245") or min:sec ("4:05",
+ * "4分05秒"); every filled value must sit inside a sane range or the save is
+ * blocked fail-close. */
+
+// Fields whose text input accepts min:sec notation in addition to seconds.
+const TIME_INPUT_KEYS = new Set<StandardFieldKey>(['run800m', 'run1000m', 'run50x8']);
+
+/**
+ * Parse a run-duration input into total seconds. Accepts plain seconds
+ * ("245"), "m:ss" ("4:05"), and Chinese notation ("4分05秒"). Returns null
+ * for empty or unparseable input.
+ */
+export function parseFitnessTimeInput(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const minSec = /^(\d+)\s*[:：分]\s*(\d{1,2})\s*秒?$/.exec(trimmed);
+  if (minSec) {
+    const minutes = parseInt(minSec[1]!, 10);
+    const seconds = parseInt(minSec[2]!, 10);
+    if (seconds >= 60) return null;
+    return minutes * 60 + seconds;
+  }
+  if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
+  const n = parseFloat(trimmed);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Format total seconds as "m:ss" (e.g. 245 → "4:05"). */
+export function formatFitnessSeconds(totalSeconds: number): string {
+  const total = Math.max(0, Math.round(totalSeconds));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+// Sane per-metric ranges; a filled value outside the range blocks save.
+export const FITNESS_PLAUSIBLE_RANGES: Record<StandardFieldKey, { min: number; max: number }> = {
+  run50m: { min: 5, max: 20 },
+  run800m: { min: 120, max: 600 },
+  run1000m: { min: 150, max: 700 },
+  run50x8: { min: 60, max: 300 },
+  run10mShuttle: { min: 4, max: 20 },
+  sitAndReach: { min: -30, max: 45 },
+  standingLongJump: { min: 30, max: 320 },
+  tennisBallThrow: { min: 1, max: 25 },
+  doubleFootJump: { min: 2, max: 20 },
+  balanceBeam: { min: 1, max: 60 },
+  sitUps: { min: 0, max: 100 },
+  pullUps: { min: 0, max: 60 },
+  ropeSkipping: { min: 0, max: 300 },
+  vitalCapacity: { min: 200, max: 7000 },
+};
+
+/** Parse a standard-field raw input into its numeric value (seconds for timed runs). */
+export function parseStandardFieldValue(key: StandardFieldKey, raw: string): number | null {
+  if (TIME_INPUT_KEYS.has(key)) return parseFitnessTimeInput(raw);
+  return STANDARD_INT_KEYS.has(key) ? parseIntNum(raw) : parseNum(raw);
+}
+
+/** Empty inputs pass (field not filled); filled inputs must parse and sit inside the plausible range. */
+export function isStandardFieldValuePlausible(key: StandardFieldKey, raw: string): boolean {
+  if (!raw.trim()) return true;
+  const value = parseStandardFieldValue(key, raw);
+  if (value == null) return false;
+  const range = FITNESS_PLAUSIBLE_RANGES[key];
+  return value >= range.min && value <= range.max;
+}
+
+// Admitted foot-arch enum values (fitness.foot_arch_status valueText).
+const FOOT_ARCH_OPTIONS = ['normal', 'flat', 'high-arch', 'monitoring'] as const;
+const FOOT_ARCH_OPTION_LABELS: Record<(typeof FOOT_ARCH_OPTIONS)[number], string> = {
+  normal: i18nText('Fitness.footArch.normal'),
+  flat: i18nText('Fitness.footArch.flat'),
+  'high-arch': i18nText('Fitness.footArch.highArch'),
+  monitoring: i18nText('Fitness.footArch.monitoring'),
+};
+
 /* ── Event entry model ────────────────────────────────────────────────────
  * Each entry is one card in the modal and saves as its own health record. A
  * `standard` entry writes the national-standard assessment; an activity entry
@@ -273,13 +352,28 @@ function parseIntNum(v: string): number | null {
 export interface FitnessEventEntry {
   category: string;
   standardValues: Partial<Record<StandardFieldKey, string>>;
+  /** Foot-arch status for standard entries ('' = not recorded). */
+  footArch: string;
   duration: string;
   distance: string;
   intensity: string;
 }
 
 export function makeEntry(category: string): FitnessEventEntry {
-  return { category, standardValues: {}, duration: '', distance: '', intensity: '' };
+  return { category, standardValues: {}, footArch: '', duration: '', distance: '', intensity: '' };
+}
+
+/** A standard entry is complete only when at least one metric (or foot arch) is filled. */
+export function standardEntryHasMetric(entry: FitnessEventEntry): boolean {
+  if (entry.footArch.trim()) return true;
+  return (Object.keys(entry.standardValues) as StandardFieldKey[])
+    .some((key) => (entry.standardValues[key] ?? '').trim() !== '');
+}
+
+/** Every filled standard-field value must parse and sit inside its plausible range. */
+export function standardEntryValuesPlausible(entry: FitnessEventEntry): boolean {
+  return (Object.keys(entry.standardValues) as StandardFieldKey[])
+    .every((key) => isStandardFieldValuePlausible(key, entry.standardValues[key] ?? ''));
 }
 
 /** Seeds the modal in single-event edit mode for an existing fitness record. */
@@ -308,9 +402,8 @@ type FitnessFormContentProps = {
 };
 
 export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClose, linkedReminder, editTarget }: FitnessFormContentProps) {
-  const tier = ageTier(ageMonths);
+  const derivedTier = ageTier(ageMonths);
   const isFemale = child.gender === 'female';
-  const fields = visibleFields(tier, isFemale);
   const editing = !!editTarget;
 
   const [date, setDate] = useState(editTarget?.date ?? new Date().toISOString().slice(0, 10));
@@ -321,6 +414,12 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
   );
   const [activeIdx, setActiveIdx] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  // '' = auto (derive from age); manual override covers grade-vs-age mismatch
+  // (e.g. a 144-month child still in grade 6).
+  const [tierOverride, setTierOverride] = useState<AgeTier | ''>('');
+  const tier = tierOverride || derivedTier;
+  const fields = visibleFields(tier, isFemale);
 
   const updateEntry = (idx: number, patch: Partial<FitnessEventEntry>) => {
     setEntries((prev) => prev.map((entry, i) => (i === idx ? { ...entry, ...patch } : entry)));
@@ -336,14 +435,18 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
     setActiveIdx((cur) => (idx < cur ? cur - 1 : Math.min(cur, entries.length - 2)));
   };
 
-  // An activity entry needs a positive duration; a standard entry always saves.
+  // An activity entry needs a positive duration; a standard entry needs at
+  // least one filled metric, and every filled value must be plausible.
   const entryComplete = (entry: FitnessEventEntry) =>
-    entry.category === STANDARD_CATEGORY || (parseNum(entry.duration) ?? 0) > 0;
+    entry.category === STANDARD_CATEGORY
+      ? standardEntryHasMetric(entry) && standardEntryValuesPlausible(entry)
+      : (parseNum(entry.duration) ?? 0) > 0;
   const canSave = !!date && entries.every(entryComplete);
 
   const handleSubmit = async () => {
     if (!canSave || saving) return;
     setSaving(true);
+    setSaveError(false);
     const now = isoNow();
     const ageAtDate = computeAgeMonthsAt(child.birthDate, date);
     try {
@@ -396,10 +499,7 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
         });
 
         if (entry.category === STANDARD_CATEGORY) {
-          const num = (key: StandardFieldKey) => {
-            const raw = entry.standardValues[key] ?? '';
-            return STANDARD_INT_KEYS.has(key) ? parseIntNum(raw) : parseNum(raw);
-          };
+          const num = (key: StandardFieldKey) => parseStandardFieldValue(key, entry.standardValues[key] ?? '');
           if (editTarget) {
             const values = STANDARD_CAPTURE_FIELDS
               .map((field) => {
@@ -409,6 +509,11 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
                   : value(field.metricId, { valueNumber, unit: field.unit });
               })
               .filter((item): item is HealthRecordCaptureValueInput => item != null);
+            // Foot arch is an enum/text metric — captured as valueText, never
+            // routed through the numeric STANDARD_CAPTURE_FIELDS.
+            if (entry.footArch) {
+              values.push(value('fitness.foot_arch_status', { valueText: entry.footArch }));
+            }
             await replaceHealthRecordCapture(
               editTarget.eventId,
               captureInput(ulid(), 'fitness-school-assessment', values),
@@ -435,7 +540,7 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
             tennisBallThrow: num('tennisBallThrow'),
             doubleFootJump: num('doubleFootJump'),
             balanceBeam: num('balanceBeam'),
-            footArchStatus: null,
+            footArchStatus: entry.footArch || null,
             notes: notes || null,
             now,
             linkedReminderStateId: linkedStateId,
@@ -463,8 +568,10 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
       }
       await onSaved();
       onClose();
-    } catch {
-      /* bridge unavailable */
+    } catch (error) {
+      // Fail-close: surface the failure instead of swallowing it silently.
+      catchLog('fitness', 'action:save-fitness-record-failed')(error);
+      setSaveError(true);
     } finally {
       setSaving(false);
     }
@@ -489,6 +596,19 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
               />
             </FormField>
           </FormGrid>
+
+          <FormField label={i18nText('Fitness.form.tierLabel')}>
+            <AppSelect
+              value={tierOverride}
+              onChange={(value) => setTierOverride(value as AgeTier | '')}
+              options={[
+                { value: '', label: `${i18nText('Fitness.form.tierAuto')} · ${FITNESS_AGE_TIER_LABELS[derivedTier]}` },
+                ...(Object.keys(FITNESS_AGE_TIER_LABELS) as AgeTier[]).map((v) => ({ value: v, label: FITNESS_AGE_TIER_LABELS[v] })),
+              ]}
+              className="min-h-12"
+              contentClassName="z-[120]"
+            />
+          </FormField>
 
           {entries.map((entry, idx) => {
             const isActive = idx === activeIdx;
@@ -561,14 +681,23 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
                     </FormField>
 
                     {entry.category === STANDARD_CATEGORY ? (
-                      <StandardEventFields
-                        tier={tier}
-                        fields={fields}
-                        values={entry.standardValues}
-                        onChange={(key, value) =>
-                          updateEntry(idx, { standardValues: { ...entry.standardValues, [key]: value } })
-                        }
-                      />
+                      <>
+                        <StandardEventFields
+                          tier={tier}
+                          fields={fields}
+                          values={entry.standardValues}
+                          footArch={entry.footArch}
+                          onChange={(key, value) =>
+                            updateEntry(idx, { standardValues: { ...entry.standardValues, [key]: value } })
+                          }
+                          onFootArchChange={(value) => updateEntry(idx, { footArch: value })}
+                        />
+                        {!standardEntryHasMetric(entry) ? (
+                          <p className="text-[12px] text-[var(--nimi-status-warning)]">
+                            {i18nText('Fitness.form.standardMinOne')}
+                          </p>
+                        ) : null}
+                      </>
                     ) : (
                       <ActivityEventFields
                         entry={entry}
@@ -594,6 +723,12 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
               className="w-full"
             />
           </FormField>
+
+          {saveError ? (
+            <p className="rounded-2xl border border-[color-mix(in_srgb,var(--nimi-status-danger)_28%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))] px-4 py-3 text-[13px] text-[var(--nimi-status-danger)]">
+              {i18nText('Fitness.form.saveFailed')}
+            </p>
+          ) : null}
         </div>
       </ModalContent>
       <ModalFooter>
@@ -610,12 +745,16 @@ function StandardEventFields({
   tier,
   fields,
   values,
+  footArch,
   onChange,
+  onFootArchChange,
 }: {
   tier: AgeTier;
   fields: FieldVisibility;
   values: Partial<Record<StandardFieldKey, string>>;
+  footArch: string;
   onChange: (key: StandardFieldKey, value: string) => void;
+  onFootArchChange: (value: string) => void;
 }) {
   const groups: StandardFieldGroup[] = ['speed', 'strength', 'flex'];
   return (
@@ -637,9 +776,14 @@ function StandardEventFields({
                   key={f.key}
                   label={i18nText('Fitness.form.labelWithUnit', { label: f.label, unit: f.unit })}
                   hint={f.hint}
+                  error={
+                    !isStandardFieldValuePlausible(f.key, values[f.key] ?? '')
+                      ? i18nText('Fitness.form.valueOutOfRange')
+                      : undefined
+                  }
                 >
                   <TextField
-                    type="number"
+                    type={TIME_INPUT_KEYS.has(f.key) ? 'text' : 'number'}
                     step={f.step}
                     min={f.min}
                     placeholder={i18nText('Fitness.form.examplePlaceholder', { value: f.example })}
@@ -654,6 +798,18 @@ function StandardEventFields({
           </div>
         );
       })}
+      <FormField label={i18nText('Fitness.form.footArchLabel')}>
+        <AppSelect
+          value={footArch}
+          onChange={onFootArchChange}
+          options={[
+            { value: '', label: i18nText('Fitness.form.footArchUnset') },
+            ...FOOT_ARCH_OPTIONS.map((v) => ({ value: v, label: FOOT_ARCH_OPTION_LABELS[v] })),
+          ]}
+          className="min-h-12"
+          contentClassName="z-[120]"
+        />
+      </FormField>
     </div>
   );
 }

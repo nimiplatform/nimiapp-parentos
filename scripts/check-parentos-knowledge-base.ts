@@ -356,6 +356,71 @@ for (const metric of healthMetricData.metrics ?? []) {
   }
 }
 
+for (const metric of healthMetricData.metrics ?? []) {
+  if (!metric.evaluationPolicyRef) continue;
+  const policy = (healthEvaluationData.policies ?? []).find((p) => p.policyId === metric.evaluationPolicyRef);
+  if (policy && !(policy.appliesTo ?? []).includes(metric.metricId)) {
+    fail(`data/structured/parentos/health-metric-registry.yaml metric ${metric.metricId} binds ${metric.evaluationPolicyRef} but is outside that policy's appliesTo`);
+  }
+}
+
+// Fitness standard tables (fitness.standard-grade policy dataset).
+const fitnessStandardData = parseYaml(
+  readFileSync(resolve(TABLES, 'fitness-standard-tables.yaml'), 'utf-8'),
+) as {
+  tables?: Array<{
+    tier?: string;
+    sex?: string;
+    metrics?: Array<{ metricId?: string; direction?: string; pass?: number; good?: number; excellent?: number }>;
+  }>;
+};
+const FITNESS_STANDARD_TIERS = new Set(['grade12', 'grade34', 'grade56', 'grade7plus']);
+const fitnessStandardPolicy = (healthEvaluationData.policies ?? []).find((p) => p.policyId === 'fitness.standard-grade');
+const fitnessStandardMetricIds = new Set(fitnessStandardPolicy?.appliesTo ?? []);
+const fitnessStandardRows = new Set<string>();
+for (const table of fitnessStandardData.tables ?? []) {
+  const rowKey = `${table.tier}/${table.sex}`;
+  if (!table.tier || !FITNESS_STANDARD_TIERS.has(table.tier)) {
+    fail(`data/structured/parentos/fitness-standard-tables.yaml table has invalid tier ${table.tier}`);
+  }
+  if (table.sex !== 'male' && table.sex !== 'female') {
+    fail(`data/structured/parentos/fitness-standard-tables.yaml table ${rowKey} has invalid sex ${table.sex}`);
+  }
+  if (fitnessStandardRows.has(rowKey)) {
+    fail(`data/structured/parentos/fitness-standard-tables.yaml duplicate table row ${rowKey}`);
+  }
+  fitnessStandardRows.add(rowKey);
+  const seenMetrics = new Set<string>();
+  for (const entry of table.metrics ?? []) {
+    if (!entry.metricId || !healthMetricIds.has(entry.metricId)) {
+      fail(`data/structured/parentos/fitness-standard-tables.yaml table ${rowKey} references unknown metricId ${entry.metricId}`);
+      continue;
+    }
+    if (!fitnessStandardMetricIds.has(entry.metricId)) {
+      fail(`data/structured/parentos/fitness-standard-tables.yaml table ${rowKey} metric ${entry.metricId} is outside fitness.standard-grade appliesTo`);
+    }
+    if (seenMetrics.has(entry.metricId)) {
+      fail(`data/structured/parentos/fitness-standard-tables.yaml table ${rowKey} duplicates metric ${entry.metricId}`);
+    }
+    seenMetrics.add(entry.metricId);
+    if (entry.direction !== 'lower_better' && entry.direction !== 'higher_better') {
+      fail(`data/structured/parentos/fitness-standard-tables.yaml table ${rowKey} metric ${entry.metricId} has invalid direction ${entry.direction}`);
+    }
+    for (const key of ['pass', 'good', 'excellent'] as const) {
+      if (typeof entry[key] !== 'number' || !Number.isFinite(entry[key])) {
+        fail(`data/structured/parentos/fitness-standard-tables.yaml table ${rowKey} metric ${entry.metricId} ${key} must be a finite number`);
+      }
+    }
+    if (entry.direction === 'lower_better' && !(Number(entry.pass) > Number(entry.good) && Number(entry.good) > Number(entry.excellent))) {
+      fail(`data/structured/parentos/fitness-standard-tables.yaml table ${rowKey} metric ${entry.metricId} lower_better requires pass > good > excellent`);
+    }
+    if (entry.direction === 'higher_better' && !(Number(entry.excellent) > Number(entry.good) && Number(entry.good) > Number(entry.pass))) {
+      fail(`data/structured/parentos/fitness-standard-tables.yaml table ${rowKey} metric ${entry.metricId} higher_better requires excellent > good > pass`);
+    }
+  }
+}
+pass(`Validated fitness standard tables for ${fitnessStandardRows.size} tier/sex rows`);
+
 const recordDataRules = new Map<string, { ruleId: string; actionType?: string }>();
 for (const rule of [...(reminderData.rules ?? []), ...(reminderExtendedData.rules ?? [])]) {
   if (rule.actionType === 'record_data') {

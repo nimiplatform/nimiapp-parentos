@@ -17,6 +17,10 @@ import {
   type GrowthPercentileStandard,
   type GrowthPercentileTypeId,
 } from './growth-percentile-band.js';
+import {
+  fitnessStandardTier,
+  resolveFitnessStandardBand,
+} from './fitness-standard-grade.js';
 import type { HealthEvaluation, HealthMetricSnapshot, HealthRecordEvent, HealthRecordSnapshot, HealthRecordValue, RecomputeDerivedValuesOptions } from './health-record-domain-types.js';
 export type { HealthEvaluation, HealthGroupSnapshot, HealthMetricSnapshot, HealthRecordEvent, HealthRecordEventKind, HealthRecordSnapshot, HealthRecordValue, HealthRecordValueKind, RecomputeDerivedValuesOptions } from './health-record-domain-types.js';
 
@@ -363,6 +367,18 @@ function evaluateMetric(input: {
     return eventPayloadEvaluation;
   }
 
+  const fitnessStandardEvaluation = evaluateFitnessStandardGradePolicy({
+    metric: input.metric,
+    policy,
+    latestValue,
+    latestEvent,
+    nowIso: input.nowIso,
+    sex: input.sex,
+  });
+  if (fitnessStandardEvaluation) {
+    return fitnessStandardEvaluation;
+  }
+
   if (isPresencePolicy(policy.policyId)) {
     return evaluation({
       status: 'on_track',
@@ -398,6 +414,80 @@ const PERCENTILE_TYPE_ID_BY_METRIC: Partial<Record<HealthMetricId, GrowthPercent
 
 function isPercentilePolicy(policyId: string) {
   return policyId === 'growth.percentile-band' || policyId === 'growth.bmi-percentile-band';
+}
+
+// @nimi-authority: definition.parentos.structured.fitness.standard.tables
+function evaluateFitnessStandardGradePolicy(input: {
+  metric: HealthMetricDefinition;
+  policy: HealthEvaluationPolicy;
+  latestValue: HealthRecordValue;
+  latestEvent: HealthRecordEvent;
+  nowIso: string;
+  sex?: GrowthPercentileSex;
+}): HealthEvaluation | null {
+  if (input.policy.policyId !== 'fitness.standard-grade') {
+    return null;
+  }
+
+  const baseInputs = {
+    valueId: input.latestValue.valueId,
+    eventId: input.latestEvent.eventId,
+    ageMonths: input.latestEvent.ageMonths,
+  };
+  const unrated = (reason: string, explanation: string, extraInputs: Record<string, unknown> = {}) =>
+    evaluation({
+      status: 'unrated',
+      reason,
+      label: 'Recorded',
+      explanation,
+      policy: input.policy,
+      metric: input.metric,
+      nowIso: input.nowIso,
+      inputs: { ...baseInputs, ...extraInputs },
+    });
+
+  // Enum/text metrics (e.g. foot arch status) have no national-standard score.
+  if (typeof input.latestValue.valueNumber !== 'number') {
+    return unrated('numeric_value_required', 'This evaluation policy requires a numeric value.');
+  }
+  if (!input.sex) {
+    return unrated('sex_required', 'Standard-grade evaluation requires the child sex to select the scoring table.');
+  }
+  const tier = fitnessStandardTier(input.latestEvent.ageMonths);
+  if (!tier) {
+    return unrated(
+      'standard_table_not_available_for_stage',
+      'No admitted national-standard scoring table exists for this school stage.',
+    );
+  }
+  const value = input.latestValue.valueNumber;
+  const band = resolveFitnessStandardBand({
+    metricId: input.metric.metricId,
+    value,
+    tier,
+    sex: input.sex,
+  });
+  if (!band) {
+    return unrated(
+      'standard_table_not_available_for_metric',
+      'No admitted national-standard scoring table exists for this metric, stage, and sex.',
+      { sex: input.sex, tier },
+    );
+  }
+
+  const below = band === 'below_pass';
+  return evaluation({
+    status: below ? 'watch' : 'on_track',
+    reason: below ? 'below_standard_pass_threshold' : 'meets_standard_pass_threshold',
+    label: below ? 'Watch' : 'On track',
+    explanation: below
+      ? 'The latest value is below the admitted national-standard pass line for this stage and sex.'
+      : 'The latest value meets the admitted national-standard pass line for this stage and sex.',
+    policy: input.policy,
+    metric: input.metric,
+    nowIso: input.nowIso,
+    inputs: { ...baseInputs, sex: input.sex, tier, value, band },
+  });
 }
 
 function evaluateGrowthPercentilePolicy(input: {

@@ -100,12 +100,12 @@ protocols: &parentos_health_capture_protocol_entries
     groupId: development
     displayName: Female Tanner self-assessment
     modeSupport: [manual, prefilled, guided, reminder]
-    metricIds: [development.tanner_breast_stage, development.tanner_pubic_hair_stage, development.bone_age_years, development.body_fat_percentage]
+    metricIds: [development.tanner_breast_stage, development.tanner_pubic_hair_stage, development.menarche_status, development.menarche_date, development.bone_age_years, development.body_fat_percentage]
     requiredMetricIds: [development.tanner_breast_stage, development.tanner_pubic_hair_stage]
-    optionalMetricIds: [development.bone_age_years, development.body_fat_percentage]
+    optionalMetricIds: [development.menarche_status, development.menarche_date, development.bone_age_years, development.body_fat_percentage]
     sourceSupport: [manual, reminder]
     storageTarget: health_record_event
-    completionPolicy: "One self-assessment event must contain breast stage and pubic hair stage, each constrained to Tanner stage 1..5."
+    completionPolicy: "One self-assessment event must contain breast stage and pubic hair stage, each constrained to Tanner stage 1..5. menarche_status uses not_yet | occurred; menarche_date is required when and only when menarche_status is occurred."
   - protocolId: tanner-male-self-assessment
     groupId: development
     displayName: Male Tanner self-assessment

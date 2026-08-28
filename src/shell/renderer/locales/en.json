@@ -2297,13 +2297,32 @@
       "normal": "Normal",
       "flat": "Flat foot",
       "highArch": "High arch",
-      "monitoring": "Monitoring"
+      "monitoring": "Monitoring",
+      "other": "Other"
     },
     "source": {
       "schoolPe": "School PE",
       "sportsClub": "Sports club",
       "clinic": "Clinic",
-      "self": "Self test"
+      "self": "Self test",
+      "other": "Other"
+    },
+    "grade": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "pass": "Pass",
+      "belowPass": "Below pass"
+    },
+    "delta": {
+      "improved": "Improved vs last",
+      "regressed": "Regressed vs last"
+    },
+    "trend": {
+      "title": "Fitness trend",
+      "empty": "Trends appear after at least two records",
+      "lineExcellent": "Excellent",
+      "lineGood": "Good",
+      "linePass": "Pass"
     },
     "intensity": {
       "light": "Light",
@@ -2386,7 +2405,14 @@
       "intensityLabel": "Intensity",
       "labelWithUnit": "{{label}} ({{unit}})",
       "examplePlaceholder": "e.g. {{value}}",
-      "runSecondsHint": "Enter seconds, e.g. 4:05 = 245"
+      "runSecondsHint": "Accepts 4:05 or 245 seconds",
+      "tierLabel": "School stage",
+      "tierAuto": "Auto (by age)",
+      "standardMinOne": "Fill in at least one fitness metric",
+      "saveFailed": "Save failed, please try again",
+      "footArchLabel": "Foot arch",
+      "footArchUnset": "Not recorded",
+      "valueOutOfRange": "Value out of plausible range"
     },
     "page": {
       "title": "Fitness assessment",
@@ -3811,7 +3837,12 @@
       "titleWithoutAssessment": "Age-based guidance",
       "subtitle": "{{stageTitle}} · Actionable guidance based on {{mode}}",
       "modeStage": "assessment stage",
-      "modeAge": "age"
+      "modeAge": "age",
+      "commonWindow": "Typical timing: {{primary}}; pubic hair: {{pubicHair}}",
+      "menarcheOccurredWithDate": "Menarche occurred · {{date}}",
+      "progressionFast": "Observed stage progression of 2 or more stages within the past 12 months; consider consulting a professional",
+      "progressionStable": "Stage progression over the past 12 months has been steady",
+      "nextStageTitle": "Next stage preview"
     },
     "referenceNotes": {
       "title": "Reference notes",
@@ -3831,6 +3862,10 @@
       "boneAgePlaceholder": "e.g. 11.5",
       "bodyFat": "Body fat percentage (optional)",
       "bodyFatPlaceholder": "e.g. 18.5",
+      "menarcheStatus": "Has menarche occurred",
+      "menarcheNotYet": "Not yet",
+      "menarcheOccurred": "Occurred",
+      "menarcheDate": "Menarche date",
       "notes": "Notes (optional)",
       "notesPlaceholder": "Record observed changes, the child's feelings, and other context...",
       "cancel": "Cancel",
@@ -3850,14 +3885,23 @@
       "genitalStage": "Genital stage",
       "pubicHairStage": "Pubic hair stage",
       "changed": "Changed",
+      "menarcheOccurred": "Menarche occurred",
+      "menarcheOccurredWithDate": "Menarche occurred · {{date}}",
       "notesPrefix": "Notes:"
     },
     "overview": {
       "boneAgeMatched": "Bone age aligned",
       "boneAgeAhead": "Bone age {{years}} years ahead",
       "boneAgeBehind": "Bone age {{years}} years lower than chronological age",
+      "boneAgeDeviationLarge": "Bone age differs by more than ±2 years; consider consulting a pediatric endocrinology clinic",
+      "boneAgeCaption": "A bone age within ±1 year of chronological age is a common range; for reference only",
       "boneAge": "Bone age",
-      "bodyFat": "Body fat"
+      "bodyFat": "Body fat",
+      "bodyFatDelta": "vs previous {{delta}}",
+      "height": "Height",
+      "heightVelocity": "Records show {{delta}} cm of height growth over the past {{months}} months (annualized about {{annualized}} cm)",
+      "heightVelocityInsufficient": "Not enough height records to estimate growth velocity yet",
+      "heightGrowthCurveLink": "View growth curve"
     },
     "stage": {
       "breast": {
@@ -3914,7 +3958,7 @@
           "howToJudge": "📏 Reference: the testes are about jujube or small egg size (long axis about 4.5-5 cm, about 15-25 mL). Overall external genital appearance is adult-like."
         }
       },
-      "pubicHair": {
+      "pubicHairFemale": {
         "1": {
           "title": "PH1 · No pubic hair",
           "desc": "There is no pubic hair in the genital area, only fine vellus hair similar to the abdomen.",
@@ -3922,8 +3966,8 @@
         },
         "2": {
           "title": "PH2 · Sparse appearance",
-          "desc": "A small amount of longer, slightly darker hair appears, usually along the labia or at the base of the penis.",
-          "howToJudge": "👀 Observe: a few to a dozen longer, slightly darker hairs may be visible. They are usually straight or slightly curved and mainly appear on the perineum or at the base of the penis."
+          "desc": "A small amount of longer, slightly darker hair appears, usually along the labia majora.",
+          "howToJudge": "👀 Observe: a few to a dozen longer, slightly darker hairs may be visible. They are usually straight or slightly curved and mainly appear along the labia majora."
         },
         "3": {
           "title": "PH3 · More and coarser",
@@ -3937,7 +3981,34 @@
         },
         "5": {
           "title": "PH5 · Adult pattern",
-          "desc": "Hair distribution and density are adult-like, extending to the inner thighs; typically inverted-triangle in females and diamond-shaped in males.",
+          "desc": "Hair distribution and density are adult-like, extending to the inner thighs in an inverted-triangle pattern.",
+          "howToJudge": "👀 Observe: distribution and density are adult-like and extend to the inner upper thighs."
+        }
+      },
+      "pubicHairMale": {
+        "1": {
+          "title": "PH1 · No pubic hair",
+          "desc": "There is no pubic hair in the genital area, only fine vellus hair similar to the abdomen.",
+          "howToJudge": "👀 Observe: it looks like childhood, with only very fine light vellus hair that is barely visible."
+        },
+        "2": {
+          "title": "PH2 · Sparse appearance",
+          "desc": "A small amount of longer, slightly darker hair appears, usually at the base of the penis.",
+          "howToJudge": "👀 Observe: a few to a dozen longer, slightly darker hairs may be visible. They are usually straight or slightly curved and mainly appear at the base of the penis."
+        },
+        "3": {
+          "title": "PH3 · More and coarser",
+          "desc": "Hair becomes more numerous, coarser, curlier, darker, and starts spreading toward the pubic area.",
+          "howToJudge": "👀 Observe: there is enough hair to describe as a small cluster. It starts curling, becomes clearly dark, and spreads toward the lower abdomen."
+        },
+        "4": {
+          "title": "PH4 · Near adult",
+          "desc": "Hair texture is close to adult pubic hair: coarse and curly, with wider coverage but not yet extending to the inner thighs.",
+          "howToJudge": "👀 Observe: the hair is dense and adult-like in texture, coarse and curly, but the distribution has not yet reached the inner upper thighs."
+        },
+        "5": {
+          "title": "PH5 · Adult pattern",
+          "desc": "Hair distribution and density are adult-like, extending to the inner thighs in a diamond-shaped pattern.",
           "howToJudge": "👀 Observe: distribution and density are adult-like and extend to the inner upper thighs."
         }
       }
@@ -4211,6 +4282,57 @@
             "4": "If the child feels embarrassed, keep a clean pair of underwear nearby"
           },
           "when": "Discuss this before G3 rather than waiting until the child discovers it with fear"
+        },
+        "menstrualIron": {
+          "steps": {
+            "1": "During menstruation, serve red meat (beef, lean pork) 2-3 times a week, about 50-75 g each time",
+            "2": "Add liver (chicken or pork, 25-50 g) once a week, paired with dark leafy vegetables",
+            "3": "Pair meals with vitamin C-rich fruit (oranges, kiwi) to support iron absorption",
+            "4": "Avoid strong tea or coffee with iron-rich meals, as they can reduce absorption"
+          },
+          "when": "Focus on iron intake during the period and the week after it"
+        },
+        "irregular2YearsSeekCare": {
+          "steps": {
+            "1": "Irregular cycles are common in the first 1-2 years after menarche; start by logging each period on a calendar",
+            "2": "Note cycles that stay shorter than 21 days or longer than 45 days, or bleeding that lasts more than 8 days",
+            "3": "If cycles are still very irregular 2 years after menarche, consider consulting a professional",
+            "4": "Bring the period log to the visit so the clinician can see the pattern"
+          },
+          "when": "Keep observing after menarche; act if cycles remain irregular at the 2-year mark"
+        },
+        "hpvTiming": {
+          "steps": {
+            "1": "HPV vaccination is usually advised for girls aged 9-14, with the best protection when given early",
+            "2": "Ask your community health center or child health clinic about available vaccine types and schedules",
+            "3": "Before vaccination, tell the clinician about the child's health status and vaccination history"
+          },
+          "when": "Planning can start at age 9; consult a vaccination clinic early"
+        },
+        "crampsWarmRest": {
+          "steps": {
+            "1": "Mild lower-abdominal discomfort during a period is common; a warm compress over clothing can help",
+            "2": "Prioritize rest and sleep, avoid intense exercise; gentle walking may ease discomfort",
+            "3": "Offer warm drinks and keep warm; avoid very cold food and drinks",
+            "4": "If pain interferes with school or daily activities, consider consulting a professional"
+          }
+        },
+        "growthVelocityWindow": {
+          "steps": {
+            "1": "Measure height at the same time of day every 3-6 months and log it on the growth curve",
+            "2": "Before puberty, about 5-6 cm of growth per year is a common pace, with wide individual variation",
+            "3": "Once puberty starts, height enters a rapid-growth phase and then gradually slows",
+            "4": "If growth stays clearly lower than usual over a full year, consider consulting a professional for an evaluation"
+          }
+        },
+        "scoliosisRapidGrowth": {
+          "steps": {
+            "1": "During rapid growth, check monthly: have the child stand naturally and look from behind at whether both shoulders are level",
+            "2": "Forward-bend check: with legs straight, bend forward 90 degrees and observe whether the two sides of the back look symmetric",
+            "3": "If you observe uneven shoulders or one side of the back protruding, consult a professional for further evaluation",
+            "4": "Encourage good sitting posture and alternate shoulders when carrying a backpack to avoid long-term one-sided load"
+          },
+          "when": "Monthly during rapid growth (around B3 for girls, G3 for boys)"
         }
       }
     }

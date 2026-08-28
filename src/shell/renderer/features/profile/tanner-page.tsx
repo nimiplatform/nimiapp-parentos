@@ -15,7 +15,9 @@ import { TannerTimeline } from './tanner-timeline.js';
 import {
   BREAST_STAGES,
   GENITAL_STAGES,
+  pubicHairStages,
   sortAssessmentsDesc,
+  type MenarcheStatus,
 } from './tanner-page-shared.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -37,6 +39,7 @@ export default function TannerPage() {
 
   const [boneAgeMeasurements, setBoneAgeMeasurements] = useState<MeasurementRow[]>([]);
   const [bodyFatMeasurements, setBodyFatMeasurements] = useState<MeasurementRow[]>([]);
+  const [heightMeasurements, setHeightMeasurements] = useState<MeasurementRow[]>([]);
 
   const [formAssessedAt, setFormAssessedAt] = useState(new Date().toISOString().slice(0, 10));
   const [formBG, setFormBG] = useState(1);
@@ -45,12 +48,15 @@ export default function TannerPage() {
   const [formNotes, setFormNotes] = useState('');
   const [formBoneAge, setFormBoneAge] = useState('');
   const [formBodyFat, setFormBodyFat] = useState('');
+  const [formMenarcheStatus, setFormMenarcheStatus] = useState<MenarcheStatus>('not_yet');
+  const [formMenarcheDate, setFormMenarcheDate] = useState('');
 
   const loadAll = async (cid: string) => {
     const [ta, ms] = await Promise.all([getTannerAssessments(cid), getMeasurements(cid)]);
     setAssessments(ta);
     setBoneAgeMeasurements(ms.filter((m) => m.typeId === 'bone-age'));
     setBodyFatMeasurements(ms.filter((m) => m.typeId === 'body-fat-percentage'));
+    setHeightMeasurements(ms.filter((m) => m.typeId === 'height'));
   };
 
   useEffect(() => {
@@ -77,11 +83,13 @@ export default function TannerPage() {
   const resetForm = () => {
     setFormAssessedAt(new Date().toISOString().slice(0, 10));
     setFormBG(1); setFormPH(1); setFormAssessedBy('parent'); setFormNotes('');
-    setFormBoneAge(''); setFormBodyFat(''); setShowForm(false);
+    setFormBoneAge(''); setFormBodyFat(''); setFormMenarcheStatus('not_yet'); setFormMenarcheDate('');
+    setShowForm(false);
   };
 
   const handleSubmit = async () => {
     if (!formAssessedAt || formBG < 1 || formBG > 5 || formPH < 1 || formPH > 5) return;
+    if (isFemale && formMenarcheStatus === 'occurred' && !formMenarcheDate) return;
     const now = isoNow();
     const am = computeAgeMonthsAt(child.birthDate, formAssessedAt);
     try {
@@ -89,6 +97,8 @@ export default function TannerPage() {
         assessmentId: ulid(), childId: child.childId, assessedAt: formAssessedAt,
         ageMonths: am, breastOrGenitalStage: formBG, pubicHairStage: formPH,
         assessedBy: formAssessedBy || null, notes: formNotes || null, now,
+        menarcheStatus: isFemale ? formMenarcheStatus : null,
+        menarcheDate: isFemale && formMenarcheStatus === 'occurred' ? formMenarcheDate : null,
       });
       // Save bone age as measurement if provided.
       if (formBoneAge.trim()) {
@@ -170,7 +180,7 @@ export default function TannerPage() {
       <TannerOverviewCards
         boneAgeMeasurements={boneAgeMeasurements}
         bodyFatMeasurements={bodyFatMeasurements}
-        ageMonths={ageMonths}
+        heightMeasurements={heightMeasurements}
       />
 
       {/* ── Guide ────────────────────────────────────────── */}
@@ -222,8 +232,10 @@ export default function TannerPage() {
 
       {showForm && (
         <TannerAssessmentForm
+          isFemale={isFemale}
           bgLabel={bgLabel}
           bgStages={bgStages}
+          phStages={pubicHairStages(isFemale)}
           formAssessedAt={formAssessedAt}
           setFormAssessedAt={setFormAssessedAt}
           formBG={formBG}
@@ -238,6 +250,10 @@ export default function TannerPage() {
           setFormBoneAge={setFormBoneAge}
           formBodyFat={formBodyFat}
           setFormBodyFat={setFormBodyFat}
+          formMenarcheStatus={formMenarcheStatus}
+          setFormMenarcheStatus={setFormMenarcheStatus}
+          formMenarcheDate={formMenarcheDate}
+          setFormMenarcheDate={setFormMenarcheDate}
           onClose={resetForm}
           onSave={() => void handleSubmit()}
         />
@@ -250,6 +266,7 @@ export default function TannerPage() {
         childName={child.displayName}
         ageLabel={ageLabel}
         gender={child.gender}
+        assessments={sorted}
       />
 
       <h2 className="text-[14px] font-semibold mb-3 mt-6 text-[var(--nimi-text-primary)]">

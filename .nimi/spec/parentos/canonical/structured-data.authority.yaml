@@ -30,6 +30,20 @@ units:
     relations:
       - type: applies_to
         target: definition.parentos.structured.feature.matrix
+  - id: definition.parentos.structured.fitness.standard.tables
+    kind: definition
+    title: Fitness Standard Tables
+    meaning: data/structured/parentos/fitness-standard-tables.yaml is the specialized structured ParentOS artifact for the Fitness Standard Tables dataset (China National Student Physical Fitness Standards grade thresholds by school-stage tier, sex, and metric); this canonical definition owns its product role and the artifact retains the detailed schema and entries.
+  - id: rule.parentos.structured.fitness.standard.tables.binding
+    kind: rule
+    title: Fitness Standard Tables binding
+    modality: must
+    statement: ParentOS generators, validators, embedded catalogs, and runtime consumers use data/structured/parentos/fitness-standard-tables.yaml as the sole specialized structured artifact for the Fitness Standard Tables dataset and do not create a competing app-local catalog.
+    condition: Whenever ParentOS generates, validates, embeds, or consumes the Fitness Standard Tables dataset.
+    failure: Fail closed when data/structured/parentos/fitness-standard-tables.yaml is missing, invalid, drifted from its checked projection, or bypassed by a competing catalog.
+    relations:
+      - type: applies_to
+        target: definition.parentos.structured.fitness.standard.tables
   - id: definition.parentos.structured.growth.milestone.rules
     kind: definition
     title: Growth Milestone Rules

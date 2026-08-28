@@ -68,6 +68,7 @@ export {
   HEALTH_CAPTURE_PROTOCOL_IDS,
   HEALTH_EVALUATION_POLICY_IDS,
   HEALTH_RECORD_DATA_RULE_IDS,
+  FITNESS_STANDARD_TABLES,
 } from './gen/health-record.gen.js';
 export type {
   HealthMetricGroup,
@@ -94,6 +95,11 @@ export type {
   HealthReminderCaptureTarget,
   HealthRecordDataRuleId,
   HealthDateDefaultPolicy,
+  FitnessStandardTier,
+  FitnessStandardDirection,
+  FitnessStandardBand,
+  FitnessStandardMetricThresholds,
+  FitnessStandardTable,
 } from './gen/health-record.gen.js';
 
 export {

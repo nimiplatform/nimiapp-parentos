@@ -106,8 +106,8 @@ policies: &parentos_health_evaluation_policy_entries
       - status: on_track
         when: "value is within admitted reference band"
   - policyId: fitness.standard-grade
-    appliesTo: [fitness.run_50m, fitness.vital_capacity]
-    sourceRefs: [China National Student Physical Fitness Standards]
+    appliesTo: [fitness.run_10m_shuttle, fitness.run_50m, fitness.run_800m, fitness.run_1000m, fitness.run_50x8, fitness.sit_and_reach, fitness.standing_long_jump, fitness.sit_ups, fitness.pull_ups, fitness.rope_skipping, fitness.vital_capacity, fitness.tennis_ball_throw, fitness.double_foot_jump, fitness.balance_beam, fitness.foot_arch_status]
+    sourceRefs: [data/structured/parentos/fitness-standard-tables.yaml]
     outputRules:
       - status: missing
         when: "no latest assessment"

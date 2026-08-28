@@ -1,0 +1,102 @@
+version: 1
+id: parentos.fitness-standard-tables
+purpose: >
+  China National Student Physical Fitness Standards (国家学生体质健康标准) single-item
+  grade thresholds for admitted school-stage tiers, used by the fitness.standard-grade
+  evaluation policy and the fitness page grade badges / trend reference lines.
+source:
+  title: 国家学生体质健康标准（2014年修订）
+  issuer: 中华人民共和国教育部
+  document: 教体艺〔2014〕5号
+  referenceUrls:
+    - https://www.haowendang.cn/c0qimh1iddi0fvam2gyzr6h1tx45d76007j3_1.html
+    - https://www.lngc.edu.cn/tyb/info/1028/1254.htm
+derivation: >
+  Each admitted school-stage tier resolves to the official single-item scoring table of
+  the LOWEST grade in its band, so a child is never graded against an older grade's bar:
+  grade12 → 小学一年级, grade34 → 小学三年级, grade56 → 小学五年级,
+  grade7plus → 初中一年级(七年级). Threshold values are the official performance lines
+  for score 60 (pass/及格), score 80 (good/良好), and score 90 (excellent/优秀) from the
+  per-grade single-item scoring tables (表1-3 ~ 表1-16). Timed runs are lower_better;
+  all other metrics are higher_better. Endurance runs (50米×8, 800米, 1000米) are stored
+  in seconds, converted from the official 分·秒 notation. Preschool-tier metrics
+  (10米折返跑, 网球掷远, 双脚连续跳, 走平衡木) have no national-standard scoring table
+  and therefore no entries here; they stay unrated.
+bands:
+  - band: excellent
+    minScore: 90
+  - band: good
+    minScore: 80
+  - band: pass
+    minScore: 60
+tables:
+  # ── grade12 → 小学一年级 ──────────────────────────────────────────────
+  - tier: grade12
+    sex: male
+    metrics:
+      - { metricId: fitness.run_50m, direction: lower_better, pass: 12.6, good: 10.6, excellent: 10.4 }
+      - { metricId: fitness.sit_and_reach, direction: higher_better, pass: 0.0, good: 11.0, excellent: 13.0 }
+      - { metricId: fitness.rope_skipping, direction: higher_better, pass: 17, good: 87, excellent: 99 }
+      - { metricId: fitness.vital_capacity, direction: higher_better, pass: 700, good: 1300, excellent: 1500 }
+  - tier: grade12
+    sex: female
+    metrics:
+      - { metricId: fitness.run_50m, direction: lower_better, pass: 13.8, good: 11.8, excellent: 11.2 }
+      - { metricId: fitness.sit_and_reach, direction: higher_better, pass: 2.4, good: 13.4, excellent: 16.0 }
+      - { metricId: fitness.rope_skipping, direction: higher_better, pass: 17, good: 87, excellent: 103 }
+      - { metricId: fitness.vital_capacity, direction: higher_better, pass: 600, good: 1000, excellent: 1200 }
+  # ── grade34 → 小学三年级 ──────────────────────────────────────────────
+  - tier: grade34
+    sex: male
+    metrics:
+      - { metricId: fitness.run_50m, direction: lower_better, pass: 11.5, good: 9.5, excellent: 9.3 }
+      - { metricId: fitness.sit_and_reach, direction: higher_better, pass: -0.8, good: 10.2, excellent: 13.4 }
+      - { metricId: fitness.rope_skipping, direction: higher_better, pass: 34, good: 104, excellent: 116 }
+      - { metricId: fitness.vital_capacity, direction: higher_better, pass: 900, good: 1700, excellent: 2100 }
+      - { metricId: fitness.sit_ups, direction: higher_better, pass: 16, good: 36, excellent: 42 }
+  - tier: grade34
+    sex: female
+    metrics:
+      - { metricId: fitness.run_50m, direction: lower_better, pass: 12.0, good: 10.0, excellent: 9.4 }
+      - { metricId: fitness.sit_and_reach, direction: higher_better, pass: 2.2, good: 13.2, excellent: 16.6 }
+      - { metricId: fitness.rope_skipping, direction: higher_better, pass: 39, good: 109, excellent: 125 }
+      - { metricId: fitness.vital_capacity, direction: higher_better, pass: 800, good: 1400, excellent: 1600 }
+      - { metricId: fitness.sit_ups, direction: higher_better, pass: 16, good: 36, excellent: 42 }
+  # ── grade56 → 小学五年级 ──────────────────────────────────────────────
+  - tier: grade56
+    sex: male
+    metrics:
+      - { metricId: fitness.run_50m, direction: lower_better, pass: 10.8, good: 8.8, excellent: 8.6 }
+      - { metricId: fitness.sit_and_reach, direction: higher_better, pass: -2.6, good: 9.4, excellent: 13.8 }
+      - { metricId: fitness.rope_skipping, direction: higher_better, pass: 56, good: 126, excellent: 138 }
+      - { metricId: fitness.vital_capacity, direction: higher_better, pass: 1300, good: 2200, excellent: 2700 }
+      - { metricId: fitness.sit_ups, direction: higher_better, pass: 18, good: 38, excellent: 44 }
+      - { metricId: fitness.run_50x8, direction: lower_better, pass: 138, good: 108, excellent: 102 }
+  - tier: grade56
+    sex: female
+    metrics:
+      - { metricId: fitness.run_50m, direction: lower_better, pass: 11.1, good: 9.1, excellent: 8.5 }
+      - { metricId: fitness.sit_and_reach, direction: higher_better, pass: 2.0, good: 13.0, excellent: 17.2 }
+      - { metricId: fitness.rope_skipping, direction: higher_better, pass: 58, good: 128, excellent: 144 }
+      - { metricId: fitness.vital_capacity, direction: higher_better, pass: 1050, good: 1850, excellent: 2050 }
+      - { metricId: fitness.sit_ups, direction: higher_better, pass: 18, good: 38, excellent: 44 }
+      - { metricId: fitness.run_50x8, direction: lower_better, pass: 143, good: 113, excellent: 107 }
+  # ── grade7plus → 初中一年级(七年级) ───────────────────────────────────
+  - tier: grade7plus
+    sex: male
+    metrics:
+      - { metricId: fitness.run_50m, direction: lower_better, pass: 10.2, good: 8.2, excellent: 8.0 }
+      - { metricId: fitness.sit_and_reach, direction: higher_better, pass: -2.6, good: 10.4, excellent: 14.2 }
+      - { metricId: fitness.standing_long_jump, direction: higher_better, pass: 155, good: 195, excellent: 211 }
+      - { metricId: fitness.vital_capacity, direction: higher_better, pass: 1700, good: 2900, excellent: 3400 }
+      - { metricId: fitness.pull_ups, direction: higher_better, pass: 4, good: 9, excellent: 11 }
+      - { metricId: fitness.run_1000m, direction: lower_better, pass: 320, good: 270, excellent: 255 }
+  - tier: grade7plus
+    sex: female
+    metrics:
+      - { metricId: fitness.run_50m, direction: lower_better, pass: 10.9, good: 8.9, excellent: 8.3 }
+      - { metricId: fitness.sit_and_reach, direction: higher_better, pass: 2.0, good: 15.0, excellent: 18.4 }
+      - { metricId: fitness.standing_long_jump, direction: higher_better, pass: 140, good: 170, excellent: 184 }
+      - { metricId: fitness.vital_capacity, direction: higher_better, pass: 1350, good: 2350, excellent: 2550 }
+      - { metricId: fitness.sit_ups, direction: higher_better, pass: 20, good: 40, excellent: 46 }
+      - { metricId: fitness.run_800m, direction: lower_better, pass: 295, good: 245, excellent: 229 }

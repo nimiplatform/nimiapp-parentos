@@ -1,6 +1,7 @@
 import { Surface } from '@nimiplatform/kit/ui';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { TannerAssessmentRow } from '../../bridge/sqlite-bridge.js';
 import {
   DETAIL_MAP,
   FEMALE_GUIDANCE,
@@ -19,7 +20,40 @@ type TannerGuidePanelProps = {
   childName: string;
   ageLabel: string;
   gender: string;
+  /** Assessments sorted newest-first (sortAssessmentsDesc). */
+  assessments: TannerAssessmentRow[];
 };
+
+// Pre-menarche preparation tips become obsolete once menarche has occurred.
+const PRE_MENARCHE_OBSOLETE_IDS = new Set([
+  'prepareMenstrualSupplies',
+  'menstrualEmergencyKit',
+  'talkMenstruationFear',
+  'menarcheSoon',
+]);
+
+const TWELVE_MONTHS_MS = 365.25 * 24 * 60 * 60 * 1000;
+
+// Admitted watch threshold (development.tanner-stage-reference →
+// tanner-stage-two-stage-twelve-month-watch): stage delta ≥ 2 within 12 months.
+function computeTwelveMonthStageDelta(assessments: TannerAssessmentRow[]): number | null {
+  const staged = assessments.filter((row) => row.breastOrGenitalStage != null);
+  if (staged.length < 2) return null;
+  const latest = staged[0];
+  if (!latest) return null;
+  const latestTime = Date.parse(latest.assessedAt);
+  if (Number.isNaN(latestTime)) return null;
+  const windowStart = latestTime - TWELVE_MONTHS_MS;
+  let earliest = latest;
+  for (const row of staged) {
+    const time = Date.parse(row.assessedAt);
+    if (!Number.isNaN(time) && time >= windowStart) {
+      earliest = row;
+    }
+  }
+  if (earliest === latest) return null;
+  return (latest.breastOrGenitalStage ?? 0) - (earliest.breastOrGenitalStage ?? 0);
+}
 
 function GuidanceItem({
   item,
@@ -102,15 +136,32 @@ export function TannerGuidePanel({
   childName,
   ageLabel,
   gender,
+  assessments,
 }: TannerGuidePanelProps) {
   const [expanded, setExpanded] = useState(true);
-  const currentStage = Math.max(latestBG ?? 1, latestPH ?? 1);
+  // B/G is the primary axis: female milestones (menarche, growth deceleration) anchor to it,
+  // and PH often runs ahead — taking max() would show guidance one stage too early.
+  const currentStage = latestBG ?? latestPH ?? 1;
   const guidanceList = isFemale ? FEMALE_GUIDANCE : MALE_GUIDANCE;
   const guidance = guidanceList.find((item) => item.stage === currentStage) ?? guidanceList[0];
 
   if (!guidance) {
     return null;
   }
+
+  const nextGuidance = currentStage < 5
+    ? guidanceList.find((item) => item.stage === currentStage + 1)
+    : undefined;
+  // Assessments arrive newest-first, so the first occurred row is the latest menarche record.
+  const latestMenarche = isFemale
+    ? assessments.find((row) => row.menarcheStatus === 'occurred')
+    : undefined;
+  const stageDelta = computeTwelveMonthStageDelta(assessments);
+  const sections = buildGuidanceSections(guidance).map((section) => (
+    latestMenarche
+      ? { ...section, items: section.items.filter((item) => !PRE_MENARCHE_OBSOLETE_IDS.has(item.id)) }
+      : section
+  )).filter((section) => section.items.length > 0);
 
   return (
     <Surface as="section" tone="card" material="glass-regular" elevation="raised" padding="none" className="mt-6 overflow-hidden rounded-3xl">
@@ -125,6 +176,26 @@ export function TannerGuidePanel({
               mode: latestBG ? i18nText('Tanner.guidePanel.modeStage') : i18nText('Tanner.guidePanel.modeAge'),
             })}
           </p>
+          <p className="mt-0.5 text-[12px] text-[color-mix(in_srgb,var(--nimi-action-primary-text)_70%,transparent)]">
+            {i18nText('Tanner.guidePanel.commonWindow', {
+              primary: isFemale ? i18nText('Tanner.page.guide.primaryTimingFemale') : i18nText('Tanner.page.guide.primaryTimingMale'),
+              pubicHair: isFemale ? i18nText('Tanner.page.guide.pubicHairTimingFemale') : i18nText('Tanner.page.guide.pubicHairTimingMale'),
+            })}
+          </p>
+          {latestMenarche ? (
+            <p className="mt-0.5 text-[12px] font-medium text-[var(--nimi-action-primary-text)]">
+              {latestMenarche.menarcheDate
+                ? i18nText('Tanner.guidePanel.menarcheOccurredWithDate', { date: latestMenarche.menarcheDate.split('T')[0] ?? latestMenarche.menarcheDate })
+                : i18nText('Tanner.timeline.menarcheOccurred')}
+            </p>
+          ) : null}
+          {stageDelta != null ? (
+            <p className={`mt-0.5 text-[12px] ${stageDelta >= 2 ? 'font-medium text-[var(--nimi-action-primary-text)]' : 'text-[color-mix(in_srgb,var(--nimi-action-primary-text)_70%,transparent)]'}`}>
+              {stageDelta >= 2
+                ? i18nText('Tanner.guidePanel.progressionFast')
+                : i18nText('Tanner.guidePanel.progressionStable')}
+            </p>
+          ) : null}
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={`text-[color-mix(in_srgb,var(--nimi-action-primary-text)_70%,transparent)] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
           <path d="M6 9l6 6 6-6" />
@@ -133,7 +204,7 @@ export function TannerGuidePanel({
 
       {expanded ? (
         <div className="space-y-4 bg-[var(--nimi-surface-card)] p-5">
-          {buildGuidanceSections(guidance).map((section) => (
+          {sections.map((section) => (
             <div key={section.id}>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[16px]">{section.icon}</span>
@@ -153,6 +224,24 @@ export function TannerGuidePanel({
               </div>
             </div>
           ))}
+          {nextGuidance ? (
+            <div className="rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] p-3">
+              <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Tanner.guidePanel.nextStageTitle')}</p>
+              <p className="mt-1 text-[13px] font-semibold text-[var(--nimi-text-primary)]">{nextGuidance.title}</p>
+              {nextGuidance.physical[0] ? (
+                <p className="mt-1 text-[12px] text-[var(--nimi-text-muted)]">
+                  <span className="font-medium text-[var(--nimi-text-primary)]">{i18nText('Tanner.guidance.section.physical')}：</span>
+                  {nextGuidance.physical[0].text}
+                </p>
+              ) : null}
+              {nextGuidance.parentTips[0] ? (
+                <p className="mt-0.5 text-[12px] text-[var(--nimi-text-muted)]">
+                  <span className="font-medium text-[var(--nimi-text-primary)]">{i18nText('Tanner.guidance.section.parentTips')}：</span>
+                  {nextGuidance.parentTips[0].text}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="space-y-1 border-t border-[var(--nimi-border-subtle)] pt-3">
             <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Tanner.referenceNotes.title')}</p>
             <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.referenceNotes.a')}</p>
