@@ -48,6 +48,7 @@ const {
   getOutdoorGoalMock,
   textGenerateMock,
   chatControl,
+  aiConfigControl,
 } = vi.hoisted(() => ({
   createConversationMock: vi.fn(async (params: {
     conversationId: string;
@@ -188,6 +189,9 @@ const {
     text: '默认顾问回复。',
     failure: null as { message: string; reasonCode: string } | null,
   },
+  aiConfigControl: {
+    available: true,
+  },
 }));
 
 vi.mock('@nimiplatform/kit/features/chat/ui', () => {
@@ -256,7 +260,7 @@ vi.mock('../settings/parentos-ai-runtime.js', () => ({
 }));
 
 vi.mock('../settings/parentos-ai-config.js', () => ({
-  hasParentosAIConfigCapability: () => Promise.resolve(true),
+  hasParentosAIConfigCapability: () => Promise.resolve(aiConfigControl.available),
   PARENTOS_TEXT_CAPABILITY_CONTRACT: 'text.generate',
 }));
 
@@ -310,6 +314,7 @@ describe('AdvisorPage', () => {
     textGenerateMock.mockReset();
     chatControl.text = '默认顾问回复。';
     chatControl.failure = null;
+    aiConfigControl.available = true;
     textGenerateMock.mockImplementation(async (input: TextGenerateInput) => {
       if (isSuggestionCall(input)) {
         return {
@@ -424,6 +429,21 @@ describe('AdvisorPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/你想聊睡眠、敏感期、屏幕使用/)).toBeTruthy();
     });
+  });
+
+  it('blocks advisor turns and runtime calls until a local AI is connected', async () => {
+    aiConfigControl.available = false;
+
+    renderAdvisorPage(['/advisor?topic=sleep&desc=recent-sleep']);
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: '去连接 AI' })).toBeTruthy();
+    });
+
+    expect(screen.queryByPlaceholderText('输入问题...')).toBeNull();
+    expect(createConversationMock).not.toHaveBeenCalled();
+    expect(insertAiMessageMock).not.toHaveBeenCalled();
+    expect(textGenerateMock).not.toHaveBeenCalled();
   });
 
   it('shows journal context preview and starts conversation on starter click', async () => {

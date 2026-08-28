@@ -1610,8 +1610,11 @@
     "empty": {
       "eyebrow": "AI advisor",
       "title": "Choose or create a conversation",
-      "description": "The AI advisor works from {{childName}}'s profile and local records",
-      "runtimeUnavailable": "nimi runtime is not connected; local structured facts will be used"
+      "description": "The AI advisor works from {{childName}}'s profile and local records"
+    },
+    "runtimeGate": {
+      "message": "The advisor needs a connected local AI before it can answer. Connect first, then come back to ask.",
+      "action": "Connect AI"
     },
     "journalContext": {
       "title": "What would you like to discuss about this journal entry?",
@@ -1695,8 +1698,14 @@
       "latestJournal": "Latest record on {{date}}, content type {{contentType}}",
       "sources": "Sources: {{sources}}",
       "question": "Question: {{question}}",
-      "childLine": "Child: {{name}}, {{ageMonths}} months, nurture mode {{mode}}",
+      "childLine": "Child: {{name}}, {{age}}, nurture mode {{mode}}",
       "profileFacts": "Profile facts: birth date {{birthDate}}, gender {{gender}}",
+      "genderMale": "boy",
+      "genderFemale": "girl",
+      "contentTypeText": "text",
+      "contentTypeVoice": "voice",
+      "contentTypeImage": "image",
+      "contentTypeMixed": "voice + text",
       "noGrowthData": "No available growth records",
       "growthRecords": "Growth records: {{summary}}",
       "vaccineRecords": "Vaccine records: {{summary}}",

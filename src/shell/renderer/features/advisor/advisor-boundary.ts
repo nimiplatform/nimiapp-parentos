@@ -3,6 +3,7 @@ import {
   ADVISOR_GENERIC_RUNTIME,
   KNOWLEDGE_SOURCES,
   NEEDS_REVIEW_DOMAINS,
+  NURTURE_MODES,
   REVIEWED_DOMAINS,
 } from '../../knowledge-base/index.js';
 import type {
@@ -21,6 +22,7 @@ import {
   getVaccineRecords,
 } from '../../bridge/sqlite-bridge.js';
 import { i18nText } from '../../i18n/index.js';
+import { formatAge } from '../../app-shell/app-store.js';
 
 export interface AdvisorSnapshot {
   child: {
@@ -66,6 +68,35 @@ function getSourceLabels(domains: string[]) {
 
 function advisorListJoin(items: string[]) {
   return items.join(i18nText('Advisor.structuredFallback.listSeparator'));
+}
+
+function advisorNurtureModeLabel(modeId: string) {
+  return NURTURE_MODES.find((mode) => mode.modeId === modeId)?.displayName ?? modeId;
+}
+
+function advisorGenderLabel(gender: string) {
+  if (gender === 'male') {
+    return i18nText('Advisor.structuredFallback.genderMale');
+  }
+  if (gender === 'female') {
+    return i18nText('Advisor.structuredFallback.genderFemale');
+  }
+  return gender;
+}
+
+function advisorJournalContentTypeLabel(contentType: string) {
+  switch (contentType) {
+    case 'text':
+      return i18nText('Advisor.structuredFallback.contentTypeText');
+    case 'voice':
+      return i18nText('Advisor.structuredFallback.contentTypeVoice');
+    case 'image':
+      return i18nText('Advisor.structuredFallback.contentTypeImage');
+    case 'mixed':
+      return i18nText('Advisor.structuredFallback.contentTypeMixed');
+    default:
+      return contentType;
+  }
 }
 
 function summarizeMeasurements(measurements: MeasurementRow[]) {
@@ -148,7 +179,7 @@ function summarizeJournal(journalEntries: JournalEntryRow[]) {
 
   return i18nText('Advisor.structuredFallback.latestJournal', {
     date: latest.recordedAt.slice(0, 10),
-    contentType: latest.contentType,
+    contentType: advisorJournalContentTypeLabel(latest.contentType),
   });
 }
 
@@ -336,12 +367,12 @@ export function buildStructuredAdvisorFallback(
     i18nText('Advisor.structuredFallback.question', { question }),
     i18nText('Advisor.structuredFallback.childLine', {
       name: snapshot.child.displayName,
-      ageMonths: snapshot.ageMonths,
-      mode: snapshot.child.nurtureMode,
+      age: formatAge(snapshot.ageMonths),
+      mode: advisorNurtureModeLabel(snapshot.child.nurtureMode),
     }),
     i18nText('Advisor.structuredFallback.profileFacts', {
       birthDate: snapshot.child.birthDate,
-      gender: snapshot.child.gender,
+      gender: advisorGenderLabel(snapshot.child.gender),
     }),
   ];
 

@@ -1,4 +1,5 @@
 import { ADVISOR_EMPTY_GRADIENT } from './advisor-theme.js';
+import { AdvisorRuntimeGateNotice } from './advisor-runtime-gate.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -29,10 +30,11 @@ function formatContextDateTime(value: string) {
 
 export type AdvisorJournalContextProps = {
   context: JournalEntryAdvisorContext;
+  runtimeAvailable: boolean | null;
   onSelectStarter: (starter: string) => void;
 };
 
-export function AdvisorJournalContext({ context, onSelectStarter }: AdvisorJournalContextProps) {
+export function AdvisorJournalContext({ context, runtimeAvailable, onSelectStarter }: AdvisorJournalContextProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6">
       <div className={`${ADVISOR_EMPTY_GRADIENT} w-full max-w-md rounded-[30px] border border-white/80 p-6 shadow-[0_20px_52px_rgba(15,23,42,0.08)]`}>
@@ -72,6 +74,9 @@ export function AdvisorJournalContext({ context, onSelectStarter }: AdvisorJourn
         </div>
 
         {/* Starter buttons */}
+        {runtimeAvailable === false ? (
+          <AdvisorRuntimeGateNotice />
+        ) : (
         <div className="flex flex-col gap-1.5">
           {JOURNAL_CONTEXT_STARTER_KEYS.map((starterKey) => {
             const starter = i18nText(starterKey);
@@ -87,6 +92,7 @@ export function AdvisorJournalContext({ context, onSelectStarter }: AdvisorJourn
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );

@@ -43,6 +43,7 @@ import { AdvisorJournalContext, type JournalEntryAdvisorContext } from './adviso
 import { AdvisorSuggestions, AdvisorSuggestionsSkeleton } from './advisor-suggestions.js';
 import { generateAdvisorSuggestions, type AdvisorSuggestion } from './advisor-suggestion-engine.js';
 import { AdvisorOpeningCard } from './advisor-opening-card.js';
+import { AdvisorRuntimeGateNotice } from './advisor-runtime-gate.js';
 import type { AdvisorSnapshot } from './advisor-boundary.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -175,6 +176,14 @@ function buildSystemPrompt(
 - 如涉及数据异常，只能描述结构化事实，并提醒"建议咨询专业人士"。
 - 回答结尾不要自行编造来源标签，来源会由系统追加。
 
+内容取舍（家长时间宝贵，先让人快速看懂）：
+- 不要复述用户的问题、随记内容或孩子的档案信息（姓名、年龄、出生日期、养育模式），这些在对话里已经能看到。
+- 第一句直接给出最核心的回答或要点，不要用"我先为你整理……"这类铺垫开场。
+- 只保留与问题直接相关的信息，不要把本地快照里的数据全量罗列出来。
+- 除非用户明确要求展开，回答控制在 3 个要点或 150 字以内；信息不足时，用一两句话说明还缺什么、可以补充什么。
+- 不要使用"你想了解 / 基本信息 / 当前记录 / 下一步 / 参考依据"这类模板化分节标题。
+- 不要出现内部字段名或英文枚举值（如 contentType、mixed、advanced、female），一律用自然中文描述。
+
 排版与呈现：
 - 使用 Markdown，核心关键词用 **双星号加粗**（例如 **身高**、**敏感期**、**户外时间**），每段最多加粗 2-3 个词，避免整句加粗。
 - 段与段之间用空行分隔，句子不要挤在一起。
@@ -197,6 +206,7 @@ function buildAdvisorSystemPrompt(
 
 当前策略：reviewed-advice
 - 可以基于本地快照和已审核领域给出解释、归纳、温和建议。
+- 先给结论，要点不超过 3 个；不要复述用户问题和档案信息。
 - 不要输出诊断、药物、治疗或惊吓式表述。`;
   }
   if (strategy === 'needs-review-descriptive') {
@@ -204,6 +214,7 @@ function buildAdvisorSystemPrompt(
 
 当前策略：needs-review-descriptive
 - 只允许基于本地快照做描述、整理、重述和范围说明。
+- 只整理与问题直接相关的 1-3 条本地事实，用简短自然语言，不要全量罗列档案。
 - 不要给出诊断、治疗、用药、风险评级、因果解释或专家式判断。
 - 如用户索要结论或建议，只能说明当前先基于本地记录描述事实，并建议咨询专业人士。`;
   }
@@ -213,12 +224,14 @@ function buildAdvisorSystemPrompt(
 当前策略：unknown-clarifier
 - 用户意图还不明确。
 - 只做简短澄清和方向引导，不直接给个性化育儿结论。
+- 澄清回复控制在 2-3 句以内。
 - 优先把问题收敛到睡眠、敏感期、性教育、数字使用，或本地记录查看方向。`;
   }
   return `${basePrompt}
 
 当前策略：generic-chat
 - 用户如果只是问候、闲聊、测试、询问你是谁或你能做什么，可以正常聊天。
+- 闲聊回复保持简短，1-3 句即可。
 - 可以主动追问想了解的方向，例如睡眠、疫苗、生长、里程碑或观察记录。
 - 在领域未明确前，不直接给个性化育儿判断或高风险建议。`;
 }
@@ -507,11 +520,6 @@ export default function AdvisorPage() {
       return;
     }
 
-    if (!runtimeAvailable) {
-      await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot), snapshotJson, params.reminderConsultationAnchor);
-      return;
-    }
-
     if (strategy === 'generic-chat' || strategy === 'needs-review-descriptive') {
       await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot), snapshotJson, params.reminderConsultationAnchor);
       return;
@@ -609,7 +617,10 @@ export default function AdvisorPage() {
 
   // ── Handle incoming topic from reminder panel ─────────────
   useEffect(() => {
-    if (runtimeAvailable === null) return;
+    // rule.parentos.advs.r003: without a connected local AI the advisor must
+    // not start a Q&A turn, so reminder/topic openings wait until the runtime
+    // check succeeds.
+    if (runtimeAvailable !== true) return;
     const topic = searchParams.get('topic');
     const desc = searchParams.get('desc') ?? '';
     const record = searchParams.get('record');
@@ -759,6 +770,7 @@ export default function AdvisorPage() {
 
   const handleSend = async () => {
     if (!input.trim() || streamingState === 'streaming') return;
+    if (runtimeAvailable !== true) return;
     const q = input.trim(); setInput('');
     if (pendingJournalContext && !activeConvId) {
       await handleStartJournalConversation(q);
@@ -776,6 +788,7 @@ export default function AdvisorPage() {
 
   const handleSuggestionSelect = async (question: string) => {
     if (streamingState === 'streaming') return;
+    if (runtimeAvailable !== true) return;
     if (pendingJournalContext && !activeConvId) {
       await handleStartJournalConversation(question);
       return;
@@ -803,6 +816,7 @@ export default function AdvisorPage() {
         {!activeConvId && pendingJournalContext ? (
           <AdvisorJournalContext
             context={pendingJournalContext}
+            runtimeAvailable={runtimeAvailable}
             onSelectStarter={handleStartJournalConversation}
           />
         ) : !activeConvId ? (
@@ -839,6 +853,13 @@ export default function AdvisorPage() {
                 ) : null}
               </>
             )}
+            {runtimeAvailable === false ? (
+              <div className="shrink-0 px-6 pb-5 pt-3">
+                <div className="mx-auto max-w-3xl">
+                  <AdvisorRuntimeGateNotice />
+                </div>
+              </div>
+            ) : (
             <AdvisorComposer
               value={input}
               onChange={setInput}
@@ -848,6 +869,7 @@ export default function AdvisorPage() {
               isStreaming={streamingState === 'streaming'}
               recordRoute={recordRoute}
             />
+            )}
           </>
         )}
       </div>

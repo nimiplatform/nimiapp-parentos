@@ -1610,8 +1610,11 @@
     "empty": {
       "eyebrow": "AI 顾问",
       "title": "选择或创建一个对话",
-      "description": "AI 顾问基于 {{childName}} 的档案和本地记录工作",
-      "runtimeUnavailable": "nimi runtime 未连接，将使用本地结构化事实"
+      "description": "AI 顾问基于 {{childName}} 的档案和本地记录工作"
+    },
+    "runtimeGate": {
+      "message": "成长顾问需要连接本地 AI 后才能回答问题。请先完成连接，再回来提问。",
+      "action": "去连接 AI"
     },
     "journalContext": {
       "title": "关于这条随记，你想聊什么？",
@@ -1695,8 +1698,14 @@
       "latestJournal": "最近记录于 {{date}}，内容类型 {{contentType}}",
       "sources": "来源：{{sources}}",
       "question": "问题：{{question}}",
-      "childLine": "孩子：{{name}}，{{ageMonths}} 个月，养育模式 {{mode}}",
+      "childLine": "孩子：{{name}}，{{age}}，养育模式 {{mode}}",
       "profileFacts": "档案事实：出生日期 {{birthDate}}，性别 {{gender}}",
+      "genderMale": "男孩",
+      "genderFemale": "女孩",
+      "contentTypeText": "文字",
+      "contentTypeVoice": "语音",
+      "contentTypeImage": "图片",
+      "contentTypeMixed": "语音 + 文字",
       "noGrowthData": "暂无可用生长记录",
       "growthRecords": "生长记录：{{summary}}",
       "vaccineRecords": "疫苗记录：{{summary}}",

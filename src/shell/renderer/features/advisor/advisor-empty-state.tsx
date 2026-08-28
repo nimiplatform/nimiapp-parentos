@@ -1,4 +1,5 @@
 import { ADVISOR_EMPTY_GRADIENT } from './advisor-theme.js';
+import { AdvisorRuntimeGateNotice } from './advisor-runtime-gate.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -21,8 +22,8 @@ export function AdvisorEmptyState({ childName, runtimeAvailable }: AdvisorEmptyS
           {i18nText('Advisor.empty.description', { childName })}
         </p>
         {runtimeAvailable === false && (
-          <div className="mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-2 text-[14px] text-amber-800">
-            {i18nText('Advisor.empty.runtimeUnavailable')}
+          <div className="mt-4 text-left">
+            <AdvisorRuntimeGateNotice />
           </div>
         )}
       </div>

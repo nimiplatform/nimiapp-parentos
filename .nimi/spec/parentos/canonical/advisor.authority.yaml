@@ -30,7 +30,7 @@ units:
     kind: rule
     title: Structured Advisor Fallback
     modality: must
-    statement: "When advisor chat runtime is unavailable, snapshot assembly fails, persistence fails, runtime output violates safety checks, or the runtime call itself fails, the advisor must return a structured fallback composed from local facts. The fallback must: echo the user question summarize the child snapshot with structured facts only append source labels when a spec-backed source is known use fixed safety wording when a domain is needs-review The fallback must not silently degrade into fake success or unsupported interpretation."
+    statement: "When advisor chat runtime is unavailable, the advisor surface must not start a question-and-answer turn; it must tell the user that the advisor requires a connected local AI and direct them to the AI settings surface to connect before asking. When request-time snapshot assembly fails, persistence fails, runtime output violates safety checks, or the runtime call itself fails during a turn, the advisor must return a structured fallback composed from local facts. The fallback must: echo the user question summarize the child snapshot with structured facts only append source labels when a spec-backed source is known use fixed safety wording when a domain is needs-review The fallback must not silently degrade into fake success or unsupported interpretation."
     condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-ADVS-003.
     failure: Fail closed and report PO-ADVS-003 when the governed behavior does not satisfy this rule.
     relations:
