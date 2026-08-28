@@ -5240,7 +5240,8 @@
       "title": "睡眠记录",
       "addRecord": "添加记录",
       "summaryContext": "近期 {{count}} 条睡眠记录，最近一次: {{date}}",
-      "referenceRange": "参考睡眠时长: {{low}}-{{high}} 小时/天（{{age}} · {{tier}}）",
+      "stageTitle": "{{age}} · {{tier}}",
+      "stageAdvice": "建议每日总睡眠 {{low}}-{{high}} 小时",
       "emptyTitle": "还没有睡眠记录",
       "emptyHint": "点击上方按钮添加第一条记录",
       "confirmDelete": "确认删除",
@@ -5307,7 +5308,34 @@
     "trend": {
       "title": "睡眠趋势",
       "referenceRange": "参考 {{low}}-{{high}}h/天",
-      "durationLabel": "睡眠时长"
+      "durationLabel": "睡眠时长",
+      "tabDuration": "睡眠时长",
+      "tabBedtime": "入睡时间",
+      "tabWake": "起床时间",
+      "avg7d": "近7天平均 {{value}}",
+      "avgBedtime7d": "近7天平均入睡 {{value}}",
+      "avgWake7d": "近7天平均起床 {{value}}"
+    },
+    "overview": {
+      "title": "近7天",
+      "avgTotal": "平均每日睡眠",
+      "night": "夜间睡眠",
+      "nap": "白天小睡",
+      "bedtime": "平均入睡",
+      "regularity": "规律度",
+      "insufficientData": "记录不足",
+      "sufficiency": {
+        "within": "符合当前年龄建议",
+        "below": "略低于建议范围",
+        "above": "高于建议范围",
+        "insufficient": "记录不足"
+      },
+      "regularityValue": {
+        "good": "良好",
+        "fair": "一般",
+        "variable": "波动",
+        "insufficient": "记录不足"
+      }
     }
   },
   "GrowthCurve": {

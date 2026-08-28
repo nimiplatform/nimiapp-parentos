@@ -5240,7 +5240,8 @@
       "title": "Sleep records",
       "addRecord": "Add record",
       "summaryContext": "{{count}} recent sleep records; latest: {{date}}",
-      "referenceRange": "Reference sleep duration: {{low}}-{{high}} hours/day ({{age}} · {{tier}})",
+      "stageTitle": "{{age}} · {{tier}}",
+      "stageAdvice": "Recommended total sleep: {{low}}-{{high}} hours per day",
       "emptyTitle": "No sleep records yet",
       "emptyHint": "Use the button above to add the first record",
       "confirmDelete": "Confirm delete",
@@ -5307,7 +5308,34 @@
     "trend": {
       "title": "Sleep trend",
       "referenceRange": "Reference {{low}}-{{high}}h/day",
-      "durationLabel": "Sleep duration"
+      "durationLabel": "Sleep duration",
+      "tabDuration": "Duration",
+      "tabBedtime": "Bedtime",
+      "tabWake": "Wake time",
+      "avg7d": "7-day avg {{value}}",
+      "avgBedtime7d": "7-day avg bedtime {{value}}",
+      "avgWake7d": "7-day avg wake time {{value}}"
+    },
+    "overview": {
+      "title": "Last 7 days",
+      "avgTotal": "Avg daily sleep",
+      "night": "Night sleep",
+      "nap": "Daytime naps",
+      "bedtime": "Avg bedtime",
+      "regularity": "Regularity",
+      "insufficientData": "Not enough data",
+      "sufficiency": {
+        "within": "Within the recommendation for this age",
+        "below": "Slightly below the recommendation",
+        "above": "Above the recommendation",
+        "insufficient": "Not enough data"
+      },
+      "regularityValue": {
+        "good": "Good",
+        "fair": "Fair",
+        "variable": "Variable",
+        "insufficient": "Not enough data"
+      }
     }
   },
   "GrowthCurve": {

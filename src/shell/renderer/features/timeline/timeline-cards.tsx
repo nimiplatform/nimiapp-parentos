@@ -52,15 +52,15 @@ export function SleepTrendCard({ summary }: { summary: SleepTrendSummary }) {
             </div>
           </div>
           <div className="mt-6 flex items-end gap-2">
-            {summary.points.map((point) => {
-              const maxDur = Math.max(...summary.points.map((p) => p.durationMinutes));
-              const minDur = Math.min(...summary.points.map((p) => p.durationMinutes));
+            {summary.points.slice(-10).map((point, _index, visiblePoints) => {
+              const maxDur = Math.max(...visiblePoints.map((p) => p.durationMinutes));
+              const minDur = Math.min(...visiblePoints.map((p) => p.durationMinutes));
               const range = maxDur - minDur || 1;
               const height = Math.max(((point.durationMinutes - minDur) / range) * 56 + 16, 16);
               return (
-                <div key={point.date} className="flex flex-1 flex-col items-center gap-1.5" title={`${point.date}: ${fmtDuration(point.durationMinutes)}`}>
+                <div key={point.date} className="flex min-w-0 flex-1 flex-col items-center gap-1.5" title={`${point.date}: ${fmtDuration(point.durationMinutes)}`}>
                   <div className="w-full rounded-lg" style={{ height, background: '#818CF8' }} />
-                  <span className="text-[12px] font-medium" style={{ color: '#64748b' }}>{point.date.slice(5).replace('-', '/')}</span>
+                  <span className="whitespace-nowrap text-[10px] font-medium" style={{ color: '#64748b' }}>{point.date.slice(5).replace('-', '/')}</span>
                 </div>
               );
             })}

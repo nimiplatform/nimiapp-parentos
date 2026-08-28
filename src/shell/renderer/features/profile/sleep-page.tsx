@@ -16,6 +16,7 @@ import {
   TIER_LABELS,
 } from './sleep-page-shared.js';
 import { SleepTrendChart } from './sleep-trend-chart.js';
+import { SleepWeekOverview } from './sleep-week-overview.js';
 import { i18nText } from '../../i18n/index.js';
 
 function sleepAgeLabel(ageMonths: number): string {
@@ -94,14 +95,14 @@ export default function SleepPage() {
         />
       }
     >
-      <p className="text-sm mb-4 text-[var(--nimi-text-muted)]">
-        {i18nText('Sleep.page.referenceRange', {
-          low: refLo,
-          high: refHi,
-          age: formatAge(ageMonths),
-          tier: TIER_LABELS[tier],
-        })}
-      </p>
+      <div className="mb-4">
+        <p className="text-[15px] font-medium text-[var(--nimi-text-primary)]">
+          {i18nText('Sleep.page.stageTitle', { age: formatAge(ageMonths), tier: TIER_LABELS[tier] })}
+        </p>
+        <p className="text-[13px] mt-0.5 text-[var(--nimi-text-muted)]">
+          {i18nText('Sleep.page.stageAdvice', { low: refLo, high: refHi })}
+        </p>
+      </div>
 
       {showForm ? (
         <SleepRecordForm
@@ -111,6 +112,8 @@ export default function SleepPage() {
           onClose={closeForm}
         />
       ) : null}
+
+      <SleepWeekOverview records={records} ageMonths={ageMonths} />
 
       {records.length >= 2 && <SleepTrendChart records={records} ageMonths={ageMonths} />}
 

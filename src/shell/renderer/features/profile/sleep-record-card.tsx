@@ -1,6 +1,5 @@
 import { Surface } from '@nimiplatform/kit/ui';
 import { Pencil, Trash2 } from 'lucide-react';
-import { formatAge } from '../../app-shell/app-store.js';
 import type { SleepRecordRow } from '../../bridge/sqlite-bridge.js';
 import {
   fmtDuration,
@@ -45,7 +44,6 @@ export function SleepRecordCard({
               <Trash2 size={13} strokeWidth={1.5} className="text-[var(--nimi-status-danger)]" />
             </button>
           </div>
-          <span className="text-[12px] ml-1 text-[var(--nimi-text-muted)]">{formatAge(record.ageMonths)}</span>
         </div>
       </div>
 
