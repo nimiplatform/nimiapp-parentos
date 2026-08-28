@@ -90,6 +90,7 @@
   "Settings": {
     "title": "Settings",
     "other": "Other",
+    "general": "General",
     "common": {
       "backToSettings": "Back to settings",
       "loading": "Loading...",
@@ -105,6 +106,20 @@
       "desc": "Switch ParentOS interface copy globally.",
       "ariaLabel": "Choose interface language",
       "saveFailed": "Language setting could not be saved"
+    },
+    "dataTransfer": {
+      "title": "Local structured-data backup",
+      "desc": "Export or restore local SQLite structured data. Backups exclude photos, audio, attachments, and local media paths and are never uploaded. Restore replaces the existing structured data; it is blocked when current media records exist to avoid mismatched files and records.",
+      "export": "Export structured data",
+      "import": "Restore structured data",
+      "exporting": "Exporting...",
+      "importing": "Importing...",
+      "workingWithProgress": "Working... {{progress}}",
+      "exportDone": "Exported to {{fileName}}",
+      "exportSummary": "Exported {{tables}} tables and {{rows}} rows",
+      "restoreConfirm": "Restore replaces all current structured data. Photos, audio, and attachments are not restored; the operation is blocked if current media records exist. Continue to choose a backup file?",
+      "importDone": "Structured data restored",
+      "importSummary": "Restored {{tables}} tables and {{rows}} rows"
     },
     "sections": {
       "children": {

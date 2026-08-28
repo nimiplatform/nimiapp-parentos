@@ -90,6 +90,7 @@
   "Settings": {
     "title": "设置",
     "other": "其他",
+    "general": "通用",
     "common": {
       "backToSettings": "返回设置",
       "loading": "加载中...",
@@ -105,6 +106,20 @@
       "desc": "切换 ParentOS 的全局界面文案。",
       "ariaLabel": "选择界面语言",
       "saveFailed": "语言设置保存失败"
+    },
+    "dataTransfer": {
+      "title": "本地结构化数据备份",
+      "desc": "导出或恢复本机 SQLite 结构化数据。备份不包含照片、语音、附件及其本地路径，也不会上传网络。恢复会整体替换现有结构化数据；若当前存在媒体记录，将拒绝恢复以避免文件与记录不一致。",
+      "export": "导出结构化数据",
+      "import": "恢复结构化数据",
+      "exporting": "导出中...",
+      "importing": "导入中...",
+      "workingWithProgress": "处理中... {{progress}}",
+      "exportDone": "已导出到 {{fileName}}",
+      "exportSummary": "已导出 {{tables}} 张表、{{rows}} 行记录",
+      "restoreConfirm": "恢复将整体替换当前结构化数据。照片、语音和附件不会恢复；如果当前存在媒体记录，系统会拒绝操作。是否继续选择备份文件？",
+      "importDone": "结构化数据恢复完成",
+      "importSummary": "已恢复 {{tables}} 张表、{{rows}} 行记录"
     },
     "sections": {
       "children": {

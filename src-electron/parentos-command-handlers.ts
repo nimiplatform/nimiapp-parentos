@@ -1,3 +1,4 @@
+import { readFile, stat, writeFile } from 'node:fs/promises';
 import { dialog, type BrowserWindow } from 'electron';
 import type {
   NimiElectronCommandHandler,
@@ -131,6 +132,8 @@ const PARENTOS_SIDECAR_COMMANDS = [
   'get_vision_followup_settings',
   'set_vision_followup_settings',
   'clear_vision_followup_settings',
+  'export_structured_backup',
+  'import_structured_backup',
   'db_init',
 ] as const;
 
@@ -155,7 +158,75 @@ export function createParentOSElectronCommandHandlers(
       pickImageFilesAsBase64(input.hostClient, input.getMainWindow(), context.payload),
     report_export_create_save_target: (context: Parameters<NimiElectronCommandHandler>[0]) =>
       createReportSaveTarget(input.hostClient, input.getMainWindow(), context.payload),
+    data_transfer_write_export_file: (context: Parameters<NimiElectronCommandHandler>[0]) =>
+      writeDataTransferExportFile(input.getMainWindow(), context.payload),
+    data_transfer_read_import_file: (context: Parameters<NimiElectronCommandHandler>[0]) =>
+      readDataTransferImportFile(input.getMainWindow(), context.payload),
   };
+}
+
+const MAX_DATA_TRANSFER_FILE_BYTES = 64 * 1024 * 1024;
+
+/**
+ * One-shot export: the save dialog and the file write both happen in the main
+ * process, so the renderer never receives a reusable absolute path (same
+ * posture as the report save-target flow). Returns a display-only file name.
+ */
+async function writeDataTransferExportFile(
+  mainWindow: BrowserWindow | undefined,
+  payload: unknown,
+): Promise<{ fileName: string } | null> {
+  const input = asRecord(payload, 'data_transfer_write_export_file payload');
+  const content = requiredText(input.content, 'content');
+  if (Buffer.byteLength(content, 'utf8') > MAX_DATA_TRANSFER_FILE_BYTES) {
+    throw new Error('ParentOS export exceeds the 64 MiB limit');
+  }
+  const title = optionalText(input.title);
+  const defaultFilename = optionalText(input.defaultFilename)
+    || `parentos-backup-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.json`;
+  const options = {
+    title: title || 'Export ParentOS data',
+    defaultPath: defaultFilename,
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  };
+  const result = mainWindow
+    ? await dialog.showSaveDialog(mainWindow, options)
+    : await dialog.showSaveDialog(options);
+  if (result.canceled || !result.filePath) {
+    return null;
+  }
+  const targetPath = /\.json$/iu.test(result.filePath) ? result.filePath : `${result.filePath}.json`;
+  await writeFile(targetPath, content, 'utf8');
+  return { fileName: displayOnlyPath(targetPath) };
+}
+
+/**
+ * One-shot import: the open dialog and the file read both happen in the main
+ * process. Returns the file content; fail-closes on unreadable/oversized files.
+ */
+async function readDataTransferImportFile(
+  mainWindow: BrowserWindow | undefined,
+  payload: unknown,
+): Promise<string | null> {
+  const input = asRecord(payload ?? {}, 'data_transfer_read_import_file payload');
+  const title = optionalText(input.title);
+  const options: Electron.OpenDialogOptions = {
+    title: title || 'Import ParentOS data',
+    properties: ['openFile'],
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  };
+  const result = mainWindow
+    ? await dialog.showOpenDialog(mainWindow, options)
+    : await dialog.showOpenDialog(options);
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+  const filePath = result.filePaths[0]!;
+  const info = await stat(filePath);
+  if (!info.isFile() || info.size > MAX_DATA_TRANSFER_FILE_BYTES) {
+    throw new Error('ParentOS import file is missing or exceeds the 64 MiB limit');
+  }
+  return await readFile(filePath, 'utf8');
 }
 
 async function pickImageFilesAsBase64(

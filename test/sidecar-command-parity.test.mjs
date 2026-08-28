@@ -8,6 +8,15 @@ const ELECTRON_NATIVE_APP_COMMANDS = new Set([
   'pick_image_files_as_base64',
   'report_export_create_save_target',
 ]);
+/**
+ * Native commands admitted on the Electron carrier only. Tauri is the legacy
+ * shell and is not an admitted Nimi local-development carrier, so the data
+ * migration dialogs ship Electron-side without a Tauri counterpart.
+ */
+const ELECTRON_ONLY_NATIVE_APP_COMMANDS = new Set([
+  'data_transfer_write_export_file',
+  'data_transfer_read_import_file',
+]);
 const INTERNAL_SIDECAR_COMMANDS = new Set([
   'dropped_file_read_image_files_as_base64',
   'report_export_register_save_target',
@@ -69,6 +78,12 @@ test('Electron and Tauri register the same exact app-owned command surface', () 
     assert.match(electronHandlers, new RegExp(`${command}\\s*:`), `Electron must implement native command ${command}`);
     assert.ok(tauriAppDomain.includes(command), `Tauri must register its native command ${command}`);
     assert.ok(!directElectronSidecar.includes(command), `native command ${command} must not be direct sidecar passthrough`);
+  }
+  for (const command of ELECTRON_ONLY_NATIVE_APP_COMMANDS) {
+    assert.match(electronHandlers, new RegExp(`${command}\\s*:`), `Electron must implement native command ${command}`);
+    assert.ok(!tauriAppDomain.includes(command), `Electron-only command ${command} must not be registered on the legacy Tauri shell`);
+    assert.ok(!directElectronSidecar.includes(command), `native command ${command} must not be direct sidecar passthrough`);
+    assert.ok(!rustImplementedSet.has(command), `native command ${command} must not be implemented in the Rust sidecar`);
   }
   for (const internal of INTERNAL_SIDECAR_COMMANDS) {
     assert.ok(rustImplementedSet.has(internal), `Rust sidecar must implement internal command ${internal}`);

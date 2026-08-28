@@ -161,6 +161,8 @@ fn main() {
                 sqlite::queries::get_vision_followup_settings,
                 sqlite::queries::set_vision_followup_settings,
                 sqlite::queries::clear_vision_followup_settings,
+                sqlite::queries::export_structured_backup,
+                sqlite::queries::import_structured_backup,
                 sqlite::db_init,
             ],
         )

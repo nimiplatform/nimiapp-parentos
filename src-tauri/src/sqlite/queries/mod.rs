@@ -1,5 +1,6 @@
 mod assessments;
 mod custom_todos;
+mod data_transfer;
 mod health_measurements;
 mod health_records;
 mod journal;
@@ -11,6 +12,7 @@ mod vision;
 
 pub use assessments::*;
 pub use custom_todos::*;
+pub use data_transfer::*;
 pub use health_measurements::*;
 pub use health_records::*;
 pub use journal::*;

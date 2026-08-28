@@ -70,7 +70,7 @@ units:
     kind: rule
     title: Settings Surfaces
     modality: must
-    statement: "Current settings authority includes: /settings/children for child CRUD /settings/nurture-mode for nurture-mode and per-domain overrides /settings/reminders for reminder frequency override management /settings/ai for ParentOS model/runtime preferences /settings for app language preference, persisted in app_settings Settings state must round-trip through children or app_settings. The shell must not invent shadow config stores outside those admitted persistence paths."
+    statement: "Current settings authority includes: /settings/children for child CRUD /settings/nurture-mode for nurture-mode and per-domain overrides /settings/reminders for reminder frequency override management /settings/ai for ParentOS model/runtime preferences /settings for app language preference, persisted in app_settings /settings for user-initiated local structured-data backup export and restore under rule.parentos.shell.r009 Settings state must round-trip through children or app_settings. The shell must not invent shadow config stores outside those admitted persistence paths."
     condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-SHELL-006.
     failure: Fail closed and report PO-SHELL-006 when the governed behavior does not satisfy this rule.
     relations:
@@ -83,6 +83,16 @@ units:
     statement: "The shell must fail closed when spec-governed prerequisites are invalid. app-data bootstrap failures map to app-data-unavailable or app-data-repair-required, keep the app-owned store closed, and expose an actionable retry or repair instruction a protected Nimi feature failure remains local to that feature and MUST NOT clear, lock, or relabel app-owned family data as permission-denied renderer metadata, env, argv, display app id, or a direct gRPC connection must not turn a protected feature failure into a positive Nimi session a missing public permission or service entitlement is typed unavailable/denied for the affected feature, not a ParentOS-wide capability gate missing compiled knowledge-base artifacts is a startup failure route drift against data/structured/parentos/routes.yaml is a verification failure, not a runtime fallback case malformed typed bridge payloads must raise an error instead of returning placeholder success objects missing nurture-mode parameters must not be patched with ad hoc values outside the spec-defined balanced default Exclusions The following remain outside this contract: family collaboration and multi-account sharing (PO-FEAT-030) cloud sync or remote backup any use of the ability-model design asset as a frozen runtime contract"
     condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-SHELL-007.
     failure: Fail closed and report PO-SHELL-007 when the governed behavior does not satisfy this rule.
+    relations:
+      - type: applies_to
+        target: definition.parentos.app.shell.contract
+  - id: rule.parentos.shell.r009
+    kind: rule
+    title: Local Structured Data Backup and Restore
+    modality: must
+    statement: ParentOS MAY expose a user-initiated local structured-data backup and restore surface in /settings. This is not cloud sync, remote backup, or a complete media archive. Export MUST use an explicit versioned envelope bound to appId nimi.parentos, include only the current admitted SQLite structured tables, replace every reusable local media path with null, and exclude attachments rows, orthodontic photo-session rows, photo-session metadata, and all media bytes. The Electron main process MUST own a one-shot native save or open dialog and MUST return only display-safe file content or file names, never a reusable absolute path. Restore MUST reject invalid JSON, unknown or missing envelope fields, a wrong appId or format version, unknown or missing tables or columns, values incompatible with the live SQLite schema, and any current database containing media-backed rows or reusable media paths. The complete envelope and every row MUST be validated before the first write. Restore semantics are full replacement of the admitted structured tables inside one SQLite transaction with foreign-key verification before commit; any validation, delete, insert, constraint, or commit failure MUST roll back the entire restore and preserve the pre-restore database. Renderer-side sequential per-table writes, duplicate skipping, partial merge, compatibility coercion, legacy adapters, and fail-open import are forbidden.
+    condition: Whenever ParentOS implements, stores, projects, or evaluates behavior governed by PO-SHELL-009.
+    failure: Fail closed and report PO-SHELL-009 when the governed behavior does not satisfy this rule.
     relations:
       - type: applies_to
         target: definition.parentos.app.shell.contract
