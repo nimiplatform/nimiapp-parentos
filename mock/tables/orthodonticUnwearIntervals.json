@@ -1,0 +1,38 @@
+[
+  {
+    "intervalId": "oui-zhiyao-001",
+    "childId": "child-lin-zhiyao",
+    "caseId": "oc-zhiyao-001",
+    "applianceId": "oa-zhiyao-001",
+    "startAt": "2026-08-15T15:10:00+08:00",
+    "endAt": "2026-08-15T17:25:00+08:00",
+    "reason": "sport",
+    "notes": "校队训练",
+    "createdAt": "2026-08-15T17:30:00+08:00",
+    "updatedAt": "2026-08-15T17:30:00+08:00"
+  },
+  {
+    "intervalId": "oui-zhiyao-002",
+    "childId": "child-lin-zhiyao",
+    "caseId": "oc-zhiyao-001",
+    "applianceId": "oa-zhiyao-001",
+    "startAt": "2026-08-23T12:05:00+08:00",
+    "endAt": "2026-08-23T13:10:00+08:00",
+    "reason": "meal",
+    "notes": "家庭聚餐",
+    "createdAt": "2026-08-23T13:15:00+08:00",
+    "updatedAt": "2026-08-23T13:15:00+08:00"
+  },
+  {
+    "intervalId": "oui-zhiyao-003",
+    "childId": "child-lin-zhiyao",
+    "caseId": "oc-zhiyao-001",
+    "applianceId": "oa-zhiyao-001",
+    "startAt": "2026-08-26T16:00:00+08:00",
+    "endAt": "2026-08-26T18:05:00+08:00",
+    "reason": "sport",
+    "notes": "比赛日",
+    "createdAt": "2026-08-26T18:10:00+08:00",
+    "updatedAt": "2026-08-26T18:10:00+08:00"
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "caseId": "oc-zhiyao-001",
+    "childId": "child-lin-zhiyao",
+    "caseType": "clear-aligners",
+    "stage": "active",
+    "startedAt": "2026-03-10",
+    "plannedEndAt": "2027-03-01",
+    "primaryIssues": "上下牙列轻度拥挤，深覆合",
+    "providerName": "陈医生",
+    "providerInstitution": "市口腔医院正畸科",
+    "notes": "隐形矫治方案，共 32 副牙套，每副佩戴 10 天，每天 22 小时",
+    "createdAt": "2026-03-10T21:00:00+08:00",
+    "updatedAt": "2026-03-10T21:00:00+08:00"
+  },
+  {
+    "caseId": "oc-keran-001",
+    "childId": "child-lin-keran",
+    "caseType": "early-intervention",
+    "stage": "assessment",
+    "startedAt": "2026-06-10",
+    "plannedEndAt": null,
+    "primaryIssues": "乳牙期咬合关系待评估，轻度深覆合倾向",
+    "providerName": "周医生",
+    "providerInstitution": "市儿童医院口腔科",
+    "notes": "口腔检查建议正畸科随访观察，暂未开始矫治",
+    "createdAt": "2026-06-10T21:00:00+08:00",
+    "updatedAt": "2026-06-10T21:00:00+08:00"
+  }
+]

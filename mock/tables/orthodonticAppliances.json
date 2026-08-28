@@ -1,0 +1,25 @@
+[
+  {
+    "applianceId": "oa-zhiyao-001",
+    "caseId": "oc-zhiyao-001",
+    "childId": "child-lin-zhiyao",
+    "childBirthDate": "2012-11-20",
+    "applianceType": "clear-aligner",
+    "status": "active",
+    "startedAt": "2026-03-10",
+    "prescribedHoursPerDay": 22,
+    "prescribedActivations": null,
+    "activationIntervalDays": null,
+    "totalAligners": 32,
+    "daysPerAligner": 10,
+    "currentPhase": "active-series",
+    "phaseStartedAt": "2026-03-10",
+    "reviewIntervalDays": 84,
+    "nextReviewAgenda": "复诊时确认附件是否松动",
+    "notes": null,
+    "lastReviewAt": "2026-06-10",
+    "nextReviewDate": "2026-09-02",
+    "createdAt": "2026-03-10T21:00:00+08:00",
+    "updatedAt": "2026-06-10T21:30:00+08:00"
+  }
+]

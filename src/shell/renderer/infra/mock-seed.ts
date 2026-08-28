@@ -16,6 +16,13 @@ import journalTags from '../../../../mock/tables/journalTags.json';
 import measurements from '../../../../mock/tables/measurements.json';
 import medicalEvents from '../../../../mock/tables/medicalEvents.json';
 import milestoneRecords from '../../../../mock/tables/milestoneRecords.json';
+import orthodonticAppliances from '../../../../mock/tables/orthodonticAppliances.json';
+import orthodonticCases from '../../../../mock/tables/orthodonticCases.json';
+import orthodonticCheckins from '../../../../mock/tables/orthodonticCheckins.json';
+import orthodonticUnwearIntervals from '../../../../mock/tables/orthodonticUnwearIntervals.json';
+import outdoorGoals from '../../../../mock/tables/outdoorGoals.json';
+import outdoorRecords from '../../../../mock/tables/outdoorRecords.json';
+import postureAssessments from '../../../../mock/tables/postureAssessments.json';
 import reminderStates from '../../../../mock/tables/reminderStates.json';
 import sleepRecords from '../../../../mock/tables/sleepRecords.json';
 import tannerAssessments from '../../../../mock/tables/tannerAssessments.json';
@@ -36,6 +43,20 @@ import {
   setAppSetting,
   insertAllergyRecord,
   saveHealthRecordCapture,
+  insertOutdoorRecord,
+  setOutdoorGoal,
+  insertPostureAssessment,
+  insertOrthodonticCase,
+  insertOrthodonticAppliance,
+  updateOrthodonticApplianceReview,
+  insertOrthodonticCheckin,
+  insertUnwearInterval,
+  type OrthodonticApplianceStatus,
+  type OrthodonticApplianceType,
+  type OrthodonticCheckinType,
+  type OrthodonticStage,
+  type OrthodonticUnwearReason,
+  type WritableOrthodonticCaseType,
 } from '../bridge/sqlite-bridge.js';
 import { mapChildRow } from '../bridge/mappers.js';
 import { useAppStore } from '../app-shell/app-store.js';
@@ -54,6 +75,8 @@ const mockData = {
     journalEntries,
     journalTags,
     milestoneRecords,
+    outdoorRecords,
+    postureAssessments,
     reminderStates,
     vaccineRecords,
   },
@@ -162,7 +185,9 @@ const measurementMap: Record<
   },
   'body-fat-percentage': {
     metricId: 'development.body_fat_percentage',
-    protocolId: 'development-auxiliary-measurement',
+    // The metric registry admits body fat only via Tanner self-assessment
+    // protocols (unlike bone age); the sole fixture row is zhiyao (female).
+    protocolId: 'tanner-female-self-assessment',
     groupId: 'development',
     unit: 'percent',
     qualifier: null,
@@ -565,6 +590,26 @@ export function buildCanonicalHealthFixtureCaptures(fixtures: MockHealthFixtures
   return captures;
 }
 
+/**
+ * Fixture rows carry bookkeeping columns (createdAt/updatedAt, and conversation
+ * counters) that the strict sidecar payload contract (deny_unknown_fields)
+ * rejects. Strip them before invoking; `now` is attached explicitly per call.
+ */
+function stripFixtureMeta<T extends object>(row: T, extraKeys: readonly string[] = []): T {
+  const clone: Record<string, unknown> = { ...(row as Record<string, unknown>) };
+  delete clone.createdAt;
+  delete clone.updatedAt;
+  for (const key of extraKeys) {
+    delete clone[key];
+  }
+  return clone as T;
+}
+
+function isDuplicateError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /UNIQUE constraint/i.test(message);
+}
+
 async function insertAll<T>(
   label: string,
   rows: T[],
@@ -576,8 +621,15 @@ async function insertAll<T>(
     try {
       await fn(row);
       ok++;
-    } catch {
-      // skip duplicates (UNIQUE constraint) on re-import
+    } catch (error) {
+      // Duplicates (UNIQUE constraint) are expected on re-import; anything
+      // else is a real failure and must abort instead of being swallowed.
+      if (!isDuplicateError(error)) {
+        throw new Error(
+          `${label} import failed: ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error },
+        );
+      }
     }
     onProgress?.(label, ok, rows.length);
   }
@@ -602,13 +654,16 @@ export async function seedMockData(
     try {
       await createFamily(family.familyId, family.displayName, family.createdAt);
       results.push('family: 1');
-    } catch {
+    } catch (error) {
+      if (!isDuplicateError(error)) {
+        throw error;
+      }
       results.push('family: exists');
     }
 
     // Children
     const n1 = await insertAll('children', tables.children, (r) =>
-      createChild({ ...r, now: r.createdAt }), report);
+      createChild({ ...stripFixtureMeta(r), now: r.createdAt }), report);
     results.push(`children: ${n1}/${tables.children.length}`);
 
     // Canonical health records
@@ -627,43 +682,46 @@ export async function seedMockData(
 
     // Milestones
     const n3 = await insertAll('milestones', tables.milestoneRecords, (r) =>
-      upsertMilestoneRecord({ ...r, now: r.createdAt }), report);
+      upsertMilestoneRecord({ ...stripFixtureMeta(r), now: r.createdAt }), report);
     results.push(`milestones: ${n3}/${tables.milestoneRecords.length}`);
 
     // Reminder states
     const n4 = await insertAll('reminders', tables.reminderStates, (r) =>
-      upsertReminderState({ ...r, now: r.createdAt }), report);
+      upsertReminderState({ ...stripFixtureMeta(r), now: r.createdAt }), report);
     results.push(`reminders: ${n4}/${tables.reminderStates.length}`);
 
     // Vaccines
     const n5 = await insertAll('vaccines', tables.vaccineRecords, (r) =>
-      insertVaccineRecord({ ...r, now: r.createdAt }), report);
+      insertVaccineRecord({ ...stripFixtureMeta(r), now: r.createdAt }), report);
     results.push(`vaccines: ${n5}/${tables.vaccineRecords.length}`);
 
     // Journal entries
     const n6 = await insertAll('journal', tables.journalEntries, (r) =>
-      insertJournalEntry({ ...r, now: r.createdAt }), report);
+      insertJournalEntry({ ...stripFixtureMeta(r), now: r.createdAt }), report);
     results.push(`journal: ${n6}/${tables.journalEntries.length}`);
 
     // Journal tags
     const n7 = await insertAll('tags', tables.journalTags, (r) =>
-      insertJournalTag({ ...r, now: r.createdAt }), report);
+      insertJournalTag({ ...stripFixtureMeta(r), now: r.createdAt }), report);
     results.push(`tags: ${n7}/${tables.journalTags.length}`);
 
     // Conversations
     const n8 = await insertAll('conversations', tables.conversations, (r) =>
-      createConversation({ ...r, now: r.createdAt }), report);
+      createConversation({
+        ...stripFixtureMeta(r, ['startedAt', 'lastMessageAt', 'messageCount']),
+        now: r.createdAt,
+      }), report);
     results.push(`conversations: ${n8}/${tables.conversations.length}`);
 
     // AI messages
     const aiMessageFixtures = tables.aiMessages as MockAiMessage[];
     const n9 = await insertAll('aiMessages', aiMessageFixtures, (r) =>
-      insertAiMessage({ ...r, now: r.createdAt }), report);
+      insertAiMessage({ ...stripFixtureMeta(r), now: r.createdAt }), report);
     results.push(`aiMessages: ${n9}/${aiMessageFixtures.length}`);
 
     // Growth reports
     const n10 = await insertAll('reports', tables.growthReports, (r) =>
-      insertGrowthReport({ ...r, now: r.createdAt }), report);
+      insertGrowthReport({ ...stripFixtureMeta(r), now: r.createdAt }), report);
     results.push(`reports: ${n10}/${tables.growthReports.length}`);
 
     // App settings
@@ -673,8 +731,67 @@ export async function seedMockData(
 
     // Allergy records
     const n12 = await insertAll('allergies', tables.allergyRecords, (r) =>
-      insertAllergyRecord({ ...r, now: r.createdAt }), report);
+      insertAllergyRecord({ ...stripFixtureMeta(r), now: r.createdAt }), report);
     results.push(`allergies: ${n12}/${tables.allergyRecords.length}`);
+
+    // Outdoor weekly goals + activity records
+    const n13 = await insertAll('outdoorGoals', outdoorGoals, (r) =>
+      setOutdoorGoal(r.childId, r.goalMinutes, r.updatedAt), report);
+    results.push(`outdoorGoals: ${n13}/${outdoorGoals.length}`);
+
+    const n14 = await insertAll('outdoor', tables.outdoorRecords, (r) =>
+      insertOutdoorRecord({ ...stripFixtureMeta(r), now: r.createdAt }), report);
+    results.push(`outdoor: ${n14}/${tables.outdoorRecords.length}`);
+
+    // Posture assessments
+    const n15 = await insertAll('posture', tables.postureAssessments, (r) =>
+      insertPostureAssessment({ ...stripFixtureMeta(r), now: r.createdAt }), report);
+    results.push(`posture: ${n15}/${tables.postureAssessments.length}`);
+
+    // Orthodontic case + appliance + checkins + wear-gap intervals
+    const n16 = await insertAll('orthodonticCases', orthodonticCases, (r) =>
+      insertOrthodonticCase({
+        ...stripFixtureMeta(r),
+        caseType: r.caseType as WritableOrthodonticCaseType,
+        stage: r.stage as OrthodonticStage,
+        now: r.createdAt,
+      }), report);
+    results.push(`orthodonticCases: ${n16}/${orthodonticCases.length}`);
+
+    const n17 = await insertAll('orthodonticAppliances', orthodonticAppliances, async (r) => {
+      const { lastReviewAt, nextReviewDate, ...insertParams } = stripFixtureMeta(r);
+      await insertOrthodonticAppliance({
+        ...insertParams,
+        applianceType: r.applianceType as OrthodonticApplianceType,
+        status: r.status as OrthodonticApplianceStatus,
+        now: r.createdAt,
+      });
+      if (lastReviewAt || nextReviewDate) {
+        await updateOrthodonticApplianceReview({
+          applianceId: r.applianceId,
+          lastReviewAt: lastReviewAt ?? null,
+          nextReviewDate: nextReviewDate ?? null,
+          now: r.createdAt,
+        });
+      }
+    }, report);
+    results.push(`orthodonticAppliances: ${n17}/${orthodonticAppliances.length}`);
+
+    const n18 = await insertAll('orthodonticCheckins', orthodonticCheckins, (r) =>
+      insertOrthodonticCheckin({
+        ...stripFixtureMeta(r),
+        checkinType: r.checkinType as OrthodonticCheckinType,
+        now: r.createdAt,
+      }), report);
+    results.push(`orthodonticCheckins: ${n18}/${orthodonticCheckins.length}`);
+
+    const n19 = await insertAll('orthodonticUnwear', orthodonticUnwearIntervals, (r) =>
+      insertUnwearInterval({
+        ...stripFixtureMeta(r),
+        reason: r.reason as OrthodonticUnwearReason | null,
+        now: r.createdAt,
+      }), report);
+    results.push(`orthodonticUnwear: ${n19}/${orthodonticUnwearIntervals.length}`);
 
     // Refresh Zustand store
     const store = useAppStore.getState();

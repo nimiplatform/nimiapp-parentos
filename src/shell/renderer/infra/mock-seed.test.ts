@@ -24,10 +24,18 @@ const bridgeMocks = vi.hoisted(() => ({
   insertJournalTag: vi.fn(),
   insertMeasurement: vi.fn(),
   insertMedicalEvent: vi.fn(),
+  insertOrthodonticAppliance: vi.fn(),
+  insertOrthodonticCase: vi.fn(),
+  insertOrthodonticCheckin: vi.fn(),
+  insertOutdoorRecord: vi.fn(),
+  insertPostureAssessment: vi.fn(),
   insertTannerAssessment: vi.fn(),
+  insertUnwearInterval: vi.fn(),
   insertVaccineRecord: vi.fn(),
   saveHealthRecordCapture: vi.fn(),
   setAppSetting: vi.fn(),
+  setOutdoorGoal: vi.fn(),
+  updateOrthodonticApplianceReview: vi.fn(),
   upsertMilestoneRecord: vi.fn(),
   upsertReminderState: vi.fn(),
   upsertSleepRecord: vi.fn(),
@@ -113,5 +121,24 @@ describe('mock-seed health fixtures', () => {
     expect(bridgeMocks.insertMedicalEvent).not.toHaveBeenCalled();
     expect(bridgeMocks.insertTannerAssessment).not.toHaveBeenCalled();
     expect(bridgeMocks.insertFitnessAssessment).not.toHaveBeenCalled();
+    expect(bridgeMocks.setOutdoorGoal).toHaveBeenCalled();
+    expect(bridgeMocks.insertOutdoorRecord).toHaveBeenCalled();
+    expect(bridgeMocks.insertPostureAssessment).toHaveBeenCalled();
+    expect(bridgeMocks.insertOrthodonticCase).toHaveBeenCalled();
+    expect(bridgeMocks.insertOrthodonticAppliance).toHaveBeenCalled();
+    expect(bridgeMocks.insertOrthodonticCheckin).toHaveBeenCalled();
+    expect(bridgeMocks.insertUnwearInterval).toHaveBeenCalled();
+    expect(bridgeMocks.createChild.mock.calls[0]?.[0]).not.toHaveProperty('createdAt');
+    expect(bridgeMocks.createChild.mock.calls[0]?.[0]).not.toHaveProperty('updatedAt');
+  });
+
+  it('fails the seed run on non-duplicate bridge errors', async () => {
+    bridgeMocks.insertOutdoorRecord.mockRejectedValueOnce(new Error('disk unavailable'));
+
+    const result = await seedMockData();
+
+    expect(result.ok).toBe(false);
+    expect(result.summary).toContain('outdoor import failed: disk unavailable');
+    expect(bridgeMocks.insertPostureAssessment).not.toHaveBeenCalled();
   });
 });
