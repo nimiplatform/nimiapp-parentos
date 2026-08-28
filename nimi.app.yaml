@@ -4,6 +4,9 @@ profile: standalone
 manifest_role: submitted-input
 app_access:
   - runtime.consume
+ai_config_ui:
+  allowed_routes:
+    - local
 local_development:
   electron:
     renderer_origin: http://127.0.0.1:1426

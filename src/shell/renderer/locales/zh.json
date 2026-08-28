@@ -667,9 +667,9 @@
     },
     "declared": {
       "title": "AI 能力声明",
-      "description": "Nimi 平台为 ParentOS 配置的 AI 能力意图（只读声明）。",
+      "description": "Runtime 为 ParentOS 保存的 AI 能力意图和有效状态。",
       "empty": "尚未配置任何能力。",
-      "platformManaged": "能力声明与路由由 Nimi 平台管理；ParentOS 只读取当前配置，并跳转到 Nimi 完成修改。",
+      "platformManaged": "Runtime 拥有 canonical 配置；ParentOS 可在此编辑已覆盖的 App 配置，Nimi Desktop 仍可用于集中编辑。",
       "openOwnerConfiguration": "在 Nimi 中配置",
       "openingOwnerConfiguration": "正在打开…",
       "loadFailed": "AI 配置读取失败",
@@ -686,6 +686,22 @@
         "audioSynthesize": "语音合成",
         "imageGenerate": "图像生成"
       }
+    },
+    "localEditor": {
+      "title": "本地 AI 配置",
+      "localOnly": "仅限本地",
+      "back": "返回",
+      "localConfigured": "已配置本地路由意图",
+      "notConfigured": "尚未配置本地路由意图",
+      "effectiveReady": "当前设备已有可用的本地 effective selection。",
+      "effectivePending": "Runtime 尚未在当前设备投影出可用的本地 effective selection。",
+      "save": "使用本地路由",
+      "saving": "正在保存…",
+      "clear": "清除配置",
+      "clearing": "正在清除…",
+      "saveFailed": "AI 配置保存失败。请刷新 canonical 状态后重试。",
+      "existingCloud": "此能力当前使用云端路由。你可以清除它或改为本地路由；ParentOS 不提供新的云端选项。",
+      "conflict": "配置已在其他位置变化。已重新载入当前 canonical 状态，请确认后再保存。"
     },
     "features": {
       "title": "功能可用性",

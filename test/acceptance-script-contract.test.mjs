@@ -29,7 +29,6 @@ test('live acceptance verifies the supervised App Access contract and denial bou
   assert.match(electronSource, /--cdp-port/u, 'Electron acceptance must request an explicit CDP port from the supervisor');
   assert.match(electronSource, /local-app\.sessionStatus/u, 'Electron acceptance must prove a bound local-app session');
   assert.match(electronSource, /local-app\.aiConfigGet/u, 'Electron acceptance must read the platform-owned AIConfig projection');
-  assert.doesNotMatch(electronSource, /local-app\.aiConfigOverwrite/u, 'Electron acceptance must not mutate the platform-owned App AIConfig');
   assert.match(electronSource, /local-app\.textGenerateCandidate/u, 'Electron acceptance must exercise the declared runtime.consume domain');
   assert.match(electronSource, /local-app\.realmWorldCoreList/u, 'Electron acceptance must probe an undeclared App Access domain');
   assert.match(electronSource, /local-app-access-denied/u, 'Electron acceptance must assert the typed denial for undeclared domains');

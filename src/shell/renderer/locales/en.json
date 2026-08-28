@@ -667,9 +667,9 @@
     },
     "declared": {
       "title": "AI Capability Declarations",
-      "description": "AI capability intents configured for ParentOS by the Nimi platform (read-only declarations).",
+      "description": "Runtime-owned AI capability intents and effective state for ParentOS.",
       "empty": "No capabilities are configured yet.",
-      "platformManaged": "Capability declarations and routes are managed by Nimi. ParentOS reads the current configuration and hands changes to Nimi.",
+      "platformManaged": "Runtime owns the canonical configuration. ParentOS can edit its covered App configuration here; Nimi Desktop remains available for centralized editing.",
       "openOwnerConfiguration": "Configure in Nimi",
       "openingOwnerConfiguration": "Opening…",
       "loadFailed": "AI configuration could not be read",
@@ -686,6 +686,22 @@
         "audioSynthesize": "Speech synthesis",
         "imageGenerate": "Image generation"
       }
+    },
+    "localEditor": {
+      "title": "Local AI configuration",
+      "localOnly": "Local only",
+      "back": "Back",
+      "localConfigured": "Local route intent configured",
+      "notConfigured": "No Local route intent configured",
+      "effectiveReady": "The current machine has a ready Local effective selection.",
+      "effectivePending": "Runtime has not projected a ready Local effective selection on this machine.",
+      "save": "Use Local route",
+      "saving": "Saving…",
+      "clear": "Clear configuration",
+      "clearing": "Clearing…",
+      "saveFailed": "The AI configuration could not be saved. Refresh the canonical state and try again.",
+      "existingCloud": "This capability currently has a Cloud route. You may clear it or replace it with a Local route; ParentOS does not offer new Cloud choices.",
+      "conflict": "The configuration changed elsewhere. Current canonical state has been reloaded; review it before saving again."
     },
     "features": {
       "title": "Feature Availability",
