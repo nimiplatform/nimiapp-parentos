@@ -16,6 +16,17 @@ export const PARENTOS_AI_CAPABILITY_CONTRACTS: readonly ParentosAIConfigCapabili
 
 type ParentosAIConfigCapabilityError = Error & { readonly reasonCode: string };
 
+function hasReadyLocalCapability(
+  snapshot: ParentosPortableAIConfig,
+  capabilityContract: ParentosAIConfigCapabilityContract,
+): boolean {
+  return snapshot.effectiveSelections.some((selection) => (
+    selection.capabilityContract === capabilityContract
+    && selection.state === 'ready'
+    && selection.resource?.oneofKind === 'local'
+  ));
+}
+
 function reasonCodeFromUnknownError(error: unknown): string {
   const record = error && typeof error === 'object' ? error as Record<string, unknown> : {};
   const reasonCode = typeof record.reasonCode === 'string' ? record.reasonCode.trim() : '';
@@ -39,8 +50,11 @@ export async function readParentosAIConfig(): Promise<
     return { state: 'unavailable', reasonCode: 'nimi-shell-runtime-bridge-unavailable' };
   }
   try {
-    const config = await getParentOSNimiClient().aiConfig.get();
-    return { state: 'ready', config };
+    const snapshot = await getParentOSNimiClient().aiConfig.get();
+    if (!snapshot.config) {
+      return { state: 'not-configured', reasonCode: 'ai-config-not-found' };
+    }
+    return { state: 'ready', config: snapshot };
   } catch (error) {
     const reasonCode = reasonCodeFromUnknownError(error);
     if (reasonCode === 'ai-config-not-found') {
@@ -55,10 +69,7 @@ export async function hasParentosAIConfigCapability(
 ): Promise<boolean> {
   const result = await readParentosAIConfig();
   return result.state === 'ready'
-    && result.config.capabilities.some((capability) => (
-      capability.capabilityContract === capabilityContract
-      && capability.route.oneofKind === 'local'
-    ));
+    && hasReadyLocalCapability(result.config, capabilityContract);
 }
 
 export async function requireParentosAIConfigCapability(
@@ -72,10 +83,7 @@ export async function requireParentosAIConfigCapability(
     ) as ParentosAIConfigCapabilityError;
   }
   const configured = result.state === 'ready'
-    && result.config.capabilities.some((capability) => (
-      capability.capabilityContract === capabilityContract
-      && capability.route.oneofKind === 'local'
-    ));
+    && hasReadyLocalCapability(result.config, capabilityContract);
   if (!configured) {
     throw Object.assign(
       new Error(`ParentOS requires a Nimi-owned local ${capabilityContract} AIConfig intent.`),

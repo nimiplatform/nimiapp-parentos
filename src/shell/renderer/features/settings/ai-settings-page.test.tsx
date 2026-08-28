@@ -24,10 +24,19 @@ vi.mock('@nimiplatform/kit/shell/renderer/bridge', () => ({
 }));
 
 const DECLARED_CONFIG = {
-  owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
-  capabilities: [
-    { capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: {} } },
-  ],
+  config: {
+    owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
+    capabilities: [
+      { capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: {} } },
+    ],
+  },
+  revision: 'rev-1',
+  effectiveSelections: [{
+    capabilityContract: 'text.generate',
+    state: 'ready',
+    resource: { oneofKind: 'local', local: {} },
+    reasons: [],
+  }],
 };
 
 describe('AiSettingsPage', () => {

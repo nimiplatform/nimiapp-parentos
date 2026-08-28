@@ -42,14 +42,22 @@ describe('ParentOS portable AIConfig projection', () => {
       owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
       capabilities: [{ capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: {} } }],
     };
-    const get = vi.fn().mockResolvedValue({
-      ...config,
-    });
+    const snapshot = {
+      config,
+      revision: 'rev-1',
+      effectiveSelections: [{
+        capabilityContract: 'text.generate',
+        state: 'ready',
+        resource: { oneofKind: 'local', local: {} },
+        reasons: [],
+      }],
+    };
+    const get = vi.fn().mockResolvedValue(snapshot);
     const overwrite = vi.fn();
     const client = clientWithAIConfig({ get, overwrite });
     getParentOSNimiClientMock.mockReturnValue(client);
 
-    await expect(readParentosAIConfig()).resolves.toEqual({ state: 'ready', config });
+    await expect(readParentosAIConfig()).resolves.toEqual({ state: 'ready', config: snapshot });
     expect(overwrite).not.toHaveBeenCalled();
   });
 
@@ -65,8 +73,17 @@ describe('ParentOS portable AIConfig projection', () => {
 
   it('checks exact configured capabilities from the read-only projection', async () => {
     const get = vi.fn().mockResolvedValue({
-      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
-      capabilities: [{ capabilityContract: 'audio.transcribe', requiredFeatures: [], route: { oneofKind: 'local', local: {} } }],
+      config: {
+        owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
+        capabilities: [{ capabilityContract: 'audio.transcribe', requiredFeatures: [], route: { oneofKind: 'local', local: {} } }],
+      },
+      revision: 'rev-1',
+      effectiveSelections: [{
+        capabilityContract: 'audio.transcribe',
+        state: 'ready',
+        resource: { oneofKind: 'local', local: {} },
+        reasons: [],
+      }],
     });
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
 
@@ -75,16 +92,25 @@ describe('ParentOS portable AIConfig projection', () => {
 
   it('does not admit a cloud intent across the ParentOS local-only privacy boundary', async () => {
     const get = vi.fn().mockResolvedValue({
-      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
-      capabilities: [{
-        capabilityContract: 'audio.transcribe',
-        requiredFeatures: [],
-        route: {
-          oneofKind: 'cloud',
-          cloud: {
-            implementation: { implementationId: 'cloud.stt', driverId: 'driver.stt', driverDialect: 'stt/v1' },
+      config: {
+        owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
+        capabilities: [{
+          capabilityContract: 'audio.transcribe',
+          requiredFeatures: [],
+          route: {
+            oneofKind: 'cloud',
+            cloud: {
+              implementation: { implementationId: 'cloud.stt', driverId: 'driver.stt', driverDialect: 'stt/v1' },
+            },
           },
-        },
+        }],
+      },
+      revision: 'rev-1',
+      effectiveSelections: [{
+        capabilityContract: 'audio.transcribe',
+        state: 'ready',
+        resource: { oneofKind: 'cloud', cloud: {} },
+        reasons: [],
       }],
     });
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
@@ -113,8 +139,9 @@ describe('ParentOS portable AIConfig projection', () => {
 
   it('uses the product-level not-configured error only when the local intent is absent', async () => {
     const get = vi.fn().mockResolvedValue({
-      owner: { owner: { oneofKind: 'app', app: { appId: 'nimi.parentos' } } },
-      capabilities: [],
+      config: null,
+      revision: '',
+      effectiveSelections: [],
     });
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
 

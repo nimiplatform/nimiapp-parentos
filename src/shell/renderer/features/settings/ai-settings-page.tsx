@@ -164,10 +164,10 @@ export default function AiSettingsPage() {
   }, [ownerHandoffPending]);
 
   const postureReady = posture?.state === 'ready';
-  const declaredCapabilities = aiConfig?.capabilities ?? [];
-  const configuredLocalCapabilities = new Set(declaredCapabilities
-    .filter((capability) => capability.route.oneofKind === 'local')
-    .map((capability) => capability.capabilityContract));
+  const declaredCapabilities = aiConfig?.config?.capabilities ?? [];
+  const configuredLocalCapabilities = new Set((aiConfig?.effectiveSelections ?? [])
+    .filter((selection) => selection.state === 'ready' && selection.resource?.oneofKind === 'local')
+    .map((selection) => selection.capabilityContract));
 
   const featureStatus = (row: ParentosAIFeatureRow): ParentosAIFeatureStatus => {
     if (!row.supported || row.capabilityContract === null) return 'not-supported';
