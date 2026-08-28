@@ -232,15 +232,33 @@ function NarrativeViewer({ content, reportId, onContentUpdate }: { content: Narr
 /* ── V1 Structured Viewer ── */
 
 function StructuredViewer({ content }: { content: StructuredGrowthReportContent }) {
+  const actionItems = content.actionItems ?? [];
+  const sectionsWithData = content.sections.filter((sec) => sec.items.length > 0);
+  const emptySectionTitles = content.sections.filter((sec) => sec.items.length === 0).map((sec) => sec.title);
   return (<div className="space-y-4">
     <div className="report-glass-card report-card-pad">
       <h2 className="report-card-title-lg">{content.title}</h2>
       <p className="report-card-subtitle">{content.subtitle}</p>
       <p className="report-footnote report-footnote--warning report-footnote--spaced">{content.safetyNote}</p>
     </div>
+    {actionItems.length > 0 && <div className="report-glass-card report-card-pad">
+      <h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.focusTitle')}</h3>
+      <div className="space-y-2">{actionItems.map((a) => (<Link key={a.id} to={a.linkTo ?? '/advisor'} className="report-action-link">
+        <ArrowRight size={16} className="report-icon-accent" strokeWidth={2} />
+        <span className="report-action-link-text">{a.text}</span>
+      </Link>))}</div>
+    </div>}
     {content.metrics.length > 0 && <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{content.metrics.map((m) => (<div key={m.id} className="report-glass-card report-metric-card"><div className="report-data-label">{m.label}</div><div className="report-metric-value">{m.value}</div>{m.detail && <div className="report-data-detail">{m.detail}</div>}</div>))}</div>}
     {content.overview.length > 0 && <div className="report-glass-card report-card-pad"><h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.overview')}</h3><ul className="space-y-2">{content.overview.map((item) => <li key={item} className="report-list-item report-list-item--panel">{item}</li>)}</ul></div>}
-    <div className="grid gap-3 sm:grid-cols-2">{content.sections.map((sec) => (<div key={sec.id} className="report-glass-card report-card-pad"><h3 className="report-card-title report-title-spaced">{sec.title}</h3><ul className="space-y-2">{sec.items.map((item) => <li key={item} className="report-list-item report-list-item--panel">{item}</li>)}</ul></div>))}</div>
+    {content.trendSignals.length > 0 && <div className="report-glass-card report-card-pad">
+      <h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.trendSignals')}</h3>
+      <div className="grid gap-3 sm:grid-cols-2">{content.trendSignals.map((sig) => (<div key={sig.id} className="report-trend-card">
+        <h4 className="report-trend-title">{sig.title}</h4>
+        <p className="report-trend-summary">{sig.summary}</p>
+      </div>))}</div>
+    </div>}
+    {sectionsWithData.length > 0 && <div className="grid gap-3 sm:grid-cols-2">{sectionsWithData.map((sec) => (<div key={sec.id} className="report-glass-card report-card-pad"><h3 className="report-card-title report-title-spaced">{sec.title}{i18nText('Reports.structured.sectionCountSuffix', { count: sec.items.length })}</h3><ul className="space-y-2">{sec.items.map((item) => <li key={item} className="report-list-item report-list-item--panel">{item}</li>)}</ul></div>))}</div>}
+    {emptySectionTitles.length > 0 && <div className="report-glass-card report-card-pad-sm"><p className="report-footnote">{i18nText('Reports.structured.emptySectionsNote', { list: emptySectionTitles.join(i18nText('Common.list.separator')) })}</p></div>}
     <div className="report-glass-card report-card-pad-sm"><p className="report-footnote">{i18nText('Reports.page.sourcesPrefix')}{content.sources.join(i18nText('Common.list.separator'))}</p></div>
   </div>);
 }
@@ -512,6 +530,7 @@ export default function ReportsPage() {
             const isExpanded = expandedReportId === report.reportId;
             const parsed = parseReportContent(report.content);
             const title = parsed.title;
+            const teaser = parsed.version === 2 ? parsed.teaser : (parsed.overview[1] ?? parsed.overview[0] ?? '');
             return (<div key={report.reportId}>
               <button onClick={() => setExpandedReportId((prev) => prev === report.reportId ? null : report.reportId)}
                 className={`report-history-button ${isExpanded ? 'report-history-button--active' : ''}`}>
@@ -521,6 +540,7 @@ export default function ReportsPage() {
                   <ChevronDown size={12} className={`report-icon-muted shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} strokeWidth={2} />
                 </div>
                 <p className="report-history-date">{i18nText('Reports.page.periodRange', { start: report.periodStart.slice(0, 10), end: report.periodEnd.slice(0, 10) })}</p>
+                {teaser ? <p className="report-history-date">{teaser}</p> : null}
               </button>
               {isExpanded && (<div ref={viewerRef} className="mt-2 pb-4">
                 <ReportViewer content={parsed} reportId={report.reportId} persisted={report} childName={activeChild.displayName} selfRoleName={activeChild.recorderProfiles?.[0]?.name} onContentUpdate={parsed.version === 2 ? (u) => void handleContentUpdate(report.reportId, u) : undefined} />

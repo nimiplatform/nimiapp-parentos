@@ -1,4 +1,4 @@
-import { computeAgeMonthsAt, type ChildProfile } from '../../app-shell/app-store.js';
+import { computeAgeMonthsAt, formatAge, type ChildProfile } from '../../app-shell/app-store.js';
 import type {
   JournalEntryRow,
   MeasurementRow,
@@ -73,6 +73,8 @@ export interface StructuredGrowthReportContent {
   metrics: StructuredGrowthReportMetric[];
   trendSignals: StructuredTrendSignal[];
   sections: StructuredGrowthReportSection[];
+  /** Top-priority open reminders with advisor links. Older v1 reports may not include this field. */
+  actionItems?: ActionItem[];
   sources: string[];
   safetyNote: string;
 }
@@ -196,8 +198,7 @@ function startOfUtcMonth(date: Date) {
 }
 
 function startOfUtcQuarter(date: Date) {
-  const quarterStartMonth = Math.floor(date.getUTCMonth() / 3) * 3;
-  return new Date(Date.UTC(date.getUTCFullYear(), quarterStartMonth, 1));
+  return new Date(Date.UTC(date.getUTCFullYear(), Math.floor(date.getUTCMonth() / 3) * 3, 1));
 }
 
 function formatDate(iso: string) {
@@ -206,6 +207,10 @@ function formatDate(iso: string) {
 
 function truncate(value: string, max = 160) {
   return value.length > max ? `${value.slice(0, max - 1)}...` : value;
+}
+
+function listSeparator() {
+  return i18nText('Common.list.separator');
 }
 
 function getReportPeriod(reportType: GrowthReportType, now: string) {
@@ -223,9 +228,7 @@ function inPeriod(value: string | null | undefined, start: string, end: string) 
 
 function summarizeMeasurements(measurements: MeasurementRow[], start: string, end: string) {
   const inWindow = measurements.filter((item) => inPeriod(item.measuredAt, start, end));
-  if (inWindow.length === 0) {
-    return ['No growth measurements were recorded during this report window.'];
-  }
+  if (inWindow.length === 0) return [];
 
   const latestByType = new Map<string, MeasurementRow>();
   for (const measurement of inWindow) {
@@ -238,38 +241,36 @@ function summarizeMeasurements(measurements: MeasurementRow[], start: string, en
       const standard = growthStandardById.get(measurement.typeId as typeof GROWTH_STANDARDS[number]['typeId']);
       const label = standard?.displayName ?? measurement.typeId;
       const unit = standard?.unit ? ` ${standard.unit}` : '';
-      return `${label}: ${measurement.value}${unit} on ${formatDate(measurement.measuredAt)}`;
+      return i18nText('Reports.structured.lines.measurement', {
+        label, value: measurement.value, unit, date: formatDate(measurement.measuredAt),
+      });
     });
 }
 
 function summarizeMilestones(milestones: MilestoneRecordRow[], start: string, end: string) {
   const achieved = milestones.filter((item) => inPeriod(item.achievedAt, start, end));
-  if (achieved.length === 0) {
-    return ['No new milestone achievements were recorded during this report window.'];
-  }
+  if (achieved.length === 0) return [];
 
   return achieved.map((item) => {
     const milestone = milestoneById.get(item.milestoneId);
     const title = milestone?.title ?? item.milestoneId;
-    const achievedAt = item.achievedAt ? formatDate(item.achievedAt) : 'date not recorded';
-    return `${title} recorded on ${achievedAt}`;
+    const date = item.achievedAt ? formatDate(item.achievedAt) : i18nText('Reports.structured.lines.dateNotRecorded');
+    return i18nText('Reports.structured.lines.milestone', { title, date });
   });
 }
 
 function summarizeVaccines(vaccines: VaccineRecordRow[], start: string, end: string) {
   const inWindow = vaccines.filter((item) => inPeriod(item.vaccinatedAt, start, end));
-  if (inWindow.length === 0) {
-    return ['No vaccine records were added during this report window.'];
-  }
+  if (inWindow.length === 0) return [];
 
-  return inWindow.map((item) => `${item.vaccineName} on ${formatDate(item.vaccinatedAt)}`);
+  return inWindow.map((item) => i18nText('Reports.structured.lines.vaccine', {
+    name: item.vaccineName, date: formatDate(item.vaccinatedAt),
+  }));
 }
 
 function summarizeJournalEntries(journalEntries: JournalEntryRow[], child: ChildProfile, start: string, end: string) {
   const inWindow = journalEntries.filter((item) => inPeriod(item.recordedAt, start, end));
-  if (inWindow.length === 0) {
-    return ['No journal entries were recorded during this report window.'];
-  }
+  if (inWindow.length === 0) return [];
 
   const recorderCounts = new Map<string, number>();
   let keepsakeCount = 0;
@@ -286,33 +287,39 @@ function summarizeJournalEntries(journalEntries: JournalEntryRow[], child: Child
   }
 
   const items = [
-    `${inWindow.length} journal entries were saved in this report window.`,
-    `${keepsakeCount} entries were marked as keepsakes.`,
-    `${voiceCount} voice-only entries and ${mixedCount} mixed voice/text entries were saved.`,
+    i18nText('Reports.structured.lines.journalCount', { count: inWindow.length }),
+    i18nText('Reports.structured.lines.journalKeepsake', { count: keepsakeCount }),
+    i18nText('Reports.structured.lines.journalVoiceMixed', { voice: voiceCount, mixed: mixedCount }),
   ];
 
   if (recorderCounts.size > 0) {
     const recorderNameById = new Map((child.recorderProfiles ?? []).map((item) => [item.id, item.name]));
     const recorderSummary = Array.from(recorderCounts.entries())
       .map(([recorderId, count]) => `${recorderNameById.get(recorderId) ?? recorderId}: ${count}`)
-      .join(', ');
-    items.push(`Recorder coverage: ${recorderSummary}.`);
+      .join(listSeparator());
+    items.push(i18nText('Reports.structured.lines.journalRecorders', { summary: recorderSummary }));
   }
 
   return items;
 }
 
-function summarizeReminders(reminderStates: ReminderStateRow[]) {
-  const openStatuses = new Set(['pending', 'active', 'overdue']);
-  const openItems = reminderStates.filter((item) => openStatuses.has(item.status));
-  if (openItems.length === 0) {
-    return ['No pending or overdue reminders are open right now.'];
-  }
+const OPEN_REMINDER_STATUSES = new Set(['pending', 'active', 'overdue']);
+const OPEN_REMINDER_STATUS_RANK: Record<string, number> = { overdue: 0, active: 1, pending: 2 };
 
-  return openItems.slice(0, 5).map((item) => {
+function openReminderStates(reminderStates: ReminderStateRow[]) {
+  return reminderStates
+    .filter((item) => OPEN_REMINDER_STATUSES.has(item.status))
+    .sort((left, right) => (OPEN_REMINDER_STATUS_RANK[left.status] ?? 3) - (OPEN_REMINDER_STATUS_RANK[right.status] ?? 3));
+}
+
+function summarizeReminders(reminderStates: ReminderStateRow[]) {
+  return openReminderStates(reminderStates).map((item) => {
     const rule = reminderRuleById.get(item.ruleId);
     const title = rule?.title ?? item.ruleId;
-    return `${title} (${item.status})`;
+    return i18nText('Reports.structured.lines.reminder', {
+      title,
+      status: i18nText(`Reports.structured.reminderStatus.${item.status}`),
+    });
   });
 }
 
@@ -336,34 +343,44 @@ function buildOverview(
   const evidence = summarizeReminderProgression(reminderStates.map(mapReminderStateRow), REMINDER_RULES);
 
   const engagementParts: string[] = [];
-  if (evidence.tasksCompleted > 0) engagementParts.push(`completed ${evidence.tasksCompleted} tasks`);
+  if (evidence.tasksCompleted > 0) {
+    engagementParts.push(i18nText('Reports.structured.engagement.tasksCompleted', { count: evidence.tasksCompleted }));
+  }
   if (evidence.guidesAcknowledged > 0) {
     engagementParts.push(
       evidence.guidesReflected > 0
-        ? `acknowledged ${evidence.guidesAcknowledged} guides (${evidence.guidesReflected} with reflection)`
-        : `acknowledged ${evidence.guidesAcknowledged} guides`,
+        ? i18nText('Reports.structured.engagement.guidesAcknowledgedReflected', { count: evidence.guidesAcknowledged, reflected: evidence.guidesReflected })
+        : i18nText('Reports.structured.engagement.guidesAcknowledged', { count: evidence.guidesAcknowledged }),
     );
   }
-  if (evidence.practicesInProgress > 0 || evidence.practicesHabituated > 0) {
-    const base = evidence.practicesInProgress > 0
-      ? `practicing ${evidence.practicesInProgress} behavior guides (${evidence.practiceTotalEvents} engagements logged)`
-      : '';
-    const hab = evidence.practicesHabituated > 0
-      ? `${evidence.practicesHabituated} practice${evidence.practicesHabituated === 1 ? '' : 's'} marked habituated`
-      : '';
-    if (base) engagementParts.push(base);
-    if (hab) engagementParts.push(hab);
+  if (evidence.practicesInProgress > 0) {
+    engagementParts.push(i18nText('Reports.structured.engagement.practicesInProgress', { count: evidence.practicesInProgress, events: evidence.practiceTotalEvents }));
   }
-  if (evidence.consultsCompleted > 0) engagementParts.push(`consulted the AI advisor on ${evidence.consultsCompleted} topics`);
+  if (evidence.practicesHabituated > 0) {
+    engagementParts.push(i18nText('Reports.structured.engagement.practicesHabituated', { count: evidence.practicesHabituated }));
+  }
+  if (evidence.consultsCompleted > 0) {
+    engagementParts.push(i18nText('Reports.structured.engagement.consultsCompleted', { count: evidence.consultsCompleted }));
+  }
 
   const engagementLine = engagementParts.length > 0
-    ? `Parent engagement this window: ${engagementParts.join('; ')}.`
-    : `No reminder engagement recorded this window.`;
+    ? i18nText('Reports.structured.engagement.some', { parts: engagementParts.join(listSeparator()) })
+    : i18nText('Reports.structured.engagement.none');
 
   return [
-    `${child.displayName}'s ${reportType.replace('-', ' ')} report covers ${formatDate(periodStart)} to ${formatDate(periodEnd)}.`,
-    `This window includes ${measurementCount} growth measurements, ${journalCount} journal entries, ${milestoneCount} milestone updates, and ${vaccineCount} vaccine records.`,
-    `${engagementLine} ${evidence.unfinished} reminder items are still open on the timeline.`,
+    i18nText('Reports.structured.overview.coverage', {
+      childName: child.displayName,
+      reportType: i18nText(`Reports.structured.reportType.${reportType}`),
+      start: formatDate(periodStart),
+      end: formatDate(periodEnd),
+    }),
+    i18nText('Reports.structured.overview.counts', {
+      measurements: measurementCount,
+      journals: journalCount,
+      milestones: milestoneCount,
+      vaccines: vaccineCount,
+    }),
+    `${engagementLine} ${i18nText('Reports.structured.overview.openReminders', { count: evidence.unfinished })}`,
   ];
 }
 
@@ -385,12 +402,17 @@ export function buildStructuredGrowthReport(snapshot: StructuredGrowthReportSnap
     : getReportPeriod(reportType, now);
   const ageMonthsStart = computeAgeMonthsAt(child.birthDate, period.start);
   const ageMonthsEnd = computeAgeMonthsAt(child.birthDate, period.end);
+  const ageStartLabel = formatAge(ageMonthsStart);
+  const ageEndLabel = formatAge(ageMonthsEnd);
 
-  const title = reportType === 'quarterly-letter'
-    ? `${child.displayName}'s quarterly letter`
-    : `${child.displayName}'s ${reportType.replace('-', ' ')} report`;
+  const titleKey = reportType === 'quarterly-letter' ? 'quarterlyLetter' : reportType;
+  const title = i18nText(`Reports.page.narrativeTitle.${titleKey}`, { childName: child.displayName });
 
-  const subtitle = `Structured local facts only. Generated ${formatDate(now)} for ages ${ageMonthsStart}-${ageMonthsEnd} months.`;
+  const subtitle = i18nText('Reports.structured.subtitle', {
+    date: formatDate(now),
+    ageStart: ageStartLabel,
+    ageEnd: ageEndLabel,
+  });
   const trendSignals = buildStructuredTrendSignals({
     measurements,
     journalEntries,
@@ -410,8 +432,8 @@ export function buildStructuredGrowthReport(snapshot: StructuredGrowthReportSnap
       {
         id: 'age-range',
         label: i18nText('Reports.structured.metrics.ageWindow'),
-        value: `${ageMonthsStart}-${ageMonthsEnd} months`,
-        detail: `${formatDate(period.start)} to ${formatDate(period.end)}`,
+        value: `${ageStartLabel} – ${ageEndLabel}`,
+        detail: i18nText('Reports.page.periodRange', { start: formatDate(period.start), end: formatDate(period.end) }),
       },
       {
         id: 'measurement-count',
@@ -431,7 +453,7 @@ export function buildStructuredGrowthReport(snapshot: StructuredGrowthReportSnap
       {
         id: 'reminder-count',
         label: i18nText('Reports.structured.metrics.openReminders'),
-        value: String(reminderStates.filter((item) => ['pending', 'active', 'overdue'].includes(item.status)).length),
+        value: String(openReminderStates(reminderStates).length),
       },
     ],
     trendSignals,
@@ -442,15 +464,16 @@ export function buildStructuredGrowthReport(snapshot: StructuredGrowthReportSnap
       { id: 'journal', title: i18nText('Reports.structured.sections.journal'), items: summarizeJournalEntries(journalEntries, child, period.start, period.end) },
       { id: 'timeline', title: i18nText('Reports.structured.sections.timeline'), items: summarizeReminders(reminderStates) },
     ],
+    actionItems: buildNarrativeActionItems(reminderStates),
     sources: [
-      'Local child profile',
-      'Local growth measurements',
-      'Local journal entries',
-      'Local milestone records + milestone catalog',
-      'Local vaccine records',
-      'Local reminder states + reminder rules',
+      i18nText('Reports.structured.sources.childProfile'),
+      i18nText('Reports.structured.sources.growthMeasurements'),
+      i18nText('Reports.structured.sources.journalEntries'),
+      i18nText('Reports.structured.sources.milestones'),
+      i18nText('Reports.structured.sources.vaccines'),
+      i18nText('Reports.structured.sources.reminders'),
     ],
-    safetyNote: 'Growth, milestone, vaccine, and observation domains remain structured facts only while they are marked needs-review. This report does not provide diagnosis, ranking, or treatment guidance.',
+    safetyNote: i18nText('Reports.structured.safetyNote'),
   };
 
   return {
@@ -469,13 +492,11 @@ const DOMAIN_ROUTES: Record<string, string> = {
   vaccine: '/profile', checkup: '/profile', growth: '/profile',
   vision: '/profile', dental: '/profile', sleep: '/profile',
   'bone-age': '/profile', sensitivity: '/journal', milestone: '/profile',
-  posture: '/profile', fitness: '/profile', tanner: '/profile',
+  posture: '/profile', fitness: '/profile/fitness', tanner: '/profile',
 };
 
 export function buildNarrativeActionItems(reminderStates: ReminderStateRow[]): ActionItem[] {
-  const openStatuses = new Set(['pending', 'active', 'overdue']);
-  return reminderStates
-    .filter((s) => openStatuses.has(s.status))
+  return openReminderStates(reminderStates)
     .map((s) => ({ state: s, rule: reminderRuleById.get(s.ruleId) }))
     .filter((item) => item.rule != null)
     .slice(0, 3)
@@ -493,6 +514,15 @@ export function buildNarrativeActionItems(reminderStates: ReminderStateRow[]): A
 }
 
 /* ── Parsers ── */
+
+function parseActionItems(raw: unknown): ActionItem[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  return (raw as Array<Record<string, unknown>>).map((a) => ({
+    id: String(a.id ?? ''), text: String(a.text ?? ''),
+    linkTo: typeof a.linkTo === 'string' ? a.linkTo : undefined,
+    ruleId: typeof a.ruleId === 'string' ? a.ruleId : undefined,
+  }));
+}
 
 function parseNarrativeReportContent(parsed: Record<string, unknown>): NarrativeReportContent {
   const fmt = parsed.format;
@@ -521,11 +551,7 @@ function parseNarrativeReportContent(parsed: Record<string, unknown>): Narrative
         label: String(d.label ?? ''), value: String(d.value ?? ''), detail: d.detail != null ? String(d.detail) : undefined,
       })) : undefined,
     })),
-    actionItems: (parsed.actionItems as Array<Record<string, unknown>>).map((a) => ({
-      id: String(a.id ?? ''), text: String(a.text ?? ''),
-      linkTo: typeof a.linkTo === 'string' ? a.linkTo : undefined,
-      ruleId: typeof a.ruleId === 'string' ? a.ruleId : undefined,
-    })),
+    actionItems: parseActionItems(parsed.actionItems) ?? [],
     trendSignals: Array.isArray(parsed.trendSignals)
       ? (parsed.trendSignals as Array<Record<string, unknown>>).map((s) => ({
         id: String(s.id ?? ''), title: String(s.title ?? ''), summary: truncate(String(s.summary ?? '')),
@@ -636,6 +662,7 @@ export function parseStructuredGrowthReportContent(raw: string): StructuredGrowt
       title: String(section.title),
       items: Array.isArray(section.items) ? section.items.map((item) => truncate(String(item))) : [],
     })),
+    actionItems: parseActionItems(parsed.actionItems),
     sources: parsed.sources.map((item) => String(item)),
     safetyNote: parsed.safetyNote,
   };

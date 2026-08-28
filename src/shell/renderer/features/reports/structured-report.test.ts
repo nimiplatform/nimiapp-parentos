@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { i18nText } from '../../i18n/index.js';
 import { buildStructuredGrowthReport, parseReportContent, parseStructuredGrowthReportContent } from './structured-report.js';
 
 describe('structured-report', () => {
@@ -128,7 +129,7 @@ describe('structured-report', () => {
     expect(report.content.trendSignals.length).toBeGreaterThan(0);
     const v1 = report.content as { sections: Array<{ id: string }> };
     expect(v1.sections.some((section) => section.id === 'journal')).toBe(true);
-    expect(report.content.safetyNote).toMatch(/structured facts only/i);
+    expect(report.content.safetyNote).toBe(i18nText('Reports.structured.safetyNote'));
   });
 
   it('rejects malformed stored payloads', () => {
@@ -176,5 +177,74 @@ describe('structured-report', () => {
     expect(parseReportContent(v1).version).toBe(1);
     const v2 = JSON.stringify({ version: 2, format: 'narrative', reportType: 'monthly', title: 'T', subtitle: '', teaser: '', generatedAt: '', narrativeSections: [], actionItems: [], trendSignals: [], metrics: [], sources: [], safetyNote: 'test' });
     expect(parseReportContent(v2).version).toBe(2);
+  });
+
+  it('describes sparse windows as sparse without sentinel text and keeps priority action items', () => {
+    const report = buildStructuredGrowthReport({
+      child,
+      reportType: 'monthly',
+      now: '2026-04-03T00:00:00.000Z',
+      measurements: [],
+      milestones: [],
+      vaccines: [],
+      journalEntries: [],
+      reminderStates: [
+        {
+          stateId: 'r-1',
+          childId: 'child-1',
+          ruleId: 'PO-REM-VAC-001',
+          status: 'overdue',
+          activatedAt: null,
+          completedAt: null,
+          dismissedAt: null,
+          dismissReason: null,
+          repeatIndex: 0,
+          nextTriggerAt: null,
+          snoozedUntil: null,
+          scheduledDate: null,
+          notApplicable: 0,
+          plannedForDate: null,
+          surfaceRank: null,
+          lastSurfacedAt: null,
+          surfaceCount: 0,
+          notes: null,
+          acknowledgedAt: null,
+          reflectedAt: null,
+          practiceStartedAt: null,
+          practiceLastAt: null,
+          practiceCount: 0,
+          practiceHabituatedAt: null,
+          consultedAt: null,
+          consultationConversationId: null,
+          createdAt: '2026-04-01T00:00:00.000Z',
+          updatedAt: '2026-04-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    const content = report.content;
+    if (content.version !== 1) throw new Error('expected v1 content');
+
+    // Empty domains stay structurally empty; no English sentinel sentences.
+    for (const section of content.sections) {
+      for (const item of section.items) {
+        expect(item).not.toMatch(/No .* (were|was) recorded/i);
+      }
+    }
+    expect(content.sections.find((s) => s.id === 'growth')?.items).toEqual([]);
+    expect(content.sections.find((s) => s.id === 'timeline')?.items).toHaveLength(1);
+
+    // Priority follow-ups surface as clickable action items and round-trip.
+    expect(content.actionItems).toHaveLength(1);
+    expect(content.actionItems?.[0]?.ruleId).toBe('PO-REM-VAC-001');
+    expect(content.actionItems?.[0]?.linkTo).toContain('/advisor');
+    const reparsed = parseReportContent(JSON.stringify(content));
+    if (reparsed.version !== 1) throw new Error('expected v1 reparse');
+    expect(reparsed.actionItems).toHaveLength(1);
+
+    // Age window is formatted for humans, not raw months.
+    const ageMetric = content.metrics.find((m) => m.id === 'age-range');
+    expect(ageMetric?.value).not.toMatch(/^\d+-\d+ months$/);
+    expect(ageMetric?.value).toMatch(/岁|year/);
   });
 });

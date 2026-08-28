@@ -4968,7 +4968,56 @@
       },
       "action": {
         "overdueSuffix": "（逾期）"
-      }
+      },
+      "subtitle": "仅含本地结构化事实 · 生成于 {{date}} · 年龄 {{ageStart}} – {{ageEnd}}",
+      "reportType": {
+        "monthly": "月度",
+        "quarterly": "季度",
+        "quarterly-letter": "季度信",
+        "custom": "综合"
+      },
+      "overview": {
+        "coverage": "{{childName}}的{{reportType}}报告，覆盖 {{start}} 至 {{end}}。",
+        "counts": "本窗口共 {{measurements}} 次生长测量、{{journals}} 条日志、{{milestones}} 个里程碑、{{vaccines}} 条疫苗记录。",
+        "openReminders": "时间线上仍有 {{count}} 条提醒待处理。"
+      },
+      "engagement": {
+        "some": "本期家长参与：{{parts}}。",
+        "none": "本期无提醒互动记录。",
+        "tasksCompleted": "完成 {{count}} 项任务",
+        "guidesAcknowledged": "确认 {{count}} 条指南",
+        "guidesAcknowledgedReflected": "确认 {{count}} 条指南（{{reflected}} 条附反思）",
+        "practicesInProgress": "正在实践 {{count}} 项行为指南（共 {{events}} 次记录）",
+        "practicesHabituated": "{{count}} 项实践已标记为习惯化",
+        "consultsCompleted": "就 {{count}} 个主题咨询了 AI 顾问"
+      },
+      "lines": {
+        "measurement": "{{label}}：{{value}}{{unit}}（{{date}}）",
+        "milestone": "{{title}}（{{date}}）",
+        "vaccine": "{{name}}（{{date}}）",
+        "dateNotRecorded": "未记录日期",
+        "journalCount": "本窗口保存 {{count}} 条日志。",
+        "journalKeepsake": "其中 {{count}} 条标记为珍藏。",
+        "journalVoiceMixed": "纯语音 {{voice}} 条，语音+文字 {{mixed}} 条。",
+        "journalRecorders": "记录人分布：{{summary}}。",
+        "reminder": "{{title}}（{{status}}）"
+      },
+      "reminderStatus": {
+        "overdue": "逾期",
+        "active": "进行中",
+        "pending": "待处理"
+      },
+      "sectionCountSuffix": "（{{count}}）",
+      "emptySectionsNote": "本期无新增记录：{{list}}。",
+      "sources": {
+        "childProfile": "本地儿童档案",
+        "growthMeasurements": "本地生长测量",
+        "journalEntries": "本地日志",
+        "milestones": "本地里程碑记录 + 里程碑目录",
+        "vaccines": "本地疫苗记录",
+        "reminders": "本地提醒状态 + 提醒规则"
+      },
+      "safetyNote": "生长、里程碑、疫苗与观察域当前标记为待评审，仅呈现结构化事实。本报告不提供诊断、排名或治疗建议。"
     },
     "professionalSummary": {
       "sections": {
@@ -5112,6 +5161,7 @@
       "nextActions": "下一步行动",
       "sourcesPrefix": "数据来源：",
       "overview": "概览",
+      "focusTitle": "本期重点",
       "noChild": "请先添加孩子档案。",
       "invalidPeriod": "请选择有效的报告时间范围。",
       "periodSubtitle": "{{start}} 至 {{end}}",

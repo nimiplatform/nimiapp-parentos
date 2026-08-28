@@ -4968,7 +4968,56 @@
       },
       "action": {
         "overdueSuffix": " (overdue)"
-      }
+      },
+      "subtitle": "Structured local facts only · Generated {{date}} · Ages {{ageStart}} – {{ageEnd}}",
+      "reportType": {
+        "monthly": "monthly",
+        "quarterly": "quarterly",
+        "quarterly-letter": "quarterly letter",
+        "custom": "custom"
+      },
+      "overview": {
+        "coverage": "{{childName}}'s {{reportType}} report covers {{start}} to {{end}}.",
+        "counts": "This window includes {{measurements}} growth measurements, {{journals}} journal entries, {{milestones}} milestone updates, and {{vaccines}} vaccine records.",
+        "openReminders": "{{count}} reminder items are still open on the timeline."
+      },
+      "engagement": {
+        "some": "Parent engagement this window: {{parts}}.",
+        "none": "No reminder engagement recorded this window.",
+        "tasksCompleted": "completed {{count}} tasks",
+        "guidesAcknowledged": "acknowledged {{count}} guides",
+        "guidesAcknowledgedReflected": "acknowledged {{count}} guides ({{reflected}} with reflection)",
+        "practicesInProgress": "practicing {{count}} behavior guides ({{events}} engagements logged)",
+        "practicesHabituated": "{{count}} practices marked habituated",
+        "consultsCompleted": "consulted the AI advisor on {{count}} topics"
+      },
+      "lines": {
+        "measurement": "{{label}}: {{value}}{{unit}} on {{date}}",
+        "milestone": "{{title}} recorded on {{date}}",
+        "vaccine": "{{name}} on {{date}}",
+        "dateNotRecorded": "date not recorded",
+        "journalCount": "{{count}} journal entries were saved in this report window.",
+        "journalKeepsake": "{{count}} entries were marked as keepsakes.",
+        "journalVoiceMixed": "{{voice}} voice-only entries and {{mixed}} mixed voice/text entries were saved.",
+        "journalRecorders": "Recorder coverage: {{summary}}.",
+        "reminder": "{{title}} ({{status}})"
+      },
+      "reminderStatus": {
+        "overdue": "overdue",
+        "active": "active",
+        "pending": "pending"
+      },
+      "sectionCountSuffix": " ({{count}})",
+      "emptySectionsNote": "No new records this period: {{list}}.",
+      "sources": {
+        "childProfile": "Local child profile",
+        "growthMeasurements": "Local growth measurements",
+        "journalEntries": "Local journal entries",
+        "milestones": "Local milestone records + milestone catalog",
+        "vaccines": "Local vaccine records",
+        "reminders": "Local reminder states + reminder rules"
+      },
+      "safetyNote": "Growth, milestone, vaccine, and observation domains remain structured facts only while they are marked needs-review. This report does not provide diagnosis, ranking, or treatment guidance."
     },
     "professionalSummary": {
       "sections": {
@@ -5112,6 +5161,7 @@
       "nextActions": "Next actions",
       "sourcesPrefix": "Data sources: ",
       "overview": "Overview",
+      "focusTitle": "Key this period",
       "noChild": "Add a child profile first.",
       "invalidPeriod": "Select a valid report date range.",
       "periodSubtitle": "{{start}} to {{end}}",
