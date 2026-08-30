@@ -1,5 +1,5 @@
 import {
-  convertTauriFileSrc,
+  convertShellFileSrc,
   invoke as invokeShellCommand,
   type JsonValue,
 } from '@nimiplatform/kit/shell/renderer/bridge';
@@ -12,5 +12,5 @@ export async function invoke<T = unknown>(
 }
 
 export function convertFileSrc(filePath: string): string {
-  return convertTauriFileSrc(filePath);
+  return convertShellFileSrc(filePath);
 }

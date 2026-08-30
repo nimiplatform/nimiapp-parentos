@@ -184,6 +184,8 @@ describe('timeline dashboard cards', () => {
           development: [
             { ruleId: 'PO-TEST-GUIDE', title: '语言互动窗口', description: '多回应孩子的发声。', domain: 'language', priority: 'P1' },
           ],
+          healthOverflow: 0,
+          developmentOverflow: 0,
         }}
       />,
     );
@@ -206,6 +208,8 @@ describe('timeline dashboard cards', () => {
           development: [
             { ruleId: 'PO-TEST-GUIDE', title: '语言互动窗口', description: '多回应孩子的发声。', domain: 'language', priority: 'P1' },
           ],
+          healthOverflow: 0,
+          developmentOverflow: 0,
         }}
       />,
     );
@@ -214,6 +218,30 @@ describe('timeline dashboard cards', () => {
     expect(screen.getByText('发展关注')).toBeTruthy();
     const hrefs = Array.from(container.querySelectorAll('a')).map((link) => link.getAttribute('href'));
     expect(hrefs).toContain('/reminders');
+  });
+
+  it('renders the per-group overflow count as a link to the reminders surface', () => {
+    const { container } = renderInRouter(
+      <StageInsightCard
+        summary={{
+          ageLabel: '10个月',
+          health: [
+            { ruleId: 'PO-TEST-T0', title: '视力定期检查', description: '每半年检查一次视力。', domain: 'vision', priority: 'P1' },
+          ],
+          development: [
+            { ruleId: 'PO-TEST-G0', title: '语言互动窗口', description: '多回应孩子的发声。', domain: 'language', priority: 'P1' },
+          ],
+          healthOverflow: 6,
+          developmentOverflow: 0,
+        }}
+      />,
+    );
+
+    const overflowLink = screen.getByText('还有 6 项 →');
+    expect(overflowLink.closest('a')?.getAttribute('href')).toBe('/reminders');
+    expect(screen.queryByText('还有 0 项 →')).toBeNull();
+    const links = Array.from(container.querySelectorAll('a'));
+    expect(links.filter((link) => link.textContent?.startsWith('还有'))).toHaveLength(1);
   });
 
   it('renders the getting-started guide with three linked steps', () => {

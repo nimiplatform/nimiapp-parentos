@@ -3161,6 +3161,7 @@
       "stageInsightTitle": "{{ageLabel}}",
       "stageInsightHealthGroup": "Health windows",
       "stageInsightDevGroup": "Development focus",
+      "stageInsightOverflow": "{{count}} more →",
       "coldStartGuideTitle": "Start with these three — the home page grows from here",
       "coldStartStep1Title": "Log the first growth measurement",
       "coldStartStep1Body": "Enter one height or weight and a WHO-referenced trend curve appears here.",

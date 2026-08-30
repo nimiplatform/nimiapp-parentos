@@ -56,8 +56,11 @@ export function AdvisorComposer({
       <div className="mx-auto max-w-3xl">
         {recordRoute && (
           <div className="mb-2">
-            <Button asChild tone="secondary" size="sm" leadingIcon={<Plus size={14} aria-hidden="true" />}>
-              <Link to={recordRoute}>{i18nText('Advisor.composer.recordData')}</Link>
+            <Button asChild tone="secondary" size="sm">
+              <Link to={recordRoute} className="inline-flex items-center gap-1.5">
+                <Plus size={14} aria-hidden="true" />
+                {i18nText('Advisor.composer.recordData')}
+              </Link>
             </Button>
           </div>
         )}

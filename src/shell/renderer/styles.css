@@ -2688,3 +2688,128 @@ button.report-note-composer {
     animation: none;
   }
 }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * ParentOS AI mascot button (圆形小精灵) — profile surfaces 的 AI 入口。
+ * 待机：轻微上下浮动 + 周期性眨眼；思考（生成中）：左右摇摆 + 眼珠扫描。
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.parentos-ai-mascot-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: transform var(--nimi-motion-fast) var(--nimi-motion-ease-standard),
+    filter var(--nimi-motion-fast) var(--nimi-motion-ease-standard);
+}
+
+.parentos-ai-mascot-button:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.06);
+  filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--nimi-action-primary-bg) 45%, transparent));
+}
+
+.parentos-ai-mascot-button:active:not(:disabled) {
+  transform: scale(var(--nimi-motion-pressed-scale));
+}
+
+.parentos-ai-mascot-button:disabled {
+  cursor: default;
+}
+
+.parentos-ai-mascot-button:focus-visible {
+  outline: 2px solid var(--nimi-action-primary-bg);
+  outline-offset: 2px;
+}
+
+.parentos-ai-mascot-button svg,
+.parentos-ai-mascot-static svg {
+  display: block;
+}
+
+/* 非交互形态：无 hover/press 反馈，仅作为装饰性存在（如“暂无数据”提示条）。 */
+.parentos-ai-mascot-static {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 9999px;
+}
+
+.parentos-ai-mascot-float {
+  animation: parentosAiMascotBob 3.6s ease-in-out infinite;
+}
+
+.parentos-ai-mascot-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: parentosAiMascotBlink 5s ease-in-out infinite;
+}
+
+.parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-float {
+  animation: parentosAiMascotWobble 1.1s ease-in-out infinite;
+}
+
+.parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-eye {
+  animation: parentosAiMascotScan 1.1s ease-in-out infinite;
+}
+
+@keyframes parentosAiMascotBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+
+@keyframes parentosAiMascotBlink {
+  0%,
+  91%,
+  100% {
+    transform: scaleY(1);
+  }
+
+  94% {
+    transform: scaleY(0.12);
+  }
+
+  97% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes parentosAiMascotWobble {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes parentosAiMascotScan {
+  0%,
+  100% {
+    transform: translateX(-2px) scaleY(0.85);
+  }
+
+  50% {
+    transform: translateX(2px) scaleY(0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parentos-ai-mascot-float,
+  .parentos-ai-mascot-eye,
+  .parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-float,
+  .parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-eye {
+    animation: none;
+  }
+}

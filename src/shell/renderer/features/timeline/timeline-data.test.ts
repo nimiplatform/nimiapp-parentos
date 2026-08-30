@@ -751,7 +751,7 @@ describe('buildStageInsight', () => {
     expect(summary?.development.map((item) => item.ruleId)).toEqual(['PO-TEST-GUIDE', 'PO-TEST-PRACTICE']);
   });
 
-  it('keeps every eligible row instead of truncating the authority-backed projection', () => {
+  it('caps each group at the group limit and reports the overflow count', () => {
     const summary = buildStageInsight(10, 'balanced', [
       makeRule({ ruleId: 'PO-TEST-T0' }),
       makeRule({ ruleId: 'PO-TEST-T1' }),
@@ -759,7 +759,21 @@ describe('buildStageInsight', () => {
       makeRule({ ruleId: 'PO-TEST-T3' }),
     ]);
 
-    expect(summary?.health).toHaveLength(4);
+    expect(summary?.health.map((item) => item.ruleId)).toEqual(['PO-TEST-T0', 'PO-TEST-T1', 'PO-TEST-T2']);
+    expect(summary?.healthOverflow).toBe(1);
+    expect(summary?.developmentOverflow).toBe(0);
+  });
+
+  it('keeps the highest-priority rows inside the cap', () => {
+    const summary = buildStageInsight(10, 'balanced', [
+      makeRule({ ruleId: 'PO-TEST-T0' }),
+      makeRule({ ruleId: 'PO-TEST-T1' }),
+      makeRule({ ruleId: 'PO-TEST-T2' }),
+      makeRule({ ruleId: 'PO-TEST-T3', priority: 'P0' }),
+    ]);
+
+    expect(summary?.health.map((item) => item.ruleId)).toEqual(['PO-TEST-T3', 'PO-TEST-T0', 'PO-TEST-T1']);
+    expect(summary?.healthOverflow).toBe(1);
   });
 
   it('sorts deterministically by priority, start age, then ruleId', () => {
@@ -770,7 +784,8 @@ describe('buildStageInsight', () => {
       makeRule({ ruleId: 'PO-TEST-A', priority: 'P0', triggerAge: { startMonths: 9, endMonths: -1 } }),
     ]);
 
-    expect(summary?.health.map((item) => item.ruleId)).toEqual(['PO-TEST-A', 'PO-TEST-C', 'PO-TEST-D', 'PO-TEST-B']);
+    expect(summary?.health.map((item) => item.ruleId)).toEqual(['PO-TEST-A', 'PO-TEST-C', 'PO-TEST-D']);
+    expect(summary?.healthOverflow).toBe(1);
   });
 
   it('returns null when no rule is eligible', () => {

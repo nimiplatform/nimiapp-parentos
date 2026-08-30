@@ -620,7 +620,7 @@ export default function JournalPage() {
      ════════════════════════════════════════════════════════ */
 
   return (
-    <div className="hide-scrollbar mx-auto min-h-full max-w-3xl px-6 pb-6 pt-4">
+    <div className="hide-scrollbar mx-auto min-h-full max-w-3xl px-6 pb-6 pt-12">
       <JournalPageCapture
         childPronoun={i18nText(child.gender === 'female' ? 'Common.pronoun.female' : 'Common.pronoun.male')}
         guidedContext={guidedContext}

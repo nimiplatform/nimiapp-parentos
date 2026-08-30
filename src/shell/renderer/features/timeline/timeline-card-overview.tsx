@@ -281,7 +281,7 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
   );
 }
 
-function StageInsightGroup({ title, items }: { title: string; items: StageInsightItem[] }) {
+function StageInsightGroup({ title, items, overflow }: { title: string; items: StageInsightItem[]; overflow: number }) {
   return (
     <div className="dashboard-inset rounded-[18px] p-5">
       <p className="text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: textSoft }}>{title}</p>
@@ -289,12 +289,17 @@ function StageInsightGroup({ title, items }: { title: string; items: StageInsigh
         {items.map((item) => (
           <div key={item.ruleId}>
             <p className="text-[14px] font-semibold" style={{ color: textMain }}>{item.title}</p>
-            <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>
               {item.description}
             </p>
           </div>
         ))}
       </div>
+      {overflow > 0 ? (
+        <Link to="/reminders" className="mt-4 inline-block text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>
+          {i18nText('Timeline.home.stageInsightOverflow', { count: overflow })}
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -315,8 +320,8 @@ export function StageInsightCard({ summary }: { summary: StageInsightSummary }) 
         </Link>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {summary.health.length > 0 ? <StageInsightGroup title={i18nText('Timeline.home.stageInsightHealthGroup')} items={summary.health} /> : null}
-        {summary.development.length > 0 ? <StageInsightGroup title={i18nText('Timeline.home.stageInsightDevGroup')} items={summary.development} /> : null}
+        {summary.health.length > 0 ? <StageInsightGroup title={i18nText('Timeline.home.stageInsightHealthGroup')} items={summary.health} overflow={summary.healthOverflow} /> : null}
+        {summary.development.length > 0 ? <StageInsightGroup title={i18nText('Timeline.home.stageInsightDevGroup')} items={summary.development} overflow={summary.developmentOverflow} /> : null}
       </div>
     </Cd>
   );

@@ -11,8 +11,11 @@ export function AdvisorRuntimeGateNotice() {
         <p className="text-[14px] leading-6 text-amber-800">
           {i18nText('Advisor.runtimeGate.message')}
         </p>
-        <Button asChild tone="secondary" size="sm" leadingIcon={<Sparkles size={14} aria-hidden="true" />}>
-          <Link to="/settings/ai">{i18nText('Advisor.runtimeGate.action')}</Link>
+        <Button asChild tone="secondary" size="sm">
+          <Link to="/settings/ai" className="inline-flex items-center gap-1.5">
+            <Sparkles size={14} aria-hidden="true" />
+            {i18nText('Advisor.runtimeGate.action')}
+          </Link>
         </Button>
       </div>
     </div>

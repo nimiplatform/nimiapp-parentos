@@ -191,6 +191,9 @@ export interface StageInsightSummary {
   ageLabel: string;
   health: StageInsightItem[];
   development: StageInsightItem[];
+  /** Eligible rows beyond the per-group render cap, per group. */
+  healthOverflow: number;
+  developmentOverflow: number;
 }
 
 export interface TimelineHomeViewModel {

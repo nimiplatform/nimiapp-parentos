@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +19,7 @@ import { chromium } from 'playwright';
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(currentDir, '..');
 const evidenceRoot = path.join(repoRoot, '.nimi', 'local', 'acceptance', 'mock-data');
+const demographicMatrixPath = path.join(repoRoot, 'mock', 'demographic-matrix.json');
 const bridgeKey = '__NIMI_ELECTRON_RUNTIME__';
 
 const routesToCheck = [
@@ -42,6 +43,7 @@ const routesToCheck = [
 ];
 
 async function main() {
+  const demographicMatrix = JSON.parse(await readFile(demographicMatrixPath, 'utf8'));
   const evidenceDir = path.join(evidenceRoot, new Date().toISOString().replace(/[:.]/gu, '-'));
   const screenshotDir = path.join(evidenceDir, 'screenshots');
   await mkdir(screenshotDir, { recursive: true });
@@ -96,9 +98,12 @@ async function main() {
       { timeout: 180_000 },
     );
     const settingsText = await page.evaluate(() => document.body?.innerText || '');
+    assert.doesNotMatch(settingsText, /Failed:/u, `seed import must complete: ${settingsText.slice(-800)}`);
     assert.match(settingsText, /children:\s*\d+\/\d+/u, `seed summary must report children: ${settingsText.slice(-400)}`);
+    assert.match(settingsText, /journal:\s*\d+\/\d+/u, `seed summary must report journal completion: ${settingsText.slice(-800)}`);
     const seedSummary = (settingsText.match(/family:[^\n]*/u) || [''])[0];
     console.log(`seed summary: ${seedSummary}`);
+    await switchActiveChild(page, '林可然');
 
     // 2. Walk every data route and assert seeded content renders.
     const routeResults = [];
@@ -132,33 +137,64 @@ async function main() {
     }
 
     const failedRoutes = routeResults.filter((result) => result.errors.length > 0);
-    assert.deepEqual(pageErrors, [], 'page must not emit page errors');
+
+    // 3. Switch through same-age male/female pairs and verify the product's
+    // age- and sex-driven projections through the real Electron renderer.
+    const productFailures = [];
+    const timelineSwitchFailure = await probeTimelineChildSwitch({
+      page,
+      appOrigin,
+      scenario: demographicMatrix.scenarios[0],
+      pageErrors,
+    });
+    if (timelineSwitchFailure) productFailures.push(timelineSwitchFailure);
+
+    const demographicResults = [];
+    for (const scenario of demographicMatrix.scenarios) {
+      const result = await inspectDemographicScenario({
+        page,
+        appOrigin,
+        screenshotDir,
+        scenario,
+      });
+      demographicResults.push(result);
+      console.log(`PASS demographic ${scenario.scenarioId} (${result.ageMonths} months)`);
+    }
+
     // The self-hosted fallback does not register the nimi-shell-file:// media
     // scheme (that is owned by the Desktop-supervised host), so journal
     // photo/audio resources fail with ERR_UNKNOWN_URL_SCHEME there. Those are
     // environment noise, not data defects; every other console.error fails.
     const unexpectedConsoleErrors = consoleEvents.filter((event) => event.type === 'error'
       && !(event.text.includes('ERR_UNKNOWN_URL_SCHEME') && event.location?.url?.startsWith('nimi-shell-file://')));
-    assert.deepEqual(
-      unexpectedConsoleErrors,
-      [],
-      'page must not emit console.error events',
-    );
-    assert.deepEqual(
-      failedRoutes.map((result) => ({ route: result.route, errors: result.errors })),
-      [],
-      'every data route must render seeded content',
-    );
-
     const evidencePath = path.join(evidenceDir, 'evidence.json');
     await writeFile(evidencePath, JSON.stringify({
       seedSummary,
       routeResults,
+      productFailures,
+      demographicMatrix: {
+        asOfDate: demographicMatrix.meta.asOfDate,
+        scenarioCount: demographicMatrix.scenarios.length,
+        results: demographicResults,
+      },
       consoleEvents,
       pageErrors,
       diagnostics: diagnostics(),
     }, null, 2), 'utf8');
     console.log(`Mock data acceptance: ${evidencePath}`);
+
+    assert.deepEqual(
+      failedRoutes.map((result) => ({ route: result.route, errors: result.errors })),
+      [],
+      'every data route must render seeded content',
+    );
+    assert.deepEqual(productFailures, [], 'cross-child product projections must refresh without crashing');
+    assert.deepEqual(pageErrors, [], 'page must not emit page errors');
+    assert.deepEqual(
+      unexpectedConsoleErrors,
+      [],
+      'page must not emit console.error events',
+    );
   } catch (error) {
     if (page) {
       await page.screenshot({ path: path.join(evidenceDir, 'failure.png'), fullPage: true }).catch(() => undefined);
@@ -175,6 +211,198 @@ async function main() {
     await terminateProcessTree(appProcess);
     if (rendererProcess) await terminateProcessTree(rendererProcess);
   }
+}
+
+async function inspectDemographicScenario({ page, appOrigin, screenshotDir, scenario }) {
+  const { child } = scenario;
+  // Switch from the settings route so a known in-place timeline transition
+  // defect does not prevent the rest of the matrix from being inspected. The
+  // defect is probed separately and still fails the acceptance run.
+  await page.goto(`${appOrigin}/settings`, { waitUntil: 'domcontentloaded' });
+  await waitForProductRoute(page);
+
+  const optionText = await switchActiveChild(page, child.displayName);
+  const ageMonths = computeAgeMonthsAt(child.birthDate, new Date());
+  const expectedAgeLabel = formatAgeLabel(ageMonths);
+  assert.match(optionText, new RegExp(escapeRegExp(expectedAgeLabel), 'u'), `${scenario.scenarioId} child menu age label`);
+
+  const checkedOptionText = await readCheckedChildOption(page, child.displayName);
+  assert.match(checkedOptionText, new RegExp(escapeRegExp(expectedAgeLabel), 'u'));
+
+  await page.goto(`${appOrigin}/timeline`, { waitUntil: 'domcontentloaded' });
+  await waitForProductRoute(page);
+  await page.waitForFunction(
+    (displayName) => (document.body?.innerText || '').includes(displayName),
+    child.displayName,
+    { timeout: 15_000 },
+  );
+  const timelineText = await assertHealthyProductSurface(page, `${scenario.scenarioId} timeline`);
+  for (const quickLink of expectedQuickLinks(ageMonths)) {
+    assert.ok(
+      timelineText.includes(quickLink),
+      `${scenario.scenarioId} timeline must include age-driven quick link: ${quickLink}`,
+    );
+  }
+  const timelineScreenshot = path.join(screenshotDir, `demographic-${scenario.scenarioId}-timeline.png`);
+  await page.screenshot({ path: timelineScreenshot, fullPage: true });
+
+  let tanner = null;
+  if (scenario.cohort === 'puberty-12y' || scenario.cohort === 'adolescent-16y') {
+    await page.goto(`${appOrigin}/profile/tanner`, { waitUntil: 'domcontentloaded' });
+    await waitForProductRoute(page);
+    const addAssessmentButton = page.getByRole('button', { name: '添加评估' });
+    await addAssessmentButton.waitFor({ state: 'visible', timeout: 15_000 });
+    const genderLabel = child.gender === 'female' ? '女孩' : '男孩';
+    let tannerText = await assertHealthyProductSurface(page, `${scenario.scenarioId} Tanner page`);
+    assert.match(tannerText, new RegExp(`${genderLabel}\\s*·\\s*共`, 'u'));
+    await addAssessmentButton.click();
+    tannerText = await assertHealthyProductSurface(page, `${scenario.scenarioId} Tanner form`);
+    const expectedPrimaryLabel = child.gender === 'female' ? '乳房发育 (B期)' : '外生殖器发育 (G期)';
+    const forbiddenPrimaryLabel = child.gender === 'female' ? '外生殖器发育 (G期)' : '乳房发育 (B期)';
+    assert.ok(tannerText.includes(expectedPrimaryLabel), `${scenario.scenarioId} Tanner form must show ${expectedPrimaryLabel}`);
+    assert.ok(!tannerText.includes(forbiddenPrimaryLabel), `${scenario.scenarioId} Tanner form must not show ${forbiddenPrimaryLabel}`);
+    const screenshot = path.join(screenshotDir, `demographic-${scenario.scenarioId}-tanner.png`);
+    await page.screenshot({ path: screenshot, fullPage: true });
+    tanner = { genderLabel, expectedPrimaryLabel, screenshot };
+  }
+
+  let fitness = null;
+  if (ageMonths >= 144) {
+    await page.goto(`${appOrigin}/profile/fitness`, { waitUntil: 'domcontentloaded' });
+    await waitForProductRoute(page);
+    const addFitnessButton = page.getByRole('button', { name: '添加记录' });
+    await addFitnessButton.waitFor({ state: 'visible', timeout: 15_000 });
+    await addFitnessButton.click();
+    const standardTab = page.locator('button').filter({ hasText: '体测' });
+    await standardTab.waitFor({ state: 'visible', timeout: 15_000 });
+    await standardTab.click();
+    const fitnessText = await assertHealthyProductSurface(page, `${scenario.scenarioId} fitness form`);
+    assert.ok(fitnessText.includes('初中及以上'), `${scenario.scenarioId} fitness tier must be grade 7+`);
+    const expectedSexMetrics = child.gender === 'female'
+      ? ['800米跑', '仰卧起坐']
+      : ['1000米跑', '引体向上'];
+    const forbiddenSexMetrics = child.gender === 'female'
+      ? ['1000米跑', '引体向上']
+      : ['800米跑', '仰卧起坐'];
+    for (const metric of expectedSexMetrics) {
+      assert.ok(fitnessText.includes(metric), `${scenario.scenarioId} fitness form must show ${metric}`);
+    }
+    for (const metric of forbiddenSexMetrics) {
+      assert.ok(!fitnessText.includes(metric), `${scenario.scenarioId} fitness form must not show ${metric}`);
+    }
+    const screenshot = path.join(screenshotDir, `demographic-${scenario.scenarioId}-fitness.png`);
+    await page.screenshot({ path: screenshot, fullPage: true });
+    fitness = { expectedSexMetrics, forbiddenSexMetrics, screenshot };
+  }
+
+  return {
+    scenarioId: scenario.scenarioId,
+    cohort: scenario.cohort,
+    childId: child.childId,
+    displayName: child.displayName,
+    gender: child.gender,
+    birthDate: child.birthDate,
+    ageMonths,
+    expectedAgeLabel,
+    expectedQuickLinks: expectedQuickLinks(ageMonths),
+    timelineScreenshot,
+    tanner,
+    fitness,
+  };
+}
+
+async function probeTimelineChildSwitch({ page, appOrigin, scenario, pageErrors }) {
+  await page.goto(`${appOrigin}/timeline`, { waitUntil: 'domcontentloaded' });
+  await waitForProductRoute(page);
+  const pageErrorStart = pageErrors.length;
+  try {
+    await switchActiveChild(page, scenario.child.displayName);
+    await page.waitForFunction(
+      (displayName) => (document.body?.innerText || '').includes(displayName),
+      scenario.child.displayName,
+      { timeout: 5_000 },
+    );
+    await assertHealthyProductSurface(page, 'in-place timeline child switch');
+    return null;
+  } catch (error) {
+    return {
+      id: 'timeline-in-place-child-switch',
+      fromChild: '林可然',
+      toChild: scenario.child.displayName,
+      error: error instanceof Error ? error.message : String(error),
+      pageErrors: pageErrors.slice(pageErrorStart),
+    };
+  } finally {
+    await page.goto(`${appOrigin}/settings`, { waitUntil: 'domcontentloaded' });
+    await waitForProductRoute(page);
+  }
+}
+
+async function switchActiveChild(page, displayName) {
+  const menuButton = page.locator('nav button[aria-haspopup="menu"]').first();
+  await menuButton.waitFor({ state: 'visible', timeout: 15_000 });
+  await menuButton.click();
+  const option = page.getByRole('menuitemradio').filter({ hasText: displayName });
+  await option.waitFor({ state: 'attached', timeout: 15_000 });
+  await option.scrollIntoViewIfNeeded();
+  await option.waitFor({ state: 'visible', timeout: 15_000 });
+  const optionText = await option.innerText();
+  await option.click();
+  return optionText;
+}
+
+async function readCheckedChildOption(page, displayName) {
+  const menuButton = page.locator('nav button[aria-haspopup="menu"]').first();
+  await menuButton.click();
+  const option = page.getByRole('menuitemradio').filter({ hasText: displayName });
+  await option.waitFor({ state: 'attached', timeout: 15_000 });
+  await option.scrollIntoViewIfNeeded();
+  await option.waitFor({ state: 'visible', timeout: 15_000 });
+  assert.equal(await option.getAttribute('aria-checked'), 'true', `${displayName} must remain selected`);
+  const optionText = await option.innerText();
+  await page.keyboard.press('Escape');
+  return optionText;
+}
+
+async function assertHealthyProductSurface(page, label) {
+  await delay(250);
+  const state = await page.evaluate(() => ({
+    bodyText: document.body?.innerText || '',
+    loading: Boolean(document.querySelector('[data-testid="parentos-bootstrap-loading"]')),
+    failure: Boolean(document.querySelector('[data-testid="parentos-bootstrap-failure"]')),
+  }));
+  assert.equal(state.loading, false, `${label} must not remain loading`);
+  assert.equal(state.failure, false, `${label} must not show bootstrap failure`);
+  assert.ok(state.bodyText.trim().length >= 30, `${label} must render substantive content`);
+  assert.doesNotMatch(state.bodyText, /�/u, `${label} must not contain replacement glyphs`);
+  return state.bodyText;
+}
+
+function computeAgeMonthsAt(birthDate, target) {
+  const birth = new Date(birthDate);
+  let months = (target.getFullYear() - birth.getFullYear()) * 12
+    + target.getMonth() - birth.getMonth();
+  if (target.getDate() < birth.getDate()) months -= 1;
+  return Math.max(0, months);
+}
+
+function formatAgeLabel(ageMonths) {
+  if (ageMonths < 12) return `${ageMonths}个月`;
+  const years = Math.floor(ageMonths / 12);
+  const months = ageMonths % 12;
+  return months > 0 ? `${years}岁${months}个月` : `${years}岁`;
+}
+
+function expectedQuickLinks(ageMonths) {
+  if (ageMonths <= 12) return ['生长曲线', '疫苗', '睡眠', '里程碑', '就医记录', '成长随记'];
+  if (ageMonths <= 36) return ['生长曲线', '疫苗', '睡眠', '里程碑', '口腔', '成长随记'];
+  if (ageMonths <= 72) return ['生长曲线', '视力', '户外目标', '睡眠', '里程碑', '成长随记'];
+  if (ageMonths <= 144) return ['生长曲线', '视力', '户外目标', '体能', '口腔', '成长随记'];
+  return ['生长曲线', '视力', '户外目标', '体能', '青春期', '成长随记'];
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
 function spawnNimiAppDev(port) {
@@ -221,7 +449,10 @@ async function ensureViteRenderer() {
 }
 
 function spawnSelfHostedElectron(port) {
-  const electronBin = path.join(repoRoot, 'node_modules', 'electron', 'dist', process.platform === 'win32' ? 'electron.exe' : 'electron');
+  const electronDist = path.join(repoRoot, 'node_modules', 'electron', 'dist');
+  const electronBin = process.platform === 'darwin'
+    ? path.join(electronDist, 'Electron.app', 'Contents', 'MacOS', 'Electron')
+    : path.join(electronDist, process.platform === 'win32' ? 'electron.exe' : 'electron');
   const profileDir = path.join(evidenceRoot, 'self-host-profile');
   return spawn(electronBin, [
     path.join(repoRoot, 'dist-electron', 'main.js'),

@@ -3161,6 +3161,7 @@
       "stageInsightTitle": "{{ageLabel}}",
       "stageInsightHealthGroup": "健康窗口",
       "stageInsightDevGroup": "发展关注",
+      "stageInsightOverflow": "还有 {{count}} 项 →",
       "coldStartGuideTitle": "先从这三件事开始，记录孩子的成长",
       "coldStartStep1Title": "记录第一次成长测量",
       "coldStartStep1Body": "输入一次身高或体重，这里会自动生成对照 WHO 标准的趋势曲线。",

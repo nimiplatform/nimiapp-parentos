@@ -38,6 +38,12 @@ const EMPTY: DashData = {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+type DashState = {
+  childId: string | null;
+  d: DashData;
+  loading: boolean;
+};
+
 function deriveOrthoCycle(
   appliance: OrthodonticApplianceRow,
   checkins: OrthodonticCheckinRow[],
@@ -86,17 +92,27 @@ function deriveOrthoCycle(
 }
 
 export function useDash(childId: string | null) {
-  const [d, setD] = React.useState<DashData>(EMPTY);
-  const [loading, setLoading] = React.useState(true);
+  // @nimi-authority: rule.parentos.shell.r005
+  const [state, setState] = React.useState<DashState>({
+    childId,
+    d: EMPTY,
+    loading: childId != null,
+  });
+  const currentChildIdRef = React.useRef(childId);
+  const requestSequenceRef = React.useRef(0);
+  currentChildIdRef.current = childId;
 
   const load = React.useCallback(async () => {
+    const requestedChildId = childId;
+    const requestSequence = ++requestSequenceRef.current;
     if (!childId) {
-      setD(EMPTY);
-      setLoading(false);
+      setState({ childId: null, d: EMPTY, loading: false });
       return;
     }
 
-    setLoading(true);
+    setState((previous) => previous.childId === requestedChildId
+      ? { ...previous, loading: true }
+      : { childId: requestedChildId, d: EMPTY, loading: true });
     const [rs, ms, vs, mi, jo, sl, al, rp, ct, or, og, od] = await Promise.allSettled([
       getReminderStates(childId),
       getMeasurements(childId),
@@ -132,7 +148,14 @@ export function useDash(childId: string | null) {
       }
     }
 
-    setD({
+    if (
+      currentChildIdRef.current !== requestedChildId
+      || requestSequenceRef.current !== requestSequence
+    ) {
+      return;
+    }
+
+    const d: DashData = {
       reminderStates: rs.status === 'fulfilled' ? rs.value.map(mapReminderStateRow) : [],
       measurements: ms.status === 'fulfilled' ? ms.value : [],
       vaccineRecords,
@@ -180,13 +203,18 @@ export function useDash(childId: string | null) {
               generatedAt: latestPersistedMonthlyReport.generatedAt,
             }
           : null,
-    });
-    setLoading(false);
+    };
+    setState({ childId: requestedChildId, d, loading: false });
   }, [childId]);
 
   React.useEffect(() => {
     void load();
   }, [load]);
 
-  return { d, loading, reload: load };
+  const ownsCurrentChild = state.childId === childId;
+  return {
+    d: ownsCurrentChild ? state.d : EMPTY,
+    loading: childId == null ? false : !ownsCurrentChild || state.loading,
+    reload: load,
+  };
 }

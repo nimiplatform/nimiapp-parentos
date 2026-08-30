@@ -50,19 +50,19 @@ interface QuickLink {
 }
 
 const QLINKS_REGISTRY: QuickLink[] = [
-  { id: 'growth', to: '/profile', label: i18nText('Timeline.quickLink.growth'), emoji: '📏' },
-  { id: 'vaccines', to: '/profile', label: i18nText('Timeline.quickLink.vaccines'), emoji: '💉', ageGate: (age) => age <= 84 },
-  { id: 'sleep', to: '/profile', label: i18nText('Timeline.quickLink.sleep'), emoji: '😴' },
+  { id: 'growth', to: '/profile/growth', label: i18nText('Timeline.quickLink.growth'), emoji: '📏' },
+  { id: 'vaccines', to: '/profile/vaccines', label: i18nText('Timeline.quickLink.vaccines'), emoji: '💉', ageGate: (age) => age <= 84 },
+  { id: 'sleep', to: '/profile/sleep', label: i18nText('Timeline.quickLink.sleep'), emoji: '😴' },
   { id: 'journal', to: '/journal', label: i18nText('Timeline.quickLink.journal'), emoji: '📝' },
   { id: 'reports', to: '/reports', label: i18nText('Timeline.quickLink.reports'), emoji: '📄' },
-  { id: 'medical', to: '/profile', label: i18nText('Timeline.quickLink.medical'), emoji: '🏥' },
-  { id: 'milestones', to: '/profile', label: i18nText('Timeline.quickLink.milestones'), emoji: '🎯', ageGate: (age) => age <= 72 },
-  { id: 'outdoor', to: '/profile', label: i18nText('Timeline.quickLink.outdoor'), emoji: '🌳', ageGate: (age) => age >= 6 },
-  { id: 'vision', to: '/profile', label: i18nText('Timeline.quickLink.vision'), emoji: '👁️', ageGate: (age) => age >= 36 },
-  { id: 'dental', to: '/profile', label: i18nText('Timeline.quickLink.dental'), emoji: '🦷', ageGate: (age) => age >= 6 },
-  { id: 'fitness', to: '/profile', label: i18nText('Timeline.quickLink.fitness'), emoji: '🏃', ageGate: (age) => age >= 36 },
-  { id: 'tanner', to: '/profile', label: i18nText('Timeline.quickLink.tanner'), emoji: '🌱', ageGate: (age) => age >= 84 },
-  { id: 'posture', to: '/profile', label: i18nText('Timeline.quickLink.posture'), emoji: '🧍', ageGate: (age) => age >= 60 },
+  { id: 'medical', to: '/profile/medical-events', label: i18nText('Timeline.quickLink.medical'), emoji: '🏥' },
+  { id: 'milestones', to: '/profile/milestones', label: i18nText('Timeline.quickLink.milestones'), emoji: '🎯', ageGate: (age) => age <= 72 },
+  { id: 'outdoor', to: '/profile/outdoor', label: i18nText('Timeline.quickLink.outdoor'), emoji: '🌳', ageGate: (age) => age >= 6 },
+  { id: 'vision', to: '/profile/vision', label: i18nText('Timeline.quickLink.vision'), emoji: '👁️', ageGate: (age) => age >= 36 },
+  { id: 'dental', to: '/profile/dental', label: i18nText('Timeline.quickLink.dental'), emoji: '🦷', ageGate: (age) => age >= 6 },
+  { id: 'fitness', to: '/profile/fitness', label: i18nText('Timeline.quickLink.fitness'), emoji: '🏃', ageGate: (age) => age >= 36 },
+  { id: 'tanner', to: '/profile/tanner', label: i18nText('Timeline.quickLink.tanner'), emoji: '🌱', ageGate: (age) => age >= 84 },
+  { id: 'posture', to: '/profile/posture', label: i18nText('Timeline.quickLink.posture'), emoji: '🧍', ageGate: (age) => age >= 60 },
 ];
 
 const QLINKS_TIERS: Array<{ maxAge: number; topIds: string[] }> = [
@@ -612,6 +612,9 @@ export function isColdStart(d: DashData): boolean {
 const STAGE_INSIGHT_PRIORITY_ORDER: Record<ReminderPriority, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 
 // @nimi-authority: rule.parentos.time.r011
+export const STAGE_INSIGHT_GROUP_LIMIT = 3;
+
+// @nimi-authority: rule.parentos.time.r011
 export function buildStageInsight(
   ageMonths: number,
   nurtureMode: NurtureMode,
@@ -632,11 +635,21 @@ export function buildStageInsight(
     domain: rule.domain,
     priority: rule.priority,
   });
-  const health = eligible.filter((rule) => rule.kind === 'task' || rule.kind === 'consult').map(toItem);
-  const development = eligible.filter((rule) => rule.kind === 'guide' || rule.kind === 'practice').map(toItem);
-  if (health.length === 0 && development.length === 0) return null;
+  const toGroup = (group: readonly ReminderRule[]) => ({
+    items: group.slice(0, STAGE_INSIGHT_GROUP_LIMIT).map(toItem),
+    overflow: Math.max(0, group.length - STAGE_INSIGHT_GROUP_LIMIT),
+  });
+  const health = toGroup(eligible.filter((rule) => rule.kind === 'task' || rule.kind === 'consult'));
+  const development = toGroup(eligible.filter((rule) => rule.kind === 'guide' || rule.kind === 'practice'));
+  if (health.items.length === 0 && development.items.length === 0) return null;
 
-  return { ageLabel: formatAgeLabel(ageMonths), health, development };
+  return {
+    ageLabel: formatAgeLabel(ageMonths),
+    health: health.items,
+    development: development.items,
+    healthOverflow: health.overflow,
+    developmentOverflow: development.overflow,
+  };
 }
 
 export function buildTimelineHomeViewModel(params: {

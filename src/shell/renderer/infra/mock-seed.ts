@@ -3,6 +3,7 @@
  */
 
 import mockCore from '../../../../mock/core.json';
+import demographicMatrix from '../../../../mock/demographic-matrix.json';
 import allergyRecords from '../../../../mock/tables/allergyRecords.json';
 import aiMessages from '../../../../mock/tables/aiMessages.json';
 import appSettings from '../../../../mock/tables/appSettings.json';
@@ -70,7 +71,8 @@ const mockData = {
     allergyRecords,
     aiMessages,
     appSettings,
-    children,
+    // @nimi-authority: rule.parentos.prof.r001
+    children: [...children, ...demographicMatrix.scenarios.map((scenario) => scenario.child)],
     conversations,
     growthReports,
     journalEntries,
@@ -93,7 +95,7 @@ type MockAiMessage = {
   createdAt: string;
 };
 type MockHealthFixtures = {
-  children: typeof children;
+  children: Array<{ childId: string; gender: string }>;
   dentalRecords: typeof dentalRecords;
   fitnessAssessments: typeof fitnessAssessments;
   measurements: typeof measurements;
@@ -608,7 +610,13 @@ function stripFixtureMeta<T extends object>(row: T, extraKeys: readonly string[]
 
 function isDuplicateError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
-  return /UNIQUE constraint/i.test(message);
+  // Some re-insert rejections are guarded at the application layer and never
+  // surface as raw SQLite UNIQUE errors; match their contract messages:
+  // - PO-PROF-006: one vaccine record per (childId, ruleId)
+  // - PO-ORTHO-002b: one ongoing orthodontic case per child
+  return /UNIQUE constraint/i.test(message)
+    || /vaccine rule already recorded/i.test(message)
+    || /already has an ongoing orthodontic case/i.test(message);
 }
 
 async function insertAll<T>(
@@ -623,8 +631,9 @@ async function insertAll<T>(
       await fn(row);
       ok++;
     } catch (error) {
-      // Duplicates (UNIQUE constraint) are expected on re-import; anything
-      // else is a real failure and must abort instead of being swallowed.
+      // Duplicates (UNIQUE constraint or the sidecar's app-level duplicate
+      // guards) are expected on re-import; anything else is a real failure
+      // and must abort instead of being swallowed.
       if (!isDuplicateError(error)) {
         throw new Error(
           `${label} import failed: ${error instanceof Error ? error.message : String(error)}`,

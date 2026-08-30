@@ -14,6 +14,7 @@ import {
   runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
 import { i18nText } from '../../i18n/index.js';
+import { ParentosAiMascotButton, ParentosAiMascotStatic } from './parentos-ai-mascot-button.js';
 
 
 interface AISummaryCardProps {
@@ -205,11 +206,11 @@ export function AISummaryCard(props: AISummaryCardProps) {
 
   useEffect(() => { void generate(); }, [generate]);
 
-  // No data at all — show a subtle hint
+  // No data at all — show a subtle hint (吉祥物以非交互形态陪伴)
   if (!dataContext) {
     return (
       <Surface tone="card" material="solid" elevation="base" padding="md" className="mb-5 flex items-center gap-3">
-        <span className="text-[20px]">📊</span>
+        <ParentosAiMascotStatic size={28} />
         <p className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('AISummary.noDataHint')}</p>
       </Surface>
     );
@@ -218,21 +219,17 @@ export function AISummaryCard(props: AISummaryCardProps) {
   return (
     <Surface tone="card" material="solid" elevation="raised" padding="lg" className="mb-5">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-[16px]">✨</span>
+        <div className="flex items-center gap-2.5">
+          <ParentosAiMascotButton
+            thinking={loading}
+            onClick={() => void generate(true)}
+            label={loading ? i18nText('AISummary.generating') : i18nText('AISummary.regenerate')}
+          />
           <h3 className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('AISummary.title')}</h3>
         </div>
-        <Button onClick={() => void generate(true)}
-          disabled={loading}
-          tone="ghost"
-          size="sm"
-          title={i18nText('AISummary.regenerate')}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-            className={loading ? 'animate-spin' : ''}>
-            <path d="M21 12a9 9 0 1 1-6.22-8.56" />
-          </svg>
-          {loading ? i18nText('AISummary.generating') : i18nText('AISummary.refresh')}
-        </Button>
+        {loading ? (
+          <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('AISummary.generating')}…</span>
+        ) : null}
       </div>
 
       {loading && !summary ? (

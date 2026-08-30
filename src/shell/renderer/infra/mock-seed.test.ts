@@ -132,6 +132,23 @@ describe('mock-seed health fixtures', () => {
     expect(bridgeMocks.createChild.mock.calls[0]?.[0]).not.toHaveProperty('updatedAt');
   });
 
+  it('tolerates the sidecar duplicate guards on re-import', async () => {
+    bridgeMocks.insertVaccineRecord.mockRejectedValue(
+      new Error('ParentOS Electron sidecar command failed: insert_vaccine_record: vaccine rule already recorded for child (PO-PROF-006): PO-REM-VAC-001'),
+    );
+    bridgeMocks.insertOrthodonticCase.mockRejectedValue(
+      new Error('ParentOS Electron sidecar command failed: insert_orthodontic_case: this child already has an ongoing orthodontic case; complete or delete it before starting a new one (PO-ORTHO-002b)'),
+    );
+
+    const result = await seedMockData();
+
+    expect(result.ok).toBe(true);
+    expect(result.summary).toContain('vaccines: 0/7');
+    expect(result.summary).toContain('orthodonticCases: 0/2');
+    expect(bridgeMocks.insertJournalEntry).toHaveBeenCalled();
+    expect(bridgeMocks.insertOrthodonticAppliance).toHaveBeenCalled();
+  });
+
   it('fails the seed run on non-duplicate bridge errors', async () => {
     bridgeMocks.insertOutdoorRecord.mockRejectedValueOnce(new Error('disk unavailable'));
 
