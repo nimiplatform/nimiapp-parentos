@@ -611,6 +611,10 @@ export function isColdStart(d: DashData): boolean {
 
 const STAGE_INSIGHT_PRIORITY_ORDER: Record<ReminderPriority, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 
+// Editorial age-range prefixes (e.g. "15-18 岁：") repeat the card's own age header, so the
+// stage-insight surface drops them; the reminder list keeps the full rule description.
+const STAGE_INSIGHT_AGE_PREFIX = /^\d+(?:-\d+)?\s*岁[：:]\s*/;
+
 // @nimi-authority: rule.parentos.time.r011
 export const STAGE_INSIGHT_GROUP_LIMIT = 3;
 
@@ -631,7 +635,7 @@ export function buildStageInsight(
   const toItem = (rule: ReminderRule): StageInsightItem => ({
     ruleId: rule.ruleId,
     title: rule.title,
-    description: rule.description,
+    description: rule.description.replace(STAGE_INSIGHT_AGE_PREFIX, ''),
     domain: rule.domain,
     priority: rule.priority,
   });

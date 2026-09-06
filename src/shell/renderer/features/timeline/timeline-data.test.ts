@@ -798,4 +798,16 @@ describe('buildStageInsight', () => {
     const summary = buildStageInsight(10, 'balanced', [makeRule()]);
     expect(summary?.ageLabel).toBe('10个月');
   });
+
+  it('strips the editorial age-range prefix that repeats the card age header', () => {
+    const summary = buildStageInsight(10, 'balanced', [
+      makeRule({ ruleId: 'PO-TEST-PREFIX', description: '15-18 岁：你的角色正在从管理者变成顾问。' }),
+      makeRule({ ruleId: 'PO-TEST-INLINE', description: '6-18 岁每半年检查一次视力。' }),
+      makeRule({ ruleId: 'PO-TEST-PLAIN', description: '按程序完成接种。' }),
+    ]);
+
+    expect(summary?.health.find((item) => item.ruleId === 'PO-TEST-PREFIX')?.description).toBe('你的角色正在从管理者变成顾问。');
+    expect(summary?.health.find((item) => item.ruleId === 'PO-TEST-INLINE')?.description).toBe('6-18 岁每半年检查一次视力。');
+    expect(summary?.health.find((item) => item.ruleId === 'PO-TEST-PLAIN')?.description).toBe('按程序完成接种。');
+  });
 });

@@ -18,6 +18,10 @@ export interface ObservationFocusOption {
   parentQuestion: string;
 }
 
+const SIGNAL_PREVIEW_COUNT = 4;
+const QUESTION_PREVIEW_COUNT = 3;
+
+// @nimi-authority: rule.parentos.jour.r002
 export function ObservationFocusPanel({
   focus,
   options,
@@ -30,7 +34,14 @@ export function ObservationFocusPanel({
   onClose?: () => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [signalsExpanded, setSignalsExpanded] = useState(false);
+  const [questionsExpanded, setQuestionsExpanded] = useState(false);
   const switchRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setSignalsExpanded(false);
+    setQuestionsExpanded(false);
+  }, [focus.dimensionId]);
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -52,6 +63,18 @@ export function ObservationFocusPanel({
 
   const otherOptions = options.filter((option) => option.dimensionId !== focus.dimensionId);
   const canSwitch = otherOptions.length > 0;
+
+  const hiddenSignalCount = focus.observableSignals.length - SIGNAL_PREVIEW_COUNT;
+  const collapseSignals = hiddenSignalCount > 1;
+  const visibleSignals = collapseSignals && !signalsExpanded
+    ? focus.observableSignals.slice(0, SIGNAL_PREVIEW_COUNT)
+    : focus.observableSignals;
+
+  const hiddenQuestionCount = focus.guidedQuestions.length - QUESTION_PREVIEW_COUNT;
+  const collapseQuestions = hiddenQuestionCount > 1;
+  const visibleQuestions = collapseQuestions && !questionsExpanded
+    ? focus.guidedQuestions.slice(0, QUESTION_PREVIEW_COUNT)
+    : focus.guidedQuestions;
 
   return (
     <Surface
@@ -136,12 +159,24 @@ export function ObservationFocusPanel({
       {focus.observableSignals.length > 0 ? (
         <div className="mt-3">
           <p className="mb-1.5 text-[12px] font-medium text-[var(--nimi-action-primary-bg)]">{i18nText('Journal.focus.observableSignals')}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {focus.observableSignals.map((signal, i) => (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {visibleSignals.map((signal, i) => (
               <StatusBadge key={i} tone="neutral" className="parentos-radius-full bg-[var(--nimi-surface-card)] px-2.5 py-1 text-[12px] text-[var(--nimi-text-primary)]">
                 {signal}
               </StatusBadge>
             ))}
+            {collapseSignals ? (
+              <button
+                type="button"
+                onClick={() => setSignalsExpanded((value) => !value)}
+                aria-expanded={signalsExpanded}
+                className="parentos-radius-full border border-dashed border-[var(--nimi-border-strong)] bg-transparent px-2.5 py-0.5 text-[12px] text-[var(--nimi-text-muted)] transition-colors hover:border-[var(--nimi-action-primary-bg)] hover:text-[var(--nimi-action-primary-bg)]"
+              >
+                {signalsExpanded
+                  ? i18nText('Journal.focus.showLess')
+                  : i18nText('Journal.focus.signalsMore', { count: hiddenSignalCount })}
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -150,12 +185,24 @@ export function ObservationFocusPanel({
         <div className="mt-3">
           <p className="mb-1.5 text-[12px] font-medium text-[var(--nimi-action-primary-bg)]">{i18nText('Journal.focus.guidedQuestions')}</p>
           <div className="space-y-1">
-            {focus.guidedQuestions.map((q, i) => (
+            {visibleQuestions.map((q, i) => (
               <p key={i} className="text-[13px] leading-relaxed text-[var(--nimi-text-primary)]">
                 {i + 1}. {q}
               </p>
             ))}
           </div>
+          {collapseQuestions ? (
+            <button
+              type="button"
+              onClick={() => setQuestionsExpanded((value) => !value)}
+              aria-expanded={questionsExpanded}
+              className="mt-1.5 text-[12px] font-medium text-[var(--nimi-action-primary-bg)] transition-colors hover:underline"
+            >
+              {questionsExpanded
+                ? i18nText('Journal.focus.showLess')
+                : i18nText('Journal.focus.questionsMore', { count: hiddenQuestionCount })}
+            </button>
+          ) : null}
         </div>
       ) : null}
 

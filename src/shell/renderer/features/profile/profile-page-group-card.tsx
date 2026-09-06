@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Activity, Award, ChevronDown, ChevronRight, Eye, Footprints, Moon, Plus, Smile, Stethoscope, Sun, Syringe } from 'lucide-react';
+import { Activity, Award, ChevronDown, ChevronRight, Eye, Footprints, Moon, PersonStanding, Plus, Smile, Stethoscope, Sun, Syringe } from 'lucide-react';
 import { Surface } from '@nimiplatform/kit/ui';
 import type { HealthGroupSnapshot, HealthMetricSnapshot } from '../../engine/health-record-domain.js';
 import type { HealthMetricGroupId, HealthMetricId } from '../../knowledge-base/index.js';
@@ -23,6 +23,7 @@ const GROUP_VISUAL: Record<HealthMetricGroupId, GroupVisual> = {
   dental: { icon: Smile, iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-info)_12%,transparent)] text-[var(--nimi-status-info)]' },
   medical: { icon: Stethoscope, iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-danger)_10%,transparent)] text-[var(--nimi-status-danger)]' },
   development: { icon: Award, iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_12%,transparent)] text-[var(--nimi-action-primary-bg)]' },
+  posture: { icon: PersonStanding, iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-info)_12%,transparent)] text-[var(--nimi-status-info)]' },
 };
 
 function progressBarClassName(progress: number, review: ReviewStatusPiece[]): string {

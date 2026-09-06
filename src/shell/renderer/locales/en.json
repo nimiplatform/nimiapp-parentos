@@ -974,7 +974,21 @@
       "nutrition": "Nutrition",
       "safety": "Safety",
       "language": "Language",
-      "motor": "Motor"
+      "motor": "Motor",
+      "career": "Career",
+      "digital": "Digital",
+      "emotional": "Emotional",
+      "fitness": "Fitness",
+      "hygiene": "Hygiene",
+      "independence": "Independence",
+      "interest": "Interests",
+      "outdoor": "Outdoor",
+      "posture": "Posture",
+      "relationship": "Relationship",
+      "sensitivity": "Sensitive period",
+      "sexuality": "Sexuality education",
+      "tanner": "Puberty",
+      "values": "Values"
     },
     "status": {
       "completed": "Completed",
@@ -996,13 +1010,12 @@
       "askAdvisor": "Ask AI advisor",
       "recordVaccine": "Record vaccine",
       "recordData": "Record data",
-      "viewDetails": "View details",
       "viewProfile": "View profile",
       "markComplete": "Mark complete",
-      "snooze": "Snooze",
       "schedule": "Schedule",
       "notApplicable": "Not applicable",
-      "adjust": "Adjust",
+      "adjustFrequency": "Adjust frequency",
+      "more": "More",
       "expand": "Expand",
       "collapse": "Collapse",
       "backHome": "Back home",
@@ -1041,10 +1054,6 @@
     },
     "page": {
       "itemCount": "{{count}} items",
-      "todayBadge": "Today",
-      "noTodayTitle": "No tasks today",
-      "noTodayDescription": "Nothing needs immediate action right now.",
-      "schedulePrompt": "Schedule date (YYYY-MM-DD)",
       "noChildTitle": "No child selected",
       "noChildDescription": "Select a child to view their reminder center.",
       "unknownRuleTitle": "Reminder catalog incomplete",
@@ -1052,43 +1061,21 @@
       "unknownRuleFailClose": "To prevent data from being misread, the reminders page has failed closed under PO-TIME-007. ParentOS will not delete these records silently; reconcile the persisted ruleIds with the compiled reminder catalog before retrying.",
       "restoreTodoFailed": "Failed to restore the to-do: {{message}}",
       "deleteTodoFailed": "Failed to delete the to-do: {{message}}",
+      "actionFailed": "Action failed: {{message}}",
       "loading": "Loading...",
       "title": "Reminder Center",
-      "subtitle": "Today {{today}} items · Upcoming {{upcoming}} · History {{history}}",
-      "summary": {
-        "p0Overflow": {
-          "label": "More important",
-          "hint": "High-priority reminders beyond the first screen."
-        },
-        "catchup": {
-          "label": "History catch-up",
-          "hint": "Items already overdue before profile creation."
-        },
-        "today": {
-          "label": "Today",
-          "hint": "Items worth handling today."
-        },
-        "upcoming": {
-          "label": "Upcoming",
-          "hint": "Important soon, but not urgent today."
-        },
-        "overdue": {
-          "label": "Overdue summary",
-          "hint": "Older overdue items are folded here."
-        }
-      },
+      "subtitleToday": "Today: {{count}}",
+      "subtitleUpcoming": "Upcoming: {{count}}",
       "section": {
         "today": {
-          "title": "Today's items",
-          "hint": "Collapsed by default; expand when you need the full list and actions for today."
+          "title": "Today",
+          "hint": "Items due today or already overdue; handle them here first."
         },
         "p0Overflow": {
-          "title": "More important items",
-          "hint": "High-priority items stay visible; anything beyond the first-screen capacity is folded here."
+          "title": "More important items"
         },
         "catchup": {
-          "title": "History catch-up",
-          "hint": "These reminders were already overdue before the profile was created and will not enter the main task list."
+          "title": "History catch-up"
         },
         "upcoming": {
           "title": "Upcoming",
@@ -1096,11 +1083,10 @@
         },
         "history": {
           "title": "History",
-          "hint": "Completed, scheduled, snoozed, and not-applicable reminders are kept here."
+          "hint": "Completed, scheduled, snoozed, and not-applicable reminders, plus completed daily tasks, are kept here."
         },
         "customTodos": {
-          "title": "Daily task history",
-          "hint": "Manually added daily tasks that have been completed."
+          "title": "Daily task history"
         }
       },
       "empty": {
@@ -1144,6 +1130,10 @@
       "customPlaceholder": "Months",
       "monthUnit": "months",
       "disableWarning": "After disabling, this reminder will no longer appear. You can restore it in Settings -> Reminder management."
+    },
+    "schedule": {
+      "title": "Schedule a date",
+      "description": "Pick a date. This reminder will be tucked away and reappear as that day approaches."
     }
   },
   "DrugCombobox": {
@@ -1784,7 +1774,10 @@
       "switchMenu": "Switch observation focus",
       "close": "Exit observation focus",
       "observableSignals": "Observable signals",
+      "signalsMore": "+{{count}} more signals",
       "guidedQuestions": "Guided questions",
+      "questionsMore": "Show {{count}} more questions",
+      "showLess": "Show less",
       "experiment": "Try this small experiment"
     },
     "experimentTemplate": {
@@ -3318,7 +3311,6 @@
       "recordVaccine": "Record vaccine",
       "recordData": "Record data",
       "markComplete": "Mark complete",
-      "snooze": "Snooze",
       "notApplicable": "Not applicable",
       "observe": "Observe"
     },

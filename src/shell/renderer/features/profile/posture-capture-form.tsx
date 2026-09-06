@@ -4,8 +4,10 @@ import { useRef, useState } from 'react';
 import { computeAgeMonthsAt } from '../../app-shell/app-store.js';
 import { insertPostureAssessment } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
+import { getLocalToday } from '../../engine/reminder-engine.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { readImageFileAsDataUrl } from './checkup-ocr.js';
+import type { LinkedHealthRecordReminder } from './health-capture-orchestrator.js';
 import {
   ChipGroup,
   FormField,
@@ -106,10 +108,18 @@ type PostureCaptureProps = {
   child: PostureCaptureChild;
   onSaved: () => void | Promise<void>;
   onClose: () => void;
+  /**
+   * Set when the form is opened from a record_data posture reminder
+   * (PO-REM-POS-003/004). The insert threads these ids into
+   * insert_posture_assessment so the Rust side persists the assessment and
+   * completes the bound reminder in one transaction (PO-CAPT-005).
+   */
+  linkedReminder?: LinkedHealthRecordReminder | null;
 };
 
-export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptureProps) {
-  const [formDate, setFormDate] = useState(() => new Date().toISOString().slice(0, 10));
+// @nimi-authority: rule.parentos.capt.r005
+export function PostureCaptureContent({ child, onSaved, onClose, linkedReminder }: PostureCaptureProps) {
+  const [formDate, setFormDate] = useState(getLocalToday);
   const [formSource, setFormSource] = useState<string>('parent');
   const [formShoulder, setFormShoulder] = useState('');
   const [formScapula, setFormScapula] = useState('');
@@ -171,6 +181,12 @@ export function PostureCaptureContent({ child, onSaved, onClose }: PostureCaptur
         notes: formNotes.trim() || null,
         photoPaths: photoValues.length > 0 ? JSON.stringify(photoValues) : null,
         now: isoNow(),
+        // Reminder-linked capture: the Rust insert completes the bound reminder
+        // in the same transaction. stateId falls back to a fresh ULID because the
+        // reminder_states row may not exist yet (upsert INSERT branch needs a PK).
+        linkedReminderStateId: linkedReminder ? (linkedReminder.stateId ?? ulid()) : null,
+        linkedReminderRuleId: linkedReminder?.ruleId ?? null,
+        linkedReminderRepeatIndex: linkedReminder ? (linkedReminder.repeatIndex ?? 0) : null,
       });
       await onSaved();
       onClose();

@@ -189,6 +189,15 @@ protocols: &parentos_health_capture_protocol_entries
     sourceSupport: [manual]
     storageTarget: retained_table
     completionPolicy: "One milestone event payload must include milestone id and achievement state."
+  - protocolId: posture-self-check
+    groupId: posture
+    displayName: Posture self-check
+    modeSupport: [manual, prefilled, reminder]
+    metricIds: [posture.self_check]
+    requiredMetricIds: [posture.self_check]
+    sourceSupport: [manual, reminder]
+    storageTarget: retained_table
+    completionPolicy: "One posture_assessments row must be persisted for the child with an assessment date and at least one observation code, measurement value, note, or photo."
 
 constraints:
   - "Every metric id in protocols must resolve in data/structured/parentos/health-metric-registry.yaml."

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { canMarkNotApplicable, defaultSnoozeUntil, type ReminderActionType } from '../../engine/reminder-actions.js';
-import { getLocalToday, type ActiveReminder } from '../../engine/reminder-engine.js';
+import { canMarkNotApplicable, type ReminderActionType } from '../../engine/reminder-actions.js';
+import { type ActiveReminder } from '../../engine/reminder-engine.js';
 import { ReminderExplainDrawer } from '../reminders/reminder-explain-drawer.js';
 import type { CustomTodoRow } from '../../bridge/sqlite-bridge.js';
 import type { DynamicTask, EnhancedReminder } from '../../engine/smart-alerts.js';
@@ -127,6 +127,7 @@ function OverdueGroup({
   items,
   totalCount,
   onAction,
+  onSchedule,
   onOpenCapture,
 }: {
   items: ActiveReminder[];
@@ -136,6 +137,7 @@ function OverdueGroup({
     action: ReminderActionType,
     extra?: string | null,
   ) => void;
+  onSchedule: (reminder: ActiveReminder) => void;
   onOpenCapture: (reminder: ActiveReminder) => void;
 }) {
   const [open, setOpen] = useState(true);
@@ -165,7 +167,7 @@ function OverdueGroup({
         return (
           <div
             key={`overdue-${reminder.rule.ruleId}-${reminder.repeatIndex}`}
-            className="group flex items-start gap-2.5 rounded-lg px-2 py-2.5 transition-colors hover:bg-[#fefbf5]"
+            className="group flex items-start gap-2.5 rounded-lg px-2 py-2.5 transition-colors hover:bg-white"
           >
             <button
               type="button"
@@ -191,11 +193,11 @@ function OverdueGroup({
                 <PrimaryActionPill primary={primary} reminder={reminder} onOpenCapture={onOpenCapture} />
                 <button
                   type="button"
-                  onClick={() => onAction(reminder, 'snooze', defaultSnoozeUntil(reminder.kind, getLocalToday()))}
+                  onClick={() => onSchedule(reminder)}
                   className={ACTION_PILL_CLASS}
                   style={{ background: '#f1f5f9', color: '#475569' }}
                 >
-                  <span className={ACTION_LABEL_CLASS}>{i18nText('Timeline.reminderAction.snooze')}</span>
+                  <span className={ACTION_LABEL_CLASS}>{i18nText('Reminders.action.schedule')}</span>
                 </button>
               </div>
             </div>
@@ -217,6 +219,7 @@ function AgendaOverflowGroup({
   items,
   tone,
   onAction,
+  onSchedule,
   onOpenCapture,
 }: {
   label: string;
@@ -228,6 +231,7 @@ function AgendaOverflowGroup({
     action: ReminderActionType,
     extra?: string | null,
   ) => void;
+  onSchedule: (reminder: ActiveReminder) => void;
   onOpenCapture: (reminder: ActiveReminder) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -257,7 +261,7 @@ function AgendaOverflowGroup({
         return (
           <div
             key={`${label}-${reminder.rule.ruleId}-${reminder.repeatIndex}`}
-            className="group flex items-start gap-2.5 rounded-lg px-2 py-2.5 transition-colors hover:bg-[#f6f6f3]"
+            className="group flex items-start gap-2.5 rounded-lg px-2 py-2.5 transition-colors hover:bg-white"
           >
             <button
               type="button"
@@ -283,11 +287,11 @@ function AgendaOverflowGroup({
                 <PrimaryActionPill primary={primary} reminder={reminder} onOpenCapture={onOpenCapture} />
                 <button
                   type="button"
-                  onClick={() => onAction(reminder, 'snooze', defaultSnoozeUntil(reminder.kind, getLocalToday()))}
+                  onClick={() => onSchedule(reminder)}
                   className={ACTION_PILL_CLASS}
                   style={{ background: '#f1f5f9', color: '#475569' }}
                 >
-                  <span className={ACTION_LABEL_CLASS}>{i18nText('Timeline.reminderAction.snooze')}</span>
+                  <span className={ACTION_LABEL_CLASS}>{i18nText('Reminders.action.schedule')}</span>
                 </button>
                 {canMarkNotApplicable(reminder) && (
                   <button
@@ -360,6 +364,8 @@ export interface ReminderPanelProps {
     action: ReminderActionType,
     extra?: string | null,
   ) => void;
+  /** Postpone path: opens the host's schedule modal for an explicit date. */
+  onSchedule: (reminder: ActiveReminder) => void;
   onOpenCapture: (reminder: ActiveReminder) => void;
   onCustomTodoChanged: () => void;
   observationNudges: ObservationNudge[];
@@ -389,6 +395,7 @@ export function ReminderPanel({
   childId,
   orthoCycle,
   onAction,
+  onSchedule,
   onOpenCapture,
   onCustomTodoChanged,
   observationNudges,
@@ -513,6 +520,7 @@ export function ReminderPanel({
             items={p0OverflowItems}
             tone={{ bg: '#fff6df', fg: '#c9891a', text: '#b7791f' }}
             onAction={onAction}
+            onSchedule={onSchedule}
             onOpenCapture={onOpenCapture}
           />
         )}
@@ -524,12 +532,13 @@ export function ReminderPanel({
             items={onboardingCatchupItems}
             tone={{ bg: '#f3eefc', fg: '#8a63b8', text: '#7b61a8' }}
             onAction={onAction}
+            onSchedule={onSchedule}
             onOpenCapture={onOpenCapture}
           />
         )}
 
         {overdueCount > 0 && (
-          <OverdueGroup items={overdueItems} totalCount={overdueCount} onAction={onAction} onOpenCapture={onOpenCapture} />
+          <OverdueGroup items={overdueItems} totalCount={overdueCount} onAction={onAction} onSchedule={onSchedule} onOpenCapture={onOpenCapture} />
         )}
 
         {seasonalTasks.length > 0 && (
@@ -553,6 +562,7 @@ export function ReminderPanel({
         reminder={activeReminder}
         onClose={() => setActiveReminder(null)}
         onOpenCapture={onOpenCapture}
+        onSchedule={onSchedule}
         onAction={(reminder, action, extra) => {
           onAction(reminder, action, extra);
         }}

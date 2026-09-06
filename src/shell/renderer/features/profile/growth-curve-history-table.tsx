@@ -11,6 +11,7 @@ import {
   getMeasurementSourceLabel,
   type GrowthMetricDefinition,
 } from './growth-curve-page-shared.js';
+import { ParentosAiMascotButton } from './parentos-ai-mascot-button.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -116,11 +117,6 @@ const ICON_STROKE = {
   strokeLinejoin: 'round' as const,
 };
 
-const AnalyzeIcon = (
-  <svg width="15" height="15" viewBox="0 0 24 24" {...ICON_STROKE}>
-    <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10z" />
-  </svg>
-);
 const EditIcon = (
   <svg width="15" height="15" viewBox="0 0 24 24" {...ICON_STROKE}>
     <path d="M12 20h9" />
@@ -380,13 +376,11 @@ export function GrowthCurveHistoryTable({
                           </>
                         ) : (
                           <>
-                            <IconButton
+                            <ParentosAiMascotButton
+                              thinking={false}
                               onClick={() => onAnalyze(measurement)}
-                              tone="ghost"
-                              size="sm"
-                              className="h-7 min-h-0 w-7 text-[var(--nimi-text-muted)] hover:text-[var(--nimi-text-primary)]"
-                              title={t('Profile.rich.common.aiAnalyze')}
-                              icon={AnalyzeIcon}
+                              label={t('Profile.rich.common.aiAnalyze')}
+                              size={24}
                             />
                             <IconButton
                               onClick={() => onStartEdit(measurement)}

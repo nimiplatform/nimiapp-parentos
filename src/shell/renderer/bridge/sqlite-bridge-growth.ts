@@ -171,6 +171,9 @@ export function insertPostureAssessment(params: {
   notes: string | null;
   photoPaths: string | null;
   now: string;
+  linkedReminderStateId?: string | null;
+  linkedReminderRuleId?: string | null;
+  linkedReminderRepeatIndex?: number | null;
 }) {
   return invoke<void>('insert_posture_assessment', params);
 }

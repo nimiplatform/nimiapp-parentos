@@ -1033,7 +1033,7 @@ rules: &parentos_reminder_rule_extended_entries
     triggerAge: { startMonths: 96, endMonths: 192 }
     priority: P2
     nurtureMode: { relaxed: silent, balanced: push, advanced: push }
-    actionType: go_hospital
+    actionType: record_data
     repeatRule: { cadenceUnit: month, interval: 1, maxRepeats: 96 }
     explain:
       whyNow: "8-16 岁身高变化快，每月一次三角度照片对比能在脊柱侧弯、骨盆倾斜等问题刚出现时就被发现，比一年一筛能争取更长的可干预窗口。"
@@ -1056,7 +1056,7 @@ rules: &parentos_reminder_rule_extended_entries
     triggerAge: { startMonths: 96, endMonths: 192 }
     priority: P2
     nurtureMode: { relaxed: silent, balanced: push, advanced: push }
-    actionType: go_hospital
+    actionType: record_data
     repeatRule: { cadenceUnit: month, interval: 3, maxRepeats: 32 }
     explain:
       whyNow: "月度照片捕捉外观变化，季度做一次结构化量测（足弓 / 颈部 / 骨盆）能形成可量化的趋势线，比单看照片更早识别需要专业介入的情况。"

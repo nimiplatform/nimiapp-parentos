@@ -1077,6 +1077,9 @@ struct InsertPostureAssessmentArgs {
     notes: Option<String>,
     photo_paths: Option<String>,
     now: String,
+    linked_reminder_state_id: Option<String>,
+    linked_reminder_rule_id: Option<String>,
+    linked_reminder_repeat_index: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2419,6 +2422,9 @@ pub fn dispatch_parentos_sidecar_command(
                     args.notes,
                     args.photo_paths,
                     args.now,
+                    args.linked_reminder_state_id,
+                    args.linked_reminder_rule_id,
+                    args.linked_reminder_repeat_index,
                 ),
             )
         }

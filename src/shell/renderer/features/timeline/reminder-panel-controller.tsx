@@ -55,6 +55,7 @@ import { DashboardTaskList, type DashboardTaskCaptureIntent } from './dashboard-
 import { buildDashboardTaskProjection } from './dashboard-task-projection.js';
 import { useDash, type DashData } from './timeline-data.js';
 import { ReminderPanel, type ReminderPanelProps } from './timeline-page-panels.js';
+import { ScheduleModal } from '../reminders/schedule-modal.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -112,6 +113,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
   const [freqOverrides, setFreqOverrides] = useState<FreqOverrideMap>(new Map());
   const [captureSelection, setCaptureSelection] = useState<HealthCaptureSelection | null>(null);
   const [orthoCapture, setOrthoCapture] = useState<OrthoCaptureState>(null);
+  const [scheduleModalReminder, setScheduleModalReminder] = useState<ActiveReminder | null>(null);
 
   // Capture failures surface as transient toasts. The modals signal
   // `onError(null)` to clear before submit — dropped here since toasts
@@ -228,18 +230,33 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
     reminder: ActiveReminder,
     action: ReminderActionType,
     extra?: string | null,
-  ) => {
-    if (!child) return;
-    await applyReminderAction({
+  ): Promise<boolean> => {
+    if (!child) return false;
+    const applied = await applyReminderAction({
       childId: child.childId,
       reminder,
       state: reminder.state,
       action,
       scheduledDate: action === 'schedule' ? extra ?? null : undefined,
       snoozedUntil: action === 'snooze' ? extra ?? null : undefined,
-    }).catch(catchLog('timeline', 'action:apply-reminder-action-failed'));
+    })
+      .then(() => true)
+      .catch((error: unknown) => {
+        catchLog('timeline', 'action:apply-reminder-action-failed')(error);
+        nimiToast.danger(i18nText('Reminders.page.actionFailed', {
+          message: error instanceof Error ? error.message : String(error),
+        }));
+        return false;
+      });
     await reload();
+    return applied;
   }, [child, reload]);
+
+  const handleScheduleConfirm = useCallback((reminder: ActiveReminder, scheduledDate: string) => {
+    void handleAction(reminder, 'schedule', scheduledDate).then((applied) => {
+      if (applied) nimiToast.success(i18nText('Reminders.status.scheduledDate', { date: scheduledDate }));
+    });
+  }, [handleAction]);
 
   const openRecordDataCapture = useCallback(async (reminder: ActiveReminder) => {
     // Orthodontic protocol reminders route to per-appliance modals instead of
@@ -343,6 +360,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
     childId: child?.childId ?? '',
     orthoCycle: d.orthoCycle,
     onAction: handleAction,
+    onSchedule: setScheduleModalReminder,
     onOpenCapture: openRecordDataCapture,
     onCustomTodoChanged: reload,
     observationNudges,
@@ -368,6 +386,19 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
             setCaptureSelection(null);
             navigate(`/profile?focus=${encodeURIComponent(groupId)}`);
           }}
+        />
+      ) : null}
+
+      {scheduleModalReminder ? (
+        <ScheduleModal
+          ruleTitle={scheduleModalReminder.rule.title}
+          suggestedDate={scheduleModalReminder.state?.scheduledDate ?? localToday}
+          minDate={localToday}
+          onConfirm={(date) => {
+            handleScheduleConfirm(scheduleModalReminder, date);
+            setScheduleModalReminder(null);
+          }}
+          onClose={() => setScheduleModalReminder(null)}
         />
       ) : null}
 

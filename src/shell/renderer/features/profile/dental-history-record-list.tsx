@@ -1,4 +1,4 @@
-import { IconButton, StatusBadge, Surface, Timeline, TimelineGroup } from '@nimiplatform/kit/ui';
+import { StatusBadge, Surface, Timeline, TimelineGroup } from '@nimiplatform/kit/ui';
 import { useState } from 'react';
 import { convertFileSrc } from '../../bridge/shell-command.js';
 import type { AttachmentRow, DentalRecordRow } from '../../bridge/sqlite-bridge.js';
@@ -7,6 +7,7 @@ import { formatDateLabel } from '../journal/journal-page-helpers.js';
 import { dentalEventLabelAndEmoji, SEVERITY_LABELS, formatDentalToothLabel } from './dental-page-domain.js';
 import { DentalPhotoLightbox } from './dental-photo-lightbox.js';
 import { formatAlignerContext, type AlignerContext } from './orthodontic-derive.js';
+import { ParentosAiMascotButton } from './parentos-ai-mascot-button.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -140,19 +141,11 @@ function DentalHistoryRecordCard({
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <IconButton
+          <ParentosAiMascotButton
+            thinking={false}
             onClick={(event) => { event.stopPropagation(); onAskAi(record); }}
-            tone="ghost"
-            size="sm"
-            className="h-7 min-h-7 w-7 text-[var(--nimi-text-muted)] hover:bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_12%,transparent)] hover:text-[var(--nimi-action-primary-bg)]"
-            aria-label={i18nText('Dental.history.askAi')}
-            title={i18nText('Dental.history.askAi')}
-            icon={(
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z" />
-                <path d="M19 14l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3Z" />
-              </svg>
-            )}
+            label={i18nText('Dental.history.askAi')}
+            size={24}
           />
           <div className="opacity-0 transition-opacity duration-200 group-hover:opacity-100">
             <DentalRecordActionMenu onEdit={() => onEdit(record)} onDelete={() => onDelete(record)} />

@@ -1,6 +1,6 @@
-import type { ComponentType } from 'react';
+import { useState, type ComponentType } from 'react';
 import { Link } from 'react-router-dom';
-import { Bone, BookOpen, Eye, Mic, Moon, Ruler, Sparkles, Syringe, Trophy } from 'lucide-react';
+import { Bone, BookOpen, ChevronDown, Eye, Mic, Moon, Ruler, Sparkles, Syringe, Trophy } from 'lucide-react';
 import { type ChildProfile } from '../../app-shell/app-store.js';
 import { ChildAvatar } from '../../shared/child-avatar.js';
 import {
@@ -282,18 +282,38 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
 }
 
 function StageInsightGroup({ title, items, overflow }: { title: string; items: StageInsightItem[]; overflow: number }) {
+  const [expandedRuleId, setExpandedRuleId] = useState<string | null>(null);
   return (
     <div className="dashboard-inset rounded-[18px] p-5">
       <p className="text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: textSoft }}>{title}</p>
-      <div className="mt-3 space-y-4">
-        {items.map((item) => (
-          <div key={item.ruleId}>
-            <p className="text-[14px] font-semibold" style={{ color: textMain }}>{item.title}</p>
-            <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>
-              {item.description}
-            </p>
-          </div>
-        ))}
+      <div className="mt-3 space-y-1">
+        {items.map((item) => {
+          const expanded = expandedRuleId === item.ruleId;
+          return (
+            <div key={item.ruleId}>
+              <button
+                type="button"
+                aria-expanded={expanded}
+                onClick={() => setExpandedRuleId(expanded ? null : item.ruleId)}
+                className="flex w-full items-center justify-between gap-2 rounded-[10px] px-2 py-2 text-left transition-colors hover:bg-[rgba(15,23,42,0.04)]"
+              >
+                <span className="text-[14px] font-semibold" style={{ color: textMain }}>{item.title}</span>
+                <ChevronDown
+                  size={15}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                  className={`shrink-0 transition-transform duration-200${expanded ? ' rotate-180' : ''}`}
+                  style={{ color: textMuted }}
+                />
+              </button>
+              {expanded ? (
+                <p className="px-2 pb-2 pt-0.5 text-[13px] leading-relaxed" style={{ color: textMuted }}>
+                  {item.description}
+                </p>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
       {overflow > 0 ? (
         <Link to="/reminders" className="mt-4 inline-block text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>

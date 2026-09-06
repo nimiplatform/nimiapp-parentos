@@ -252,7 +252,7 @@ test('parentos_host sidecar protocol reaches sqlite host core and rejects unsafe
 
     await expectResult(commandBody('db_init', {
       appAccountId: null,
-      admittedReminderRuleIds: ['PO-REM-VAC-001'],
+      admittedReminderRuleIds: ['PO-REM-VAC-001', 'PO-REM-POS-003', 'PO-REM-POS-004'],
     }));
     await expectResult(commandBody('create_family', {
       familyId: 'fam_sidecar',
@@ -280,6 +280,66 @@ test('parentos_host sidecar protocol reaches sqlite host core and rejects unsafe
     assert.equal(children.length, 1);
     assert.equal(children[0].childId, 'child_sidecar');
     assert.equal(children[0].displayName, '\u5c0f\u660e');
+
+    // Exercise the Electron command boundary and real migrated SQLite schema.
+    const postureCapture = {
+      assessmentId: '01K0NQMR000000000000000001',
+      childId: 'child_sidecar',
+      assessedAt: '2026-07-08',
+      ageMonths: 78,
+      source: 'parent',
+      shoulder: null, scapula: null, hip: null, leg: null, heel: null,
+      neck: null, pelvis: null, knee: null, adam: null, cobbAngle: null,
+      notes: null, photoPaths: null, now,
+      linkedReminderStateId: '01K0NQMR000000000000000002',
+      linkedReminderRuleId: 'PO-REM-POS-003',
+      linkedReminderRepeatIndex: 3,
+    };
+    for (const invalid of [
+      {},
+      { notes: '  ', photoPaths: '[]' },
+      { photoPaths: '[" "]' },
+      { shoulder: '0', assessedAt: '2026-02-30' },
+      { shoulder: '0', photoPaths: '{}' },
+    ]) {
+      await expectErr(commandBody('insert_posture_assessment', { ...postureCapture, ...invalid }));
+    }
+    assert.deepEqual(await expectResult(commandBody('get_posture_assessments', { childId: 'child_sidecar' })), []);
+    assert.deepEqual(await expectResult(commandBody('get_reminder_states', { childId: 'child_sidecar' })), []);
+
+    await expectResult(commandBody('insert_posture_assessment', { ...postureCapture, shoulder: '0' }));
+    let postureRows = await expectResult(commandBody('get_posture_assessments', { childId: 'child_sidecar' }));
+    let postureStates = await expectResult(commandBody('get_reminder_states', { childId: 'child_sidecar' }));
+    assert.equal(postureRows.length, 1);
+    assert.equal(postureRows[0].shoulder, '0');
+    assert.equal(postureStates.length, 1);
+    assert.equal(postureStates[0].repeatIndex, 3);
+    assert.equal(postureStates[0].status, 'completed');
+    assert.equal(postureStates[0].completedAt, now);
+
+    // A state primary-key collision must roll back the assessment inserted first.
+    await expectErr(commandBody('insert_posture_assessment', {
+      ...postureCapture,
+      assessmentId: '01K0NQMR000000000000000003',
+      shoulder: '0',
+      linkedReminderRepeatIndex: 4,
+    }));
+    postureRows = await expectResult(commandBody('get_posture_assessments', { childId: 'child_sidecar' }));
+    postureStates = await expectResult(commandBody('get_reminder_states', { childId: 'child_sidecar' }));
+    assert.equal(postureRows.length, 1);
+    assert.equal(postureStates.length, 1);
+    assert.equal(postureStates[0].repeatIndex, 3);
+
+    await expectResult(commandBody('insert_posture_assessment', {
+      ...postureCapture,
+      assessmentId: '01K0NQMR000000000000000004',
+      notes: 'Follow-up observation',
+      linkedReminderStateId: null,
+      linkedReminderRuleId: null,
+      linkedReminderRepeatIndex: null,
+    }));
+    assert.equal((await expectResult(commandBody('get_posture_assessments', { childId: 'child_sidecar' }))).length, 2);
+    assert.deepEqual(await expectResult(commandBody('get_reminder_states', { childId: 'child_sidecar' })), postureStates);
 
     const [parallelFamily, parallelChildren] = await Promise.all([
       expectResult(commandBody('get_family', {})),

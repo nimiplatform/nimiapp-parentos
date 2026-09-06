@@ -38,6 +38,7 @@ export interface RecordDataReminderSelection {
  * in `health_record_events.linkedReminderStateId/RuleId` via the per-group
  * form's insert path.
  */
+// @nimi-authority: rule.parentos.remi.r013
 export function getRecordDataReminderSelection(
   reminder: ActiveReminder,
 ): RecordDataReminderSelection {
@@ -63,6 +64,7 @@ export function getRecordDataReminderSelection(
     linkedReminder: {
       stateId: reminder.state?.stateId ?? null,
       ruleId: reminder.rule.ruleId,
+      repeatIndex: reminder.repeatIndex,
       scheduledFor: reminder.state?.scheduledDate ?? reminder.effectiveStartDate,
       dueDate: reminder.effectiveEndDate,
     },

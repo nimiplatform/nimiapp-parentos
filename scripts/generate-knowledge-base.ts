@@ -193,6 +193,16 @@ export const REMINDER_KINDS = ${JSON.stringify(kinds)} ;
     'vaccine-reminder-rules.gen.rs',
     `pub(crate) static VACCINE_REMINDER_RULE_IDS: &[&str] = &[\n${vaccineRustRows}\n];\n`,
   );
+  const postureRecordDataRuleIds = merged
+    .filter((rule) => rule.domain === 'posture' && rule.actionType === 'record_data')
+    .map((rule) => rule.ruleId);
+  const postureRustRows = postureRecordDataRuleIds
+    .map((ruleId) => `    ${rustString(ruleId)},`)
+    .join('\n');
+  writeRustGen(
+    'posture-record-data-rules.gen.rs',
+    `pub(crate) static POSTURE_RECORD_DATA_RULE_IDS: &[&str] = &[\n${postureRustRows}\n];\n`,
+  );
 }
 
 // ── milestone-catalog ──────────────────────────────────────

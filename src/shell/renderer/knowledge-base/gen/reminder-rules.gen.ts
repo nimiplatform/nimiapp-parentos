@@ -3992,7 +3992,7 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
       "balanced": "push",
       "advanced": "push"
     },
-    "actionType": "go_hospital",
+    "actionType": "record_data",
     "repeatRule": {
       "cadenceUnit": "month",
       "interval": 1,
@@ -4039,7 +4039,7 @@ export const REMINDER_RULES: readonly ReminderRule[] = [
       "balanced": "push",
       "advanced": "push"
     },
-    "actionType": "go_hospital",
+    "actionType": "record_data",
     "repeatRule": {
       "cadenceUnit": "month",
       "interval": 3,

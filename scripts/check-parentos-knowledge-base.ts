@@ -963,6 +963,8 @@ const genFiles: Array<{ source: KnowledgeSourceRef; gen: string; root?: string }
   { source: { kind: 'table', file: 'reminder-rules-extended.yaml' }, gen: 'reminder-rules.gen.ts' },
   { source: { kind: 'table', file: 'reminder-rules.yaml' }, gen: 'vaccine-reminder-rules.gen.rs', root: RUST_GEN },
   { source: { kind: 'table', file: 'reminder-rules-extended.yaml' }, gen: 'vaccine-reminder-rules.gen.rs', root: RUST_GEN },
+  { source: { kind: 'table', file: 'reminder-rules.yaml' }, gen: 'posture-record-data-rules.gen.rs', root: RUST_GEN },
+  { source: { kind: 'table', file: 'reminder-rules-extended.yaml' }, gen: 'posture-record-data-rules.gen.rs', root: RUST_GEN },
   { source: { kind: 'data', file: 'milestone-catalog' }, gen: 'milestone-catalog.gen.ts' },
   { source: { kind: 'data', file: 'sensitive-periods' }, gen: 'sensitive-periods.gen.ts' },
   { source: { kind: 'data', file: 'observation-framework' }, gen: 'observation-framework.gen.ts' },

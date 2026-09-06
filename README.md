@@ -1,6 +1,6 @@
 # nimiapp-parentos
 
-成长底稿 (ParentOS) — AI-driven child growth operating system with Electron and Tauri 2 desktop shells, React 19, and SQLite.
+成长底稿，全年龄儿童成长的操作系统
 
 > Migrated from the `apps/parentos` workspace in the `nimi-realm` monorepo. The
 > nimi-realm copy remains in place; this project is the canonical standalone

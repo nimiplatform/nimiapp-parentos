@@ -1,5 +1,4 @@
 import {
-  IconButton,
   StatusBadge,
   Surface,
   Timeline,
@@ -25,6 +24,7 @@ import {
 } from './dental-photo-lightbox.js';
 import { DentalRecordActionMenu } from './dental-record-action-menu.js';
 import { dentalEventLabelAndEmoji } from './dental-page-domain.js';
+import { ParentosAiMascotButton } from './parentos-ai-mascot-button.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -320,7 +320,7 @@ function JourneyCard({
 }
 
 /**
- * AI ✨ + edit/delete ⋮ cluster for clinical-event cards. Mirrors the
+ * AI 小球 + edit/delete ⋮ cluster for clinical-event cards. Mirrors the
  * `DentalHistoryRecordList` action layout so the orthodontic timeline and
  * the dental history list feel like the same surface for ortho-* events.
  * The ⋮ menu fades in on group-hover to keep the resting card calm —
@@ -339,30 +339,14 @@ function CardActionButtons({
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-      <IconButton
-        size="sm"
-        tone="ghost"
+      <ParentosAiMascotButton
+        thinking={false}
         onClick={(e) => {
           e.stopPropagation();
           onAskAiAboutRecord(record);
         }}
-        aria-label={i18nText('Orthodontic.journey.askAi')}
-        title={i18nText('Orthodontic.journey.askAi')}
-        icon={
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z" />
-            <path d="M19 14l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3Z" />
-          </svg>
-        }
+        label={i18nText('Orthodontic.journey.askAi')}
+        size={24}
       />
       <div className="opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         <DentalRecordActionMenu

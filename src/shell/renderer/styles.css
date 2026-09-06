@@ -2748,12 +2748,22 @@ button.report-note-composer {
   animation: parentosAiMascotBlink 5s ease-in-out infinite;
 }
 
+/* 待机时眼珠上下左右打量：外层 g 负责位移，与 rect 的眨眼 scaleY 互不冲突 */
+.parentos-ai-mascot-eye-look {
+  animation: parentosAiMascotLook 12s ease-in-out infinite;
+}
+
 .parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-float {
   animation: parentosAiMascotWobble 1.1s ease-in-out infinite;
 }
 
 .parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-eye {
   animation: parentosAiMascotScan 1.1s ease-in-out infinite;
+}
+
+/* 思考时眼珠扫描由 rect 上的 Scan 全权负责，停掉外层的打量位移 */
+.parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-eye-look {
+  animation: none;
 }
 
 @keyframes parentosAiMascotBob {
@@ -2805,9 +2815,60 @@ button.report-note-composer {
   }
 }
 
+/* 12s 一个打量周期：看右 → 回正 → 看左 → 回正 → 看左上斜 → 回正 → 看右上斜 → 回正。
+ * 每次转视约 0.25s（快扫视），到位后停留约 1s，回正后休息更久，避免焦躁感。
+ * 斜向打量时两轴分量略收，保持与水平方向相近的总位移。 */
+@keyframes parentosAiMascotLook {
+  0%,
+  12% {
+    transform: translate(0, 0);
+  }
+
+  14%,
+  23% {
+    transform: translate(4.2px, 0);
+  }
+
+  25%,
+  39% {
+    transform: translate(0, 0);
+  }
+
+  41%,
+  50% {
+    transform: translate(-4.2px, 0);
+  }
+
+  52%,
+  63% {
+    transform: translate(0, 0);
+  }
+
+  65%,
+  73% {
+    transform: translate(-3.6px, -3.2px);
+  }
+
+  75%,
+  84% {
+    transform: translate(0, 0);
+  }
+
+  86%,
+  93% {
+    transform: translate(3.6px, -3.2px);
+  }
+
+  95%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .parentos-ai-mascot-float,
   .parentos-ai-mascot-eye,
+  .parentos-ai-mascot-eye-look,
   .parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-float,
   .parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-eye {
     animation: none;

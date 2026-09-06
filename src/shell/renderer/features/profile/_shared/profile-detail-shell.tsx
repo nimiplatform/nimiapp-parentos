@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   BackLink,
-  IconButton,
   PageDetailLayout,
   type PageDetailLayoutWidth,
 } from '@nimiplatform/kit/ui';
+import { ParentosAiMascotButton } from '../parentos-ai-mascot-button.js';
 
 export type ProfileDetailShellProps = {
   title: ReactNode;
@@ -39,18 +39,11 @@ export function ProfileDetailShell({
     : t('Profile.rich.common.aiAnalysis');
   const composedActions = aiSummary ? (
     <>
-      <IconButton
+      <ParentosAiMascotButton
+        thinking={false}
         onClick={() => setAiOpen((open) => !open)}
-        tone={aiOpen ? 'secondary' : 'primary'}
-        size="sm"
-        className="min-h-0 rounded-full"
-        aria-label={aiLabel}
-        title={aiLabel}
-        icon={(
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10z" />
-          </svg>
-        )}
+        label={aiLabel}
+        size={32}
       />
       {actions}
     </>

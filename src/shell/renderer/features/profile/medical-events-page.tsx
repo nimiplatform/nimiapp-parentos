@@ -5,6 +5,7 @@ import { getMedicalEvents } from '../../bridge/sqlite-bridge.js';
 import type { MedicalEventRow } from '../../bridge/sqlite-bridge.js';
 import { AppSelect } from '../../app-shell/app-select.js';
 import { AISummaryCard } from './ai-summary-card.js';
+import { ParentosAiMascotStatic } from './parentos-ai-mascot-button.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.js';
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
@@ -81,11 +82,7 @@ export default function MedicalEventsPage() {
               }}
               className="rounded-2xl"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-                <path d="M11 8v6M8 11h6" />
-              </svg>
+              <ParentosAiMascotStatic size={18} />
               {insights.showAnalysis ? i18nText('MedicalEvents.page.hideAnalysis') : i18nText('MedicalEvents.page.smartAnalysis')}
             </Button>
           ) : null}

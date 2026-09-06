@@ -21,11 +21,9 @@ import type { ReminderKind } from '../../knowledge-base/index.js';
 import type { ActiveReminder } from '../../engine/reminder-engine.js';
 import {
   canMarkNotApplicable,
-  defaultSnoozeUntil,
   type ReminderActionType,
 } from '../../engine/reminder-actions.js';
 import { currentProgressionState } from '../../engine/reminder-progression.js';
-import { getLocalToday } from '../../engine/reminder-engine.js';
 import { domainDetailRoute } from './reminder-detail-route.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -37,6 +35,12 @@ export interface ReminderExplainDrawerProps {
   onClose: () => void;
   onAction: (reminder: ActiveReminder, action: ReminderActionType, extra?: string | null) => void;
   onOpenCapture: (reminder: ActiveReminder) => void;
+  /**
+   * Postpone path: the parent opens its schedule modal so the parent picks an
+   * explicit next-occurrence date. A one-click snooze button used to live here
+   * but was removed — 安排 (explicit date) is the single postpone concept.
+   */
+  onSchedule?: (reminder: ActiveReminder) => void;
 }
 
 interface FooterPrimary {
@@ -170,7 +174,7 @@ function isExplainComplete(reminder: ActiveReminder): boolean {
   );
 }
 
-export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCapture }: ReminderExplainDrawerProps) {
+export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCapture, onSchedule }: ReminderExplainDrawerProps) {
   if (!reminder) return null;
 
   const explain = reminder.rule.explain;
@@ -377,17 +381,19 @@ export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCaptu
             })}
 
             <div className="ml-auto flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  onAction(reminder, 'snooze', defaultSnoozeUntil(reminder.kind, getLocalToday()));
-                  onClose();
-                }}
-                className="inline-flex h-9 items-center rounded-full px-3 text-[13px] transition-colors hover:bg-[#f1f5f9]"
-                style={{ color: '#475569' }}
-              >
-                {i18nText('Reminders.action.snooze')}
-              </button>
+              {onSchedule && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSchedule(reminder);
+                    onClose();
+                  }}
+                  className="inline-flex h-9 items-center rounded-full px-3 text-[13px] transition-colors hover:bg-[#f1f5f9]"
+                  style={{ color: '#475569' }}
+                >
+                  {i18nText('Reminders.action.schedule')}
+                </button>
+              )}
               {notApplicableOk && (
                 <button
                   type="button"

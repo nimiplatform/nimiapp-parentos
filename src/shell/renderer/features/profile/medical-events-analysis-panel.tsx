@@ -1,6 +1,7 @@
 import { Surface } from '@nimiplatform/kit/ui';
 import type { MedicalAnalysis } from '../../engine/smart-alerts.js';
 import { EVENT_TYPE_LABELS } from './medical-events-page-shared.js';
+import { ParentosAiMascotStatic } from './parentos-ai-mascot-button.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -114,7 +115,7 @@ export function MedicalEventsAnalysisPanel({
           ) : aiInsight ? (
             <div className="rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] p-3">
               <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-[14px]">✨</span>
+                <ParentosAiMascotStatic size={16} />
                 <span className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('MedicalEvents.analysis.aiInsightTitle')}</span>
               </div>
               <p className="text-[14px] leading-relaxed text-[var(--nimi-text-primary)]">{aiInsight}</p>

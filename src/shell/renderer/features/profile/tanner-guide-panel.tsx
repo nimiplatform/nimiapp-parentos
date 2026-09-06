@@ -10,6 +10,7 @@ import {
   type GuidanceItem as TannerGuidanceItem,
   type GuidanceSectionId,
 } from './tanner-page-shared.js';
+import { ParentosAiMascotStatic } from './parentos-ai-mascot-button.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -94,9 +95,7 @@ function GuidanceItem({
             title={i18nText('Tanner.guidePanel.askAdvisor')}
             className="flex h-5 w-5 items-center justify-center rounded text-[var(--nimi-status-info)] transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-text-primary)_8%,transparent)]"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+            <ParentosAiMascotStatic size={20} />
           </Link>
         </div>
       </div>

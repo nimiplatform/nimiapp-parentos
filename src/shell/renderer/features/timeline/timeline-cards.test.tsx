@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -242,6 +242,42 @@ describe('timeline dashboard cards', () => {
     expect(screen.queryByText('还有 0 项 →')).toBeNull();
     const links = Array.from(container.querySelectorAll('a'));
     expect(links.filter((link) => link.textContent?.startsWith('还有'))).toHaveLength(1);
+  });
+
+  it('keeps stage insight descriptions collapsed until a title is clicked, one at a time', () => {
+    renderInRouter(
+      <StageInsightCard
+        summary={{
+          ageLabel: '16岁',
+          health: [
+            { ruleId: 'PO-TEST-T0', title: '视力定期检查', description: '每半年检查一次视力。', domain: 'vision', priority: 'P1' },
+            { ruleId: 'PO-TEST-T1', title: '流感疫苗', description: '每年秋季接种。', domain: 'vaccine', priority: 'P1' },
+          ],
+          development: [
+            { ruleId: 'PO-TEST-G0', title: '角色转型', description: '被咨询时才发言。', domain: 'social', priority: 'P1' },
+          ],
+          healthOverflow: 0,
+          developmentOverflow: 0,
+        }}
+      />,
+    );
+
+    expect(screen.queryByText('每半年检查一次视力。')).toBeNull();
+    expect(screen.queryByText('被咨询时才发言。')).toBeNull();
+
+    fireEvent.click(screen.getByText('视力定期检查'));
+    expect(screen.getByText('每半年检查一次视力。')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('流感疫苗'));
+    expect(screen.queryByText('每半年检查一次视力。')).toBeNull();
+    expect(screen.getByText('每年秋季接种。')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('角色转型'));
+    expect(screen.getByText('被咨询时才发言。')).toBeTruthy();
+    expect(screen.getByText('每年秋季接种。')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('角色转型'));
+    expect(screen.queryByText('被咨询时才发言。')).toBeNull();
   });
 
   it('renders the getting-started guide with three linked steps', () => {

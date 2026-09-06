@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, EmptyState, InlineAlert, nimiToast, StatusBadge, Surface, cn } from '@nimiplatform/kit/ui';
+import { Button, EmptyState, InlineAlert, nimiToast, Popover, PopoverContent, PopoverTrigger, StatusBadge, Surface, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
 import {
   deleteCustomTodo,
@@ -21,12 +21,12 @@ import {
 } from '../../engine/reminder-engine.js';
 import { REMINDER_RULES } from '../../knowledge-base/index.js';
 import { FrequencyModal } from './frequency-modal.js';
+import { ScheduleModal } from './schedule-modal.js';
 import { ReminderExplainDrawer } from './reminder-explain-drawer.js';
 import { domainDetailRoute } from './reminder-detail-route.js';
 import {
   applyReminderAction,
   canMarkNotApplicable,
-  defaultSnoozeUntil,
   persistAgendaPlan,
 } from '../../engine/reminder-actions.js';
 import type { ReminderActionType } from '../../engine/reminder-actions.js';
@@ -44,6 +44,7 @@ import { i18nText } from '../../i18n/index.js';
 
 const textPrimaryClass = 'text-[var(--nimi-text-primary)]';
 const textMutedClass = 'text-[var(--nimi-text-muted)]';
+const menuItemClass = 'flex min-h-9 w-full items-center gap-2 rounded-[var(--nimi-radius-sm)] px-3 text-left text-[length:var(--nimi-type-body-sm-size)] text-[var(--nimi-text-secondary)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]';
 
 const DOMAIN_LABEL_KEYS: Record<string, string> = {
   vaccine: 'Reminders.domain.vaccine',
@@ -57,6 +58,20 @@ const DOMAIN_LABEL_KEYS: Record<string, string> = {
   safety: 'Reminders.domain.safety',
   language: 'Reminders.domain.language',
   motor: 'Reminders.domain.motor',
+  career: 'Reminders.domain.career',
+  digital: 'Reminders.domain.digital',
+  emotional: 'Reminders.domain.emotional',
+  fitness: 'Reminders.domain.fitness',
+  hygiene: 'Reminders.domain.hygiene',
+  independence: 'Reminders.domain.independence',
+  interest: 'Reminders.domain.interest',
+  outdoor: 'Reminders.domain.outdoor',
+  posture: 'Reminders.domain.posture',
+  relationship: 'Reminders.domain.relationship',
+  sensitivity: 'Reminders.domain.sensitivity',
+  sexuality: 'Reminders.domain.sexuality',
+  tanner: 'Reminders.domain.tanner',
+  values: 'Reminders.domain.values',
 };
 
 function domainLabel(domain: string): string {
@@ -106,7 +121,7 @@ function primaryAction(reminder: ActiveReminder): ReminderPrimaryAction {
   if (reminder.rule.domain === 'vaccine') return { label: i18nText('Reminders.action.recordVaccine'), to: domainDetailRoute(reminder.rule.domain) };
   if (isRecordDataReminder(reminder)) return { label: i18nText('Reminders.action.recordData'), kind: 'capture' };
   if (reminder.rule.domain === 'growth') return { label: i18nText('Reminders.action.recordData'), to: domainDetailRoute(reminder.rule.domain) };
-  return { label: reminder.rule.actionType === 'go_hospital' ? i18nText('Reminders.action.viewDetails') : i18nText('Reminders.action.viewProfile'), to: domainDetailRoute(reminder.rule.domain) };
+  return { label: reminder.rule.actionType === 'go_hospital' ? i18nText('Reminders.action.goRecord') : i18nText('Reminders.action.viewProfile'), to: domainDetailRoute(reminder.rule.domain) };
 }
 
 function statusLabel(reminder: ActiveReminder) {
@@ -146,20 +161,6 @@ function formatDateLabel(value: string | null) {
   return value.slice(0, 10);
 }
 
-/* ── Glass summary tile ── */
-
-type SummaryTone = 'success' | 'warning' | 'info' | 'danger' | 'neutral';
-
-function SummaryTile({ label, value, hint, tone }: { label: string; value: string; hint: string; tone: SummaryTone }) {
-  return (
-    <Surface material="glass-thin" tone="card" padding="none" className="rounded-2xl p-5">
-      <StatusBadge tone={tone} shape="dot">{label}</StatusBadge>
-      <p className={cn('mt-3 text-[24px] font-semibold leading-none tracking-tight', textPrimaryClass)}>{value}</p>
-      <p className={cn('mt-2 text-[13px] leading-relaxed', textMutedClass)}>{hint}</p>
-    </Surface>
-  );
-}
-
 /* ── Glass section card ── */
 
 function SectionCard({ title, hint, count, children, collapsible = false, defaultCollapsed = false }: {
@@ -193,58 +194,84 @@ function SectionCard({ title, hint, count, children, collapsible = false, defaul
   );
 }
 
-/* ── Today hero ── */
+/* ── Sub-group divider inside a section card ── */
 
-function TodayHero({
-  reminder,
-  onComplete,
-  onOpenCapture,
-}: {
-  reminder: ActiveReminder | null;
-  onComplete: (r: ActiveReminder) => void;
-  onOpenCapture: (r: ActiveReminder) => void;
-}) {
-  if (!reminder) {
-    return (
-      <Surface material="glass-thin" tone="card" padding="none" className="rounded-2xl p-6">
-        <StatusBadge tone="success" shape="dot">{i18nText('Reminders.page.todayBadge')}</StatusBadge>
-        <h2 className={cn('mt-3 text-[24px] font-semibold tracking-tight', textPrimaryClass)}>{i18nText('Reminders.page.noTodayTitle')}</h2>
-        <p className={cn('mt-2 text-[14px] leading-relaxed', textMutedClass)}>{i18nText('Reminders.page.noTodayDescription')}</p>
-      </Surface>
-    );
-  }
-  const primary = primaryAction(reminder);
-  const canComplete = canDirectlyCompleteReminder(reminder);
+function SubGroup({ label, count, children }: { label: string; count: number; children: ReactNode }) {
   return (
-    <Surface material="glass-thin" tone="card" padding="none" className="rounded-2xl p-6">
-      <StatusBadge tone="success" shape="dot">{i18nText('Reminders.page.todayBadge')}</StatusBadge>
-      <h2 className={cn('mt-3 text-[24px] font-semibold tracking-tight', textPrimaryClass)}>{reminder.rule.title}</h2>
-      <p className={cn('mt-2 text-[14px] leading-relaxed', textMutedClass)}>{statusLabel(reminder)}</p>
-      <div className="flex flex-wrap items-center gap-2 mt-5">
-        {primary.kind === 'capture' ? (
-          <Button type="button" tone="primary" size="md" onClick={() => onOpenCapture(reminder)}>
-            {primary.label}
-          </Button>
-        ) : (
-          <Button asChild tone="primary" size="md">
-            <Link to={primary.to}>{primary.label}</Link>
-          </Button>
-        )}
-        {canComplete && (
-          <Button type="button" tone="secondary" size="md" onClick={() => onComplete(reminder)}>{i18nText('Reminders.action.markComplete')}</Button>
-        )}
+    <div className="mt-6">
+      <div className="mb-3 flex items-center gap-2">
+        <span className={cn('text-[13px] font-medium', textMutedClass)}>{label}</span>
+        <StatusBadge tone="neutral">{i18nText('Reminders.page.itemCount', { count })}</StatusBadge>
       </div>
-    </Surface>
+      <div className="space-y-3">{children}</div>
+    </div>
   );
 }
 
 /* ── Reminder row ── */
 
-function ReminderRow({ reminder, onOpenDetail, onComplete, onSnooze, onSchedule, onNotApplicable, onAdjustFrequency, onOpenCapture }: {
+/**
+ * Low-frequency reminder actions (schedule / frequency / not-applicable) live
+ * behind one overflow menu, so the card presents a single primary action plus
+ * completion instead of a flat button row. Details are reached by clicking the
+ * card body, not from this menu. Postponement has exactly one concept — 安排
+ * (parent-chosen date); the old one-click 推迟 was removed.
+ */
+// @nimi-authority: rule.parentos.remi.r005
+function ReminderMoreMenu({ reminder, onSchedule, onNotApplicable, onAdjustFrequency }: {
+  reminder: ActiveReminder;
+  onSchedule: (r: ActiveReminder) => void;
+  onNotApplicable: (r: ActiveReminder) => void;
+  onAdjustFrequency: (r: ActiveReminder) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const items: { id: string; label: string; onSelect: () => void }[] = [
+    { id: 'schedule', label: i18nText('Reminders.action.schedule'), onSelect: () => onSchedule(reminder) },
+  ];
+  if (reminder.rule.repeatRule?.cadenceUnit === 'month') {
+    items.push({ id: 'adjust-frequency', label: i18nText('Reminders.action.adjustFrequency'), onSelect: () => onAdjustFrequency(reminder) });
+  }
+  const showNotApplicable = canMarkNotApplicable(reminder);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" tone="ghost" size="sm" className="gap-1" onClick={(event) => event.stopPropagation()}>
+          <span>{i18nText('Reminders.action.more')}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className={cn('transition-transform duration-200', open ? 'rotate-180' : 'rotate-0')}>
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-44 p-1">
+        <div role="menu" aria-label={i18nText('Reminders.action.more')} onClick={(event) => event.stopPropagation()}>
+          {items.map((item) => (
+            <button key={item.id} type="button" role="menuitem" className={menuItemClass}
+              onClick={() => { setOpen(false); item.onSelect(); }}>
+              {item.label}
+            </button>
+          ))}
+          {showNotApplicable ? (
+            <>
+              <div className="mx-2 my-1 border-t border-[var(--nimi-border-subtle)]" />
+              <button type="button" role="menuitem" className={cn(menuItemClass, 'text-[var(--nimi-status-danger)]')}
+                onClick={() => { setOpen(false); onNotApplicable(reminder); }}>
+                {i18nText('Reminders.action.notApplicable')}
+              </button>
+            </>
+          ) : null}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// @nimi-authority: rule.parentos.remi.r011
+function ReminderRow({ reminder, onOpenDetail, onComplete, onSchedule, onNotApplicable, onAdjustFrequency, onOpenCapture }: {
   reminder: ActiveReminder;
   onOpenDetail: (r: ActiveReminder) => void;
   onComplete: (r: ActiveReminder) => void;
-  onSnooze: (r: ActiveReminder) => void;
   onSchedule: (r: ActiveReminder) => void;
   onNotApplicable: (r: ActiveReminder) => void;
   onAdjustFrequency: (r: ActiveReminder) => void;
@@ -264,43 +291,37 @@ function ReminderRow({ reminder, onOpenDetail, onComplete, onSnooze, onSchedule,
   const canComplete = canDirectlyCompleteReminder(reminder);
 
   return (
-    <Surface material="glass-thin" tone="card" padding="none" className="rounded-2xl p-5 transition-transform hover:-translate-y-0.5">
+    <Surface material="glass-thin" tone="card" padding="none" className="rounded-2xl p-5 transition-transform hover:-translate-y-0.5 cursor-pointer" onClick={() => onOpenDetail(reminder)}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <StatusBadge tone={isOverdue ? 'danger' : 'info'}>{domain}</StatusBadge>
             <span className={cn('text-[12px]', textMutedClass)}>{statusLabel(reminder)}</span>
           </div>
-          <p className={cn('text-[16px] font-semibold', textPrimaryClass)}>{reminder.rule.title}</p>
+          <button type="button" className={cn('text-left text-[16px] font-semibold', textPrimaryClass)}
+            onClick={(event) => { event.stopPropagation(); onOpenDetail(reminder); }}>
+            {reminder.rule.title}
+          </button>
           <p className={cn('mt-2 text-[14px] leading-relaxed', textMutedClass)}>{shortDescription}</p>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 mt-4">
-        <Button type="button" tone="primary" size="sm" onClick={() => onOpenDetail(reminder)}>
-          {i18nText('Reminders.action.viewDetails')}
-        </Button>
+      <div className="flex flex-wrap items-center gap-2 mt-4">
         {primary.kind === 'capture' ? (
-          <Button type="button" tone="secondary" size="sm" onClick={() => onOpenCapture(reminder)}>
+          <Button type="button" tone="primary" size="sm" onClick={(event) => { event.stopPropagation(); onOpenCapture(reminder); }}>
             {primary.label}
           </Button>
         ) : (
-          <Button asChild tone="secondary" size="sm">
-            <Link to={primary.to}>{primary.label}</Link>
+          <Button asChild tone="primary" size="sm">
+            <Link to={primary.to} onClick={(event) => event.stopPropagation()}>{primary.label}</Link>
           </Button>
         )}
         {canComplete && (
-          <Button type="button" tone="secondary" size="sm" onClick={() => onComplete(reminder)}>{completeLabel}</Button>
+          <Button type="button" tone="secondary" size="sm" onClick={(event) => { event.stopPropagation(); onComplete(reminder); }}>{completeLabel}</Button>
         )}
-        <Button type="button" tone="ghost" size="sm" onClick={() => onSnooze(reminder)}>{i18nText('Reminders.action.snooze')}</Button>
-        {reminder.kind === 'task' && (
-          <Button type="button" tone="ghost" size="sm" onClick={() => onSchedule(reminder)}>{i18nText('Reminders.action.schedule')}</Button>
-        )}
-        {canMarkNotApplicable(reminder) && (
-          <Button type="button" tone="danger" size="sm" onClick={() => onNotApplicable(reminder)}>{i18nText('Reminders.action.notApplicable')}</Button>
-        )}
-        {reminder.rule.repeatRule && (
-          <Button type="button" tone="ghost" size="sm" onClick={() => onAdjustFrequency(reminder)}>{i18nText('Reminders.action.adjust')}</Button>
-        )}
+        <ReminderMoreMenu reminder={reminder}
+          onSchedule={onSchedule}
+          onNotApplicable={onNotApplicable}
+          onAdjustFrequency={onAdjustFrequency} />
       </div>
     </Surface>
   );
@@ -315,6 +336,7 @@ export default function RemindersPage() {
   const { todos: customTodos, loading: customTodosLoading, reload: reloadCustomTodos } = useCustomTodos(activeChildId);
   const [freqOverrides, setFreqOverrides] = useState<FreqOverrideMap>(new Map());
   const [freqModalReminder, setFreqModalReminder] = useState<ActiveReminder | null>(null);
+  const [scheduleModalReminder, setScheduleModalReminder] = useState<ActiveReminder | null>(null);
   const [activeReminder, setActiveReminder] = useState<ActiveReminder | null>(null);
   const [captureSelection, setCaptureSelection] = useState<RecordDataReminderSelection | null>(null);
   const ageMonths = child ? computeAgeMonths(child.birthDate) : 0;
@@ -349,11 +371,26 @@ export default function RemindersPage() {
     persistAgendaPlan(child.childId, agenda, states).then((didPersist) => { if (didPersist) void reload(); }).catch(catchLog('reminders', 'action:persist-agenda-plan-failed'));
   }, [child, agenda, states, reload]);
 
-  const handleAction = useCallback(async (reminder: ActiveReminder, action: ReminderActionType, extra?: string | null) => {
-    if (!child) return;
-    await applyReminderAction({ childId: child.childId, reminder, state: reminder.state, action, scheduledDate: action === 'schedule' ? extra ?? null : undefined, snoozedUntil: action === 'snooze' ? extra ?? null : undefined }).catch(catchLog('reminders', 'action:apply-reminder-action-failed'));
+  const handleAction = useCallback(async (reminder: ActiveReminder, action: ReminderActionType, extra?: string | null): Promise<boolean> => {
+    if (!child) return false;
+    const applied = await applyReminderAction({ childId: child.childId, reminder, state: reminder.state, action, scheduledDate: action === 'schedule' ? extra ?? null : undefined, snoozedUntil: action === 'snooze' ? extra ?? null : undefined })
+      .then(() => true)
+      .catch((error: unknown) => {
+        catchLog('reminders', 'action:apply-reminder-action-failed')(error);
+        nimiToast.danger(i18nText('Reminders.page.actionFailed', {
+          message: error instanceof Error ? error.message : String(error),
+        }));
+        return false;
+      });
     await reload();
+    return applied;
   }, [child, reload]);
+
+  const handleScheduleConfirm = useCallback((reminder: ActiveReminder, scheduledDate: string) => {
+    void handleAction(reminder, 'schedule', scheduledDate).then((applied) => {
+      if (applied) nimiToast.success(i18nText('Reminders.status.scheduledDate', { date: scheduledDate }));
+    });
+  }, [handleAction]);
 
   const openRecordDataCapture = useCallback((reminder: ActiveReminder) => {
     try {
@@ -363,13 +400,6 @@ export default function RemindersPage() {
       nimiToast.danger(nextError instanceof Error ? nextError.message : String(nextError));
     }
   }, []);
-
-  const handleSchedule = useCallback((reminder: ActiveReminder) => {
-    const suggestion = reminder.state?.scheduledDate ?? localToday;
-    const scheduledDate = window.prompt(i18nText('Reminders.page.schedulePrompt'), suggestion);
-    if (!scheduledDate) return;
-    void handleAction(reminder, 'schedule', scheduledDate);
-  }, [handleAction, localToday]);
 
   const handleRestoreCustomTodo = useCallback(async (todoId: string) => {
     await uncompleteCustomTodo(todoId, isoNow()).catch((error: unknown) => {
@@ -395,6 +425,16 @@ export default function RemindersPage() {
     () => customTodos.filter((t) => Boolean(t.completedAt)).sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')),
     [customTodos],
   );
+
+  const renderReminderRows = (items: ActiveReminder[], keyPrefix = '') => items.map((reminder) => (
+    <ReminderRow key={`${keyPrefix}${reminder.rule.ruleId}-${reminder.repeatIndex}`} reminder={reminder}
+      onOpenDetail={setActiveReminder}
+      onComplete={(item) => void handleAction(item, item.kind === 'task' ? 'complete' : 'acknowledge')}
+      onSchedule={(item) => setScheduleModalReminder(item)}
+      onNotApplicable={(item) => void handleAction(item, 'mark_not_applicable')}
+      onAdjustFrequency={(item) => setFreqModalReminder(item)}
+      onOpenCapture={openRecordDataCapture} />
+  ));
 
   if (!child) {
     return (
@@ -436,6 +476,11 @@ export default function RemindersPage() {
     );
   }
 
+  const subtitleParts = [
+    agenda.todayFocus.length > 0 ? i18nText('Reminders.page.subtitleToday', { count: agenda.todayFocus.length }) : null,
+    agenda.upcoming.length > 0 ? i18nText('Reminders.page.subtitleUpcoming', { count: agenda.upcoming.length }) : null,
+  ].filter((part): part is string => part !== null);
+
   return (
     <div className="h-full overflow-y-auto hide-scrollbar">
       <div className="max-w-[920px] mx-auto px-6 py-8 space-y-6">
@@ -448,131 +493,88 @@ export default function RemindersPage() {
           </Button>
           <div>
             <h1 className={cn('text-[24px] font-semibold tracking-tight', textPrimaryClass)}>{i18nText('Reminders.page.title')}</h1>
-            <p className={cn('mt-1 text-[14px]', textMutedClass)}>
-              {i18nText('Reminders.page.subtitle', { today: agenda.todayFocus.length, upcoming: agenda.upcoming.length, history: agenda.history.length })}
-            </p>
+            {subtitleParts.length > 0 && (
+              <p className={cn('mt-1 text-[14px]', textMutedClass)}>
+                {subtitleParts.join(i18nText('Common.list.separator'))}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Hero section — glass card */}
-        <Surface as="section" material="glass-thick" padding="none" tone="card" className="rounded-3xl p-7">
-          <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-5 items-stretch">
-            <TodayHero
-              reminder={agenda.todayFocus[0] ?? null}
-              onComplete={(item) => void handleAction(item, item.kind === 'task' ? 'complete' : 'acknowledge')}
-              onOpenCapture={openRecordDataCapture}
-            />
-            <div className="grid grid-cols-1 gap-4">
-              {agenda.p0Overflow.count > 0 && <SummaryTile label={i18nText('Reminders.page.summary.p0Overflow.label')} value={String(agenda.p0Overflow.count)} hint={i18nText('Reminders.page.summary.p0Overflow.hint')} tone="warning" />}
-              {agenda.onboardingCatchup.count > 0 && <SummaryTile label={i18nText('Reminders.page.summary.catchup.label')} value={String(agenda.onboardingCatchup.count)} hint={i18nText('Reminders.page.summary.catchup.hint')} tone="info" />}
-              <SummaryTile label={i18nText('Reminders.page.summary.today.label')} value={String(agenda.todayFocus.length)} hint={i18nText('Reminders.page.summary.today.hint')} tone="success" />
-              <SummaryTile label={i18nText('Reminders.page.summary.upcoming.label')} value={String(agenda.upcoming.length)} hint={i18nText('Reminders.page.summary.upcoming.hint')} tone="info" />
-              <SummaryTile label={i18nText('Reminders.page.summary.overdue.label')} value={String(agenda.overdueSummary.count)} hint={i18nText('Reminders.page.summary.overdue.hint')} tone="danger" />
-            </div>
-          </div>
-        </Surface>
-
-        {/* Today */}
-        <SectionCard count={agenda.todayFocus.length} title={i18nText('Reminders.page.section.today.title')} hint={i18nText('Reminders.page.section.today.hint')} collapsible defaultCollapsed>
+        {/* Today — full list always expanded; overflow and catch-up land as sub-groups */}
+        <SectionCard count={agenda.todayFocus.length} title={i18nText('Reminders.page.section.today.title')} hint={i18nText('Reminders.page.section.today.hint')}>
           <div className="space-y-4">
             {agenda.todayFocus.length === 0 ? <p className={cn('text-[14px]', textMutedClass)}>{i18nText('Reminders.page.empty.today')}</p>
-            : agenda.todayFocus.map((r) => (
-              <ReminderRow key={`${r.rule.ruleId}-${r.repeatIndex}`} reminder={r}
-                onOpenDetail={setActiveReminder}
-                onComplete={(i) => void handleAction(i, i.kind === 'task' ? 'complete' : 'acknowledge')}
-                onSnooze={(i) => void handleAction(i, 'snooze', defaultSnoozeUntil(i.kind, localToday))}
-                onSchedule={handleSchedule} onNotApplicable={(i) => void handleAction(i, 'mark_not_applicable')} onAdjustFrequency={(i) => setFreqModalReminder(i)} onOpenCapture={openRecordDataCapture} />
-            ))}
+            : renderReminderRows(agenda.todayFocus)}
           </div>
+          {agenda.p0Overflow.count > 0 && (
+            <SubGroup label={i18nText('Reminders.page.section.p0Overflow.title')} count={agenda.p0Overflow.count}>
+              {renderReminderRows(agenda.p0Overflow.items, 'p0-')}
+            </SubGroup>
+          )}
+          {agenda.onboardingCatchup.count > 0 && (
+            <SubGroup label={i18nText('Reminders.page.section.catchup.title')} count={agenda.onboardingCatchup.count}>
+              {renderReminderRows(agenda.onboardingCatchup.items, 'cold-')}
+            </SubGroup>
+          )}
         </SectionCard>
-
-        {agenda.p0Overflow.count > 0 && (
-          <SectionCard count={agenda.p0Overflow.count} title={i18nText('Reminders.page.section.p0Overflow.title')} hint={i18nText('Reminders.page.section.p0Overflow.hint')}>
-            <div className="space-y-4">
-              {agenda.p0Overflow.items.map((r) => (
-                <ReminderRow key={`p0-${r.rule.ruleId}-${r.repeatIndex}`} reminder={r}
-                  onOpenDetail={setActiveReminder}
-                  onComplete={(i) => void handleAction(i, i.kind === 'task' ? 'complete' : 'acknowledge')}
-                  onSnooze={(i) => void handleAction(i, 'snooze', defaultSnoozeUntil(i.kind, localToday))}
-                  onSchedule={handleSchedule} onNotApplicable={(i) => void handleAction(i, 'mark_not_applicable')} onAdjustFrequency={(i) => setFreqModalReminder(i)} onOpenCapture={openRecordDataCapture} />
-              ))}
-            </div>
-          </SectionCard>
-        )}
-
-        {agenda.onboardingCatchup.count > 0 && (
-          <SectionCard count={agenda.onboardingCatchup.count} title={i18nText('Reminders.page.section.catchup.title')} hint={i18nText('Reminders.page.section.catchup.hint')}>
-            <div className="space-y-4">
-              {agenda.onboardingCatchup.items.map((r) => (
-                <ReminderRow key={`cold-${r.rule.ruleId}-${r.repeatIndex}`} reminder={r}
-                  onOpenDetail={setActiveReminder}
-                  onComplete={(i) => void handleAction(i, i.kind === 'task' ? 'complete' : 'acknowledge')}
-                  onSnooze={(i) => void handleAction(i, 'snooze', defaultSnoozeUntil(i.kind, localToday))}
-                  onSchedule={handleSchedule} onNotApplicable={(i) => void handleAction(i, 'mark_not_applicable')} onAdjustFrequency={(i) => setFreqModalReminder(i)} onOpenCapture={openRecordDataCapture} />
-              ))}
-            </div>
-          </SectionCard>
-        )}
 
         {/* Upcoming */}
         <SectionCard count={agenda.upcoming.length} title={i18nText('Reminders.page.section.upcoming.title')} hint={i18nText('Reminders.page.section.upcoming.hint')}>
           <div className="space-y-4">
             {agenda.upcoming.length === 0 ? <p className={cn('text-[14px]', textMutedClass)}>{i18nText('Reminders.page.empty.upcoming')}</p>
-            : agenda.upcoming.map((r) => (
-              <ReminderRow key={`${r.rule.ruleId}-${r.repeatIndex}`} reminder={r}
-                onOpenDetail={setActiveReminder}
-                onComplete={(i) => void handleAction(i, i.kind === 'task' ? 'complete' : 'acknowledge')}
-                onSnooze={(i) => void handleAction(i, 'snooze', defaultSnoozeUntil(i.kind, localToday))}
-                onSchedule={handleSchedule} onNotApplicable={(i) => void handleAction(i, 'mark_not_applicable')} onAdjustFrequency={(i) => setFreqModalReminder(i)} onOpenCapture={openRecordDataCapture} />
-            ))}
+            : renderReminderRows(agenda.upcoming)}
           </div>
         </SectionCard>
 
-        {/* History */}
-        <SectionCard count={agenda.history.length} title={i18nText('Reminders.page.section.history.title')} hint={i18nText('Reminders.page.section.history.hint')}>
-          <div className="space-y-3">
-            {agenda.history.length === 0 ? <p className={cn('text-[14px]', textMutedClass)}>{i18nText('Reminders.page.empty.history')}</p>
-            : agenda.history.map((item) => (
-              <Surface key={`${item.rule.ruleId}-${item.repeatIndex}`} material="glass-thin" tone="card" padding="none" className="flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
-                <div className="min-w-0">
-                  <p className={cn('truncate text-[14px] font-medium', textPrimaryClass)}>{item.rule.title}</p>
-                  <p className={cn('mt-1 text-[13px]', textMutedClass)}>{historyLabel(item)}</p>
+        {/* History — reminder history plus completed custom todos, collapsed by default */}
+        <SectionCard count={agenda.history.length + completedCustomTodos.length} title={i18nText('Reminders.page.section.history.title')} hint={i18nText('Reminders.page.section.history.hint')} collapsible defaultCollapsed>
+          {agenda.history.length === 0 && completedCustomTodos.length === 0 ? (
+            <p className={cn('text-[14px]', textMutedClass)}>{i18nText('Reminders.page.empty.history')}</p>
+          ) : (
+            <>
+              {agenda.history.length > 0 && (
+                <div className="space-y-3">
+                  {agenda.history.map((item) => (
+                    <Surface key={`${item.rule.ruleId}-${item.repeatIndex}`} material="glass-thin" tone="card" padding="none" className="flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
+                      <div className="min-w-0">
+                        <p className={cn('truncate text-[14px] font-medium', textPrimaryClass)}>{item.rule.title}</p>
+                        <p className={cn('mt-1 text-[13px]', textMutedClass)}>{historyLabel(item)}</p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {item.historyType === 'completed' && (
+                          <Button type="button" tone="secondary" size="sm" onClick={() => void handleAction(item, 'restore')}>{i18nText('Reminders.action.restoreTodo')}</Button>
+                        )}
+                        <StatusBadge tone="neutral">{domainLabel(item.rule.domain)}</StatusBadge>
+                      </div>
+                    </Surface>
+                  ))}
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {item.historyType === 'completed' && (
-                    <Button type="button" tone="secondary" size="sm" onClick={() => void handleAction(item, 'restore')}>{i18nText('Reminders.action.restoreTodo')}</Button>
-                  )}
-                  <StatusBadge tone="neutral">{domainLabel(item.rule.domain)}</StatusBadge>
-                </div>
-              </Surface>
-            ))}
-          </div>
+              )}
+              {completedCustomTodos.length > 0 && (
+                <SubGroup label={i18nText('Reminders.page.section.customTodos.title')} count={completedCustomTodos.length}>
+                  {completedCustomTodos.map((todo) => (
+                    <Surface key={todo.todoId} material="glass-thin" tone="card" padding="none" className="flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
+                      <div className="min-w-0">
+                        <p className={cn('text-[14px] font-medium [overflow-wrap:anywhere]', textPrimaryClass)}>{todo.title}</p>
+                        <p className={cn('mt-1 text-[13px]', textMutedClass)}>
+                          {formatDateLabel(todo.completedAt)
+                            ? i18nText('Reminders.page.customCompletedAt', { date: formatDateLabel(todo.completedAt) })
+                            : i18nText('Reminders.page.customCompletedFallback')}
+                          {todo.dueDate ? i18nText('Reminders.page.customDueDate', { date: todo.dueDate }) : ''}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Button type="button" tone="secondary" size="sm" onClick={() => void handleRestoreCustomTodo(todo.todoId)}>{i18nText('Reminders.action.restoreTodo')}</Button>
+                        <Button type="button" tone="ghost" size="sm" onClick={() => void handleDeleteCustomTodo(todo.todoId)}>{i18nText('Reminders.action.delete')}</Button>
+                      </div>
+                    </Surface>
+                  ))}
+                </SubGroup>
+              )}
+            </>
+          )}
         </SectionCard>
-
-        {/* Custom todos history */}
-        {completedCustomTodos.length > 0 && (
-          <SectionCard count={completedCustomTodos.length} title={i18nText('Reminders.page.section.customTodos.title')} hint={i18nText('Reminders.page.section.customTodos.hint')}>
-            <div className="space-y-3">
-              {completedCustomTodos.map((todo) => (
-                <Surface key={todo.todoId} material="glass-thin" tone="card" padding="none" className="flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
-                  <div className="min-w-0">
-                    <p className={cn('text-[14px] font-medium [overflow-wrap:anywhere]', textPrimaryClass)}>{todo.title}</p>
-                    <p className={cn('mt-1 text-[13px]', textMutedClass)}>
-                      {formatDateLabel(todo.completedAt)
-                        ? i18nText('Reminders.page.customCompletedAt', { date: formatDateLabel(todo.completedAt) })
-                        : i18nText('Reminders.page.customCompletedFallback')}
-                      {todo.dueDate ? i18nText('Reminders.page.customDueDate', { date: todo.dueDate }) : ''}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Button type="button" tone="secondary" size="sm" onClick={() => void handleRestoreCustomTodo(todo.todoId)}>{i18nText('Reminders.action.restoreTodo')}</Button>
-                    <Button type="button" tone="ghost" size="sm" onClick={() => void handleDeleteCustomTodo(todo.todoId)}>{i18nText('Reminders.action.delete')}</Button>
-                  </div>
-                </Surface>
-              ))}
-            </div>
-          </SectionCard>
-        )}
       </div>
 
       {child && captureSelection ? (
@@ -601,10 +603,24 @@ export default function RemindersPage() {
           onSaved={() => { void reload(); void reloadFreqOverrides(); }} onClose={() => setFreqModalReminder(null)} />
       )}
 
+      {scheduleModalReminder ? (
+        <ScheduleModal
+          ruleTitle={scheduleModalReminder.rule.title}
+          suggestedDate={scheduleModalReminder.state?.scheduledDate ?? localToday}
+          minDate={localToday}
+          onConfirm={(date) => {
+            handleScheduleConfirm(scheduleModalReminder, date);
+            setScheduleModalReminder(null);
+          }}
+          onClose={() => setScheduleModalReminder(null)}
+        />
+      ) : null}
+
       <ReminderExplainDrawer
         reminder={activeReminder}
         onClose={() => setActiveReminder(null)}
         onOpenCapture={openRecordDataCapture}
+        onSchedule={(item) => setScheduleModalReminder(item)}
         onAction={(reminder, action, extra) => {
           void handleAction(reminder, action, extra);
         }}

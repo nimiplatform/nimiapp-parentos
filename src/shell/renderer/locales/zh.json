@@ -974,7 +974,21 @@
       "nutrition": "营养",
       "safety": "安全",
       "language": "语言",
-      "motor": "运动"
+      "motor": "运动",
+      "career": "职业启蒙",
+      "digital": "数字素养",
+      "emotional": "情绪管理",
+      "fitness": "体能",
+      "hygiene": "卫生习惯",
+      "independence": "独立能力",
+      "interest": "兴趣培养",
+      "outdoor": "户外",
+      "posture": "体态",
+      "relationship": "人际关系",
+      "sensitivity": "敏感期",
+      "sexuality": "性教育",
+      "tanner": "青春期",
+      "values": "价值观"
     },
     "status": {
       "completed": "已完成",
@@ -996,13 +1010,12 @@
       "askAdvisor": "问问 AI 顾问",
       "recordVaccine": "记录疫苗",
       "recordData": "记录数据",
-      "viewDetails": "查看详情",
       "viewProfile": "查看档案",
       "markComplete": "标记完成",
-      "snooze": "推迟",
       "schedule": "安排",
       "notApplicable": "不适用",
-      "adjust": "调整",
+      "adjustFrequency": "调整频率",
+      "more": "更多",
       "expand": "展开",
       "collapse": "收起",
       "backHome": "返回首页",
@@ -1041,10 +1054,6 @@
     },
     "page": {
       "itemCount": "{{count}} 项",
-      "todayBadge": "今日",
-      "noTodayTitle": "今天没有待办",
-      "noTodayDescription": "当前没有需要立即处理的事项。",
-      "schedulePrompt": "安排日期 (YYYY-MM-DD)",
       "noChildTitle": "尚未选择孩子",
       "noChildDescription": "选择孩子后即可查看对应的提醒中心。",
       "unknownRuleTitle": "提醒目录不完整",
@@ -1052,43 +1061,21 @@
       "unknownRuleFailClose": "为保护数据不被误读，提醒页面已按 PO-TIME-007 fail-close。ParentOS 不会静默删除这些记录；请先让持久化 ruleId 与编译后的提醒目录重新一致，再重试。",
       "restoreTodoFailed": "恢复待办失败：{{message}}",
       "deleteTodoFailed": "删除待办失败：{{message}}",
+      "actionFailed": "操作失败：{{message}}",
       "loading": "加载中...",
       "title": "提醒中心",
-      "subtitle": "今天 {{today}} 项，近期 {{upcoming}} 项，历史 {{history}} 项",
-      "summary": {
-        "p0Overflow": {
-          "label": "更多重要",
-          "hint": "超出首屏的高优先级提醒。"
-        },
-        "catchup": {
-          "label": "历史补录",
-          "hint": "在档案创建前已过期的事项。"
-        },
-        "today": {
-          "label": "今天",
-          "hint": "今天值得处理的事项。"
-        },
-        "upcoming": {
-          "label": "近期",
-          "hint": "近期重要，但不急于今天。"
-        },
-        "overdue": {
-          "label": "逾期汇总",
-          "hint": "较早的逾期事项折叠在这里。"
-        }
-      },
+      "subtitleToday": "今天 {{count}} 项",
+      "subtitleUpcoming": "近期 {{count}} 项",
       "section": {
         "today": {
-          "title": "今日事项",
-          "hint": "默认折叠，需要时再展开查看今天的完整事项和操作。"
+          "title": "今天",
+          "hint": "今天到期或已逾期的事项，优先在这里处理。"
         },
         "p0Overflow": {
-          "title": "更多重要事项",
-          "hint": "高优先级事项始终可见，超出首屏容量后折叠到这里。"
+          "title": "更多重要事项"
         },
         "catchup": {
-          "title": "历史补录",
-          "hint": "这些提醒在档案创建前已过期，不会进入主待办列表。"
+          "title": "历史补录"
         },
         "upcoming": {
           "title": "近期",
@@ -1096,11 +1083,10 @@
         },
         "history": {
           "title": "历史记录",
-          "hint": "已完成、已安排、已推迟和不适用的提醒都在这里。"
+          "hint": "已完成、已安排、已推迟、不适用的提醒和已完成的日常待办都在这里。"
         },
         "customTodos": {
-          "title": "日常待办记录",
-          "hint": "这里收纳你手动添加并已完成的日常待办。"
+          "title": "日常待办记录"
         }
       },
       "empty": {
@@ -1144,6 +1130,10 @@
       "customPlaceholder": "月数",
       "monthUnit": "个月",
       "disableWarning": "关闭后该提醒将不再出现。可在设置 → 提醒管理中恢复。"
+    },
+    "schedule": {
+      "title": "安排日期",
+      "description": "选择一个日期，这条提醒会暂时收起，临近那天再次出现。"
     }
   },
   "DrugCombobox": {
@@ -1784,7 +1774,10 @@
       "switchMenu": "切换观察专题",
       "close": "退出观察专题",
       "observableSignals": "可以观察的信号",
+      "signalsMore": "+{{count}} 条信号",
       "guidedQuestions": "引导问题",
+      "questionsMore": "展开其余 {{count}} 个问题",
+      "showLess": "收起",
       "experiment": "试试这个小实验"
     },
     "experimentTemplate": {
@@ -3318,7 +3311,6 @@
       "recordVaccine": "记录疫苗",
       "recordData": "记录数据",
       "markComplete": "标记完成",
-      "snooze": "推迟",
       "notApplicable": "不适用",
       "observe": "去观察"
     },

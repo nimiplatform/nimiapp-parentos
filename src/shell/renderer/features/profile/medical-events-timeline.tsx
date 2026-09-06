@@ -20,6 +20,7 @@ import {
   RESULT_LABELS,
   SEVERITY_LABELS,
 } from './medical-events-page-shared.js';
+import { ParentosAiMascotButton, ParentosAiMascotStatic } from './parentos-ai-mascot-button.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -196,15 +197,11 @@ export function MedicalEventsTimeline({
                           aria-label={i18nText('MedicalEvents.timeline.edit')}
                           icon="✏️"
                         />
-                        <IconButton
+                        <ParentosAiMascotButton
+                          thinking={eventAiLoading === event.eventId}
                           onClick={() => onAnalyze(event)}
-                          disabled={eventAiLoading === event.eventId}
-                          tone="ghost"
-                          size="sm"
-                          className="h-6 min-h-6 w-6 text-[12px] text-[var(--nimi-text-muted)]"
-                          title={i18nText('MedicalEvents.timeline.aiAnalysis')}
-                          aria-label={i18nText('MedicalEvents.timeline.aiAnalysis')}
-                          icon={eventAiLoading === event.eventId ? '⏳' : '✨'}
+                          label={i18nText('MedicalEvents.timeline.aiAnalysis')}
+                          size={22}
                         />
                       </div>
                     </div>
@@ -214,7 +211,7 @@ export function MedicalEventsTimeline({
                     <Surface tone="card" material="solid" elevation="base" padding="none" className="ml-[38px] mt-1 rounded-lg p-2.5">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1">
-                          <span className="text-[12px]">✨</span>
+                          <ParentosAiMascotStatic size={14} />
                           <span className="text-[12px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('MedicalEvents.timeline.aiAnalysis')}</span>
                         </div>
                         <button onClick={() => onCloseAI(event.eventId)} className="rounded px-1 text-[12px] text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]">

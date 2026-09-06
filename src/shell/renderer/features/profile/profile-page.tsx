@@ -83,6 +83,7 @@ function buildOverviewDataContext(snapshot: HealthRecordSnapshot, t: TFunction):
   return lines.join('\n');
 }
 
+// @nimi-authority: rule.parentos.prof.r019
 export default function ProfilePage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -251,7 +252,14 @@ export default function ProfilePage() {
                 </Button>
               </div>
               <div className="space-y-4">
-                {snapshot.groups.map((group) => (
+                {snapshot.groups
+                  // Posture is a retained-owner stateful domain
+                  // (rule.parentos.prof.r019): records live in
+                  // posture_assessments, not health_record_events, so the
+                  // event-driven registry group card would always read empty.
+                  // ProfilePostureCard below renders the domain instead.
+                  .filter((group) => group.group.groupId !== 'posture')
+                  .map((group) => (
                   <ProfileGroupCard
                     key={group.group.groupId}
                     group={group}

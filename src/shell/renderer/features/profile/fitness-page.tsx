@@ -1,4 +1,4 @@
-import { Button, IconButton, Surface, Timeline, TimelineGroup } from '@nimiplatform/kit/ui';
+import { Button, Surface, Timeline, TimelineGroup } from '@nimiplatform/kit/ui';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -40,6 +40,7 @@ import {
   type FitnessEventEntry,
 } from './fitness-assessment-form.js';
 import { formatDateLabel } from '../journal/journal-page-helpers.js';
+import { ParentosAiMascotButton } from './parentos-ai-mascot-button.js';
 import { i18nText } from '../../i18n/index.js';
 
 const FOOT_ARCH_LABELS: Record<string, string> = {
@@ -446,7 +447,7 @@ function MetricRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-// AI ✨ + edit/delete ⋮ cluster — mirrors the orthodontic journey timeline so
+// AI 小球 + edit/delete ⋮ cluster — mirrors the orthodontic journey timeline so
 // the two timelines feel like one surface. The ⋮ menu fades in on card hover.
 function CardActions({
   onAskAi,
@@ -459,21 +460,14 @@ function CardActions({
 }) {
   return (
     <div className="flex shrink-0 items-center gap-1">
-      <IconButton
-        size="sm"
-        tone="ghost"
+      <ParentosAiMascotButton
+        thinking={false}
         onClick={(e) => {
           e.stopPropagation();
           onAskAi();
         }}
-        aria-label={i18nText('Fitness.page.askAi')}
-        title={i18nText('Fitness.page.askAi')}
-        icon={
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z" />
-            <path d="M19 14l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3Z" />
-          </svg>
-        }
+        label={i18nText('Fitness.page.askAi')}
+        size={24}
       />
       <div className="opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         <DentalRecordActionMenu onEdit={onEdit} onDelete={onDelete} />

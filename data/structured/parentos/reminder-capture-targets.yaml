@@ -74,6 +74,18 @@ targets: &parentos_reminder_capture_target_entries
     targetMetricIds: [development.tanner_genital_stage, development.tanner_pubic_hair_stage]
     dateDefaultPolicy: scheduledDate
     completionPolicy: "Complete only after one male Tanner self-assessment event persists genital stage and pubic hair stage for the target child."
+  - ruleId: PO-REM-POS-003
+    actionType: record_data
+    captureProtocolId: posture-self-check
+    targetMetricIds: [posture.self_check]
+    dateDefaultPolicy: today
+    completionPolicy: "Complete only after one posture assessment for the monthly self-check is persisted for the target child."
+  - ruleId: PO-REM-POS-004
+    actionType: record_data
+    captureProtocolId: posture-self-check
+    targetMetricIds: [posture.self_check]
+    dateDefaultPolicy: today
+    completionPolicy: "Complete only after one posture assessment for the quarterly measurement is persisted for the target child."
 
 constraints:
   - "Every actionType=record_data rule in data/structured/parentos/reminder-rules.yaml and data/structured/parentos/reminder-rules-extended.yaml must have exactly one target row here."

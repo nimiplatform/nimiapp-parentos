@@ -297,6 +297,7 @@ function SidebarHealthCaptureModal({
           child={{ childId, birthDate: childBirthDate }}
           onSaved={handleSavedFromGroup}
           onClose={onClose}
+          linkedReminder={linkedReminder}
         />
       );
     }

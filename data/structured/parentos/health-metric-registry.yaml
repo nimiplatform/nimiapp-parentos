@@ -77,6 +77,9 @@ groups:
   - groupId: development
     displayName: Development
     rank: 90
+  - groupId: posture
+    displayName: Posture
+    rank: 95
 
 metrics: &parentos_health_metric_entries
   - metricId: growth.height
@@ -693,6 +696,16 @@ metrics: &parentos_health_metric_entries
     freshnessPolicyRef: development.stage-window
     detailRoute: /profile/milestones
     sourceSupport: [manual]
+    safetyClass: descriptive
+  - metricId: posture.self_check
+    groupId: posture
+    displayName: Posture self-check
+    valueShape: event
+    valueCardinality: event_payload
+    recordKind: event
+    captureProtocolIds: [posture-self-check]
+    detailRoute: /profile/posture
+    sourceSupport: [manual, reminder]
     safetyClass: descriptive
 
 constraints:
