@@ -5473,7 +5473,8 @@
       "percentileAria": "Percentile P{{percentile}}",
       "emptyTitle": "No growth records yet",
       "emptyDescription": "Add the first {{metric}} measurement to generate a trend description.",
-      "sixMonthPercentile": "Past 6 months"
+      "sixMonthPercentile": "Past 6 months",
+      "insufficientHistory": "More records needed"
     },
     "milestones": {
       "title": "Growth milestones",
@@ -5614,19 +5615,20 @@
       "totalMeasurements": "{{count}} measurement records"
     },
     "lede": {
-      "heightSteadyAboveP50": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{yearOverYearDeltaDisplay}} growth over the past year. It is slightly above the same-age median and appears to be growing steadily.",
-      "heightSteadyBelowP50": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{yearOverYearDeltaDisplay}} growth over the past year. A steady growth rhythm is observed, around the same-age middle range.",
-      "heightAccelerating": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{yearOverYearDeltaDisplay}} growth over the past year. Growth speed appears to have increased.",
-      "heightDecelerating": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{yearOverYearDeltaDisplay}} growth over the past year. Growth speed appears to have slowed; keep recording.",
-      "heightPlateau": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{yearOverYearDeltaDisplay}} growth over the past year. It appears to be in a plateau period; keep recording and consult a professional.",
-      "weightSteady": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{yearOverYearDeltaDisplay}} change over the past year. It appears stable.",
-      "weightAccelerating": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{yearOverYearDeltaDisplay}} change over the past year. Weight gain speed appears to have increased.",
-      "weightDecelerating": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{yearOverYearDeltaDisplay}} change over the past year. Weight gain speed appears to have slowed.",
+      "heightSteadyAboveP50": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. It is slightly above the same-age median and appears to be growing steadily.",
+      "heightSteadyBelowP50": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. A steady growth rhythm is observed, around the same-age middle range.",
+      "heightAccelerating": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. Growth speed appears to have increased.",
+      "heightDecelerating": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. Growth speed appears to have slowed; keep recording.",
+      "heightPlateau": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. It appears to be in a plateau period; keep recording and consult a professional.",
+      "weightSteady": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} change from {{comparisonStartDate}} to {{comparisonEndDate}}. It appears stable.",
+      "weightAccelerating": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} change from {{comparisonStartDate}} to {{comparisonEndDate}}. Weight gain speed appears to have increased.",
+      "weightDecelerating": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} change from {{comparisonStartDate}} to {{comparisonEndDate}}. Weight gain speed appears to have slowed.",
       "bmiInRange": "Current BMI is {{currentValueDisplay}}, {{currentPercentileLabel}}, within the common same-age range.",
       "bmiAboveRange": "Current BMI is {{currentValueDisplay}}, {{currentPercentileLabel}}, above the common same-age range. Consult a professional.",
       "bmiBelowRange": "Current BMI is {{currentValueDisplay}}, {{currentPercentileLabel}}, below the common same-age range. Consult a professional.",
-      "headSteady": "Current head circumference is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{yearOverYearDeltaDisplay}} change over the past year. It appears to be growing steadily.",
-      "noData": "No data has been recorded for this metric yet. Add the first measurement to generate a description."
+      "headSteady": "Current head circumference is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} change from {{comparisonStartDate}} to {{comparisonEndDate}}. It appears to be growing steadily.",
+      "noData": "No data has been recorded for this metric yet. Add the first measurement to generate a description.",
+      "insufficientHistory": "Recorded {{currentValueDisplay}}. Add a measurement from another date before comparing change."
     },
     "trend": {
       "flat": "Flat"
@@ -5648,15 +5650,15 @@
       "halfYear": "Semiannual recheck"
     },
     "trendStats": {
-      "yearGrowth": "Annual growth",
+      "yearGrowth": "Recorded change",
       "distanceToP50": "Distance to P50",
       "percentile": "Percentile",
       "needMoreData": "More data needed",
-      "noPriorYear": "No same-period data from last year",
+      "noPriorYear": "No earlier measurement to compare",
       "increased": "increased by {{percent}}%",
       "decreased": "decreased by {{percent}}%",
       "flat": "basically unchanged",
-      "yearOverYearCaption": "Compared with {{value}}{{unit}} in the same period last year, {{direction}}",
+      "yearOverYearCaption": "{{from}} to {{to}}: compared with the first recorded {{value}}{{unit}}, {{direction}}",
       "percentileChange6mPrefix": "Past 6 months ",
       "percentileChange6m": "Past 6 months {{change}}"
     }

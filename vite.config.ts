@@ -5,12 +5,6 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 const require = createRequire(import.meta.url);
-// Linked platform packages (@nimiplatform/sdk, @nimiplatform/kit) resolve
-// through their package `exports` into the linked checkout's built dist/.
-// The repo root stays on fs.allow/manualChunks only because pnpm link: makes
-// served files physically live outside this workspace.
-const nimiRepoRoot = path.resolve(__dirname, '../../nimi');
-const nimiRepoRootNormalized = nimiRepoRoot.split(path.sep).join('/');
 
 function matchesAny(value: string, patterns: readonly string[]): boolean {
   return patterns.some((pattern) => value.includes(pattern));
@@ -104,12 +98,6 @@ export default defineConfig(() => {
       host: '127.0.0.1',
       port: 1426,
       strictPort: true,
-      fs: {
-        allow: [
-          path.resolve(__dirname),
-          nimiRepoRoot,
-        ],
-      },
     },
     build: {
       outDir: path.resolve(__dirname, 'dist'),
@@ -123,10 +111,8 @@ export default defineConfig(() => {
           manualChunks(id) {
             const normalizedId = id.split(path.sep).join('/');
 
-            const isNimiSdk = normalizedId.includes('/node_modules/@nimiplatform/sdk/')
-              || normalizedId.startsWith(`${nimiRepoRootNormalized}/sdks/typescript/`);
-            const isNimiKit = normalizedId.includes('/node_modules/@nimiplatform/kit/')
-              || normalizedId.startsWith(`${nimiRepoRootNormalized}/kit/`);
+            const isNimiSdk = normalizedId.includes('/node_modules/@nimiplatform/sdk/');
+            const isNimiKit = normalizedId.includes('/node_modules/@nimiplatform/kit/');
             if (isNimiSdk && normalizedId.includes('/dist/core-generated/runtime-protobuf/google/')) {
               return 'sdk-runtime-google-generated';
             }

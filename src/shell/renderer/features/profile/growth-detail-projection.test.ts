@@ -122,6 +122,32 @@ describe('buildGrowthDetailSnapshot — empty data', () => {
 // ---------------------------------------------------------------------------
 
 describe('buildGrowthDetailSnapshot — single metric', () => {
+  it('does not invent a change or trend from a single measurement', () => {
+    const events = [makeEvent({ eventId: 'only' })];
+    const values = [makeValue({ valueId: 'only-height', eventId: 'only', metricId: 'growth.height', valueNumber: 113.2 })];
+    const snap = buildGrowthDetailSnapshot(baseInput({ events, values }));
+    if (snap.headline.state === 'no_data') throw new Error('measurement is present');
+    expect(snap.headline.recordedChange).toBeNull();
+    expect(snap.headline.trend).toBeNull();
+    expect(snap.headline.ledeTemplate).toBe('insufficient_history');
+    expect(snap.trendStats[0]?.value).toBe('— cm');
+  });
+
+  it('compares actual recorded endpoints and shows both dates', () => {
+    const start = isoDaysBefore(NOW, 400);
+    const end = isoDaysBefore(NOW, 10);
+    const events = [makeEvent({ eventId: 'first', effectiveDate: start }), makeEvent({ eventId: 'last', effectiveDate: end })];
+    const values = [
+      makeValue({ valueId: 'first-height', eventId: 'first', metricId: 'growth.height', valueNumber: 132 }),
+      makeValue({ valueId: 'last-height', eventId: 'last', metricId: 'growth.height', valueNumber: 140 }),
+    ];
+    const snap = buildGrowthDetailSnapshot(baseInput({ events, values }));
+    if (snap.headline.state === 'no_data') throw new Error('measurements are present');
+    expect(snap.headline.recordedChange).toEqual({ value: 8, unit: 'cm', sign: '+', from: start, to: end });
+    expect(snap.trendStats[0]?.caption).toContain(start.slice(0, 10));
+    expect(snap.trendStats[0]?.caption).toContain(end.slice(0, 10));
+  });
+
   it('computes headline for height; only height chip visible', () => {
     const events = [
       makeEvent({ eventId: 'e1', effectiveDate: isoDaysBefore(NOW, 400), ageMonths: 103 }),

@@ -1,5 +1,6 @@
 app_id: nimi.parentos
 display_name: ParentOS
+version: 0.1.0
 profile: standalone
 manifest_role: submitted-input
 app_access:

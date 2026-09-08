@@ -1,13 +1,10 @@
 [package]
 name = "nimiplatform-parentos"
 version = "0.1.0"
-description = "ParentOS (成长底稿) — AI-Driven Child Development Companion (Tauri)"
+description = "ParentOS (成长底稿) native data host for Electron"
 authors = ["Nimi Team"]
 edition = "2021"
-default-run = "nimiplatform-parentos"
-
-[build-dependencies]
-tauri-build = { version = "2", features = [] }
+default-run = "parentos_host"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

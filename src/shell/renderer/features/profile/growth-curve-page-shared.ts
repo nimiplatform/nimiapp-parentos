@@ -316,13 +316,16 @@ export type LedeTemplateId =
   | 'bmi_above_range'
   | 'bmi_below_range'
   | 'head_steady'
+  | 'insufficient_history'
   | 'no_data';
 
 export interface LedeTemplateInputs {
   currentValueDisplay: string;
   unit: string;
   measuredAt: string;
-  yearOverYearDeltaDisplay: string;
+  recordedChangeDisplay: string;
+  comparisonStartDate: string;
+  comparisonEndDate: string;
   currentPercentileLabel: string;
 }
 
@@ -355,6 +358,7 @@ export const LEDE_TEMPLATES: Record<LedeTemplateId, (inputs: LedeTemplateInputs)
     ledeText('GrowthCurve.lede.bmiBelowRange', i),
   head_steady: (i) =>
     ledeText('GrowthCurve.lede.headSteady', i),
+  insufficient_history: (i) => ledeText('GrowthCurve.lede.insufficientHistory', i),
   no_data: () => i18nText('GrowthCurve.lede.noData'),
 };
 

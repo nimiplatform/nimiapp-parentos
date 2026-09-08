@@ -8,11 +8,7 @@ const ELECTRON_NATIVE_APP_COMMANDS = new Set([
   'pick_image_files_as_base64',
   'report_export_create_save_target',
 ]);
-/**
- * Native commands admitted on the Electron carrier only. Tauri is the legacy
- * shell and is not an admitted Nimi local-development carrier, so the data
- * migration dialogs ship Electron-side without a Tauri counterpart.
- */
+// Data transfer dialogs are owned by Electron, not the Rust sidecar.
 const ELECTRON_ONLY_NATIVE_APP_COMMANDS = new Set([
   'data_transfer_write_export_file',
   'data_transfer_read_import_file',
@@ -38,28 +34,14 @@ function extractRustImplementedCommands(source) {
   return [...match[1].matchAll(/"([^"]+)"\s*=>/gu)].map((entry) => entry[1]).sort();
 }
 
-function extractTauriRegisteredCommands(source) {
-  const match = source.match(/nimi_shell_tauri_local_app_standard_shell_handler!\[([\s\S]*?)\]\s*,?\s*\)/u);
-  assert.ok(match, 'Tauri main must use the local-app standard-shell macro with a literal app-domain command list');
-  return match[1]
-    .split('\n')
-    .map((line) => line.replace(/\/\/[^\n\r]*/u, '').trim().replace(/,$/u, ''))
-    .filter(Boolean)
-    .map((path) => path.split('::').at(-1))
-    .sort();
-}
-
 function assertSameSet(actual, expected, label) {
   assert.deepEqual([...new Set(actual)].sort(), [...new Set(expected)].sort(), label);
 }
 
-test('Electron and Tauri register the same exact app-owned command surface', () => {
+test('Electron and Rust expose the exact app-owned command surface', () => {
   const electronHandlers = readRepoFile('src-electron/parentos-command-handlers.ts');
   const electronMain = readRepoFile('src-electron/main.ts');
   const rustSidecar = readRepoFile('src-tauri/src/sidecar_commands.rs');
-  const tauriMain = readRepoFile('src-tauri/src/main.rs');
-
-  const tauriAppDomain = extractTauriRegisteredCommands(tauriMain);
   const directElectronSidecar = extractTsCommandList(electronHandlers);
   const rustImplemented = extractRustImplementedCommands(rustSidecar);
   const rustImplementedSet = new Set(rustImplemented);
@@ -76,12 +58,10 @@ test('Electron and Tauri register the same exact app-owned command surface', () 
 
   for (const command of ELECTRON_NATIVE_APP_COMMANDS) {
     assert.match(electronHandlers, new RegExp(`${command}\\s*:`), `Electron must implement native command ${command}`);
-    assert.ok(tauriAppDomain.includes(command), `Tauri must register its native command ${command}`);
     assert.ok(!directElectronSidecar.includes(command), `native command ${command} must not be direct sidecar passthrough`);
   }
   for (const command of ELECTRON_ONLY_NATIVE_APP_COMMANDS) {
     assert.match(electronHandlers, new RegExp(`${command}\\s*:`), `Electron must implement native command ${command}`);
-    assert.ok(!tauriAppDomain.includes(command), `Electron-only command ${command} must not be registered on the legacy Tauri shell`);
     assert.ok(!directElectronSidecar.includes(command), `native command ${command} must not be direct sidecar passthrough`);
     assert.ok(!rustImplementedSet.has(command), `native command ${command} must not be implemented in the Rust sidecar`);
   }
@@ -95,10 +75,5 @@ test('Electron and Tauri register the same exact app-owned command surface', () 
     directElectronSidecar,
     expectedRustRendererCommands,
     'Electron and Rust sidecar app-domain implementations must not drift',
-  );
-  assertSameSet(
-    tauriAppDomain,
-    [...directElectronSidecar, ...ELECTRON_NATIVE_APP_COMMANDS],
-    'Tauri and Electron renderer-visible app-owned commands must not drift',
   );
 });

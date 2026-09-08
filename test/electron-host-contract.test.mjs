@@ -45,23 +45,6 @@ test('ParentOS Electron combines the fixed local-app carrier with exact app-owne
   assert.equal(existsSync(path.join(root, 'src-electron/parentos-command-policy.ts')), false);
 });
 
-test('ParentOS Tauri exposes the local-app carrier and exact app-owned commands', async () => {
-  const main = await readProjectFile('src-tauri/src/main.rs');
-
-  assert.match(main, /RuntimeBridgeLocalAppHost::platform_default\(\)/u);
-  assert.match(main, /nimi_shell_tauri_local_app_standard_shell_handler!\[/u);
-  assert.match(main, /app\.path\(\)\.app_data_dir\(\)/u);
-  assert.doesNotMatch(main, /installed_app_launch|append_invoke_initialization_script/u);
-  assert.doesNotMatch(main, /load_dotenv_files|NIMI_APP_LAUNCH_NONCE|bundled-with-nimi/u);
-  assert.doesNotMatch(main, /runtime_bridge_(?:unary|stream_open|stream_close)|ai_config_(?:get|set)/u);
-  assert.doesNotMatch(main, /data_path_resolve|storage_(?:read_json|write_json|remove_json)/u);
-  assert.match(main, /sqlite::db_init/u);
-  assert.match(main, /sqlite::queries::create_family/u);
-  assert.match(main, /journal_audio::save_journal_voice_audio/u);
-  assert.match(main, /report_export::report_export_write_save_target/u);
-  assert.doesNotMatch(main, /allow_data_root_in_asset_scope/u);
-});
-
 test('all renderer-to-native media writes share bounded partition enforcement', async () => {
   const boundedPayloadModules = [
     'src-tauri/src/journal_audio.rs',

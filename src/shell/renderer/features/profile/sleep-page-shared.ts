@@ -157,6 +157,11 @@ export function unpackNotes(notes: string | null): {
   return { nightWakings, napNotes, freeNotes: remaining.join(' | ') };
 }
 
+export function unpackNapRows(napNotes: string): { start: string; end: string }[] {
+  return Array.from(napNotes.matchAll(/(\d{2}:\d{2})-(\d{2}:\d{2})\([^)]*\)/g),
+    (match) => ({ start: match[1]!, end: match[2]! }));
+}
+
 export function sortSleepRecordsDesc(records: SleepRecordRow[]) {
   return [...records].sort(
     (left, right) => new Date(right.sleepDate).getTime() - new Date(left.sleepDate).getTime(),

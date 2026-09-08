@@ -6,7 +6,7 @@
   "private": true,
   "type": "module",
   "main": "dist-electron/main-wrapper.cjs",
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=24.0.0",
     "pnpm": ">=10.0.0"
@@ -16,8 +16,6 @@
     "dev:renderer": "vite --host 127.0.0.1 --port 1426 --strictPort",
     "dev:electron": "nimi-app dev --shell electron",
     "dev:shell": "nimi-app dev",
-    "prepare:workspace-surfaces": "pnpm --dir ../../nimi/sdks/typescript build && pnpm --dir ../../nimi/kit build",
-    "tauri": "tauri",
     "build:renderer": "vite build",
     "build:electron:host": "cargo build --manifest-path src-tauri/Cargo.toml --bin parentos_host",
     "build:electron": "pnpm run build:electron:host && tsc -p tsconfig.electron.json && node scripts/bundle-electron-main.mjs && node scripts/bundle-electron-preload.mjs",
@@ -28,7 +26,7 @@
     "typecheck:renderer": "tsc --noEmit",
     "typecheck:electron": "tsc -p tsconfig.electron.json --noEmit",
     "typecheck": "pnpm run typecheck:renderer && pnpm run typecheck:electron",
-    "build": "pnpm run prepare:workspace-surfaces && pnpm run typecheck && pnpm run build:renderer && (cd src-tauri && cargo check)",
+    "build": "pnpm run typecheck && pnpm run build:renderer && (cd src-tauri && cargo check)",
     "lint": "pnpm run check:i18n && pnpm run typecheck && eslint . --max-warnings 0 && (cd src-tauri && cargo check)",
     "check:i18n": "pnpm run i18n:check && pnpm run i18n:audit",
     "i18n:check": "node scripts/i18n-check.mjs",
@@ -43,9 +41,8 @@
     "check:nurture-mode-safety": "pnpm exec tsx scripts/check-parentos-nurture-mode-safety.ts",
     "check:ai-boundary": "pnpm exec tsx scripts/check-parentos-ai-boundary.ts",
     "check:phase1-closeout": "pnpm run generate:knowledge-base && pnpm run generate:who-lms-assets && pnpm run check:spec-consistency && pnpm run check:knowledge-base && pnpm run check:nurture-mode-safety && pnpm run check:ai-boundary && pnpm run typecheck && pnpm run test && pnpm run lint && cargo test --manifest-path src-tauri/Cargo.toml",
-    "doctor": "nimi-app doctor",
-    "validate": "nimi-app doctor",
-    "check:phase2-closeout": "pnpm run doctor && pnpm run generate:knowledge-base && pnpm run generate:who-lms-assets && pnpm run check:spec-consistency && pnpm run check:knowledge-base && pnpm run check:nurture-mode-safety && pnpm run check:ai-boundary && pnpm run typecheck && pnpm run test && pnpm run lint && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
+    "validate": "nimi-app check",
+    "check:phase2-closeout": "pnpm run generate:knowledge-base && pnpm run generate:who-lms-assets && pnpm run check:spec-consistency && pnpm run check:knowledge-base && pnpm run check:nurture-mode-safety && pnpm run check:ai-boundary && pnpm run typecheck && pnpm run test && pnpm run lint && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
     "test:contracts": "node --import tsx --test test/electron-host-contract.test.mjs test/electron-command-policy.test.mjs test/raw-path-shell-contract.test.mjs test/sidecar-command-parity.test.mjs test/electron-package-config.test.mjs test/acceptance-script-contract.test.mjs test/demographic-matrix.test.mjs",
     "test:sidecar-protocol": "pnpm run build:electron:host && node --test test/sidecar-protocol.test.mjs",
     "acceptance:electron": "node scripts/acceptance-electron.mjs",
@@ -53,16 +50,15 @@
     "test": "vitest run && pnpm run test:contracts && pnpm run test:sidecar-protocol",
     "test:watch": "vitest",
     "nimicoding": "nimicoding",
-    "nimicoding:doctor": "nimicoding doctor"
+    "nimicoding:doctor": "nimicoding doctor",
+    "sync": "nimi-app sync",
+    "pack": "nimi-app pack",
+    "postinstall": "install-electron"
   },
   "devDependencies": {
     "@electron/asar": "3.4.1",
     "@eslint/js": "^10.0.1",
-    "@nimiplatform/app-tools": "link:../../nimi/app-tools",
-    "@nimiplatform/kit-protected-local-win32-x64": "link:../../nimi/kit/shell/protected-local-node/npm/win32-x64",
-    "@nimiplatform/nimi-coding": "0.6.1",
     "@tailwindcss/vite": "^4.3.0",
-    "@tauri-apps/cli": "^2.11.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.9.1",
@@ -82,13 +78,13 @@
     "tsx": "^4.22.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.4",
-    "vite": "^7.3.1",
+    "vite": "^7.3.6",
     "vitest": "^4.1.7",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.0",
+    "@nimiplatform/app-tools": "^0.2.8",
+    "@nimiplatform/nimi-coding": "0.6.1"
   },
   "dependencies": {
-    "@nimiplatform/kit": "link:../../nimi/kit",
-    "@nimiplatform/sdk": "link:../../nimi/sdks/typescript",
     "@protobuf-ts/runtime": "2.11.1",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -118,6 +114,8 @@
     "tailwind-merge": "^3.6.0",
     "three": "^0.184.0",
     "zod": "4.4.3",
-    "zustand": "^5.0.13"
+    "zustand": "^5.0.13",
+    "@nimiplatform/sdk": "^0.9.1",
+    "@nimiplatform/kit": "^0.5.1"
   }
 }

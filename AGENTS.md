@@ -15,11 +15,11 @@
 | Layer | Technology | Location |
 |-------|-----------|----------|
 | Desktop shell | Electron (admitted Nimi local-development carrier) | `src-electron/` |
-| Legacy shell | Tauri 2 (builds and cargo tests stay green; not an admitted Nimi local-development carrier — its Nimi integration is deferred) | `src-tauri/` |
+| Native data sidecar | Rust, launched by Electron | `src-tauri/src/bin/parentos_host.rs` |
 | Frontend | React 19 + Vite 7 + Tailwind 4 | `src/shell/renderer/` |
 | Local storage | SQLite (rusqlite, bundled) | `src-tauri/src/sqlite/` |
 | AI | Nimi App Access protected Local App consumption: bounded foreground text candidate generation plus Scenario Job `audio.transcribe` (declared via `app_access: [runtime.consume]` in `nimi.app.yaml`) | via `@nimiplatform/sdk/app` + `@nimiplatform/kit/features/generation/runtime` |
-| UI components | `@nimiplatform/kit` | link dependency |
+| UI components | `@nimiplatform/kit` | npm dependency |
 | State | Zustand | `app-shell/app-store.ts` |
 | Charts | recharts | growth curves |
 | Dev port | 1426 | vite.config.ts |
@@ -174,8 +174,8 @@ Skip: `node_modules/`, `dist/`, `src-tauri/target/`, `src-tauri/gen/`, lockfiles
 - JSON serialized as TEXT in SQLite.
 - `childId` is the primary filter for most queries.
 - ESM imports use `.js` extension even for `.ts` files.
-- `@nimiplatform/sdk`, `@nimiplatform/kit`, `@nimiplatform/app-tools` are consumed as `link:` dependencies into the sibling platform checkout (`../../nimi/**`), resolving package `exports` to built `dist/` (never source aliases). After pulling platform changes or on a fresh checkout, run `pnpm prepare:workspace-surfaces` once to rebuild those dist artifacts; it is also chained into `pnpm build`.
-- Tauri host glue (`nimi-shell-tauri` path crate) still builds, but Tauri is not an admitted Nimi local-development carrier; `pnpm dev` is Electron-only (`nimi-app dev --shell electron`).
+- `@nimiplatform/sdk`, `@nimiplatform/kit`, and `@nimiplatform/app-tools` consume the published versions selected by app-tools sync through built package exports.
+- Electron is the sole App entry. Retain the Rust data sidecar and its current `nimi-shell-tauri` source dependency; no Tauri window entry is retained.
 
 <!-- nimicoding:managed:agents:start -->
 # Nimi Coding Managed Block

@@ -18,6 +18,7 @@ import {
   sleepAgeTier,
   TIER_DEFAULTS,
   unpackNotes,
+  unpackNapRows,
 } from './sleep-page-shared.js';
 import { Button, DatePicker, TextField } from '@nimiplatform/kit/ui';
 import { AppSelect } from '../../app-shell/app-select.js';
@@ -53,7 +54,7 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
 
   const initialNotes = unpackNotes(initialRecord?.notes ?? null);
   const [formSleepDate, setFormSleepDate] = useState(
-    initialRecord?.sleepDate?.split('T')[0] ?? new Date().toISOString().slice(0, 10),
+    initialRecord?.sleepDate?.split('T')[0] ?? formatDateValue(new Date()),
   );
   const [formBedtime, setFormBedtime] = useState(initialRecord?.bedtime ?? defaults.bed);
   const [formWakeTime, setFormWakeTime] = useState(initialRecord?.wakeTime ?? defaults.wake);
@@ -62,7 +63,7 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
   const [formNightWakings, setFormNightWakings] = useState(
     initialNotes.nightWakings != null && initialNotes.nightWakings > 0 ? String(initialNotes.nightWakings) : '',
   );
-  const [napRows, setNapRows] = useState<NapRow[]>([]);
+  const [napRows, setNapRows] = useState<NapRow[]>(() => unpackNapRows(initialNotes.napNotes));
   const [napAddHover, setNapAddHover] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);

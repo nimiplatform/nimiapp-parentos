@@ -10,7 +10,7 @@
 
 | Layer | Technology | Location |
 |-------|-----------|----------|
-| Desktop shells | Electron + Tauri 2 | `src-electron/`, `src-tauri/` |
+| Desktop shell | Electron with a Rust data sidecar | `src-electron/`, `src-tauri/src/bin/parentos_host.rs` |
 | Frontend | React 19 + Vite 7 + Tailwind 4 | `src/shell/renderer/` |
 | Local storage | SQLite (rusqlite, bundled) | `src-tauri/src/sqlite/` |
 | AI | nimi runtime (`runtime.ai.text.generate`) | via `@nimiplatform/sdk` |
@@ -27,7 +27,7 @@ Normative product authority lives only in the Nimi Coding v2 containers under `.
 
 - Node.js ≥ 24
 - pnpm ≥ 10
-- Rust (stable) + Cargo, with the Tauri 2 toolchain for `src-tauri`
+- Rust (stable) + Cargo for the Electron data sidecar
 - Python 3 (for `generate:who-lms-assets`)
 
 ## Install
@@ -36,9 +36,7 @@ Normative product authority lives only in the Nimi Coding v2 containers under `.
 pnpm install
 ```
 
-All runtime dependencies resolve from npm (`@nimiplatform/kit`,
-`@nimiplatform/sdk`) and crates.io (`nimi-shell-tauri`); no sibling
-`nimi-realm` checkout is required.
+SDK and Kit JavaScript dependencies resolve from npm. The Rust data sidecar currently requires the sibling `../../nimi/kit/shell/tauri` source dependency.
 
 ## Development
 
@@ -48,9 +46,7 @@ pnpm dev
 
 # Explicit Desktop-supervised shell selection
 pnpm dev:electron
-pnpm dev:tauri
 pnpm dev:shell -- --shell electron
-pnpm dev:shell -- --shell tauri
 
 # Renderer-only, intentionally without protected operations
 pnpm dev:renderer
@@ -98,10 +94,9 @@ Pull requests and pushes to `main` run `.github/workflows/ci.yml`, which has two
 | Job | Covers |
 |-----|--------|
 | `Spec + TypeScript` | `nimicoding doctor`, knowledge-base generation, all `check:*` scripts, typecheck, lint, vitest, renderer build |
-| `Rust (Tauri)` | `cargo fmt`, `cargo clippy -D warnings`, `cargo check`, `cargo test` against `src-tauri/` |
+| `Rust data sidecar` | `cargo fmt`, `cargo clippy -D warnings`, `cargo check`, `cargo test` against `src-tauri/` |
 
-All `@nimiplatform/*` npm packages and the `nimi-shell-tauri` Rust crate now
-resolve from their public registries, so CI runs end-to-end out of the box.
+The Rust checks require the sidecar source dependency described above.
 
 ## Release
 

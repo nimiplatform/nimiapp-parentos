@@ -10,7 +10,6 @@ describe('ParentOS local-app authority hardcut', () => {
   const bootstrapSource = read('src/shell/renderer/infra/parentos-bootstrap.ts');
   const settingsSource = read('src/shell/renderer/features/settings/settings-page.tsx');
   const electronMainSource = read('src-electron/main.ts');
-  const tauriMainSource = read('src-tauri/src/main.rs');
 
   it('keeps the canonical submitted app identity', () => {
     const manifestPath = join(root, 'nimi.app.yaml');
@@ -45,14 +44,6 @@ describe('ParentOS local-app authority hardcut', () => {
     expect(existsSync(join(root, 'src-electron/runtime-auth.ts'))).toBe(false);
     expect(existsSync(join(root, 'src-electron/parentos-command-policy.ts'))).toBe(false);
 
-    expect(tauriMainSource).toContain('RuntimeBridgeLocalAppHost::platform_default()');
-    expect(tauriMainSource).toContain('nimi_shell_tauri_local_app_standard_shell_handler![');
-    expect(tauriMainSource).toContain('sqlite::db_init');
-    expect(tauriMainSource).toContain('sqlite::queries::create_family');
-    expect(tauriMainSource).toContain('app.path().app_data_dir()');
-    expect(tauriMainSource).not.toMatch(/installed_app_launch|append_invoke_initialization_script/);
-    expect(tauriMainSource).not.toMatch(/runtime_bridge_(?:unary|stream_open|stream_close)|ai_config_(?:get|set)/);
-    expect(tauriMainSource).not.toMatch(/allow_data_root_in_asset_scope/);
   });
 
   it('removes app-owned development launchers', () => {

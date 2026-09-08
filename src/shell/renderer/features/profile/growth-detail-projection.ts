@@ -75,8 +75,8 @@ export interface GrowthHeadlineHasData {
   currentValueDisplay: string;
   currentPercentile: number | null;
   measuredAt: string;
-  yearOverYearDelta: { value: number; unit: string; sign: '+' | '-' | '0' };
-  trend: GrowthTrendKind;
+  recordedChange: { value: number; unit: string; sign: '+' | '-' | '0'; from: string; to: string } | null;
+  trend: GrowthTrendKind | null;
   ledeTemplate: LedeTemplateId;
   ledeTemplateInputs: LedeTemplateInputs;
 }
@@ -298,7 +298,8 @@ function allGrowthHistoryPoints(input: GrowthDetailProjectionInput): HistoryPoin
   return out;
 }
 
-function computeTrend(points: HistoryPoint[]): GrowthTrendKind {
+function computeTrend(points: HistoryPoint[]): GrowthTrendKind | null {
+  if (new Set(points.map((point) => point.measuredAt.slice(0, 10))).size < 2) return null;
   if (points.length < 6) {
     // Not enough samples to call accelerate/decelerate; default steady when
     // we have any history, plateau when nothing has changed for ≥3 records.
@@ -328,9 +329,10 @@ function computeTrend(points: HistoryPoint[]): GrowthTrendKind {
 
 function pickLedeTemplate(
   metricId: HealthMetricId,
-  trend: GrowthTrendKind,
+  trend: GrowthTrendKind | null,
   percentile: number | null,
 ): LedeTemplateId {
+  if (trend == null) return 'insufficient_history';
   if (metricId === 'growth.height') {
     if (trend === 'accelerating') return 'height_accelerating';
     if (trend === 'decelerating') return 'height_decelerating';
@@ -357,19 +359,18 @@ function percentileLabel(percentile: number | null): string {
   return `P${percentile}`;
 }
 
-function priorYearValue(points: HistoryPoint[], referenceIso: string): number | null {
+function comparisonStart(points: HistoryPoint[], referenceIso: string): HistoryPoint | null {
   const refMs = Date.parse(referenceIso);
   if (Number.isNaN(refMs)) return null;
-  const yearAgoMs = refMs - 365 * 86400000;
   let candidate: HistoryPoint | null = null;
   for (const p of points) {
     const ms = Date.parse(p.measuredAt);
     if (Number.isNaN(ms)) continue;
-    if (ms <= refMs && ms >= yearAgoMs) {
+    if (ms < refMs && p.measuredAt.slice(0, 10) !== referenceIso.slice(0, 10)) {
       if (!candidate || Date.parse(candidate.measuredAt) > ms) candidate = p;
     }
   }
-  return candidate?.value ?? null;
+  return candidate;
 }
 
 function chipForMetric(
@@ -518,10 +519,10 @@ function buildTrendStats(
       { label: i18nText('GrowthDetail.trendStats.percentile'), value: '—', unit: '', caption: i18nText('GrowthDetail.trendStats.needMoreData') },
     ];
   }
-  const yearAgoValue = priorYearValue(selectedPoints, latest.measuredAt);
+  const baseline = comparisonStart(selectedPoints, latest.measuredAt);
+  const yearAgoValue = baseline?.value ?? null;
   const yoy = formatYearOverYearDelta(latest.value, yearAgoValue, selectedUnit);
-  // Year-over-year framed against the prior-year value as a percentage. Falls
-  // back when no prior-year point exists.
+  // Compare the actual recorded endpoints; do not present an annualized rate.
   const yoyCaption = ((): string => {
     if (yearAgoValue == null || yearAgoValue <= 0) return i18nText('GrowthDetail.trendStats.noPriorYear');
     const unitSuffix = selectedUnit ? ` ${selectedUnit}` : '';
@@ -533,6 +534,8 @@ function buildTrendStats(
           ? i18nText('GrowthDetail.trendStats.decreased', { percent: pctText })
           : i18nText('GrowthDetail.trendStats.flat');
     return i18nText('GrowthDetail.trendStats.yearOverYearCaption', {
+      from: baseline!.measuredAt.slice(0, 10),
+      to: latest.measuredAt.slice(0, 10),
       value: yearAgoValue,
       unit: unitSuffix,
       direction,
@@ -673,7 +676,8 @@ export function buildGrowthDetailSnapshot(
       selectedLatest.event.ageMonths,
       enrichedInput.whoDataset,
     );
-    const yearAgo = priorYearValue(selectedPoints, measuredAt);
+    const baseline = comparisonStart(selectedPoints, measuredAt);
+    const yearAgo = baseline?.value ?? null;
     const yoy = formatYearOverYearDelta(value, yearAgo, unit);
     const trend = computeTrend(selectedPoints);
     const ledeTemplate = pickLedeTemplate(enrichedInput.selectedMetricId, trend, currentPercentile);
@@ -681,7 +685,9 @@ export function buildGrowthDetailSnapshot(
       currentValueDisplay: `${value} ${unit}`.trim(),
       unit,
       measuredAt,
-      yearOverYearDeltaDisplay: yoy,
+      recordedChangeDisplay: yoy,
+      comparisonStartDate: baseline?.measuredAt.slice(0, 10) ?? '',
+      comparisonEndDate: measuredAt.slice(0, 10),
       currentPercentileLabel: percentileLabel(currentPercentile),
     };
     const referenceAvailable =
@@ -696,7 +702,7 @@ export function buildGrowthDetailSnapshot(
       currentValueDisplay: `${value} ${unit}`.trim(),
       currentPercentile,
       measuredAt,
-      yearOverYearDelta: { value: Math.abs(deltaValue), unit, sign },
+      recordedChange: baseline ? { value: Math.abs(deltaValue), unit, sign, from: baseline.measuredAt, to: measuredAt } : null,
       trend,
       ledeTemplate,
       ledeTemplateInputs,

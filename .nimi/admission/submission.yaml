@@ -1,0 +1,30 @@
+app_id: nimi.parentos
+display_name: ParentOS
+version: 0.1.0
+profile: standalone
+npm_package_name: nimiapp-parentos
+cargo_package_name: nimiapp-parentos-shell
+tauri_identifier: ai.nimi.apps.nimi.parentos
+package_author: Nimi Platform
+submission_role: developer-submitted-input
+capability_contract_refs: []
+required_standardized_feature_refs: []
+storage_policy:
+  kind: nimi-mediated-default
+support_manifest:
+  diagnostics_bundle_fields:
+    - app_version
+    - runtime_status
+  redaction_rules:
+    - credentials
+  user_visible_issue_categories:
+    - startup
+    - runtime
+  escalation_path: README.md#support
+  kill_switch_visibility: visible
+  recovery_instructions: Restart the App from Nimi. If the problem persists, reinstall the current admitted release.
+review_inputs:
+  manifest: nimi.app.yaml
+  build_profile: .nimi/config/build-profile.yaml
+  scaffold_boundary: .nimi/contracts/scaffold-boundary.yaml
+admission_truth: platform-owned-after-review

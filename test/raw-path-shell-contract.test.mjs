@@ -11,18 +11,12 @@ function readRepoFile(path) {
 
 test('native image picker does not expose reusable absolute paths to the renderer', () => {
   const droppedFile = readRepoFile('src-tauri/src/dropped_file.rs');
-  const tauriMain = readRepoFile('src-tauri/src/main.rs');
   const dentalHistory = readRepoFile('src/shell/renderer/features/profile/dental-history-view.tsx');
 
   assert.doesNotMatch(
     droppedFile,
     /pub\s+fn\s+pick_image_files\s*\([^)]*\)\s*->\s*Result\s*<\s*Vec\s*<\s*String\s*>/m,
     'native picker must not return raw filesystem paths',
-  );
-  assert.doesNotMatch(
-    tauriMain,
-    /\bdropped_file::pick_image_files\b/,
-    'raw-path native picker command must not be registered',
   );
   assert.doesNotMatch(
     dentalHistory,
@@ -36,19 +30,13 @@ test('native image picker does not expose reusable absolute paths to the rendere
   );
 });
 
-test('production renderer and Tauri command registry do not expose raw filesystem path authority', () => {
-  const tauriMain = readRepoFile('src-tauri/src/main.rs');
+test('production renderer and Rust commands do not expose raw filesystem path authority', () => {
   const droppedFile = readRepoFile('src-tauri/src/dropped_file.rs');
   const reportExportRust = readRepoFile('src-tauri/src/report_export.rs');
   const dentalHistory = readRepoFile('src/shell/renderer/features/profile/dental-history-view.tsx');
   const reportExportTs = readRepoFile('src/shell/renderer/features/reports/report-export.ts');
   const windowDrag = readRepoFile('src/shell/renderer/bridge/window-drag.ts');
 
-  assert.doesNotMatch(
-    tauriMain,
-    /\b(get_storage_dirs|prepare_parentos_app_storage|parentos_start_window_drag)\b/,
-    'legacy renderer-visible storage/drag commands must be removed from Tauri main',
-  );
   assert.doesNotMatch(
     dentalHistory,
     /@tauri-apps\/api\/webview|getCurrentWebview|onDragDropEvent|read_dropped_image_as_base64/u,

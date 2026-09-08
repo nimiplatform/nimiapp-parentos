@@ -5473,7 +5473,8 @@
       "percentileAria": "百分位 P{{percentile}}",
       "emptyTitle": "暂无生长记录",
       "emptyDescription": "添加首次{{metric}}测量后即可生成趋势描述。",
-      "sixMonthPercentile": "近 6 个月"
+      "sixMonthPercentile": "近 6 个月",
+      "insufficientHistory": "记录不足"
     },
     "milestones": {
       "title": "生长重要节点",
@@ -5614,19 +5615,20 @@
       "totalMeasurements": "共 {{count}} 条测量记录"
     },
     "lede": {
-      "heightSteadyAboveP50": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，近一年增长 {{yearOverYearDeltaDisplay}}，处于同龄中等偏上水平，倾向于稳定增长。",
-      "heightSteadyBelowP50": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，近一年增长 {{yearOverYearDeltaDisplay}}，观察到稳定增长节奏，处于同龄中等水平。",
-      "heightAccelerating": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，近一年增长 {{yearOverYearDeltaDisplay}}，观察到增长速度有所加快。",
-      "heightDecelerating": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，近一年增长 {{yearOverYearDeltaDisplay}}，观察到增长速度有所放缓，建议持续记录。",
-      "heightPlateau": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，近一年增长 {{yearOverYearDeltaDisplay}}，倾向于平台期，建议持续记录并咨询专业人士。",
-      "weightSteady": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}，近一年变化 {{yearOverYearDeltaDisplay}}，倾向于稳定。",
-      "weightAccelerating": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}，近一年变化 {{yearOverYearDeltaDisplay}}，观察到增重速度有所加快。",
-      "weightDecelerating": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}，近一年变化 {{yearOverYearDeltaDisplay}}，观察到增重速度有所放缓。",
+      "heightSteadyAboveP50": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）增长 {{recordedChangeDisplay}}，处于同龄中等偏上水平，倾向于稳定增长。",
+      "heightSteadyBelowP50": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）增长 {{recordedChangeDisplay}}，观察到稳定增长节奏，处于同龄中等水平。",
+      "heightAccelerating": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）增长 {{recordedChangeDisplay}}，观察到增长速度有所加快。",
+      "heightDecelerating": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）增长 {{recordedChangeDisplay}}，观察到增长速度有所放缓，建议持续记录。",
+      "heightPlateau": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）增长 {{recordedChangeDisplay}}，倾向于平台期，建议持续记录并咨询专业人士。",
+      "weightSteady": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）变化 {{recordedChangeDisplay}}，倾向于稳定。",
+      "weightAccelerating": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）变化 {{recordedChangeDisplay}}，观察到增重速度有所加快。",
+      "weightDecelerating": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）变化 {{recordedChangeDisplay}}，观察到增重速度有所放缓。",
       "bmiInRange": "当前 BMI {{currentValueDisplay}}，{{currentPercentileLabel}}，处于同龄常见范围。",
       "bmiAboveRange": "当前 BMI {{currentValueDisplay}}，{{currentPercentileLabel}}，超出同龄常见范围，建议咨询专业人士。",
       "bmiBelowRange": "当前 BMI {{currentValueDisplay}}，{{currentPercentileLabel}}，低于同龄常见范围，建议咨询专业人士。",
-      "headSteady": "当前头围 {{currentValueDisplay}}，{{currentPercentileLabel}}，近一年变化 {{yearOverYearDeltaDisplay}}，倾向于稳定增长。",
-      "noData": "尚未记录该指标的数据，添加首次测量后即可生成描述。"
+      "headSteady": "当前头围 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）变化 {{recordedChangeDisplay}}，倾向于稳定增长。",
+      "noData": "尚未记录该指标的数据，添加首次测量后即可生成描述。",
+      "insufficientHistory": "已记录 {{currentValueDisplay}}，继续添加不同日期的测量后再比较变化。"
     },
     "trend": {
       "flat": "持平"
@@ -5648,15 +5650,15 @@
       "halfYear": "半年复测"
     },
     "trendStats": {
-      "yearGrowth": "年增速",
+      "yearGrowth": "记录变化",
       "distanceToP50": "距 P50",
       "percentile": "百分位",
       "needMoreData": "需要更多数据",
-      "noPriorYear": "暂无去年同期数据",
+      "noPriorYear": "暂无可比较的历史记录",
       "increased": "增长了 {{percent}}%",
       "decreased": "降低了 {{percent}}%",
       "flat": "基本持平",
-      "yearOverYearCaption": "较去年同期 {{value}}{{unit}}，{{direction}}",
+      "yearOverYearCaption": "{{from}} 至 {{to}}：较起始记录 {{value}}{{unit}}，{{direction}}",
       "percentileChange6mPrefix": "近 6 月 ",
       "percentileChange6m": "近 6 月 {{change}}"
     }

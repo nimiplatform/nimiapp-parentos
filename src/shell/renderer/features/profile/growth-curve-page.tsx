@@ -227,6 +227,10 @@ function computeYearlyGrowth(
   let previousLatest: number | null = null;
   for (const year of [...byYear.keys()].sort((left, right) => left - right)) {
     const entry = byYear.get(year)!;
+    if (previousLatest == null && entry.earliestDate.slice(0, 10) === entry.latestDate.slice(0, 10)) {
+      previousLatest = entry.latestValue;
+      continue;
+    }
     const growth = previousLatest == null
       ? entry.latestValue - entry.earliestValue
       : entry.latestValue - previousLatest;

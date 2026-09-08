@@ -1,10 +1,6 @@
 packages:
   - .
 
-overrides:
-  '@nimiplatform/kit': link:../../nimi/kit
-  '@nimiplatform/sdk': link:../../nimi/sdks/typescript
-
 allowBuilds:
   core-js: true
   electron-winstaller: false

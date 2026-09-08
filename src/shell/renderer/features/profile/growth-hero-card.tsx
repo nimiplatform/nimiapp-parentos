@@ -51,6 +51,7 @@ const TREND_PILL: Record<GrowthTrendKind, { label: string; tone: GrowthChip['ton
 
 function statusPillForHeadline(headline: GrowthHeadline): { label: string; tone: GrowthChip['tone'] } {
   if (headline.state === 'no_data') return { label: i18nText('GrowthCurve.hero.noData'), tone: 'neutral' };
+  if (headline.trend == null) return { label: i18nText('GrowthCurve.hero.insufficientHistory'), tone: 'neutral' };
   return TREND_PILL[headline.trend];
 }
 
