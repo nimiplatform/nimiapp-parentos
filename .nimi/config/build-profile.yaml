@@ -12,4 +12,10 @@ targets:
     build_command: pnpm run build:electron:package
     payload_path: dist-electron-package/nimiapp-parentos-shell-win32-x64
     runtime_entry: payload/nimiapp-parentos-shell.exe
+  macos-aarch64:
+    os: macos
+    arch: arm64
+    build_command: pnpm run build:electron:package
+    payload_path: dist-electron-package/nimiapp-parentos-shell-darwin-arm64
+    runtime_entry: payload/nimiapp-parentos-shell.app/Contents/MacOS/nimiapp-parentos-shell
 profile_role: developer-workflow-input
