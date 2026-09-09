@@ -7,10 +7,16 @@ cargo_package_name: nimiapp-parentos-shell
 tauri_identifier: ai.nimi.apps.nimi.parentos
 package_author: Nimi Platform
 submission_role: developer-submitted-input
-capability_contract_refs: []
+capability_contract_refs:
+  - text.generate
+  - audio.transcribe
 required_standardized_feature_refs: []
 storage_policy:
-  kind: nimi-mediated-default
+  kind: app-owned-os-storage
+  os_storage_disclosure:
+    - path_pattern: "%APPDATA%/Nimi/ParentOS/{data,cache,tmp}/**"
+      purpose: Device-local family SQLite data, media and temporary files. Retained after Nimi uninstall; managed by ParentOS.
+      expected_size_band: Durable media writes enforce a 2 GiB partition limit; images up to 25 MiB and journal audio up to 64 MiB per object.
 support_manifest:
   diagnostics_bundle_fields:
     - app_version
@@ -20,7 +26,7 @@ support_manifest:
   user_visible_issue_categories:
     - startup
     - runtime
-  escalation_path: README.md#support
+  escalation_path: https://github.com/nimiplatform/nimiapp-parentos/issues
   kill_switch_visibility: visible
   recovery_instructions: Restart the App from Nimi. If the problem persists, reinstall the current admitted release.
 review_inputs:

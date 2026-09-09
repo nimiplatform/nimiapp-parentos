@@ -175,7 +175,7 @@ Skip: `node_modules/`, `dist/`, `src-tauri/target/`, `src-tauri/gen/`, lockfiles
 - `childId` is the primary filter for most queries.
 - ESM imports use `.js` extension even for `.ts` files.
 - `@nimiplatform/sdk`, `@nimiplatform/kit`, and `@nimiplatform/app-tools` consume the published versions selected by app-tools sync through built package exports.
-- Electron is the sole App entry. Retain the Rust data sidecar and its current `nimi-shell-tauri` source dependency; no Tauri window entry is retained.
+- Electron is the sole App entry. Retain the Rust data sidecar and the published `nimi-shell-tauri` 0.2.1 dependency; no Tauri window entry is retained.
 
 <!-- nimicoding:managed:agents:start -->
 # Nimi Coding Managed Block

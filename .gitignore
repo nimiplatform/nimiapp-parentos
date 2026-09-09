@@ -25,3 +25,5 @@ src-tauri/gen/schemas/
 
 outputs/
 docs/superpowers/
+# Windows production package
+dist-electron-package/

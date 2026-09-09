@@ -10,6 +10,7 @@ export default defineConfig([
     'build/**',
     'dist/**',
     'dist-electron/**',
+    'dist-electron-package/**',
     'src-electron/dist/**',
     '.nimi/local/**',
     'src-tauri/target/**',

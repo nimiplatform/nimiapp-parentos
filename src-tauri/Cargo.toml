@@ -17,7 +17,7 @@ rusqlite = { version = "0.38", features = ["bundled"] }
 serde_yaml = "0.9"
 rfd = "0.17"
 tempfile = "3"
-nimi-shell-tauri = { path = "../../../nimi/kit/shell/tauri" }
+nimi-shell-tauri = "=0.2.1"
 # Image decode / downsample / re-encode for orthodontic photo sessions
 # (PO-ORTHO-012). Default codec set is heavy; we admit only the formats the
 # contract allows on input plus JPEG output.

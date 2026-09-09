@@ -2362,6 +2362,8 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 [[package]]
 name = "nimi-shell-protected-local"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a424159123d7e89bcc7341e34b9a55512973b4a075189d9d8be207ac783671c"
 dependencies = [
  "base64 0.22.1",
  "cc",
@@ -2391,6 +2393,8 @@ dependencies = [
 [[package]]
 name = "nimi-shell-tauri"
 version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed5efb59afeee904f4b284385290974b1547d82a010378dc4387df76d86c0445"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
