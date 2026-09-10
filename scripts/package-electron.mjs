@@ -88,7 +88,9 @@ try {
   await writeFile(productionManifestPath, `${JSON.stringify(productionManifest, null, 2)}\n`);
   await rm(path.join(productionSourceRoot, 'pnpm-lock.yaml'));
 
-  const nativeDestination = path.join(productionSourceRoot, 'node_modules', ...NATIVE_BINDING_PACKAGE.split('/'));
+  const nativeDestination = MACOS_BUILD
+    ? path.join(stagingRoot, 'nimi-native', 'protected-local')
+    : path.join(productionSourceRoot, 'node_modules', ...NATIVE_BINDING_PACKAGE.split('/'));
   await rm(nativeDestination, { recursive: true, force: true });
   await mkdir(path.dirname(nativeDestination), { recursive: true });
   await cp(nativePackageRoot, nativeDestination, { recursive: true, dereference: true, force: false });
@@ -129,7 +131,7 @@ try {
       packagedManifest.version = APP_VERSION;
       await writeFile(packagedManifestPath, `${JSON.stringify(packagedManifest, null, 2)}\n`);
     }],
-    extraResource: [path.join(appRoot, 'dist-electron', 'bin')],
+    extraResource: [path.join(appRoot, 'dist-electron', 'bin'), ...(MACOS_BUILD ? [path.join(stagingRoot, 'nimi-native')] : [])],
     win32metadata: {
       ProductName: APP_PRODUCT_NAME,
       FileDescription: APP_PRODUCT_NAME,

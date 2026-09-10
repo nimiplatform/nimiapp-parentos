@@ -1,6 +1,6 @@
 app_id: nimi.parentos
 display_name: ParentOS
-version: 0.1.4
+version: 0.1.5
 npm_package_name: nimiapp-parentos
 cargo_package_name: nimiapp-parentos-shell
 tauri_identifier: ai.nimi.apps.nimi.parentos
