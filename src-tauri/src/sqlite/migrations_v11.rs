@@ -8,7 +8,7 @@ use rusqlite::Connection;
 /// Adds two nullable columns:
 ///
 /// - `recurrenceRule`          TEXT — JSON blob encoding the repeat rule
-///                             (`{"preset":"daily"|"weekly"|"monthly"|"yearly"|"custom","interval":n,"unit":"day|week|month|year","weekdays":[0..6]}`)
+///   (`{"preset":"daily"|"weekly"|"monthly"|"yearly"|"custom","interval":n,"unit":"day|week|month|year","weekdays":[0..6]}`)
 /// - `reminderOffsetMinutes`   INTEGER — minutes before `dueDate` to raise an in-app reminder
 ///
 /// Idempotency: each ALTER is guarded by a `PRAGMA table_info(custom_todos)` probe

@@ -127,7 +127,7 @@ pub fn get_orthodontic_journey(
 ) -> Result<OrthodonticJourney, String> {
     let conn = get_conn()?.lock().map_err(|e| e.to_string())?;
     // Verify caseId belongs to childId; fail-close otherwise.
-    let case_meta: Option<(String, String, String, Option<String>, Option<String>)> = conn
+    let case_meta = conn
         .query_row(
             "SELECT caseType, stage, startedAt, plannedEndAt, actualEndAt FROM orthodontic_cases WHERE caseId = ?1 AND childId = ?2",
             params![case_id, child_id],
@@ -233,7 +233,7 @@ pub fn get_orthodontic_journey(
              FROM orthodontic_checkins WHERE caseId = ?1 ORDER BY checkinDate ASC, createdAt ASC",
         )
         .map_err(|e| format!("get_orthodontic_journey checkin prepare: {e}"))?;
-    let checkin_rows: Vec<(String, String, String, Option<i32>, Option<i32>)> = checkin_stmt
+    let checkin_rows = checkin_stmt
         .query_map(params![case_id], |row| {
             Ok((
                 row.get::<_, String>(0)?,
@@ -296,20 +296,19 @@ pub fn get_orthodontic_journey(
              ORDER BY e.effectiveDate ASC, e.createdAt ASC",
         )
         .map_err(|e| format!("get_orthodontic_journey clinical prepare: {e}"))?;
-    let clinical_rows: Vec<(String, Option<String>, String, Option<String>, Option<String>)> =
-        clinical_stmt
-            .query_map(params![child_id], |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, Option<String>>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, Option<String>>(3)?,
-                    row.get::<_, Option<String>>(4)?,
-                ))
-            })
-            .map_err(|e| format!("get_orthodontic_journey clinical query: {e}"))?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| format!("get_orthodontic_journey clinical collect: {e}"))?;
+    let clinical_rows = clinical_stmt
+        .query_map(params![child_id], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, Option<String>>(3)?,
+                row.get::<_, Option<String>>(4)?,
+            ))
+        })
+        .map_err(|e| format!("get_orthodontic_journey clinical query: {e}"))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("get_orthodontic_journey clinical collect: {e}"))?;
     for (record_id, event_type_opt, effective_date, hospital, notes) in clinical_rows {
         if let Some(event_type) = event_type_opt {
             past.push(JourneyEntry::ClinicalEvent {

@@ -58,7 +58,7 @@ pub fn set_vision_followup_settings(
     custom_next_date: Option<String>,
     now: String,
 ) -> Result<(), String> {
-    if cadence_months < MIN_CADENCE_MONTHS || cadence_months > MAX_CADENCE_MONTHS {
+    if !(MIN_CADENCE_MONTHS..=MAX_CADENCE_MONTHS).contains(&cadence_months) {
         return Err(format!(
             "set_vision_followup_settings: cadenceMonths must be between {MIN_CADENCE_MONTHS} and {MAX_CADENCE_MONTHS}, got {cadence_months}"
         ));

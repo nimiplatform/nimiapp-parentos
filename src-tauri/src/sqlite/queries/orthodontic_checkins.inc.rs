@@ -4,6 +4,7 @@
 // computed in the renderer (`orthodontic-derive.ts`); no Rust helper is
 // needed at the storage seam.
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn insert_orthodontic_checkin(
     checkin_id: String,
     child_id: String,
@@ -25,15 +26,11 @@ pub fn insert_orthodontic_checkin(
     }
     // Structural validation by checkinType.
     match ct {
-        "aligner-change" => {
-            if aligner_index.is_none() {
-                return Err("checkinType=aligner-change requires alignerIndex".to_string());
-            }
+        "aligner-change" if aligner_index.is_none() => {
+            return Err("checkinType=aligner-change requires alignerIndex".to_string());
         }
-        "expander-activation" => {
-            if activation_index.is_none() {
-                return Err("checkinType=expander-activation requires activationIndex".to_string());
-            }
+        "expander-activation" if activation_index.is_none() => {
+            return Err("checkinType=expander-activation requires activationIndex".to_string());
         }
         _ => {}
     }
@@ -46,7 +43,7 @@ pub fn insert_orthodontic_checkin(
         Some(s) => Some(s.trim().to_string()),
     };
     if let Some(ts) = checkin_at_norm.as_deref() {
-        if ts.len() < 10 || &ts[..10] != checkin_date {
+        if ts.len() < 10 || ts[..10] != checkin_date {
             return Err(format!(
                 "checkinAt UTC date component ({}) does not match checkinDate ({}) — PO-ORTHO-005",
                 &ts[..ts.len().min(10)],

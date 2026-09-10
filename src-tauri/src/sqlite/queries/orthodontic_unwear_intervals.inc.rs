@@ -161,6 +161,7 @@ fn delete_unwear_open_reminder(conn: &Connection, interval_id: &str) -> Result<(
 }
 
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn insert_unwear_interval(
     interval_id: String,
     child_id: String,

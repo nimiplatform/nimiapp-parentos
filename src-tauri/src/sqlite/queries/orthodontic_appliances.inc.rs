@@ -128,9 +128,9 @@ pub fn insert_orthodontic_appliance(
         match (total_aligners, days_per_aligner) {
             (Some(t), Some(d)) if t > 0 && d > 0 => {}
             _ => {
-                return Err(format!(
-                    "applianceType \"clear-aligner\" requires positive totalAligners and daysPerAligner (PO-ORTHO-003)"
-                ));
+                return Err(
+                    "applianceType \"clear-aligner\" requires positive totalAligners and daysPerAligner (PO-ORTHO-003)".to_string()
+                );
             }
         }
     } else if total_aligners.is_some() || days_per_aligner.is_some() {

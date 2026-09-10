@@ -50,16 +50,6 @@ VALUES (?1,?2,?3,?4,NULL,NULL,NULL,NULL,?5,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NUL
         practice_habituated_at,
         consulted_at,
         consultation_conversation_id,
-    ): (
-        String,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-        i64,
-        Option<String>,
-        Option<String>,
-        Option<String>,
     ) = conn
         .query_row(
             "SELECT status, acknowledgedAt, reflectedAt, practiceStartedAt, practiceLastAt, \
@@ -68,15 +58,15 @@ VALUES (?1,?2,?3,?4,NULL,NULL,NULL,NULL,?5,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NUL
             params!["state-1"],
             |row| {
                 Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
-                    row.get(5)?,
-                    row.get(6)?,
-                    row.get(7)?,
-                    row.get(8)?,
+                    row.get::<_, String>(0)?,
+                    row.get::<_, Option<String>>(1)?,
+                    row.get::<_, Option<String>>(2)?,
+                    row.get::<_, Option<String>>(3)?,
+                    row.get::<_, Option<String>>(4)?,
+                    row.get::<_, i64>(5)?,
+                    row.get::<_, Option<String>>(6)?,
+                    row.get::<_, Option<String>>(7)?,
+                    row.get::<_, Option<String>>(8)?,
                 ))
             },
         )
@@ -137,15 +127,6 @@ VALUES (?1,?2,?3,?4,NULL,NULL,NULL,NULL,?5,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NUL
         practice_habituated_at,
         consulted_at,
         consultation_conversation_id,
-    ): (
-        Option<String>,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-        i64,
-        Option<String>,
-        Option<String>,
-        Option<String>,
     ) = conn
         .query_row(
             "SELECT acknowledgedAt, reflectedAt, practiceStartedAt, practiceLastAt, \
@@ -154,14 +135,14 @@ VALUES (?1,?2,?3,?4,NULL,NULL,NULL,NULL,?5,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NUL
             params!["state-v9"],
             |row| {
                 Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
-                    row.get(5)?,
-                    row.get(6)?,
-                    row.get(7)?,
+                    row.get::<_, Option<String>>(0)?,
+                    row.get::<_, Option<String>>(1)?,
+                    row.get::<_, Option<String>>(2)?,
+                    row.get::<_, Option<String>>(3)?,
+                    row.get::<_, i64>(4)?,
+                    row.get::<_, Option<String>>(5)?,
+                    row.get::<_, Option<String>>(6)?,
+                    row.get::<_, Option<String>>(7)?,
                 ))
             },
         )

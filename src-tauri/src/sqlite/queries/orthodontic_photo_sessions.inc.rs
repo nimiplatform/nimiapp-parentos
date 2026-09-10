@@ -138,6 +138,7 @@ pub fn photo_attachment_exists_for_angle(
 }
 
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn insert_orthodontic_photo_session(
     session_id: String,
     child_id: String,
@@ -364,6 +365,7 @@ pub fn delete_orthodontic_photo_session_collecting_paths(
 }
 
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn insert_photo_attachment(
     attachment_id: String,
     child_id: String,
