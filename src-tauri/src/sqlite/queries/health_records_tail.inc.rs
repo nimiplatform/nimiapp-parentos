@@ -32,6 +32,7 @@ pub struct AllergyRecord {
 }
 
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn insert_allergy_record(
     record_id: String,
     child_id: String,
@@ -69,6 +70,7 @@ pub fn insert_allergy_record(
 }
 
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn update_allergy_record(
     record_id: String,
     allergen: String,
@@ -172,6 +174,7 @@ fn sleep_metadata_i32(metadata_json: Option<&str>, field_name: &str) -> Option<i
 }
 
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn upsert_sleep_record(
     record_id: String,
     child_id: String,
@@ -329,6 +332,7 @@ pub struct MedicalEvent {
     pub updated_at: String,
 }
 
+#[expect(clippy::too_many_arguments, reason = "Keep each medical-event payload field explicit")]
 fn medical_event_payload_json(
     event_type: &str,
     title: &str,
@@ -364,6 +368,7 @@ fn medical_metadata_json(event_type: &str, event_id: &str) -> String {
 }
 
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn insert_medical_event(
     event_id: String,
     child_id: String,
@@ -433,6 +438,7 @@ pub fn insert_medical_event(
 }
 
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn update_medical_event(
     event_id: String,
     title: String,

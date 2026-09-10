@@ -113,6 +113,10 @@ fn validate_journal_content_type(
 // ── Journal Entries ────────────────────────────────────────
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn insert_journal_entry(
     entry_id: String,
     child_id: String,
@@ -164,6 +168,10 @@ pub struct JournalTagInput {
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn insert_journal_entry_with_tags(
     entry_id: String,
     child_id: String,
@@ -219,6 +227,10 @@ pub fn insert_journal_entry_with_tags(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn update_journal_entry_with_tags(
     entry_id: String,
     child_id: String,
@@ -664,6 +676,10 @@ pub fn insert_ai_message(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn insert_consultation_ai_message(
     message_id: String,
     conversation_id: String,

@@ -96,6 +96,10 @@ fn normalize_menarche_fields(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn insert_tanner_assessment(
     assessment_id: String,
     child_id: String,
@@ -325,6 +329,10 @@ pub struct FitnessAssessment {
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn insert_fitness_assessment(
     assessment_id: String,
     child_id: String,

@@ -164,13 +164,12 @@ fn next_repeat_index_for_seed(
     child_id: &str,
     rule_id: &str,
 ) -> Result<i32, String> {
-    if let Some(existing) = conn
+    if let Ok(existing) = conn
         .query_row(
             "SELECT repeatIndex FROM reminder_states WHERE stateId = ?1",
             params![state_id],
             |row| row.get::<_, i32>(0),
         )
-        .ok()
     {
         return Ok(existing);
     }

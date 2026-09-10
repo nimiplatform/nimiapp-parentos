@@ -80,6 +80,7 @@ fn dental_metadata_json(event_type: &str, record_id: &str) -> String {
 }
 
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn insert_dental_record(
     record_id: String,
     child_id: String,
@@ -160,6 +161,7 @@ pub fn insert_dental_record(
 }
 
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn update_dental_record(
     record_id: String,
     event_type: String,
@@ -246,6 +248,7 @@ pub fn delete_dental_record(record_id: String) -> Result<(), String> {
 /// The row is written into canonical health_record_events so it shows up in
 /// the dental clinical timeline (PO-ORTHO-001 cross-write rule).
 #[tauri::command]
+#[expect(clippy::too_many_arguments, reason = "IPC arguments mirror the named renderer payload")]
 pub fn insert_ortho_clinical_dental_record(
     record_id: String,
     child_id: String,

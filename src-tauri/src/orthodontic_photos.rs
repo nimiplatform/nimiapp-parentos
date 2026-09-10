@@ -38,6 +38,10 @@ pub struct OrthodonticPhotoSessionBundle {
 /// through the codec gate, write the resulting JPEG to the per-session
 /// directory, and persist the `attachments` row.
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn attach_orthodontic_photo(
     attachment_id: String,
     child_id: String,

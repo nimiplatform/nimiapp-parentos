@@ -40,6 +40,10 @@ fn age_months_at_birth_date(birth_date: &str, activity_date: &str) -> Result<i32
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn insert_outdoor_record(
     record_id: String,
     child_id: String,

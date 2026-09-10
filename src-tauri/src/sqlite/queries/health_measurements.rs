@@ -238,6 +238,10 @@ fn measurement_from_health_record_row(row: &rusqlite::Row<'_>) -> rusqlite::Resu
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn insert_measurement(
     measurement_id: String,
     child_id: String,
@@ -397,6 +401,10 @@ pub fn get_measurements(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn update_measurement(
     measurement_id: String,
     value: f64,
@@ -513,6 +521,10 @@ pub fn delete_measurement(measurement_id: String) -> Result<(), String> {
 // ── Milestone Records ──────────────────────────────────────
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn upsert_milestone_record(
     record_id: String,
     child_id: String,
@@ -590,6 +602,10 @@ fn is_supported_growth_report_type(report_type: &str) -> bool {
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn insert_growth_report(
     report_id: String,
     child_id: String,

@@ -111,6 +111,10 @@ fn is_generic_attachment_owner_table(t: &str) -> bool {
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn save_attachment(
     attachment_id: String,
     child_id: String,

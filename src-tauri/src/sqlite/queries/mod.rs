@@ -232,6 +232,10 @@ pub fn get_child(child_id: String) -> Result<Option<Child>, String> {
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn create_child(
     child_id: String,
     family_id: String,
@@ -295,6 +299,10 @@ pub fn get_children(family_id: String) -> Result<Vec<Child>, String> {
 }
 
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn update_child(
     child_id: String,
     display_name: String,

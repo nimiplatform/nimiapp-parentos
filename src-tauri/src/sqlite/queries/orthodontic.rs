@@ -177,6 +177,10 @@ pub struct OrthodonticCase {
     pub updated_at: String,
 }
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn insert_orthodontic_case(
     case_id: String,
     child_id: String,
@@ -246,6 +250,10 @@ fn assert_no_other_non_completed_case(
     Ok(())
 }
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "IPC arguments mirror the named renderer payload"
+)]
 pub fn update_orthodontic_case(
     case_id: String,
     case_type: String,
