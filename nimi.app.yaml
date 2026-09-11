@@ -1,6 +1,6 @@
 app_id: nimi.parentos
 display_name: ParentOS
-version: 0.1.5
+version: 0.1.6
 profile: standalone
 manifest_role: submitted-input
 app_access:
@@ -11,3 +11,21 @@ ai_config_ui:
 local_development:
   electron:
     renderer_origin: http://127.0.0.1:1426
+metadata:
+  summary: 记录孩子的成长与家庭观察，整理成长档案和阶段提醒。
+  icon: src-tauri/icons/icon.png
+  readme: APP_GUIDE.md
+  release_notes: RELEASE_NOTES.md
+  author: Nimi Platform
+  homepage_url: https://github.com/nimiplatform/nimiapp-parentos
+  support_url: https://github.com/nimiplatform/nimiapp-parentos/issues
+capability_contract_refs:
+  - text.generate
+  - audio.transcribe
+required_standardized_feature_refs: []
+storage_policy:
+  kind: app-owned-os-storage
+  os_storage_disclosure:
+    - path_pattern: <Electron appData>/Nimi/ParentOS/{data,cache,tmp}/**
+      purpose: Device-local family SQLite data, media and temporary files under %APPDATA% on Windows or ~/Library/Application Support on macOS. Retained after Nimi uninstall; managed by ParentOS.
+      expected_size_band: Durable media writes enforce a 2 GiB partition limit; images up to 25 MiB and journal audio up to 64 MiB per object.

@@ -1,6 +1,6 @@
 {
   "name": "nimiapp-parentos",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "AI-driven child growth operating system for ParentOS desktop.",
   "author": "Nimi Platform",
   "private": true,
@@ -78,7 +78,7 @@
     "vite": "^7.3.6",
     "vitest": "^4.1.7",
     "yaml": "^2.9.0",
-    "@nimiplatform/app-tools": "^0.3.0",
+    "@nimiplatform/app-tools": "^0.4.0",
     "@nimiplatform/nimi-coding": "0.6.2"
   },
   "dependencies": {
@@ -114,5 +114,6 @@
     "zustand": "^5.0.13",
     "@nimiplatform/sdk": "^0.10.0",
     "@nimiplatform/kit": "^0.6.0"
-  }
+  },
+  "license": "MIT"
 }
