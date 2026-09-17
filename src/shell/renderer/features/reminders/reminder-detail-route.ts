@@ -6,12 +6,16 @@
  * dedicated detail surface fall back to the profile console.
  */
 
+// @nimi-authority: rule.parentos.remi.r002
+// @nimi-authority: rule.parentos.hrec.r003
 const DOMAIN_DETAIL_ROUTE: Record<string, string> = {
   vaccine: '/profile/vaccines',
   checkup: '/profile/medical-events',
   vision: '/profile/vision',
   dental: '/profile/dental',
   growth: '/profile/growth',
+  'bone-age': '/profile/tanner',
+  milestone: '/profile/milestones',
   posture: '/profile/posture',
   sleep: '/profile/sleep',
   tanner: '/profile/tanner',

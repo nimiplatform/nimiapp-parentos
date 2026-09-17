@@ -32,13 +32,13 @@ const MEASUREMENT_META: Record<
   string,
   { label: string; unit: string; domain: RecentChangeItem['domain']; to: string; icon: string }
 > = {
-  height: { label: i18nText('Profile.metrics.growth.height'), unit: i18nText('Common.unit.centimeter'), domain: 'growth', to: '/profile', icon: '📏' },
-  weight: { label: i18nText('Profile.metrics.growth.weight'), unit: i18nText('Common.unit.kilogram'), domain: 'growth', to: '/profile', icon: '⚖️' },
-  'head-circumference': { label: i18nText('Profile.metrics.growth.headCircumference'), unit: i18nText('Common.unit.centimeter'), domain: 'growth', to: '/profile', icon: '🍼' },
-  bmi: { label: 'BMI', unit: '', domain: 'growth', to: '/profile', icon: '📈' },
-  'vision-left': { label: i18nText('Profile.metrics.vision.leftVisualAcuity'), unit: '', domain: 'vision', to: '/profile', icon: '👀' },
-  'vision-right': { label: i18nText('Profile.metrics.vision.rightVisualAcuity'), unit: '', domain: 'vision', to: '/profile', icon: '👀' },
-  'bone-age': { label: i18nText('Profile.metrics.development.boneAgeYears'), unit: i18nText('Common.unit.year'), domain: 'bone-age', to: '/profile', icon: '🦴' },
+  height: { label: i18nText('Profile.metrics.growth.height'), unit: i18nText('Common.unit.centimeter'), domain: 'growth', to: '/profile/growth?metric=growth.height', icon: '📏' },
+  weight: { label: i18nText('Profile.metrics.growth.weight'), unit: i18nText('Common.unit.kilogram'), domain: 'growth', to: '/profile/growth?metric=growth.weight', icon: '⚖️' },
+  'head-circumference': { label: i18nText('Profile.metrics.growth.headCircumference'), unit: i18nText('Common.unit.centimeter'), domain: 'growth', to: '/profile/growth?metric=growth.head_circumference', icon: '🍼' },
+  bmi: { label: 'BMI', unit: '', domain: 'growth', to: '/profile/growth?metric=growth.bmi', icon: '📈' },
+  'vision-left': { label: i18nText('Profile.metrics.vision.leftVisualAcuity'), unit: '', domain: 'vision', to: '/profile/vision?metric=vision.left_visual_acuity', icon: '👀' },
+  'vision-right': { label: i18nText('Profile.metrics.vision.rightVisualAcuity'), unit: '', domain: 'vision', to: '/profile/vision?metric=vision.right_visual_acuity', icon: '👀' },
+  'bone-age': { label: i18nText('Profile.metrics.development.boneAgeYears'), unit: i18nText('Common.unit.year'), domain: 'bone-age', to: '/profile/tanner', icon: '🦴' },
 };
 
 interface QuickLink {
@@ -341,7 +341,7 @@ function buildSleepRecordChanges(sleepRecords: DashData['sleepRecords']): Recent
           subtitle: timeLabel,
           summary: null,
           timestamp: `${record.sleepDate}T00:00:00.000Z`,
-          to: '/profile',
+          to: '/profile/sleep',
           icon: '😴',
           iconName: 'moon' as const,
         };
@@ -415,7 +415,7 @@ export function buildRecentChanges(dash: DashData): RecentChangeItem[] {
         subtitle: fmtRel(record.achievedAt!),
         summary: null,
         timestamp: record.achievedAt!,
-        to: '/profile',
+        to: '/profile/milestones',
         icon: '🏆',
         iconName: 'trophy' as const,
       })),
@@ -433,7 +433,7 @@ export function buildRecentChanges(dash: DashData): RecentChangeItem[] {
         subtitle: fmtRel(record.vaccinatedAt),
         summary: null,
         timestamp: record.vaccinatedAt,
-        to: '/profile',
+        to: '/profile/vaccines',
         icon: '💉',
         iconName: 'syringe' as const,
       })),
@@ -696,21 +696,6 @@ export function buildQuickLinks(ageMonths: number): QuickLink[] {
   }
   return ordered.slice(0, 6);
 }
-
-export const DOMAIN_ROUTES: Record<string, string> = {
-  milestone: '/profile',
-  vaccine: '/profile',
-  growth: '/profile',
-  vision: '/profile',
-  dental: '/profile',
-  sleep: '/profile',
-  'bone-age': '/profile',
-  checkup: '/profile',
-  nutrition: '/profile',
-  posture: '/profile',
-  fitness: '/profile',
-  tanner: '/profile',
-};
 
 export function fmtDate() {
   return new Date().toLocaleDateString('zh-CN', {

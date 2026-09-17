@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { canMarkNotApplicable, type ReminderActionType } from '../../engine/reminder-actions.js';
 import { type ActiveReminder } from '../../engine/reminder-engine.js';
 import { ReminderExplainDrawer } from '../reminders/reminder-explain-drawer.js';
+import { domainDetailRoute } from '../reminders/reminder-detail-route.js';
 import type { CustomTodoRow } from '../../bridge/sqlite-bridge.js';
 import type { DynamicTask, EnhancedReminder } from '../../engine/smart-alerts.js';
-import { C, DOMAIN_ROUTES } from './timeline-data.js';
+import { C } from './timeline-data.js';
 import { CustomTodoComposer, CustomTodoInlineList } from './timeline-custom-todos.js';
 import { TimelineReminderRow } from './timeline-reminder-row.js';
 import type { ObservationNudge } from './timeline-observation-nudges.js';
@@ -51,7 +52,7 @@ function reminderPrimaryLink(reminder: ActiveReminder): ReminderPrimaryLink {
   if (reminder.rule.domain === 'vaccine') {
     return {
       label: i18nText('Timeline.reminderAction.recordVaccine'),
-      to: '/profile',
+      to: domainDetailRoute(reminder.rule.domain),
     };
   }
 
@@ -60,12 +61,12 @@ function reminderPrimaryLink(reminder: ActiveReminder): ReminderPrimaryLink {
   }
 
   if (reminder.rule.domain === 'growth') {
-    return { label: i18nText('Timeline.reminderAction.recordData'), to: '/profile' };
+    return { label: i18nText('Timeline.reminderAction.recordData'), to: domainDetailRoute(reminder.rule.domain) };
   }
 
   return {
     label: i18nText('Timeline.action.viewDetails'),
-    to: DOMAIN_ROUTES[reminder.rule.domain] ?? '/profile',
+    to: domainDetailRoute(reminder.rule.domain),
   };
 }
 

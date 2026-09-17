@@ -61,7 +61,7 @@ function MiniTrendRow({ trend }: { trend: GrowthTrendItem }) {
 export function GrowthSnapshotCard({ snapshot }: { snapshot: { updatedAt: string | null; updatedLabel: string; metrics: GrowthSnapshotMetric[]; trends: GrowthTrendItem[] } }) {
   return (
     <Cd cls="col-span-4 flex flex-col">
-      <Hdr title={i18nText('Timeline.home.growthSnapshotTitle')} to="/profile" link={i18nText('Timeline.home.viewCurves')} />
+      <Hdr title={i18nText('Timeline.home.growthSnapshotTitle')} to="/profile/growth" link={i18nText('Timeline.home.viewCurves')} />
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.latestGrowthMeasurement')}</p>
         <span className="text-[12px]" style={{ color: '#64748b' }}>{snapshot.updatedLabel}</span>
@@ -131,7 +131,7 @@ export function OutdoorGoalCard({
   if (goalMinutes === null) {
     return (
       <Cd cls="col-span-4">
-        <Hdr title={i18nText('Timeline.home.outdoorGoalTitle')} to="/profile" link={i18nText('Timeline.home.setGoal')} />
+        <Hdr title={i18nText('Timeline.home.outdoorGoalTitle')} to="/profile/outdoor" link={i18nText('Timeline.home.setGoal')} />
         <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.noOutdoorGoalTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>
@@ -144,7 +144,7 @@ export function OutdoorGoalCard({
 
   return (
     <Cd cls="col-span-4">
-      <Hdr title={i18nText('Timeline.home.outdoorGoalTitle')} to="/profile" />
+      <Hdr title={i18nText('Timeline.home.outdoorGoalTitle')} to="/profile/outdoor" />
       <div className="space-y-3">
         <div className="flex items-end justify-between">
           <p className="text-[18px] font-bold tabular-nums" style={{ color: textMain }}>

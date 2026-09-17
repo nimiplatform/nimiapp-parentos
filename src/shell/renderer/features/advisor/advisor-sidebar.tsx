@@ -19,7 +19,7 @@ export function AdvisorSidebar({
   onNewConversation,
 }: AdvisorSidebarProps) {
   return (
-    <aside className="advisor-sidebar-panel mt-4 mb-5 flex w-64 shrink-0 flex-col p-3">
+    <aside className="advisor-sidebar-panel flex w-64 shrink-0 flex-col self-stretch p-3">
       <button
         type="button"
         onClick={onNewConversation}

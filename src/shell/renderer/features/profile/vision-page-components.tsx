@@ -457,10 +457,14 @@ export function NextStepsEditor({
         {t('Profile.rich.vision.customNextDate')} <span className="font-normal normal-case lowercase text-[var(--nimi-field-placeholder)]">· {t('Profile.rich.vision.customNextDateHint')}</span>
       </div>
       <div className="flex items-center gap-2 mb-1">
-        <DatePicker
+        <TextField
+          type="date"
           value={customDate}
-          onChange={setCustomDate}
-          className="flex-1 text-[13px] rounded-xl px-3 py-2 border-0 outline-none"
+          onChange={(event) => setCustomDate(event.target.value)}
+          max="2100-12-31"
+          aria-label={t('Profile.rich.vision.customNextDate')}
+          className="flex-1"
+          inputClassName="text-[13px] rounded-xl px-3 py-2"
         />
         {customDate && (
           <button

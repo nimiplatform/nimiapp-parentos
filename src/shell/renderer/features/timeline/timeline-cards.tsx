@@ -36,7 +36,7 @@ export function SleepTrendCard({ summary }: { summary: SleepTrendSummary }) {
   const hasData = summary.points.length > 0;
   return (
     <Cd cls="col-span-4">
-      <Hdr title={i18nText('Timeline.card.sleep.title')} to="/profile" link={i18nText('Timeline.action.viewDetails')} />
+      <Hdr title={i18nText('Timeline.card.sleep.title')} to="/profile/sleep" link={i18nText('Timeline.action.viewDetails')} />
       {hasData ? (
         <>
           <div className="flex items-end justify-between gap-3">
@@ -82,7 +82,7 @@ export function VisionCard({ snapshot }: { snapshot: VisionSnapshotSummary }) {
   const hasData = snapshot.leftEye != null || snapshot.rightEye != null;
   return (
     <Cd cls="col-span-4">
-      <Hdr title={i18nText('Timeline.card.vision.title')} to="/profile" link={i18nText('Timeline.action.viewDetails')} />
+      <Hdr title={i18nText('Timeline.card.vision.title')} to="/profile/vision" link={i18nText('Timeline.action.viewDetails')} />
       {hasData ? (
         <>
           <div className="flex items-center justify-between gap-4">
@@ -138,7 +138,7 @@ export function MilestoneTimelineCard({ summary }: { summary: MilestoneTimelineS
   const hasUpcoming = summary.upcoming.length > 0;
   return (
     <Cd cls="col-span-4">
-      <Hdr title={i18nText('Timeline.card.milestone.title')} to="/profile" link={i18nText('Timeline.action.viewAll')} />
+      <Hdr title={i18nText('Timeline.card.milestone.title')} to="/profile/milestones" link={i18nText('Timeline.action.viewAll')} />
       {hasAchieved ? (
         <div className="mb-4">
           <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#4ECCA3' }}>{i18nText('Timeline.card.milestone.recentlyAchieved')}</p>

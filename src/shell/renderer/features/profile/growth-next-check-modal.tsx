@@ -56,6 +56,7 @@ function presetMonths(): readonly number[] {
   return PRESET_OPTIONS.map((option) => option.months);
 }
 
+// @nimi-authority: rule.parentos.growth.detail.r006
 export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextCheckModalProps) {
   const ageMonths = computeAgeMonths(child.birthDate);
   const recheckRuleId = resolveGrowthRecheckRuleId(ageMonths);
@@ -284,6 +285,7 @@ export function GrowthNextCheckModal({ child, onSaved, onClose }: GrowthNextChec
         <DatePicker
           value={dateValue}
           onValueChange={setDateValue}
+          maxDate="2100-12-31"
         />
       </div>
 
