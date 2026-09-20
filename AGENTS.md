@@ -197,3 +197,15 @@ Skip: `node_modules/`, `dist/`, `src-tauri/target/`, `src-tauri/gen/`, lockfiles
 - A failed project-local `pnpm exec nimicoding ...` invocation supplies no usable result. Pause decisions that require refused, missing, or incomplete results; continue independent authorized work. Never substitute guessed, corpus-wide, or fallback context, or treat diagnostics or partial output as complete context; choose repair values only from product/task authority.
 - Keep derived and local verification output under `.nimi/local/**`; it is never product authority.
 <!-- nimicoding:managed:agents:end -->
+
+<!-- nimi-app:managed:start -->
+## Nimi App development
+
+- For auditing adaptation feasibility or cost, creating, adapting, upgrading or releasing this App, read [the lifecycle skill](.agents/skills/nimi-app-lifecycle/SKILL.md) and only the relevant scenario. Audit-only requests do not begin implementation; prior reports remain evidence-dependent.
+- For first integration or foundation wiring changes, use the selected app-tools package's generated reference and reuse its Host, preload, renderer, session, App Access, AIConfig and AI call wiring. Follow the adaptation guide's baseline checks and reuse passing results for ordinary business edits.
+- Keep App-owned product behavior, Host code, business accounts and non-AI services with this repository. Use the SDK/Kit Local App carrier for Nimi AI, configuration, storage and session access.
+- Development may consume complete local npm tarballs through the supported explicit overrides and version matrix; public-release preflight uses registry resolutions. Do not substitute source-workspace or directory links.
+- App Tools owns its lifecycle skill, this block, managed workflow and declared engineering fields; preserve other instructions, product source and licenses. Existing adoption does not create fresh scaffold intent or lock.
+- Product-operation guides apply to their specific business tasks; they do not replace the Nimi development boundary.
+- Reuse the user's confirmed scope and authorization. Report command checks separately from actual App journeys; unrun relevant paths remain NOT-VERIFIED.
+<!-- nimi-app:managed:end -->

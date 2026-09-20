@@ -1,6 +1,6 @@
 app_id: nimi.parentos
 display_name: ParentOS
-version: 0.1.6
+version: 0.1.7
 profile: standalone
 npm_package_name: nimiapp-parentos
 cargo_package_name: nimiapp-parentos-shell
@@ -17,6 +17,30 @@ storage_policy:
     - path_pattern: <Electron appData>/Nimi/ParentOS/{data,cache,tmp}/**
       purpose: Device-local family SQLite data, media and temporary files under %APPDATA% on Windows or ~/Library/Application Support on macOS. Retained after Nimi uninstall; managed by ParentOS.
       expected_size_band: Durable media writes enforce a 2 GiB partition limit; images up to 25 MiB and journal audio up to 64 MiB per object.
+safety_profile:
+  ai:
+    direct_interaction: true
+    interaction_notice: absent
+    outputs:
+      - export_visible_marking: absent
+        exposure: exportable
+        in_product_notice: absent
+        machine_readable_marking: absent
+        modality: text
+        publication_control: not-applicable
+    risk_features: []
+    subject_notice: not-applicable
+  content_descriptors: []
+  data_practices:
+    commercial_features: []
+    publisher_direct_external_network: false
+    sensitive_data_categories:
+      - health
+    telemetry: []
+    third_party_account: none
+    user_content_sharing: none
+  high_impact_decision_uses: []
+  intended_audience: adult
 support_manifest:
   diagnostics_bundle_fields:
     - app_version
