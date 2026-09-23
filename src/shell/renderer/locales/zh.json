@@ -1134,6 +1134,14 @@
     "schedule": {
       "title": "安排日期",
       "description": "选择一个日期，这条提醒会暂时收起，临近那天再次出现。"
+    },
+    "activity": {
+      "summary": "第 {{round}} 次 · {{start}} 至 {{end}}",
+      "unsynced": "成长记录提醒尚未完全同步到 Nimi，请重试。",
+      "retryNow": "立即重试",
+      "sessionChanged": "与 Nimi 的会话已变化，提醒同步已停止。你仍可继续使用成长底稿，重新打开后恢复同步。",
+      "reopen": "重新打开",
+      "focusUnavailable": "这条提醒已不可用。"
     }
   },
   "DrugCombobox": {
@@ -5446,7 +5454,9 @@
       "photoHint": "点击或拖拽上传照片（最多 9 张）",
       "cancel": "取消",
       "saving": "保存中...",
-      "save": "保存"
+      "save": "保存",
+      "saveFailed": "保存失败：{{message}}",
+      "reminderStaysOpen": "记录已保存。这条提醒需要同时填写身高和体重（婴儿期还需头围）才会完成，暂时保留为待办。"
     },
     "age": {
       "monthsShort": "{{months}}月",

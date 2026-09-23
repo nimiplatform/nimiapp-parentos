@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button, EmptyState, InlineAlert, nimiToast, Popover, PopoverContent, PopoverTrigger, StatusBadge, Surface, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
 import {
@@ -40,6 +40,7 @@ import {
   type RecordDataReminderSelection,
 } from './record-data-capture.js';
 import { i18nText } from '../../i18n/index.js';
+import { evaluateGrowthReminders } from './growth-reminder-activity.js';
 
 
 const textPrimaryClass = 'text-[var(--nimi-text-primary)]';
@@ -339,6 +340,8 @@ export default function RemindersPage() {
   const [scheduleModalReminder, setScheduleModalReminder] = useState<ActiveReminder | null>(null);
   const [activeReminder, setActiveReminder] = useState<ActiveReminder | null>(null);
   const [captureSelection, setCaptureSelection] = useState<RecordDataReminderSelection | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const focusParam = searchParams.get('focus');
   const ageMonths = child ? computeAgeMonths(child.birthDate) : 0;
   const localToday = getLocalToday();
   const repeatableRuleIds = useMemo(() => REMINDER_RULES.filter((r) => r.repeatRule).map((r) => r.ruleId), []);
@@ -365,6 +368,28 @@ export default function RemindersPage() {
   }, [child, ageMonths, localToday, states, freqOverrides]);
 
   const agenda = agendaResult.kind === 'ok' ? agendaResult.agenda : null;
+
+  // An App activity open request lands here with ?focus=<ruleId>:<round>; the
+  // exact round opens in the explanation drawer (PO-REMI-017), nothing more.
+  useEffect(() => {
+    if (!focusParam || !child) return undefined;
+    let cancelled = false;
+    const separator = focusParam.lastIndexOf(':');
+    const ruleId = focusParam.slice(0, separator);
+    const repeatIndex = Number(focusParam.slice(separator + 1));
+    void evaluateGrowthReminders(child).then((reminders) => {
+      if (cancelled) return;
+      const found = reminders.find((reminder) => reminder.rule.ruleId === ruleId && reminder.repeatIndex === repeatIndex);
+      if (found) setActiveReminder(found);
+      else nimiToast.warning(i18nText('Reminders.activity.focusUnavailable'));
+      setSearchParams((previous) => {
+        const next = new URLSearchParams(previous);
+        next.delete('focus');
+        return next;
+      }, { replace: true });
+    }).catch(catchLog('reminders', 'action:focus-reminder-failed'));
+    return () => { cancelled = true; };
+  }, [focusParam, child, setSearchParams]);
 
   useEffect(() => {
     if (!child || !agenda) return;

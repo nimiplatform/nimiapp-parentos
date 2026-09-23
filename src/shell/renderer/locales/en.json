@@ -1134,6 +1134,14 @@
     "schedule": {
       "title": "Schedule a date",
       "description": "Pick a date. This reminder will be tucked away and reappear as that day approaches."
+    },
+    "activity": {
+      "summary": "Round {{round}} · {{start}} to {{end}}",
+      "unsynced": "Growth record reminders have not fully synced to Nimi. Please retry.",
+      "retryNow": "Retry now",
+      "sessionChanged": "Your Nimi session changed, so reminder sync stopped. You can keep using ParentOS; reopen it to resume sync.",
+      "reopen": "Reopen",
+      "focusUnavailable": "This reminder is no longer available."
     }
   },
   "DrugCombobox": {
@@ -5446,7 +5454,9 @@
       "photoHint": "Click or drag to upload photos, up to 9",
       "cancel": "Cancel",
       "saving": "Saving...",
-      "save": "Save"
+      "save": "Save",
+      "saveFailed": "Could not save: {{message}}",
+      "reminderStaysOpen": "Record saved. This reminder completes only with both height and weight (and head circumference for infants), so it stays open for now."
     },
     "age": {
       "monthsShort": "{{months}}mo",

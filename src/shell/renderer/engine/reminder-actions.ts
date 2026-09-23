@@ -1,7 +1,8 @@
-import { upsertReminderState } from '../bridge/sqlite-bridge.js';
+import { getReminderStates, upsertReminderState } from '../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../bridge/ulid.js';
 import type { ActiveReminder, ReminderAgenda, ReminderKind, ReminderState } from './reminder-engine.js';
-import { getLocalToday, reminderKey } from './reminder-engine.js';
+import { getLocalToday, mapReminderStateRow, reminderKey } from './reminder-engine.js';
+import { requestGrowthReminderSync } from '../features/reminders/growth-reminder-activity.js';
 import {
   ProgressionViolationError,
   applyTransition,
@@ -273,6 +274,85 @@ export async function applyReminderAction(input: ReminderActionInput) {
       now,
     }),
   );
+  requestGrowthReminderSync(input.childId);
+}
+
+async function loadReminderState(childId: string, ruleId: string, repeatIndex: number): Promise<ReminderState | null> {
+  const rows = await getReminderStates(childId);
+  const row = rows.find((candidate) => candidate.ruleId === ruleId && candidate.repeatIndex === repeatIndex);
+  return row ? mapReminderStateRow(row) : null;
+}
+
+/**
+ * Returns the persisted row of a round, first writing a neutral row when the
+ * round has none yet. The neutral row carries no progression change; it only
+ * gives a record-data capture a reminder row to link to.
+ */
+export async function ensureReminderStateRow(params: {
+  childId: string;
+  ruleId: string;
+  repeatIndex: number;
+  kind: ReminderKind;
+  now?: string;
+}): Promise<ReminderState> {
+  const existing = await loadReminderState(params.childId, params.ruleId, params.repeatIndex);
+  if (existing) return existing;
+  await upsertReminderState(buildRow({
+    childId: params.childId,
+    ruleId: params.ruleId,
+    repeatIndex: params.repeatIndex,
+    previous: null,
+    diff: preservedDiff(null, params.kind),
+    snoozedUntil: null,
+    scheduledDate: null,
+    plannedForDate: null,
+    surfaceRank: null,
+    lastSurfacedAt: null,
+    surfaceCount: 0,
+    now: params.now ?? isoNow(),
+  }));
+  const created = await loadReminderState(params.childId, params.ruleId, params.repeatIndex);
+  if (!created) throw new Error(`Reminder row for ${params.ruleId}:${params.repeatIndex} was not persisted`);
+  return created;
+}
+
+// @nimi-authority: rule.parentos.remi.r013
+/**
+ * Completes a record_data task only with the capture proof: the linked event
+ * and all its values were persisted and the saved event satisfies the capture
+ * target's completion policy. Everything else about the row is preserved.
+ */
+export async function completeRecordDataReminderWithProof(params: {
+  childId: string;
+  ruleId: string;
+  repeatIndex: number;
+  state: ReminderState;
+  proof: { readonly eventId: string; readonly satisfiesTarget: boolean };
+  now?: string;
+}): Promise<void> {
+  if (!params.proof.eventId || !params.proof.satisfiesTarget) {
+    throw new ProgressionViolationError('task', 'complete', 'record_data completion requires a persisted event that satisfies the capture target');
+  }
+  const now = params.now ?? isoNow();
+  const previous = params.state;
+  const diff = applyTransition(contextFromState('task', previous), { type: 'complete' }, now);
+  await upsertReminderState(buildRow({
+    childId: params.childId,
+    ruleId: params.ruleId,
+    repeatIndex: params.repeatIndex,
+    previous,
+    diff,
+    snoozedUntil: previous.snoozedUntil,
+    scheduledDate: previous.scheduledDate,
+    dismissedAt: previous.dismissedAt,
+    dismissReason: previous.dismissReason,
+    plannedForDate: previous.plannedForDate,
+    surfaceRank: previous.surfaceRank,
+    lastSurfacedAt: previous.lastSurfacedAt,
+    surfaceCount: previous.surfaceCount,
+    now,
+  }));
+  requestGrowthReminderSync(params.childId);
 }
 
 const KIND_SYNTHETIC_ACTION_TYPE: Record<ReminderKind, 'record_data' | 'read_guide' | 'observe' | 'ai_consult'> = {
@@ -307,9 +387,16 @@ export async function completeReminderByRule(params: {
 }
 
 export async function persistAgendaPlan(childId: string, agenda: ReminderAgenda, states: ReminderState[], now = isoNow()) {
+  // A snapshot loaded for another child (the page can still hold it for a
+  // render after the active child changed) must never be written to this one.
+  if (states.some((state) => state.childId !== childId)) return false;
+  // The caller's rows may predate a later write (for example a completion
+  // saved after the agenda was loaded). Each upsert rewrites every progression
+  // column, so preserve them from the rows as they are now.
+  const currentStates = (await getReminderStates(childId)).map(mapReminderStateRow);
   const localToday = agenda.localToday;
   const todayKeys = new Set(agenda.todayFocus.map((reminder) => reminderKey(reminder.rule.ruleId, reminder.repeatIndex)));
-  const stateMap = new Map(states.map((state) => [reminderKey(state.ruleId, state.repeatIndex), state]));
+  const stateMap = new Map(currentStates.map((state) => [reminderKey(state.ruleId, state.repeatIndex), state]));
   const updates: Array<ReturnType<typeof buildRow>> = [];
 
   agenda.todayFocus.forEach((reminder, index) => {
@@ -347,7 +434,7 @@ export async function persistAgendaPlan(childId: string, agenda: ReminderAgenda,
     );
   });
 
-  states
+  currentStates
     .filter((state) => state.plannedForDate === localToday)
     .filter((state) => !todayKeys.has(reminderKey(state.ruleId, state.repeatIndex)))
     .forEach((state) => {

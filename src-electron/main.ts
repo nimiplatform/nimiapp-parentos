@@ -12,6 +12,7 @@ import { createParentOSElectronCommandHandlers } from './parentos-command-handle
 import { createParentOSHostClient } from './parentos-host-client.js';
 
 const PARENTOS_APP_ID = 'nimi.parentos';
+const SESSION_INVALIDATED_CHANNEL = 'parentos:session-invalidated';
 declare const __NIMI_ELECTRON_PRODUCTION__: boolean;
 const IS_PRODUCTION_BUNDLE = typeof __NIMI_ELECTRON_PRODUCTION__ !== 'undefined'
   && __NIMI_ELECTRON_PRODUCTION__;
@@ -52,6 +53,12 @@ async function bootstrapElectron(): Promise<void> {
       hostClient,
       getMainWindow: () => mainWindow,
     }),
+    // The renderer stops publication work of the ended session.
+    onSessionInvalidated: () => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed()) window.webContents.send(SESSION_INVALIDATED_CHANNEL);
+      }
+    },
   });
 
   await createMainWindow();

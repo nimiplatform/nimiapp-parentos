@@ -8,7 +8,7 @@
 // saveHealthRecordCapture (canonical-API) per
 // data/structured/parentos/local-storage.yaml#growth_measurement_canonical_migration.
 import { useState } from 'react';
-import { Button, cn, DatePicker, TextField, TextareaField } from '@nimiplatform/kit/ui';
+import { Button, cn, DatePicker, nimiToast, TextField, TextareaField } from '@nimiplatform/kit/ui';
 import { computeAgeMonthsAt } from '../../app-shell/app-store.js';
 import { saveAttachment, saveHealthRecordCapture } from '../../bridge/sqlite-bridge.js';
 import type { SaveHealthRecordCaptureInput } from '../../bridge/sqlite-bridge.js';
@@ -24,6 +24,11 @@ import {
   ModalHeader,
 } from './health-record-modal-shell.js';
 import { i18nText } from '../../i18n/index.js';
+import {
+  growthCaptureCoversTarget,
+  growthReminderCaptureTarget,
+  saveGrowthReminderCapture,
+} from '../reminders/growth-reminder-capture.js';
 
 
 const NUMBER_INPUT_CLASS = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
@@ -97,10 +102,30 @@ export function GrowthAddRecordContent({
     const sourceSurface: SaveHealthRecordCaptureInput['sourceSurface'] = linkedReminderStateId
       ? 'reminder'
       : 'profile_detail';
+    // A growth reminder completes only through its capture target: one event
+    // of the target protocol holding every target metric (PO-REMI-013).
+    const target = linkedReminder ? growthReminderCaptureTarget(linkedReminder.ruleId) : null;
+    const enteredValues = { 'growth.height': h, 'growth.weight': w, 'growth.head_circumference': hc };
+    const completesReminder = Boolean(linkedReminder && target && growthCaptureCoversTarget(target, enteredValues));
 
     try {
       let firstEventId: string | null = null;
-      for (const metric of metricsToWrite) {
+      let separateMetrics = metricsToWrite;
+      if (linkedReminder && target && completesReminder) {
+        const linked = await saveGrowthReminderCapture({
+          childId,
+          birthDate,
+          linkedReminder,
+          effectiveDate: formDate,
+          notes,
+          values: enteredValues,
+          now,
+          makeId: ulid,
+        });
+        firstEventId = linked.eventId;
+        separateMetrics = metricsToWrite.filter((metric) => !(target.targetMetricIds as readonly string[]).includes(metric.metricId));
+      }
+      for (const metric of separateMetrics) {
         const eventId = ulid();
         const valueId = ulid();
         const input: SaveHealthRecordCaptureInput = {
@@ -153,10 +178,15 @@ export function GrowthAddRecordContent({
         }
       }
 
+      if (linkedReminder && target && !completesReminder) {
+        nimiToast.info(i18nText('GrowthCurve.capture.reminderStaysOpen'));
+      }
       await onSaved();
       onClose();
-    } catch {
-      /* bridge unavailable */
+    } catch (error) {
+      nimiToast.danger(i18nText('GrowthCurve.capture.saveFailed', {
+        message: error instanceof Error ? error.message : String(error),
+      }));
     } finally {
       setSaving(false);
     }

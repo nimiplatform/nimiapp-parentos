@@ -1,10 +1,11 @@
 app_id: nimi.parentos
 display_name: ParentOS
-version: 0.1.7
+version: 0.1.8
 profile: standalone
 manifest_role: submitted-input
 app_access:
   - runtime.consume
+  - app.activity
 ai_config_ui:
   allowed_routes:
     - local

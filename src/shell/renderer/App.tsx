@@ -8,6 +8,7 @@ import { AppRoutes } from './app-shell/routes.js';
 import { ShellLayout } from './app-shell/shell-layout.js';
 import { AppBootstrapBoundary } from './app-shell/app-bootstrap-boundary.js';
 import { shouldUseParentOSHashRouter } from './app-router-mode.js';
+import { GrowthReminderActivityBridge } from './features/reminders/growth-reminder-activity-bridge.js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +28,7 @@ export function App() {
         <TooltipProvider>
           <ParentOSRouter>
             <AppBootstrapBoundary>
+              <GrowthReminderActivityBridge />
               <ShellLayout>
                 <div data-testid="parentos-app-routed-surface" className="h-full">
                   <AppRoutes />
