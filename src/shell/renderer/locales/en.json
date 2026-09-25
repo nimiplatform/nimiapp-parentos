@@ -291,7 +291,9 @@
       "record": "Record",
       "reviewCount": "{{count}} need review",
       "staleCount": "{{count}} expired",
-      "missingCount": "{{count}} missing"
+      "missingCount": "{{count}} missing",
+      "staleBadge": "Expired",
+      "missingBadge": "Missing"
     },
     "fitness": {
       "sportActivityLabel": "Daily activity",
@@ -1642,7 +1644,10 @@
       "description": "The AI advisor works from {{childName}}'s profile and local records"
     },
     "runtimeGate": {
-      "message": "The advisor needs a connected local AI before it can answer. Connect first, then come back to ask.",
+      "title": "Turn on the growth advisor for {{childName}}",
+      "description": "Once a local AI is connected, the advisor uses the profile and local records to answer everyday questions about your child's growth.",
+      "hint": "Finish connecting in AI Settings, then come back here to ask",
+      "message": "Connect a local AI and the advisor can answer your questions",
       "action": "Connect AI"
     },
     "journalContext": {
@@ -4944,7 +4949,14 @@
     "regenerate": "Regenerate",
     "generating": "Generating",
     "refresh": "Refresh",
-    "runtimeUnavailable": "Connect the AI runtime to view intelligent analysis.",
+    "unavailable": {
+      "notConfigured": "No AI model is configured yet. Configure one to view intelligent analysis.",
+      "cloudRoute": "Intelligent analysis only runs on a local AI model. Switch to a local model in AI Settings.",
+      "hostAbsent": "Open ParentOS from Apps in the Nimi desktop app to view intelligent analysis.",
+      "runtimeFailed": "Intelligent analysis couldn't be generated right now. Retry or check AI Settings."
+    },
+    "configureAI": "Configure AI",
+    "openAISettings": "AI Settings",
     "retry": "Retry",
     "safeFallback": "Data has been recorded. Update it regularly to get a more accurate analysis.",
     "truncatedSuffix": " (The content is long; refresh to generate it again.)",

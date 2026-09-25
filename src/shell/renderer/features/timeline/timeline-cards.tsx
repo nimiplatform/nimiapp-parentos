@@ -136,47 +136,54 @@ export function VisionCard({ snapshot }: { snapshot: VisionSnapshotSummary }) {
 export function MilestoneTimelineCard({ summary }: { summary: MilestoneTimelineSummary }) {
   const hasAchieved = summary.recentlyAchieved.length > 0;
   const hasUpcoming = summary.upcoming.length > 0;
+  const hasBoth = hasAchieved && hasUpcoming;
+  // Sized by the card's own width: both groups sit side by side once there is
+  // room, and a lone group spreads its items into columns on a full-width card.
+  const itemGridCls = hasBoth ? 'grid gap-2' : 'grid gap-2 @3xl:grid-cols-3';
   return (
-    <Cd cls="col-span-4">
+    <Cd cls="@container col-span-4">
       <Hdr title={i18nText('Timeline.card.milestone.title')} to="/profile/milestones" link={i18nText('Timeline.action.viewAll')} />
-      {hasAchieved ? (
-        <div className="mb-4">
-          <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#4ECCA3' }}>{i18nText('Timeline.card.milestone.recentlyAchieved')}</p>
-          <div className="space-y-2">
-            {summary.recentlyAchieved.map((item) => (
-              <div key={item.milestoneId} className="dashboard-inset flex items-center gap-3 rounded-[14px] px-4 py-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[13px]" style={{ background: 'rgba(78,204,163,0.15)', color: '#4ECCA3' }}>&#10003;</span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-semibold" style={{ color: textMain }}>{item.title}</p>
-                  <p className="text-[12px]" style={{ color: textMuted }}>{milestoneDomainLabel(item.domain)} · {item.achievedAt ? fmtRel(item.achievedAt) : ''}</p>
-                </div>
+      {hasAchieved || hasUpcoming ? (
+        <div className={hasBoth ? 'grid gap-4 @md:grid-cols-2 @md:gap-5' : undefined}>
+          {hasAchieved ? (
+            <div>
+              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#4ECCA3' }}>{i18nText('Timeline.card.milestone.recentlyAchieved')}</p>
+              <div className={itemGridCls}>
+                {summary.recentlyAchieved.map((item) => (
+                  <div key={item.milestoneId} className="dashboard-inset flex items-center gap-3 rounded-[14px] px-4 py-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[13px]" style={{ background: 'rgba(78,204,163,0.15)', color: '#4ECCA3' }}>&#10003;</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold" style={{ color: textMain }}>{item.title}</p>
+                      <p className="text-[12px]" style={{ color: textMuted }}>{milestoneDomainLabel(item.domain)} · {item.achievedAt ? fmtRel(item.achievedAt) : ''}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-      {hasUpcoming ? (
-        <div>
-          <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#818CF8' }}>{i18nText('Timeline.card.milestone.upcoming')}</p>
-          <div className="space-y-2">
-            {summary.upcoming.map((item) => (
-              <div key={item.milestoneId} className="dashboard-inset flex items-center gap-3 rounded-[14px] px-4 py-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px]" style={{ background: 'rgba(129,140,248,0.15)', color: '#818CF8' }}>&#9679;</span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-semibold" style={{ color: textMain }}>{item.title}</p>
-                  <p className="text-[12px]" style={{ color: textMuted }}>{i18nText('Timeline.card.milestone.typicalAge', { domain: milestoneDomainLabel(item.domain), age: item.typicalAgeLabel })}</p>
-                </div>
+            </div>
+          ) : null}
+          {hasUpcoming ? (
+            <div>
+              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#818CF8' }}>{i18nText('Timeline.card.milestone.upcoming')}</p>
+              <div className={itemGridCls}>
+                {summary.upcoming.map((item) => (
+                  <div key={item.milestoneId} className="dashboard-inset flex items-center gap-3 rounded-[14px] px-4 py-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px]" style={{ background: 'rgba(129,140,248,0.15)', color: '#818CF8' }}>&#9679;</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold" style={{ color: textMain }}>{item.title}</p>
+                      <p className="text-[12px]" style={{ color: textMuted }}>{i18nText('Timeline.card.milestone.typicalAge', { domain: milestoneDomainLabel(item.domain), age: item.typicalAgeLabel })}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ) : null}
         </div>
-      ) : null}
-      {!hasAchieved && !hasUpcoming ? (
+      ) : (
         <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.card.milestone.emptyTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText('Timeline.card.milestone.emptySubtitle')}</p>
         </div>
-      ) : null}
+      )}
     </Cd>
   );
 }

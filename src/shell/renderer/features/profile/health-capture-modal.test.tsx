@@ -1,9 +1,26 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { HealthCaptureModal } from './health-capture-modal.js';
 import { useAppStore, type ChildProfile } from '../../app-shell/app-store.js';
+
+Object.defineProperty(Element.prototype, 'scrollIntoView', {
+  configurable: true,
+  value: vi.fn(),
+});
+Object.defineProperty(Element.prototype, 'hasPointerCapture', {
+  configurable: true,
+  value: vi.fn(() => false),
+});
+Object.defineProperty(Element.prototype, 'setPointerCapture', {
+  configurable: true,
+  value: vi.fn(),
+});
+Object.defineProperty(Element.prototype, 'releasePointerCapture', {
+  configurable: true,
+  value: vi.fn(),
+});
 
 vi.mock('../../bridge/sqlite-bridge.js', async () => ({
   saveHealthRecordCapture: vi.fn(),
@@ -85,5 +102,50 @@ describe('HealthCaptureModal', () => {
     const dialog = screen.getByRole('dialog', { name: 'health-capture-modal' });
     expect(dialog.style.width).toBe('920px');
     expect(dialog.style.maxWidth).toBe('calc(100vw - 32px)');
+  });
+
+  it('opens the fitness source options above the capture dialog', async () => {
+    render(
+      <HealthCaptureModal
+        open
+        childId="child-1"
+        childBirthDate="2020-12-17"
+        initialGroupId="fitness"
+        onClose={() => undefined}
+      />,
+    );
+
+    const sourceTrigger = screen.getAllByRole('combobox').find((trigger) => trigger.textContent === '自测');
+    expect(sourceTrigger).toBeTruthy();
+    fireEvent.pointerDown(sourceTrigger!, {
+      button: 0,
+      ctrlKey: false,
+      pointerType: 'mouse',
+    });
+
+    await waitFor(() => {
+      const panel = document.body.querySelector<HTMLElement>('[data-nimi-select-layer="dialog"]');
+      expect(panel).toBeTruthy();
+      expect(panel!.className).toContain('z-[calc(var(--nimi-z-dialog)+1)]');
+      expect(within(panel!).getByText('学校体育')).toBeTruthy();
+    });
+  });
+
+  it('shows the auto tier and unrecorded foot-arch choices instead of blank fitness selects', () => {
+    render(
+      <HealthCaptureModal
+        open
+        childId="child-1"
+        childBirthDate="2020-12-17"
+        initialGroupId="fitness"
+        onClose={() => undefined}
+      />,
+    );
+
+    const triggerTexts = () => screen.getAllByRole('combobox').map((trigger) => trigger.textContent ?? '');
+    expect(triggerTexts().some((text) => text.startsWith('自动（按年龄）'))).toBe(true);
+
+    fireEvent.click(screen.getByText('📋 体测'));
+    expect(triggerTexts()).toContain('未记录');
   });
 });

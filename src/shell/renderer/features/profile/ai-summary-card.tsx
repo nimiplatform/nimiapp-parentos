@@ -4,9 +4,12 @@ import { Button, Surface } from '@nimiplatform/kit/ui';
  *
  * Displays a generated textual analysis based on the child's data for a given domain.
  * Caches results in AppSettings to avoid redundant AI calls.
- * Falls back gracefully when the AI runtime is unavailable.
+ * When the summary cannot run, shows the typed cause with its recovery
+ * (AI settings for configuration problems, retry for transient failures).
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, RotateCw } from 'lucide-react';
 import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
 import { isoNow } from '../../bridge/ulid.js';
 import { filterAIResponse } from '../../engine/ai-safety-filter.js';
@@ -109,11 +112,96 @@ function buildPrompt(props: AISummaryCardProps): string {
   ].join('\n');
 }
 
+// Why a summary could not run. Configuration problems are only fixable in AI
+// settings (retrying fails again with the same reasonCode), so only host and
+// runtime failures offer retry.
+type AISummaryUnavailableReason = 'not-configured' | 'cloud-route' | 'host-absent' | 'runtime-failed';
+
+const UNAVAILABLE_MESSAGE_KEYS: Record<AISummaryUnavailableReason, string> = {
+  'not-configured': 'AISummary.unavailable.notConfigured',
+  'cloud-route': 'AISummary.unavailable.cloudRoute',
+  'host-absent': 'AISummary.unavailable.hostAbsent',
+  'runtime-failed': 'AISummary.unavailable.runtimeFailed',
+};
+
+function unavailableReasonOf(error: unknown): AISummaryUnavailableReason {
+  const reasonCode = error && typeof error === 'object' && 'reasonCode' in error
+    ? error.reasonCode
+    : null;
+  switch (reasonCode) {
+    case 'parentos-ai-capability-not-configured':
+      return 'not-configured';
+    case 'parentos-ai-cloud-route-not-admitted':
+      return 'cloud-route';
+    case 'nimi-shell-runtime-bridge-unavailable':
+      return 'host-absent';
+    default:
+      return 'runtime-failed';
+  }
+}
+
+function AISummaryUnavailableActions({
+  reason,
+  onRetry,
+}: {
+  reason: AISummaryUnavailableReason;
+  onRetry: () => void;
+}) {
+  if (reason === 'not-configured' || reason === 'cloud-route') {
+    return (
+      <Button
+        asChild
+        tone="primary"
+        size="sm"
+        className="rounded-full"
+        trailingIcon={<ArrowRight size={14} aria-hidden="true" />}
+      >
+        <Link to="/settings/ai">{i18nText('AISummary.configureAI')}</Link>
+      </Button>
+    );
+  }
+  return (
+    <>
+      <Button
+        onClick={onRetry}
+        tone="secondary"
+        size="sm"
+        className="rounded-full"
+        leadingIcon={<RotateCw size={13} aria-hidden="true" />}
+      >
+        {i18nText('AISummary.retry')}
+      </Button>
+      {reason === 'host-absent' ? null : (
+        <Button asChild tone="ghost" size="sm" className="rounded-full">
+          <Link to="/settings/ai">{i18nText('AISummary.openAISettings')}</Link>
+        </Button>
+      )}
+    </>
+  );
+}
+
+// Tinted glass card (styles.css `parentos-ai-summary-*`) that sets the AI
+// summary apart from the plain data cards around it.
+function AISummarySurface({ compact = false, children }: { compact?: boolean; children: ReactNode }) {
+  return (
+    <Surface
+      tone="card"
+      material="glass-regular"
+      elevation="base"
+      padding="none"
+      className={`parentos-ai-summary-card mb-5 rounded-2xl px-5 ${compact ? 'py-3.5' : 'py-4'}`}
+    >
+      {children}
+    </Surface>
+  );
+}
+
+// @nimi-authority: rule.parentos.prof.r016
 export function AISummaryCard(props: AISummaryCardProps) {
   const { domain, childId, dataContext } = props;
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [unavailableReason, setUnavailableReason] = useState<AISummaryUnavailableReason | null>(null);
 
   const generate = useCallback(async (skipCache = false) => {
     if (!dataContext) return; // no data to analyze
@@ -140,7 +228,7 @@ export function AISummaryCard(props: AISummaryCardProps) {
     }
 
     setLoading(true);
-    setError(false);
+    setUnavailableReason(null);
     try {
       const surfaceId = `parentos.profile.summary.${domain}` as const;
       // Prompt asks for 2-4 sentence Chinese summary (~80-200 tokens). The
@@ -157,7 +245,8 @@ export function AISummaryCard(props: AISummaryCardProps) {
           defaults: { temperature: 0.3, maxTokens: budget },
         });
         if (!result.ok) {
-          throw result.error.cause || new Error(result.error.message);
+          // Carry the typed reasonCode so the card can show the matching recovery.
+          throw Object.assign(new Error(result.error.message), { reasonCode: result.error.reasonCode });
         }
         return {
           text: result.text,
@@ -197,8 +286,8 @@ export function AISummaryCard(props: AISummaryCardProps) {
           await setAppSetting(cacheKey(childId, domain), JSON.stringify({ text, ts: isoNow(), dataHash }), isoNow());
         } catch { /* cache write failure is non-critical */ }
       }
-    } catch {
-      setError(true);
+    } catch (error) {
+      setUnavailableReason(unavailableReasonOf(error));
     } finally {
       setLoading(false);
     }
@@ -209,46 +298,64 @@ export function AISummaryCard(props: AISummaryCardProps) {
   // No data at all — show a subtle hint (吉祥物以非交互形态陪伴)
   if (!dataContext) {
     return (
-      <Surface tone="card" material="solid" elevation="base" padding="md" className="mb-5 flex items-center gap-3">
-        <ParentosAiMascotStatic size={28} />
-        <p className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('AISummary.noDataHint')}</p>
-      </Surface>
+      <AISummarySurface compact>
+        <div className="flex items-center gap-3">
+          <span className="parentos-ai-summary-avatar">
+            <ParentosAiMascotStatic size={32} />
+          </span>
+          <p className="text-[14px] leading-6 text-[var(--nimi-text-secondary)]">{i18nText('AISummary.noDataHint')}</p>
+        </div>
+      </AISummarySurface>
     );
   }
 
+  const regenerate = () => void generate(true);
+
   return (
-    <Surface tone="card" material="solid" elevation="raised" padding="lg" className="mb-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <ParentosAiMascotButton
-            thinking={loading}
-            onClick={() => void generate(true)}
-            label={loading ? i18nText('AISummary.generating') : i18nText('AISummary.regenerate')}
-          />
-          <h3 className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('AISummary.title')}</h3>
+    <AISummarySurface>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+        <div className="flex min-w-[240px] flex-1 items-start gap-3.5">
+          <span className="parentos-ai-summary-avatar">
+            {unavailableReason === 'not-configured' || unavailableReason === 'cloud-route' ? (
+              <ParentosAiMascotStatic size={44} />
+            ) : (
+              <ParentosAiMascotButton
+                size={44}
+                thinking={loading}
+                onClick={regenerate}
+                label={loading ? i18nText('AISummary.generating') : i18nText('AISummary.regenerate')}
+              />
+            )}
+          </span>
+          <div className="min-w-0 flex-1 pt-0.5">
+            <div className="flex items-center gap-2">
+              <h3 className="text-[15px] font-semibold leading-[22px] text-[var(--nimi-text-primary)]">{i18nText('AISummary.title')}</h3>
+              {loading ? (
+                <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('AISummary.generating')}…</span>
+              ) : null}
+            </div>
+            {loading && !summary ? (
+              /* Skeleton */
+              <div className="mt-3 space-y-2.5">
+                <div className="parentos-ai-summary-shimmer w-full" />
+                <div className="parentos-ai-summary-shimmer w-4/5" />
+                <div className="parentos-ai-summary-shimmer w-3/5" />
+              </div>
+            ) : unavailableReason ? (
+              <p className="mt-1 text-[14px] leading-6 text-[var(--nimi-text-secondary)]">
+                {i18nText(UNAVAILABLE_MESSAGE_KEYS[unavailableReason])}
+              </p>
+            ) : summary ? (
+              <p className="mt-1.5 text-[14px] leading-[1.75] text-[var(--nimi-text-primary)]">{summary}</p>
+            ) : null}
+          </div>
         </div>
-        {loading ? (
-          <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('AISummary.generating')}…</span>
+        {unavailableReason ? (
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <AISummaryUnavailableActions reason={unavailableReason} onRetry={regenerate} />
+          </div>
         ) : null}
       </div>
-
-      {loading && !summary ? (
-        /* Skeleton */
-        <div className="space-y-2 animate-pulse">
-          <div className="h-3 rounded-full w-full bg-[var(--nimi-surface-active)]" />
-          <div className="h-3 rounded-full w-4/5 bg-[var(--nimi-surface-active)]" />
-          <div className="h-3 rounded-full w-3/5 bg-[var(--nimi-surface-active)]" />
-        </div>
-      ) : error ? (
-        <div className="flex items-center gap-2">
-          <span className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('AISummary.runtimeUnavailable')}</span>
-          <Button onClick={() => void generate(true)} tone="secondary" size="sm">
-            {i18nText('AISummary.retry')}
-          </Button>
-        </div>
-      ) : summary ? (
-        <p className="text-[14px] leading-relaxed text-[var(--nimi-text-primary)]">{summary}</p>
-      ) : null}
-    </Surface>
+    </AISummarySurface>
   );
 }

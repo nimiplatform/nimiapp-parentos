@@ -9,6 +9,29 @@
  * aliases @nimiplatform/kit to the linked source checkout, so scan that. */
 @source "../../../../../nimi/kit/**/*.{ts,tsx}";
 
+/* ParentOS global accent override: the kit "nimi-accent" pack ships a teal
+ * accent (#45B8D6, seen on form save buttons); ParentOS standardizes on the
+ * dashboard "record one" blue (#36adf2). These unlayered rules beat the
+ * kit's layered accent theme and its :root aliases regardless of import
+ * order. Aliases like --nimi-accent resolve their var() at definition time,
+ * so each must be overridden explicitly. */
+:root[data-nimi-accent="nimi-accent"] {
+  --nimi-surface-active: rgba(54, 173, 242, 0.16);
+  --nimi-action-primary-bg: #36adf2;
+  --nimi-action-primary-bg-hover: #22a5f1;
+  --nimi-action-ghost-hover: rgba(54, 173, 242, 0.10);
+  --nimi-sidebar-item-active: rgba(54, 173, 242, 0.16);
+  --nimi-sidebar-item-hover: rgba(54, 173, 242, 0.08);
+  --nimi-field-focus: #36adf2;
+  --nimi-focus-ring-color: rgba(54, 173, 242, 0.28);
+}
+
+:root {
+  --nimi-accent: #36adf2;
+  --nimi-accent-hover: #22a5f1;
+  --nimi-accent-soft: rgba(54, 173, 242, 0.14);
+}
+
 .parentos-radius-sm {
   border-radius: var(--nimi-radius-sm);
 }
@@ -580,6 +603,26 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 .advisor-composer-textarea::-webkit-scrollbar-button {
   display: none;
+}
+
+/* Advisor runtime gate — friendly "connect AI" prompt instead of a warning banner */
+.advisor-gate-orb {
+  background: linear-gradient(135deg, var(--nimi-action-primary-bg) 0%, color-mix(in srgb, var(--nimi-action-primary-bg) 62%, var(--nimi-status-success)) 100%);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--nimi-action-primary-bg) 30%, transparent);
+  color: var(--nimi-text-inverse);
+}
+
+.advisor-gate-orb--halo {
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--nimi-action-primary-bg) 10%, transparent),
+    0 14px 32px color-mix(in srgb, var(--nimi-action-primary-bg) 32%, transparent);
+}
+
+.advisor-gate-inline {
+  border: 1px solid var(--nimi-material-glass-regular-border);
+  border-radius: var(--nimi-radius-xl);
+  background: color-mix(in srgb, var(--nimi-surface-card) 86%, transparent);
+  box-shadow: var(--nimi-elevation-base);
 }
 
 /* Dashboard add-todo textarea — thin light scrollbar, no arrows, no hover-darken */
@@ -2524,7 +2567,7 @@ button.report-note-composer {
   pointer-events: none;
   background:
     radial-gradient(46% 42% at 62% 44%, color-mix(in srgb, var(--nimi-action-primary-bg) 16%, transparent) 0%, transparent 68%),
-    radial-gradient(30% 28% at 30% 70%, rgba(69, 184, 214, 0.10) 0%, transparent 70%),
+    radial-gradient(30% 28% at 30% 70%, rgba(54, 173, 242, 0.10) 0%, transparent 70%),
     radial-gradient(26% 24% at 84% 20%, rgba(139, 124, 246, 0.10) 0%, transparent 70%);
 }
 
@@ -2871,6 +2914,70 @@ button.report-note-composer {
   .parentos-ai-mascot-eye-look,
   .parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-float,
   .parentos-ai-mascot-button.is-thinking .parentos-ai-mascot-eye {
+    animation: none;
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * ParentOS AI summary card（profile 各页的“AI 分析”卡片）。
+ * 玻璃卡片上叠一层吉祥物同款配色（薄荷绿 / 天蓝 / 淡紫）的柔光，让 AI 区块
+ * 和普通数据卡片区分开；吉祥物身后一圈光晕，加载时用同色系流光骨架。
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.parentos-ai-summary-card {
+  --parentos-ai-mint: #7df4c7;
+  --parentos-ai-sky: #53b3f7;
+  --parentos-ai-violet: #977af9;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: none;
+  box-shadow:
+    0 12px 32px -18px color-mix(in srgb, var(--parentos-ai-sky) 55%, transparent),
+    var(--nimi-elevation-base);
+}
+
+.parentos-ai-summary-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 150% at 0% 0%, color-mix(in srgb, var(--parentos-ai-mint) 26%, transparent) 0%, transparent 100%),
+    radial-gradient(36% 170% at 100% 0%, color-mix(in srgb, var(--parentos-ai-violet) 18%, transparent) 0%, transparent 100%),
+    radial-gradient(46% 140% at 58% 110%, color-mix(in srgb, var(--parentos-ai-sky) 16%, transparent) 0%, transparent 100%);
+}
+
+.parentos-ai-summary-avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.parentos-ai-summary-shimmer {
+  height: 10px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--parentos-ai-sky) 14%, transparent) 0%,
+    color-mix(in srgb, var(--parentos-ai-violet) 28%, transparent) 50%,
+    color-mix(in srgb, var(--parentos-ai-sky) 14%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: parentosAiSummaryShimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes parentosAiSummaryShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parentos-ai-summary-shimmer {
     animation: none;
   }
 }

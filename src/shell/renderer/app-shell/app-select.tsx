@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { SelectField, type SelectFieldOption } from '@nimiplatform/kit/ui';
+import { SelectField, type SelectFieldOption, type SelectFieldProps } from '@nimiplatform/kit/ui';
 
 export type AppSelectOption = SelectFieldOption;
 
@@ -11,12 +11,17 @@ export interface AppSelectProps {
   placeholder?: string;
   'aria-label'?: string;
   className?: string;
-  /** Class merged into the portaled dropdown panel — use to bump z-index above custom modal stacks. */
-  contentClassName?: string;
+  /**
+   * Portal layer of the dropdown panel. The default popover layer
+   * (--nimi-z-popover: 80) sits below dialogs (--nimi-z-dialog: 90), so a
+   * select inside a modal must pass 'dialog' or its options open invisibly
+   * behind the modal.
+   */
+  contentLayer?: SelectFieldProps['contentLayer'];
   style?: CSSProperties;
 }
 
-export function AppSelect({ value, onChange, options, placeholder, className, contentClassName, style, 'aria-label': ariaLabel }: AppSelectProps) {
+export function AppSelect({ value, onChange, options, placeholder, className, contentLayer, style, 'aria-label': ariaLabel }: AppSelectProps) {
   const select = (
     <SelectField
       value={value}
@@ -25,7 +30,7 @@ export function AppSelect({ value, onChange, options, placeholder, className, co
       placeholder={placeholder}
       aria-label={ariaLabel}
       className={className}
-      contentClassName={contentClassName}
+      contentLayer={contentLayer}
     />
   );
 

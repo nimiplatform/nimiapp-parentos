@@ -78,12 +78,21 @@ export function GrowthSnapshotCard({ snapshot }: { snapshot: { updatedAt: string
   );
 }
 
+// Columns follow the item count (at most 4 lines) and the card's own width, so a
+// short list never leaves an empty column and a row never ends half-filled.
+const RECENT_LINE_GRID_CLS: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-1 @md:grid-cols-2',
+  3: 'grid-cols-1 @xl:grid-cols-3',
+  4: 'grid-cols-1 @md:grid-cols-2 @4xl:grid-cols-4',
+};
+
 export function RecentLinesCard({ lines }: { lines: RecentLineItem[] }) {
   return (
-    <Cd cls="col-span-8">
+    <Cd cls="@container col-span-8">
       <Hdr title={i18nText('Timeline.home.recentLinesTitle')} to="/journal" link={i18nText('Timeline.home.viewAllRecords')} />
       {lines.length > 0 ? (
-        <div className="grid grid-cols-4 gap-4">
+        <div className={`grid gap-4 ${RECENT_LINE_GRID_CLS[lines.length] ?? RECENT_LINE_GRID_CLS[4]}`}>
           {lines.map((line) => (
             <Link key={line.id} to={line.to} className="dashboard-inset dashboard-inset--interactive rounded-[16px] p-5 transition-all duration-200 hover:-translate-y-1">
               <div className="flex items-center justify-between gap-2">

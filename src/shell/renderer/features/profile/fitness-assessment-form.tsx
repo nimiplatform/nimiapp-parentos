@@ -335,6 +335,12 @@ export function isStandardFieldValuePlausible(key: StandardFieldKey, raw: string
   return value >= range.min && value <= range.max;
 }
 
+// Kit SelectField drops options whose value is '' (Radix reserves it for
+// clearing the selection), so the "auto" tier and "not recorded" foot-arch
+// choices use sentinels that map back to '' in form state.
+const TIER_AUTO_OPTION = 'auto';
+const FOOT_ARCH_UNSET_OPTION = 'unset';
+
 // Admitted foot-arch enum values (fitness.foot_arch_status valueText).
 const FOOT_ARCH_OPTIONS = ['normal', 'flat', 'high-arch', 'monitoring'] as const;
 const FOOT_ARCH_OPTION_LABELS: Record<(typeof FOOT_ARCH_OPTIONS)[number], string> = {
@@ -592,21 +598,21 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
                 onChange={setSource}
                 options={SOURCE_OPTIONS.map((v) => ({ value: v, label: FITNESS_SOURCE_LABELS[v] ?? v }))}
                 className="min-h-12"
-                contentClassName="z-[120]"
+                contentLayer="dialog"
               />
             </FormField>
           </FormGrid>
 
           <FormField label={i18nText('Fitness.form.tierLabel')}>
             <AppSelect
-              value={tierOverride}
-              onChange={(value) => setTierOverride(value as AgeTier | '')}
+              value={tierOverride || TIER_AUTO_OPTION}
+              onChange={(value) => setTierOverride(value === TIER_AUTO_OPTION ? '' : value as AgeTier)}
               options={[
-                { value: '', label: `${i18nText('Fitness.form.tierAuto')} · ${FITNESS_AGE_TIER_LABELS[derivedTier]}` },
+                { value: TIER_AUTO_OPTION, label: `${i18nText('Fitness.form.tierAuto')} · ${FITNESS_AGE_TIER_LABELS[derivedTier]}` },
                 ...(Object.keys(FITNESS_AGE_TIER_LABELS) as AgeTier[]).map((v) => ({ value: v, label: FITNESS_AGE_TIER_LABELS[v] })),
               ]}
               className="min-h-12"
-              contentClassName="z-[120]"
+              contentLayer="dialog"
             />
           </FormField>
 
@@ -800,14 +806,14 @@ function StandardEventFields({
       })}
       <FormField label={i18nText('Fitness.form.footArchLabel')}>
         <AppSelect
-          value={footArch}
-          onChange={onFootArchChange}
+          value={footArch || FOOT_ARCH_UNSET_OPTION}
+          onChange={(value) => onFootArchChange(value === FOOT_ARCH_UNSET_OPTION ? '' : value)}
           options={[
-            { value: '', label: i18nText('Fitness.form.footArchUnset') },
+            { value: FOOT_ARCH_UNSET_OPTION, label: i18nText('Fitness.form.footArchUnset') },
             ...FOOT_ARCH_OPTIONS.map((v) => ({ value: v, label: FOOT_ARCH_OPTION_LABELS[v] })),
           ]}
           className="min-h-12"
-          contentClassName="z-[120]"
+          contentLayer="dialog"
         />
       </FormField>
     </div>

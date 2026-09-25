@@ -468,7 +468,7 @@ export function ReminderPanel({
                   <span
                     className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[12px] font-semibold"
                     style={active
-                      ? { background: 'rgba(78, 204, 163, 0.15)', color: '#3BB88A' }
+                      ? { background: 'rgba(54, 173, 242, 0.15)', color: '#36adf2' }
                       : { background: 'rgba(0,0,0,0.06)', color: '#9CA0A6' }}
                   >
                     {count}

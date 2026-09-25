@@ -1,6 +1,6 @@
 import { useState, type ComponentType } from 'react';
 import { Link } from 'react-router-dom';
-import { Bone, BookOpen, ChevronDown, Eye, Mic, Moon, Ruler, Sparkles, Syringe, Trophy } from 'lucide-react';
+import { Bone, BookOpen, ChevronDown, Eye, Mic, Moon, PenLine, Ruler, Sparkles, Syringe, Trophy } from 'lucide-react';
 import { type ChildProfile } from '../../app-shell/app-store.js';
 import { ChildAvatar } from '../../shared/child-avatar.js';
 import {
@@ -170,8 +170,8 @@ export function ChildContextCard({ child, ageMonths }: { child: ChildProfile; ag
           </p>
         </div>
         <div className="relative mt-auto flex w-full flex-col items-center gap-3">
-          <span className="inline-flex items-center rounded-full px-3 py-[5px] text-[13px] font-medium" style={{ background: 'rgba(52,199,89,0.12)', color: '#248a3d' }}>
-            <span className="mr-1.5 inline-block h-[6px] w-[6px] rounded-full" style={{ background: '#34c759' }} />
+          <span className="inline-flex items-center rounded-full px-3 py-[5px] text-[13px] font-medium" style={{ background: 'rgba(54,173,242,0.12)', color: '#36adf2' }}>
+            <span className="mr-1.5 inline-block h-[6px] w-[6px] rounded-full" style={{ background: '#36adf2' }} />
             {describeNurtureMode(child.nurtureMode)}
           </span>
           <Link to="/profile" className="flex w-full items-center justify-center whitespace-nowrap rounded-xl px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-black/[0.04]" style={{ color: '#1d1d1f' }}>
@@ -272,8 +272,13 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
           <p className="mt-2 text-[14px] leading-relaxed" style={{ color: textMuted }}>
             {i18nText('Timeline.home.noRecentBody')}
           </p>
-          <Link to={PROFILE_MANUAL_CAPTURE_PATH} className="mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[14px] font-medium text-white transition-all hover:-translate-y-0.5" style={{ background: textMain, boxShadow: '0 4px 14px rgba(0,0,0,0.08)' }}>
-            {i18nText('Timeline.home.recordOne')} <span>→</span>
+          {/* Sky blue from the ParentOS logo, one shade deeper so the white label stays legible. */}
+          <Link
+            to={PROFILE_MANUAL_CAPTURE_PATH}
+            className="mt-5 inline-flex items-center gap-2 self-start rounded-full bg-[#36adf2] px-5 py-2.5 text-[14px] font-medium text-white shadow-[0_4px_12px_rgba(54,173,242,0.32)] transition-all hover:-translate-y-0.5 hover:bg-[#22a5f1] hover:shadow-[0_8px_20px_rgba(54,173,242,0.38)]"
+          >
+            <PenLine size={15} strokeWidth={2} aria-hidden="true" />
+            {i18nText('Timeline.home.recordOne')} <span aria-hidden="true">→</span>
           </Link>
         </div>
       )}
@@ -386,19 +391,22 @@ export function GettingStartedCard() {
 
 export function StageFocusCard({ periods }: { periods: Array<{ periodId: string; title: string; observableSigns: string[]; ageRange: { peakMonths: number } }> }) {
   return (
-    <Cd cls="col-span-4">
+    <Cd cls="@container col-span-4">
       <Hdr title={i18nText('Timeline.home.stageFocusTitle')} to="/reminders" link={i18nText('Timeline.home.viewAllReminders')} />
       {periods.length > 0 ? (
-        <div className="space-y-4">
+        // Two periods sit side by side when the card spans the full row.
+        <div className={`grid gap-4${periods.length > 1 ? ' @2xl:grid-cols-2' : ''}`}>
           {periods.slice(0, 2).map((period) => (
-            <div key={period.periodId} className="dashboard-inset rounded-[16px] p-5">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[12px] font-semibold text-amber-600">{i18nText('Timeline.home.sensitivePeriodBadge')}</span>
-                <p className="text-[14px] font-semibold" style={{ color: textMain }}>{period.title}</p>
+            <div key={period.periodId} className="dashboard-inset flex items-center gap-4 rounded-[16px] p-5">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-0.5 text-[12px] font-semibold text-amber-600">{i18nText('Timeline.home.sensitivePeriodBadge')}</span>
+                  <p className="truncate text-[14px] font-semibold" style={{ color: textMain }}>{period.title}</p>
+                </div>
+                <p className="mt-2 text-[14px] leading-relaxed" style={{ color: textMuted }}>{period.observableSigns[0] ?? i18nText('Timeline.home.stageFocusFallback')}</p>
               </div>
-              <p className="mt-2 text-[14px] leading-relaxed" style={{ color: textMuted }}>{period.observableSigns[0] ?? i18nText('Timeline.home.stageFocusFallback')}</p>
               <Link to={`/journal?topic=${encodeURIComponent(period.title)}`}
-                className="mt-3 inline-flex rounded-full px-4 py-1.5 text-[13px] font-medium text-white hover:-translate-y-0.5"
+                className="inline-flex shrink-0 rounded-full px-4 py-1.5 text-[13px] font-medium text-white hover:-translate-y-0.5"
                 style={{ background: textMain, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>{i18nText('Timeline.home.recordAction')}</Link>
             </div>
           ))}

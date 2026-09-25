@@ -30,7 +30,7 @@ vi.mock('./timeline-data.js', () => ({
     growthSnapshot: {},
     sleepTrend: {},
     visionSnapshot: {},
-    milestoneTimeline: {},
+    milestoneTimeline: { recentlyAchieved: [], upcoming: [] },
     recentLines: [],
     observationDistribution: {},
   }),

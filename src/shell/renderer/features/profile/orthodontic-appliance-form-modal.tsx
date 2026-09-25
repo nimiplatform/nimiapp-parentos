@@ -147,6 +147,7 @@ export function ApplianceFormModal({
               value={applianceType}
               onValueChange={(v) => handleTypeChange(v as OrthodonticApplianceType)}
               options={eligibleTypes.map((o) => ({ value: o.value, label: o.label }))}
+              contentLayer="dialog"
               className="min-h-12"
             />
           </FormField>
@@ -225,6 +226,7 @@ export function ApplianceFormModal({
               onValueChange={setCurrentPhase}
               placeholder={i18nText('Orthodontic.modal.appliance.initialPhasePlaceholder')}
               options={APPLIANCE_PHASES[applianceType].map((p) => ({ value: p.phaseId, label: p.label }))}
+              contentLayer="dialog"
               className="min-h-12"
             />
           </FormField>

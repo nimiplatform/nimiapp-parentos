@@ -440,6 +440,8 @@ describe('AdvisorPage', () => {
       expect(screen.getByRole('link', { name: '去连接 AI' })).toBeTruthy();
     });
 
+    expect(screen.getByRole('heading', { name: '为Mimi开启成长顾问' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: '去连接 AI' }).getAttribute('href')).toBe('/settings/ai');
     expect(screen.queryByPlaceholderText('输入问题...')).toBeNull();
     expect(createConversationMock).not.toHaveBeenCalled();
     expect(insertAiMessageMock).not.toHaveBeenCalled();

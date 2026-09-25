@@ -291,7 +291,9 @@
       "record": "记录",
       "reviewCount": "{{count}} 项需关注",
       "staleCount": "{{count}} 项已过期",
-      "missingCount": "{{count}} 项待补"
+      "missingCount": "{{count}} 项待补",
+      "staleBadge": "已过期",
+      "missingBadge": "待补"
     },
     "fitness": {
       "sportActivityLabel": "日常运动",
@@ -1642,7 +1644,10 @@
       "description": "AI 顾问基于 {{childName}} 的档案和本地记录工作"
     },
     "runtimeGate": {
-      "message": "成长顾问需要连接本地 AI 后才能回答问题。请先完成连接，再回来提问。",
+      "title": "为{{childName}}开启成长顾问",
+      "description": "连接本地 AI 后，成长顾问会结合档案和本地记录，回答你关于孩子成长的日常问题。",
+      "hint": "在「AI 设置」完成连接后，回到这里就能开始提问",
+      "message": "连接本地 AI 后，成长顾问就能回答你的问题了",
       "action": "去连接 AI"
     },
     "journalContext": {
@@ -4944,7 +4949,14 @@
     "regenerate": "重新生成",
     "generating": "生成中",
     "refresh": "刷新",
-    "runtimeUnavailable": "连接 AI 运行时后可查看智能分析",
+    "unavailable": {
+      "notConfigured": "尚未配置 AI 模型，配置后即可查看智能分析",
+      "cloudRoute": "智能分析仅支持本地 AI 模型，请在 AI 设置中改为本地模型",
+      "hostAbsent": "请从 Nimi 桌面端的「应用」中打开 ParentOS 后查看智能分析",
+      "runtimeFailed": "智能分析暂时无法生成，请重试或检查 AI 设置"
+    },
+    "configureAI": "去配置 AI",
+    "openAISettings": "AI 设置",
     "retry": "重试",
     "safeFallback": "数据已记录，建议定期更新以获取更准确的分析。",
     "truncatedSuffix": "（内容较长，建议点击刷新重新生成）",

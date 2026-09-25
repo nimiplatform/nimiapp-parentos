@@ -220,6 +220,7 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
     ? formatDate(snapshot.latestEvent?.effectiveDate, t)
     : t('Profile.group.notRecorded');
   const reviewStatus = snapshot.evaluation.status === 'professional_review_prompt';
+  const stale = snapshot.freshness === 'stale';
 
   return (
     <li>
@@ -228,9 +229,12 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
         className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-[var(--nimi-action-ghost-hover)] sm:grid-cols-[minmax(160px,1fr)_minmax(120px,auto)_minmax(80px,auto)_auto]"
       >
         <div className="min-w-0">
-          <p className="truncate text-[14px] font-medium text-[var(--nimi-text-primary)]">
-            {metricLabel(snapshot.metric, t)}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="truncate text-[14px] font-medium text-[var(--nimi-text-primary)]">
+              {metricLabel(snapshot.metric, t)}
+            </p>
+            <FreshnessBadge freshness={snapshot.freshness} />
+          </div>
         </div>
         <div className={`text-right text-[14px] font-semibold sm:text-left ${hasValue ? 'text-[var(--nimi-text-primary)]' : 'text-[var(--nimi-text-muted)]'}`}>
           {parts.valueText}
@@ -240,7 +244,7 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
             </span>
           ) : null}
         </div>
-        <div className={`hidden text-[12px] sm:block ${reviewStatus ? 'text-[var(--nimi-status-danger)]' : 'text-[var(--nimi-text-muted)]'}`}>
+        <div className={`hidden text-[12px] sm:block ${reviewStatus ? 'text-[var(--nimi-status-danger)]' : stale ? 'text-[var(--nimi-status-warning)]' : 'text-[var(--nimi-text-muted)]'}`}>
           {dateText}
         </div>
         <div className="hidden justify-end sm:flex">
@@ -306,6 +310,28 @@ function SportActivityRow({ onCapture }: { onCapture?: () => void }) {
   );
 }
 
+// Per-metric freshness marker matching the card subtitle's stale/missing
+// counts: the summary says "N 项已过期 · M 项待补" and these badges identify
+// exactly which rows those counts refer to.
+function FreshnessBadge({ freshness }: { freshness: HealthMetricSnapshot['freshness'] }) {
+  const { t } = useTranslation();
+  if (freshness === 'stale') {
+    return (
+      <span className="inline-flex shrink-0 items-center rounded-full bg-[color-mix(in_srgb,var(--nimi-status-warning)_14%,transparent)] px-2 py-0.5 text-[11px] font-medium text-[var(--nimi-status-warning)]">
+        {t('Profile.group.staleBadge')}
+      </span>
+    );
+  }
+  if (freshness === 'missing') {
+    return (
+      <span className="inline-flex shrink-0 items-center rounded-full bg-[color-mix(in_srgb,var(--nimi-text-muted)_12%,transparent)] px-2 py-0.5 text-[11px] font-medium text-[var(--nimi-text-muted)]">
+        {t('Profile.group.missingBadge')}
+      </span>
+    );
+  }
+  return null;
+}
+
 function PreviewTile({ snapshot }: { snapshot: HealthMetricSnapshot }) {
   const { t } = useTranslation();
   const route = metricDetailRoute(snapshot.metric);
@@ -318,7 +344,10 @@ function PreviewTile({ snapshot }: { snapshot: HealthMetricSnapshot }) {
     >
       <div className="flex items-baseline justify-between gap-2">
         <p className="truncate text-[13px] font-medium text-[var(--nimi-text-primary)]">{metricLabel(snapshot.metric, t)}</p>
-        <span className="text-[11px] text-[var(--nimi-text-muted)]">{date}</span>
+        <span className="inline-flex shrink-0 items-center gap-1.5 text-[11px] text-[var(--nimi-text-muted)]">
+          <FreshnessBadge freshness={snapshot.freshness} />
+          {date}
+        </span>
       </div>
       <p className="mt-1 text-[15px] font-semibold text-[var(--nimi-text-primary)]">{value}</p>
     </Link>

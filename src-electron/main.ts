@@ -4,6 +4,9 @@ import { appendFileSync, mkdirSync } from 'node:fs';
 import { app, BrowserWindow, ipcMain, Menu, protocol, session, webContents } from 'electron';
 import { configureNimiElectronAppHostProfile } from '@nimiplatform/kit/shell/electron/host-profile';
 
+// Bind the Runtime-provided technical profile before loading other Kit code.
+// ParentOS business storage keeps its separate fixed OS app-data roots.
+// @nimi-authority: rule.parentos.shell.r001
 try {
   configureNimiElectronAppHostProfile(app);
 } catch (error) {

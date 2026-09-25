@@ -250,7 +250,7 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
                 onChange={setFormQuality}
                 options={QUALITY_OPTIONS.map((value) => ({ value, label: QUALITY_LABELS[value] ?? value }))}
                 className="min-h-12"
-                contentClassName="z-[120]"
+                contentLayer="dialog"
               />
             </FormField>
             <FormField label={i18nText('Sleep.form.notes')}>

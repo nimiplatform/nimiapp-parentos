@@ -103,6 +103,7 @@ export function FieldSelect({ label, value, onChange, options }: {
         value={value}
         onValueChange={onChange}
         options={options}
+        contentLayer="dialog"
         className="min-h-9 text-[14px]"
       />
     </div>
