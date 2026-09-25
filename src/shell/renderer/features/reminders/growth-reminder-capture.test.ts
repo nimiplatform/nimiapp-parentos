@@ -8,7 +8,7 @@ const { bridge, sync } = vi.hoisted(() => ({
     upsertReminderState: vi.fn(),
     saveHealthRecordCapture: vi.fn(),
   },
-  sync: { requestGrowthReminderSync: vi.fn() },
+  sync: { requestReminderActivitySync: vi.fn() },
 }));
 
 vi.mock('../../bridge/sqlite-bridge.js', () => ({
@@ -16,9 +16,9 @@ vi.mock('../../bridge/sqlite-bridge.js', () => ({
   upsertReminderState: bridge.upsertReminderState,
   saveHealthRecordCapture: bridge.saveHealthRecordCapture,
 }));
-vi.mock('./growth-reminder-activity.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./growth-reminder-activity.js')>()),
-  requestGrowthReminderSync: sync.requestGrowthReminderSync,
+vi.mock('./reminder-activity.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./reminder-activity.js')>()),
+  requestReminderActivitySync: sync.requestReminderActivitySync,
 }));
 
 import { completeRecordDataReminderWithProof } from '../../engine/reminder-actions.js';
@@ -96,7 +96,7 @@ describe('growth reminder capture proof', () => {
     expect(saved.linkedReminderStateId).toBe(bridge.rows[0]!.stateId);
     expect(saved.values.map((value) => value.metricId).sort()).toEqual(['growth.bmi', 'growth.height', 'growth.weight']);
     expect(bridge.rows[0]).toMatchObject({ status: 'completed', completedAt: '2026-09-23T06:00:00.000Z' });
-    expect(sync.requestGrowthReminderSync).toHaveBeenCalledWith(CHILD_ID);
+    expect(sync.requestReminderActivitySync).toHaveBeenCalledWith(CHILD_ID);
   });
 
   it('keeps the round open when the save fails or does not persist every value', async () => {
@@ -108,7 +108,7 @@ describe('growth reminder capture proof', () => {
     expect(bridge.events).not.toContain('complete');
     await expect(saveGrowthReminderCapture(baseInput({ 'growth.height': 88, 'growth.weight': null }))).rejects.toThrow(/growth\.weight/u);
     expect(bridge.rows.every((row) => !row.completedAt)).toBe(true);
-    expect(sync.requestGrowthReminderSync).not.toHaveBeenCalled();
+    expect(sync.requestReminderActivitySync).not.toHaveBeenCalled();
   });
 
   it('refuses a completion without capture proof', async () => {

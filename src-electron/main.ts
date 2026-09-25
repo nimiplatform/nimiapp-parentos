@@ -2,14 +2,24 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { app, BrowserWindow, ipcMain, Menu, protocol, session, webContents } from 'electron';
-import {
+import { configureNimiElectronAppHostProfile } from '@nimiplatform/kit/shell/electron/host-profile';
+
+try {
+  configureNimiElectronAppHostProfile(app);
+} catch (error) {
+  process.stderr.write(`[nimi-app-host-profile] ${error instanceof Error ? error.message : String(error)}\n`);
+  app.exit(78);
+  throw error;
+}
+
+const {
   createNimiElectronStandardApplicationMenuTemplate,
   isAllowedElectronRendererUrl,
   registerNimiElectronAppAssetProtocolScheme,
   registerNimiElectronAppBridge,
-} from '@nimiplatform/kit/shell/electron/main';
-import { createParentOSElectronCommandHandlers } from './parentos-command-handlers.js';
-import { createParentOSHostClient } from './parentos-host-client.js';
+} = await import('@nimiplatform/kit/shell/electron/main');
+const { createParentOSElectronCommandHandlers } = await import('./parentos-command-handlers.js');
+const { createParentOSHostClient } = await import('./parentos-host-client.js');
 
 const PARENTOS_APP_ID = 'nimi.parentos';
 const SESSION_INVALIDATED_CHANNEL = 'parentos:session-invalidated';

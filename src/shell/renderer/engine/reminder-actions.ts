@@ -2,7 +2,7 @@ import { getReminderStates, upsertReminderState } from '../bridge/sqlite-bridge.
 import { isoNow, ulid } from '../bridge/ulid.js';
 import type { ActiveReminder, ReminderAgenda, ReminderKind, ReminderState } from './reminder-engine.js';
 import { getLocalToday, mapReminderStateRow, reminderKey } from './reminder-engine.js';
-import { requestGrowthReminderSync } from '../features/reminders/growth-reminder-activity.js';
+import { requestReminderActivitySync } from '../features/reminders/reminder-activity.js';
 import {
   ProgressionViolationError,
   applyTransition,
@@ -274,7 +274,7 @@ export async function applyReminderAction(input: ReminderActionInput) {
       now,
     }),
   );
-  requestGrowthReminderSync(input.childId);
+  requestReminderActivitySync(input.childId);
 }
 
 async function loadReminderState(childId: string, ruleId: string, repeatIndex: number): Promise<ReminderState | null> {
@@ -352,7 +352,7 @@ export async function completeRecordDataReminderWithProof(params: {
     surfaceCount: previous.surfaceCount,
     now,
   }));
-  requestGrowthReminderSync(params.childId);
+  requestReminderActivitySync(params.childId);
 }
 
 const KIND_SYNTHETIC_ACTION_TYPE: Record<ReminderKind, 'record_data' | 'read_guide' | 'observe' | 'ai_consult'> = {

@@ -16,6 +16,7 @@ import {
   SectionCard,
 } from './health-record-modal-shell.js';
 import { i18nText } from '../../i18n/index.js';
+import { requestReminderActivitySync } from '../reminders/reminder-activity.js';
 
 const VACCINE_RULES = REMINDER_RULES
   .filter((rule) => rule.domain === 'vaccine')
@@ -33,6 +34,7 @@ export type VaccineCaptureProps = {
 };
 
 // @nimi-authority: rule.parentos.prof.r006
+// @nimi-authority: rule.parentos.remi.r016
 /**
  * Rule-backed vaccine capture form. Vaccines are a retained-owner stateful
  * domain (rule.parentos.hrec.r007): actual vaccination
@@ -83,6 +85,7 @@ export function VaccineCaptureContent({ child, onSaved, onClose }: VaccineCaptur
         photoPath: null,
         now,
       });
+      requestReminderActivitySync(child.childId);
       await onSaved();
       onClose();
     } catch (error) {

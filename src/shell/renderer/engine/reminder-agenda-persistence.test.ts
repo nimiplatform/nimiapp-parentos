@@ -15,7 +15,7 @@ vi.mock('../bridge/sqlite-bridge.js', () => ({
   getReminderStates: bridge.getReminderStates,
   upsertReminderState: bridge.upsertReminderState,
 }));
-vi.mock('../features/reminders/growth-reminder-activity.js', () => ({ requestGrowthReminderSync: vi.fn() }));
+vi.mock('../features/reminders/reminder-activity.js', () => ({ requestReminderActivitySync: vi.fn() }));
 
 import { persistAgendaPlan } from './reminder-actions.js';
 

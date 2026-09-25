@@ -78,7 +78,7 @@
     "vite": "^7.3.6",
     "vitest": "^4.1.7",
     "yaml": "^2.9.0",
-    "@nimiplatform/app-tools": "^0.8.0",
+    "@nimiplatform/app-tools": "^0.9.0",
     "@nimiplatform/nimi-coding": "0.6.3"
   },
   "dependencies": {
@@ -113,7 +113,7 @@
     "zod": "4.4.3",
     "zustand": "^5.0.13",
     "@nimiplatform/sdk": "^0.16.0",
-    "@nimiplatform/kit": "^0.12.0"
+    "@nimiplatform/kit": "^0.13.0"
   },
   "license": "MIT"
 }

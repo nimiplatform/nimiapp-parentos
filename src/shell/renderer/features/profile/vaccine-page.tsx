@@ -20,6 +20,7 @@ import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
 import { VaccineCaptureModal } from './vaccine-capture-form.js';
 import { i18nText } from '../../i18n/index.js';
+import { requestReminderActivitySync } from '../reminders/reminder-activity.js';
 
 
 /* ── helpers ──────────────────────────────────────────────── */
@@ -44,6 +45,7 @@ function VaccineClassBadge({ rule }: { rule: ReminderRule }) {
    RECORD MODAL
    ================================================================ */
 
+// @nimi-authority: rule.parentos.remi.r016
 function VaccineRecordModal({ rule, childId, birthDate, existing, onSave, onClose }: {
   rule: ReminderRule; childId: string; birthDate: string;
   existing?: VaccineRecordRow | null;
@@ -88,6 +90,7 @@ function VaccineRecordModal({ rule, childId, birthDate, existing, onSave, onClos
           batchNumber: batch || null, hospital: hospital || null,
           adverseReaction: reaction || null, photoPath: null, now: isoNow(),
         });
+        requestReminderActivitySync(childId);
       }
       await onSave();
       onClose();
@@ -238,12 +241,14 @@ export default function VaccinePage() {
   const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // @nimi-authority: rule.parentos.remi.r016
   const handleDeleteRecord = async (ruleId: string) => {
     const rec = records.find((x) => x.ruleId === ruleId);
     if (!rec) return;
     setDeleteError(null);
     try {
       await deleteVaccineRecord(rec.recordId, isoNow());
+      requestReminderActivitySync(rec.childId);
       setDeletingRuleId(null);
       reload();
     } catch (error) {

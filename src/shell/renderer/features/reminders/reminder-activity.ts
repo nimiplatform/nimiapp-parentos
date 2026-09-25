@@ -19,7 +19,7 @@ import { i18nText } from '../../i18n/index.js';
 import { REMINDER_RULES } from '../../knowledge-base/index.js';
 
 // @nimi-authority: rule.parentos.remi.r016
-// A growth record reminder round is projected into the current Nimi account's
+// An admitted reminder round is projected into the current Nimi account's
 // App activity as one todo. The projection is recomputed from the persisted
 // reminder rows and compared with the record Runtime holds: an equal record is
 // not republished, and every state change, including a restore after a
@@ -28,21 +28,22 @@ import { REMINDER_RULES } from '../../knowledge-base/index.js';
 // recomputation publishes it.
 
 export const GROWTH_REMINDER_ACTIVITY_TYPE = 'nimi.parentos.growth-record-reminder.v1';
+export const CARE_REMINDER_ACTIVITY_TYPE = 'nimi.parentos.care-reminder.v1';
 
 const PARENTOS_APP_ID = 'nimi.parentos';
 const RECORD_PAGE_SIZE = 100;
 const MAX_RECORD_PAGES = 10;
 
-const OBJECT_REF = /^reminder:([0-9A-Za-z]{1,64}):(PO-REM-GRO-[0-9]{3}):(0|[1-9][0-9]{0,3})$/u;
+const OBJECT_REF = /^reminder:([0-9A-Za-z]{1,64}):(PO-REM-(?:GRO|VAC|CHK|VIS|DEN)-[0-9]{3}):(0|[1-9][0-9]{0,3})$/u;
 const SYNC_DEBOUNCE_MS = 300;
 
 /** A round's projected state; its revision is assigned when it is published. */
-export type GrowthReminderPublication = Omit<NimiAppActivityPutInput, 'occurredAt' | 'agentHandle' | 'revision'> & {
+export type ReminderPublication = Omit<NimiAppActivityPutInput, 'occurredAt' | 'agentHandle' | 'revision'> & {
   readonly key: string;
   readonly occurredAt: string;
 };
 
-type IssuedPublication = GrowthReminderPublication & { readonly revision: number };
+type IssuedPublication = ReminderPublication & { readonly revision: number };
 
 export function isGrowthRecordReminderRule(rule: Pick<ReminderRule, 'domain' | 'kind' | 'actionType'>): boolean {
   return rule.domain === 'growth' && rule.kind === 'task' && rule.actionType === 'record_data';
@@ -50,24 +51,40 @@ export function isGrowthRecordReminderRule(rule: Pick<ReminderRule, 'domain' | '
 
 const GROWTH_RULES = REMINDER_RULES.filter(isGrowthRecordReminderRule);
 const GROWTH_RULE_IDS = new Set(GROWTH_RULES.map((rule) => rule.ruleId));
-const REPEATING_GROWTH_RULE_IDS = GROWTH_RULES.filter((rule) => rule.repeatRule).map((rule) => rule.ruleId);
+const CARE_DOMAINS = new Set(['vaccine', 'checkup', 'vision', 'dental']);
+export function isPublishedReminderRule(rule: Pick<ReminderRule, 'domain' | 'kind' | 'actionType' | 'category'>): boolean {
+  return isGrowthRecordReminderRule(rule) || (CARE_DOMAINS.has(rule.domain) && rule.kind === 'task' && rule.actionType === 'go_hospital' && rule.category !== 'personalized');
+}
+const PUBLISHED_RULES = REMINDER_RULES.filter(isPublishedReminderRule);
+const PUBLISHED_RULE_IDS = new Set(PUBLISHED_RULES.map(rule => rule.ruleId));
+const REPEATING_PUBLISHED_RULE_IDS = PUBLISHED_RULES.filter(rule => rule.repeatRule).map(rule => rule.ruleId);
+function activityTypeForRuleId(ruleId: string): string {
+  return GROWTH_RULE_IDS.has(ruleId) ? GROWTH_REMINDER_ACTIVITY_TYPE : CARE_REMINDER_ACTIVITY_TYPE;
+}
 
 export function isGrowthRecordReminderRuleId(ruleId: string): boolean {
   return GROWTH_RULE_IDS.has(ruleId);
 }
 
-export function growthReminderObjectRef(childId: string, ruleId: string, repeatIndex: number): string {
+export function reminderActivityObjectRef(childId: string, ruleId: string, repeatIndex: number): string {
   return `reminder:${childId}:${ruleId}:${repeatIndex}`;
 }
 
-function growthReminderKey(childId: string, ruleId: string, repeatIndex: number): string {
-  return `growth-record:${childId}:${ruleId}:${repeatIndex}`;
+function reminderActivityKey(childId: string, ruleId: string, repeatIndex: number): string {
+  return `${GROWTH_RULE_IDS.has(ruleId) ? 'growth-record' : 'care-reminder'}:${childId}:${ruleId}:${repeatIndex}`;
 }
 
-export function parseGrowthReminderObjectRef(objectRef: string): { childId: string; ruleId: string; repeatIndex: number } | null {
+export function parseReminderActivityObjectRef(objectRef: string): { childId: string; ruleId: string; repeatIndex: number } | null {
   const match = OBJECT_REF.exec(objectRef);
-  if (!match || !GROWTH_RULE_IDS.has(match[2]!)) return null;
+  if (!match || !PUBLISHED_RULE_IDS.has(match[2]!)) return null;
   return { childId: match[1]!, ruleId: match[2]!, repeatIndex: Number(match[3]) };
+}
+
+/** Publisher grouping only; this value is neither identity nor an open selector. */
+export async function reminderActivityGroupRef(childId: string): Promise<string> {
+  const bytes = new TextEncoder().encode(`nimi.parentos/reminder-group/v1\0${childId}`);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return `parentos-group-${Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')}`;
 }
 
 function localMidnightIso(dateKey: string): string {
@@ -79,12 +96,12 @@ function localMidnightIso(dateKey: string): string {
  * published: upcoming, silent, and onboarding catch-up rounds stay private.
  * Scheduled and snoozed rounds keep an already-published todo open.
  */
-export function growthReminderPublication(
+export function reminderActivityPublication(
   childId: string,
   reminder: ActiveReminder,
   previouslyPublished = false,
-): GrowthReminderPublication | null {
-  if (!isGrowthRecordReminderRule(reminder.rule)) return null;
+): ReminderPublication | null {
+  if (!isPublishedReminderRule(reminder.rule)) return null;
   let outcome: 'open' | 'completed' | 'cancelled';
   let occurredAt: string;
   if (reminder.lifecycle === 'completed' && reminder.state?.completedAt) {
@@ -106,7 +123,7 @@ export function growthReminderPublication(
   }
   const round = reminder.repeatIndex + 1;
   return {
-    key: growthReminderKey(childId, reminder.rule.ruleId, reminder.repeatIndex),
+    key: reminderActivityKey(childId, reminder.rule.ruleId, reminder.repeatIndex),
     kind: 'todo',
     todoState: outcome,
     attention: outcome === 'open',
@@ -116,8 +133,8 @@ export function growthReminderPublication(
       start: reminder.effectiveStartDate,
       end: reminder.effectiveEndDate,
     }),
-    objectRef: growthReminderObjectRef(childId, reminder.rule.ruleId, reminder.repeatIndex),
-    type: GROWTH_REMINDER_ACTIVITY_TYPE,
+    objectRef: reminderActivityObjectRef(childId, reminder.rule.ruleId, reminder.repeatIndex),
+    type: activityTypeForRuleId(reminder.rule.ruleId),
     data: {
       ruleId: reminder.rule.ruleId,
       repeatIndex: reminder.repeatIndex,
@@ -133,7 +150,7 @@ export function growthReminderPublication(
  * a newer round of the same rule superseded it, a newer round was completed,
  * or the rule was disabled. ParentOS no longer asks for that round.
  */
-export function supersededGrowthReminderPublication(record: NimiAppActivityRecord, now: string): GrowthReminderPublication {
+export function supersededReminderPublication(record: NimiAppActivityRecord, now: string): ReminderPublication {
   return {
     key: record.key,
     kind: 'todo',
@@ -148,14 +165,14 @@ export function supersededGrowthReminderPublication(record: NimiAppActivityRecor
   };
 }
 
-/** Growth record reminder rounds ParentOS itself evaluates for the child today. */
-export async function evaluateGrowthReminders(child: ChildProfile): Promise<ActiveReminder[]> {
+/** Admitted growth and care reminder rounds ParentOS itself evaluates for the child today. */
+export async function evaluatePublishedReminders(child: ChildProfile): Promise<ActiveReminder[]> {
   const [rows, overrides] = await Promise.all([
     getReminderStates(child.childId),
-    loadAllFreqOverrides(child.childId, REPEATING_GROWTH_RULE_IDS),
+    loadAllFreqOverrides(child.childId, REPEATING_PUBLISHED_RULE_IDS),
   ]);
   return computeEligibleReminders(
-    GROWTH_RULES,
+    PUBLISHED_RULES,
     {
       birthDate: child.birthDate,
       gender: child.gender,
@@ -261,20 +278,20 @@ function reportUnsynced(): void {
 }
 
 /** Reports outstanding publications and child projections that could not be read. */
-export function subscribeGrowthReminderActivitySync(listener: (unsynced: number) => void): () => void {
+export function subscribeReminderActivitySync(listener: (unsynced: number) => void): () => void {
   syncListeners.add(listener);
   return () => { syncListeners.delete(listener); };
 }
 
 /** Starts activity work for the Nimi session that is bound now. */
-export function beginGrowthReminderActivitySession(lookup: ChildLookup): void {
-  endGrowthReminderActivitySession();
+export function beginReminderActivitySession(lookup: ChildLookup): void {
+  endReminderActivitySession();
   findChild = lookup;
   sessionActive = true;
 }
 
 /** Stops the session's activity work before its next publication; nothing carries into a later session. */
-export function endGrowthReminderActivitySession(): void {
+export function endReminderActivitySession(): void {
   sessionEpoch += 1;
   sessionActive = false;
   ownSourceRef = null;
@@ -286,10 +303,10 @@ export function endGrowthReminderActivitySession(): void {
   reportUnsynced();
 }
 
-// Growth reminder records of ParentOS for the child in every state, grouped by
+// Admitted reminder records of ParentOS for the child in every state, grouped by
 // key. Until this session knows its own source they may include records of
 // another ParentOS registration.
-async function heldGrowthRecordsOf(childId: string): Promise<Map<string, NimiAppActivityRecord[]>> {
+async function heldReminderRecordsOf(childId: string): Promise<Map<string, NimiAppActivityRecord[]>> {
   const client = getParentOSNimiClient();
   const held = new Map<string, NimiAppActivityRecord[]>();
   let pageToken: string | undefined;
@@ -302,8 +319,8 @@ async function heldGrowthRecordsOf(childId: string): Promise<Map<string, NimiApp
     for (const record of result.records) {
       if (record.source.kind !== 'app' || record.source.appId !== PARENTOS_APP_ID) continue;
       if (ownSourceRef && record.source.sourceRef !== ownSourceRef) continue;
-      if (record.type !== GROWTH_REMINDER_ACTIVITY_TYPE) continue;
-      if (parseGrowthReminderObjectRef(record.objectRef ?? '')?.childId !== childId) continue;
+      if (record.type !== GROWTH_REMINDER_ACTIVITY_TYPE && record.type !== CARE_REMINDER_ACTIVITY_TYPE) continue;
+      if (parseReminderActivityObjectRef(record.objectRef ?? '')?.childId !== childId) continue;
       held.set(record.key, [...(held.get(record.key) ?? []), record]);
     }
     if (!result.nextPageToken) break;
@@ -315,7 +332,7 @@ async function heldGrowthRecordsOf(childId: string): Promise<Map<string, NimiApp
 // Queues the publication unless this registration already holds the same
 // content; a queued, not yet conflicted publication of the same content keeps
 // its revision so a retry repeats the same request.
-function queuePublication(childId: string, publication: GrowthReminderPublication, held: readonly NimiAppActivityRecord[]): void {
+function queuePublication(childId: string, publication: ReminderPublication, held: readonly NimiAppActivityRecord[]): void {
   const content = contentOf(publication);
   const queued = pending.get(publication.key);
   if (ownSourceRef) {
@@ -372,7 +389,7 @@ async function flush(childId: string, epoch: number): Promise<number> {
       // A conflict is never treated as synced: Runtime holds this key at the
       // same revision with other content or at a higher revision.
       if (revisionConflict(error) && pending.get(key) === queued) pending.set(key, { ...queued, conflicted: true });
-      catchLog('reminders', 'action:growth-reminder-activity-publish-failed')(error);
+      catchLog('reminders', 'action:reminder-activity-publish-failed')(error);
     }
   }
   if (epoch !== sessionEpoch) return unsyncedCount();
@@ -388,20 +405,22 @@ async function projectChild(childId: string, epoch: number): Promise<void> {
     }
     return;
   }
-  const reminders = await evaluateGrowthReminders(child);
+  const reminders = await evaluatePublishedReminders(child);
   if (epoch !== sessionEpoch) return;
   // A failed read leaves the whole projection retryable. Without the held
   // records we cannot reconcile dropped rounds or assign a safe revision.
-  const held = await heldGrowthRecordsOf(child.childId);
+  const held = await heldReminderRecordsOf(child.childId);
+  if (epoch !== sessionEpoch) return;
+  const groupRef = await reminderActivityGroupRef(child.childId);
   if (epoch !== sessionEpoch) return;
   const carried = new Set<string>();
-  const publications = new Map<string, GrowthReminderPublication>();
+  const publications = new Map<string, ReminderPublication>();
   for (const reminder of reminders) {
-    const key = growthReminderKey(child.childId, reminder.rule.ruleId, reminder.repeatIndex);
+    const key = reminderActivityKey(child.childId, reminder.rule.ruleId, reminder.repeatIndex);
     carried.add(key);
     const previouslyPublished = (held.get(key) ?? []).some((record) => record.source.sourceRef === ownSourceRef);
-    const publication = growthReminderPublication(child.childId, reminder, previouslyPublished);
-    if (publication) publications.set(publication.key, publication);
+    const publication = reminderActivityPublication(child.childId, reminder, previouslyPublished);
+    if (publication) publications.set(publication.key, { ...publication, data: { ...publication.data, groupRef } });
   }
   // A round the engine no longer carries is no longer pending in ParentOS.
   // Only records this session confirmed as its own are closed.
@@ -411,7 +430,7 @@ async function projectChild(childId: string, epoch: number): Promise<void> {
       if (carried.has(key)) continue;
       for (const record of records) {
         if (record.source.sourceRef !== ownSourceRef || record.todoState !== 'open') continue;
-        publications.set(key, supersededGrowthReminderPublication(record, now));
+        publications.set(key, supersededReminderPublication(record, now));
       }
     }
   }
@@ -425,8 +444,8 @@ async function projectChild(childId: string, epoch: number): Promise<void> {
   }
 }
 
-/** Recomputes the child's growth reminder projection and publishes it. */
-export function syncGrowthReminderActivity(childId: string): Promise<number> {
+/** Recomputes the child's admitted reminder projection and publishes it. */
+export function syncReminderActivity(childId: string): Promise<number> {
   if (!sessionActive || !hasParentOSNimiClient()) return Promise.resolve(unsyncedCount());
   const epoch = sessionEpoch;
   return serialized(async () => {
@@ -446,19 +465,19 @@ export function syncGrowthReminderActivity(childId: string): Promise<number> {
     if (epoch !== sessionEpoch) return unsyncedCount();
     failedProjections.add(childId);
     reportUnsynced();
-    catchLog('reminders', 'action:growth-reminder-activity-sync-failed')(error);
+    catchLog('reminders', 'action:reminder-activity-sync-failed')(error);
     return unsyncedCount();
   });
 }
 
 /** Schedules a projection update after a persisted reminder change. */
-export function requestGrowthReminderSync(childId: string): void {
+export function requestReminderActivitySync(childId: string): void {
   if (!sessionActive) return;
   const previous = debounceTimers.get(childId);
   if (previous) clearTimeout(previous);
   debounceTimers.set(childId, setTimeout(() => {
     debounceTimers.delete(childId);
-    void syncGrowthReminderActivity(childId);
+    void syncReminderActivity(childId);
   }, SYNC_DEBOUNCE_MS));
 }
 
@@ -467,33 +486,33 @@ export function requestGrowthReminderSync(childId: string): void {
  * affected child is recomputed, so an unchanged publication is sent again at
  * its revision and a conflicted one gets a revision above the held record.
  */
-export async function retryGrowthReminderActivity(): Promise<number> {
+export async function retryReminderActivity(): Promise<number> {
   if (!sessionActive || !hasParentOSNimiClient()) return unsyncedCount();
   const children = [...new Set([
     ...[...pending.values()].map((queued) => queued.childId),
     ...failedProjections,
   ])];
-  for (const childId of children) await syncGrowthReminderActivity(childId);
+  for (const childId of children) await syncReminderActivity(childId);
   return unsyncedCount();
 }
 
 // @nimi-authority: rule.parentos.remi.r017
 /**
  * Opens the exact reminder round of the right child. Opening is navigation
- * only; completion still requires the capture proof of PO-REMI-013.
+ * only; completion follows the persisted source contract of PO-REMI-016.
  */
-export function registerGrowthReminderOpenHandler(input: {
+export function registerReminderOpenHandler(input: {
   readonly selectChild: (childId: string) => void;
   readonly navigate: (path: string) => void;
   readonly focus: () => Promise<void>;
 }): NimiAppActivityOpenRegistration {
   return getParentOSNimiClient().activity.onOpenRequest(async (request) => {
-    if (request.type !== GROWTH_REMINDER_ACTIVITY_TYPE) return 'object-unavailable';
-    const target = parseGrowthReminderObjectRef(request.objectRef);
-    if (!target) return 'object-unavailable';
+    if (request.type !== GROWTH_REMINDER_ACTIVITY_TYPE && request.type !== CARE_REMINDER_ACTIVITY_TYPE) return 'object-unavailable';
+    const target = parseReminderActivityObjectRef(request.objectRef);
+    if (!target || request.type !== activityTypeForRuleId(target.ruleId)) return 'object-unavailable';
     const child = findChild(target.childId);
     if (!child) return 'object-unavailable';
-    const reminders = await evaluateGrowthReminders(child);
+    const reminders = await evaluatePublishedReminders(child);
     const instance = reminders.find((reminder) => (
       reminder.rule.ruleId === target.ruleId && reminder.repeatIndex === target.repeatIndex
     ));

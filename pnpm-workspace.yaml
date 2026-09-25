@@ -2,10 +2,10 @@ packages:
   - .
 
 overrides:
-  '@nimiplatform/app-tools': file:.nimi/local/packages/nimiplatform-app-tools-0.8.0.tgz
+  '@nimiplatform/app-tools': file:.nimi/local/packages/nimiplatform-app-tools-0.9.0.tgz
   '@nimiplatform/sdk': file:.nimi/local/packages/nimiplatform-sdk-0.16.0.tgz
-  '@nimiplatform/kit': file:.nimi/local/packages/nimiplatform-kit-0.12.0.tgz
-  '@nimiplatform/kit-protected-local-darwin-arm64': file:.nimi/local/packages/nimiplatform-kit-protected-local-darwin-arm64-0.12.0.tgz
+  '@nimiplatform/kit': file:.nimi/local/packages/nimiplatform-kit-0.13.0.tgz
+  '@nimiplatform/kit-protected-local-darwin-arm64': file:.nimi/local/packages/nimiplatform-kit-protected-local-darwin-arm64-0.13.0.tgz
 
 allowBuilds:
   core-js: true

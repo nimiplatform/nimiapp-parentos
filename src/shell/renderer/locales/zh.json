@@ -1137,7 +1137,7 @@
     },
     "activity": {
       "summary": "第 {{round}} 次 · {{start}} 至 {{end}}",
-      "unsynced": "成长记录提醒尚未完全同步到 Nimi，请重试。",
+      "unsynced": "提醒尚未完全同步到 Nimi，请重试。",
       "retryNow": "立即重试",
       "sessionChanged": "与 Nimi 的会话已变化，提醒同步已停止。你仍可继续使用成长底稿，重新打开后恢复同步。",
       "reopen": "重新打开",

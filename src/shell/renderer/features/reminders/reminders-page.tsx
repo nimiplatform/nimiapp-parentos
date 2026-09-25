@@ -40,7 +40,7 @@ import {
   type RecordDataReminderSelection,
 } from './record-data-capture.js';
 import { i18nText } from '../../i18n/index.js';
-import { evaluateGrowthReminders } from './growth-reminder-activity.js';
+import { evaluatePublishedReminders } from './reminder-activity.js';
 
 
 const textPrimaryClass = 'text-[var(--nimi-text-primary)]';
@@ -377,7 +377,7 @@ export default function RemindersPage() {
     const separator = focusParam.lastIndexOf(':');
     const ruleId = focusParam.slice(0, separator);
     const repeatIndex = Number(focusParam.slice(separator + 1));
-    void evaluateGrowthReminders(child).then((reminders) => {
+    void evaluatePublishedReminders(child).then((reminders) => {
       if (cancelled) return;
       const found = reminders.find((reminder) => reminder.rule.ruleId === ruleId && reminder.repeatIndex === repeatIndex);
       if (found) setActiveReminder(found);

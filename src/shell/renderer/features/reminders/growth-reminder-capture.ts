@@ -16,7 +16,7 @@ import {
   type HealthCaptureEventInput,
   type LinkedHealthRecordReminder,
 } from '../profile/health-capture-orchestrator.js';
-import { isGrowthRecordReminderRuleId } from './growth-reminder-activity.js';
+import { isGrowthRecordReminderRuleId } from './reminder-activity.js';
 
 const targetByRuleId = new Map(HEALTH_REMINDER_CAPTURE_TARGETS.map((target) => [target.ruleId as string, target]));
 

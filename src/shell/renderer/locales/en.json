@@ -1137,7 +1137,7 @@
     },
     "activity": {
       "summary": "Round {{round}} · {{start}} to {{end}}",
-      "unsynced": "Growth record reminders have not fully synced to Nimi. Please retry.",
+      "unsynced": "Reminders have not fully synced to Nimi. Please retry.",
       "retryNow": "Retry now",
       "sessionChanged": "Your Nimi session changed, so reminder sync stopped. You can keep using ParentOS; reopen it to resume sync.",
       "reopen": "Reopen",

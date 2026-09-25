@@ -6,13 +6,13 @@ import { focusMainWindow } from '../../bridge/index.js';
 import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import { i18nText } from '../../i18n/index.js';
 import {
-  beginGrowthReminderActivitySession,
-  endGrowthReminderActivitySession,
-  registerGrowthReminderOpenHandler,
-  requestGrowthReminderSync,
-  retryGrowthReminderActivity,
-  subscribeGrowthReminderActivitySync,
-} from './growth-reminder-activity.js';
+  beginReminderActivitySession,
+  endReminderActivitySession,
+  registerReminderOpenHandler,
+  requestReminderActivitySync,
+  retryReminderActivity,
+  subscribeReminderActivitySync,
+} from './reminder-activity.js';
 
 type ParentOSHostEvents = {
   readonly onSessionInvalidated: (listener: () => void) => () => void;
@@ -26,12 +26,12 @@ declare global {
 }
 
 /**
- * Keeps the active child's growth record reminder projection published while
+ * Keeps the active child's admitted reminder projection published while
  * a Nimi session is bound, accepts open requests for those reminders, and
  * stops both when the Host reports the session invalidated. ParentOS itself
  * stays usable; reopening resumes publication.
  */
-export function GrowthReminderActivityBridge() {
+export function ReminderActivityBridge() {
   const navigate = useNavigate();
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
@@ -40,14 +40,14 @@ export function GrowthReminderActivityBridge() {
 
   useEffect(() => {
     if (!hasParentOSNimiClient()) return undefined;
-    beginGrowthReminderActivitySession((childId) => useAppStore.getState().children.find((child) => child.childId === childId));
-    const registration = registerGrowthReminderOpenHandler({
+    beginReminderActivitySession((childId) => useAppStore.getState().children.find((child) => child.childId === childId));
+    const registration = registerReminderOpenHandler({
       selectChild: (childId) => useAppStore.getState().setActiveChildId(childId),
       navigate: (path) => navigateRef.current(path),
       focus: focusMainWindow,
     });
     const stopWatching = window.parentOSHost?.onSessionInvalidated(() => {
-      endGrowthReminderActivitySession();
+      endReminderActivitySession();
       void registration.stop();
       nimiToast.warning(i18nText('Reminders.activity.sessionChanged'), {
         sticky: true,
@@ -57,12 +57,12 @@ export function GrowthReminderActivityBridge() {
     return () => {
       stopWatching?.();
       void registration.stop();
-      endGrowthReminderActivitySession();
+      endReminderActivitySession();
     };
   }, []);
 
   useEffect(() => {
-    if (activeChildId) requestGrowthReminderSync(activeChildId);
+    if (activeChildId) requestReminderActivitySync(activeChildId);
   }, [activeChildId, children]);
 
   useUnsyncedReminderNotice();
@@ -80,13 +80,13 @@ function useUnsyncedReminderNotice() {
         action: {
           label: i18nText('Reminders.activity.retryNow'),
           onClick: () => {
-            void retryGrowthReminderActivity().then((remaining) => { if (remaining) show(remaining); }).catch(() => show(shown));
+            void retryReminderActivity().then((remaining) => { if (remaining) show(remaining); }).catch(() => show(shown));
           },
         },
       });
       shown = count;
     };
-    const unsubscribe = subscribeGrowthReminderActivitySync((count) => {
+    const unsubscribe = subscribeReminderActivitySync((count) => {
       if (count === 0) {
         if (toastId) nimiToast.dismiss(toastId);
         toastId = null;
