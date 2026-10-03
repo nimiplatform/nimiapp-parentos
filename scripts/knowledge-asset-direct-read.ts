@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { extname, relative, resolve } from 'node:path';
+import { basename, extname, relative, resolve } from 'node:path';
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.rs']);
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'target', '.git']);
@@ -13,8 +13,11 @@ function listSourceFiles(root: string): string[] {
     if (SKIP_DIRS.has(entry.name)) {
       continue;
     }
+    if (basename(root) === '.nimi' && ['local', 'cache', 'topics'].includes(entry.name)) continue;
     const path = resolve(root, entry.name);
     if (entry.isDirectory()) {
+      // Nested checkouts own their own sources and allowlists.
+      if (existsSync(resolve(path, '.git'))) continue;
       out.push(...listSourceFiles(path));
       continue;
     }

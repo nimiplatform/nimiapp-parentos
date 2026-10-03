@@ -6,7 +6,13 @@ import tseslint from 'typescript-eslint';
 export default defineConfig([
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    languageOptions: {
+      parserOptions: { tsconfigRootDir: import.meta.dirname },
+    },
+  },
   globalIgnores([
+    '.claude/worktrees/**',
     'build/**',
     'dist/**',
     'dist-electron/**',

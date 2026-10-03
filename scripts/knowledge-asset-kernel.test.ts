@@ -522,4 +522,15 @@ describe('knowledge-asset-kernel', () => {
       }),
     ).not.toThrow();
   });
+
+  it('keeps a nested worktree outside this checkout source scan', () => {
+    const root = mkdtempSync(resolve(tmpdir(), 'parentos-direct-read-worktree-'));
+    const nested = resolve(root, '.claude/worktrees/another-checkout');
+    mkdirSync(nested, { recursive: true });
+    writeFileSync(resolve(nested, '.git'), 'gitdir: /another/worktree');
+    writeFileSync(resolve(nested, 'fixture.ts'), "readKnowledgeJson('growth-standards.json');");
+    expect(() => assertNoDirectKnowledgeJsonReads({ rootDir: root, assetIds: ['growth-standards'] })).not.toThrow();
+    writeFileSync(resolve(root, 'source.ts'), "readKnowledgeJson('growth-standards.json');");
+    expect(() => assertNoDirectKnowledgeJsonReads({ rootDir: root, assetIds: ['growth-standards'] })).toThrow(/source.ts/);
+  });
 });

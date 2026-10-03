@@ -2,10 +2,10 @@ packages:
   - .
 
 overrides:
-  '@nimiplatform/app-tools': file:.nimi/local/packages/storage-8d180868/nimiplatform-app-tools-0.9.0.tgz
-  '@nimiplatform/sdk': file:.nimi/local/packages/storage-8d180868/nimiplatform-sdk-0.16.0.tgz
-  '@nimiplatform/kit': file:.nimi/local/packages/storage-8d180868/nimiplatform-kit-0.13.0.tgz
-  '@nimiplatform/kit-protected-local-win32-x64': file:.nimi/local/packages/storage-8d180868/nimiplatform-kit-protected-local-win32-x64-0.13.0.tgz
+  '@nimiplatform/app-tools': file:.nimi/local/packages/storage-8d180868/nimiplatform-app-tools-0.11.4.tgz
+  '@nimiplatform/sdk': file:.nimi/local/packages/storage-8d180868/nimiplatform-sdk-0.19.0.tgz
+  '@nimiplatform/kit': file:.nimi/local/packages/storage-8d180868/nimiplatform-kit-0.16.0.tgz
+  '@nimiplatform/kit-protected-local-win32-x64': file:.nimi/local/packages/storage-8d180868/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz
 
 allowBuilds:
   core-js: true
