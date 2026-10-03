@@ -14,7 +14,7 @@ import type { MilestoneRecordRow } from '../../bridge/sqlite-bridge.js';
 import { ulid, isoNow } from '../../bridge/ulid.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { AISummaryCard } from './ai-summary-card.js';
-import { readImageFileAsDataUrl } from './checkup-ocr.js';
+import { PhotoGrid } from './photo-grid.js';
 import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.js';
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
 import { i18nText } from '../../i18n/index.js';
@@ -98,6 +98,7 @@ function RadarChart({ data }: { data: Array<{ label: string; pct: number }> }) {
    RECORD DETAIL MODAL
    ================================================================ */
 
+// @nimi-authority: rule.parentos.prof.r007
 function RecordModal({ milestone, record, childId, ageMonths, onSave, onClose }: {
   milestone: typeof MILESTONE_CATALOG[number];
   record: MilestoneRecordRow | undefined;
@@ -128,11 +129,6 @@ function RecordModal({ milestone, record, childId, ageMonths, onSave, onClose }:
     setSaving(false);
   };
 
-  const handlePhoto = async (file: File | null) => {
-    if (!file) { setPhotoPreview(null); return; }
-    try { setPhotoPreview(await readImageFileAsDataUrl(file)); } catch { /* ignore */ }
-  };
-
   const dm = DOMAIN_MAP.get(milestone.domain as MilestoneDomain);
 
   return (
@@ -153,9 +149,11 @@ function RecordModal({ milestone, record, childId, ageMonths, onSave, onClose }:
           </div>
           <div>
             <label className="text-[13px] mb-1 block text-[var(--nimi-text-muted)]">{i18nText('Milestone.recordModal.photo')}</label>
-            <input type="file" accept="image/*" className="text-[14px]"
-              onChange={(e) => void handlePhoto(e.target.files?.[0] ?? null)} />
-            {photoPreview && <img src={photoPreview} alt="" className="mt-2 h-24 rounded-2xl object-cover" />}
+            <PhotoGrid
+              photos={photoPreview ? [{ base64: photoPreview, mimeType: 'image/jpeg', fileName: '' }] : []}
+              maxPhotos={1}
+              onChange={(photos) => setPhotoPreview(photos[0]?.base64 ?? null)}
+            />
           </div>
         </div>
       </ModalContent>

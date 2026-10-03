@@ -1,100 +1,144 @@
-import { StatusBadge, Surface, Timeline, TimelineGroup } from '@nimiplatform/kit/ui';
+import { Surface, Timeline, TimelineDivider, TimelineGroup, cn } from '@nimiplatform/kit/ui';
+import { CalendarHeart } from 'lucide-react';
+import { Fragment } from 'react';
 import type { TannerAssessmentRow } from '../../bridge/sqlite-bridge.js';
-import type { StageDesc } from './tanner-page-shared.js';
-import { pubicHairStages, fmtAge, formatAssessedBy } from './tanner-page-shared.js';
+import { formatDateLabel } from '../journal/journal-page-helpers.js';
+import {
+  TANNER_AXIS_TONE,
+  TannerAssessor,
+  TannerStageMeter,
+  recordedStages,
+  tannerAxisLabel,
+  tannerMenarcheLabel,
+  type TannerAxisKey,
+} from './tanner-record-parts.js';
+import { fmtAge, type StageDesc } from './tanner-page-shared.js';
 import { i18nText } from '../../i18n/index.js';
 
+type DayGroup = { date: string; year: number; rows: TannerAssessmentRow[] };
 
-type TannerTimelineProps = {
-  assessments: TannerAssessmentRow[];
-  bgStages: StageDesc[];
-  isFemale: boolean;
-  showForm: boolean;
-};
+// Rows arrive newest first; same-day records stay together in saved order.
+function groupByDay(assessments: TannerAssessmentRow[]): DayGroup[] {
+  const groups: DayGroup[] = [];
+  for (const row of assessments) {
+    const date = row.assessedAt.slice(0, 10);
+    const last = groups.at(-1);
+    if (last?.date === date) last.rows.push(row);
+    else groups.push({ date, year: Number(date.slice(0, 4)), rows: [row] });
+  }
+  return groups;
+}
 
+/** Earlier records on the archive timeline: one group per day, a divider when the year changes. */
+// @nimi-authority: rule.parentos.prof.r012
 export function TannerTimeline({
   assessments,
-  bgStages,
   isFemale,
-  showForm,
-}: TannerTimelineProps) {
-  if (assessments.length === 0 && !showForm) {
-    return (
-      <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="rounded-3xl p-8 text-center">
-        <span className="text-[24px]">🌱</span>
-        <p className="text-[14px] mt-2 font-medium text-[var(--nimi-text-primary)]">{i18nText('Tanner.timeline.emptyTitle')}</p>
-        <p className="text-[13px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('Tanner.timeline.emptySubtitle')}</p>
-      </Surface>
-    );
-  }
-
+}: {
+  assessments: TannerAssessmentRow[];
+  isFemale: boolean;
+}) {
+  const groups = groupByDay(assessments);
+  const currentYear = new Date().getFullYear();
   return (
     <Timeline>
-      {assessments.map((assessment, index) => {
-        const bgInfo = bgStages.find((stage) => stage.stage === assessment.breastOrGenitalStage);
-        const phInfo = pubicHairStages(isFemale).find((stage) => stage.stage === assessment.pubicHairStage);
-        const previous = assessments[index + 1];
-        const bgChanged = previous && previous.breastOrGenitalStage !== assessment.breastOrGenitalStage;
-        const phChanged = previous && previous.pubicHairStage !== assessment.pubicHairStage;
-        const dateLabel = assessment.assessedAt.split('T')[0] ?? assessment.assessedAt;
-        const secondary = assessment.assessedBy
-          ? i18nText('Tanner.timeline.secondaryWithAssessor', {
-            age: fmtAge(assessment.ageMonths),
-            assessor: formatAssessedBy(assessment.assessedBy),
-          })
-          : fmtAge(assessment.ageMonths);
-
+      {groups.map((group, index) => {
+        const previousYear = index === 0 ? currentYear : groups[index - 1]!.year;
         return (
-          <TimelineGroup
-            key={assessment.assessmentId}
-            variant="past"
-            date={dateLabel}
-            secondaryLabel={secondary}
-            isLast={index === assessments.length - 1}
-          >
-            <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="overflow-hidden rounded-3xl">
-              <div className="grid grid-cols-2 gap-3 bg-[var(--nimi-surface-card)] p-4">
-                <div className={`rounded-2xl border p-3 ${bgChanged ? 'border-[color-mix(in_srgb,var(--nimi-status-success)_35%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-success)_12%,var(--nimi-surface-card))]' : 'border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)]'}`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-bold bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]">
-                      {assessment.breastOrGenitalStage ?? '-'}
-                    </span>
-                    <span className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">
-                      {isFemale ? i18nText('Tanner.timeline.breastStage') : i18nText('Tanner.timeline.genitalStage')}
-                    </span>
-                    {bgChanged ? <StatusBadge tone="success" className="px-1.5 py-0.5 text-[12px]">{i18nText('Tanner.timeline.changed')}</StatusBadge> : null}
-                  </div>
-                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{bgInfo?.desc ?? ''}</p>
-                </div>
-                <div className={`rounded-2xl border p-3 ${phChanged ? 'border-[color-mix(in_srgb,var(--nimi-status-success)_35%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-success)_12%,var(--nimi-surface-card))]' : 'border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)]'}`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-bold bg-[var(--nimi-status-info)] text-[var(--nimi-action-primary-text)]">
-                      {assessment.pubicHairStage ?? '-'}
-                    </span>
-                    <span className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Tanner.timeline.pubicHairStage')}</span>
-                    {phChanged ? <StatusBadge tone="success" className="px-1.5 py-0.5 text-[12px]">{i18nText('Tanner.timeline.changed')}</StatusBadge> : null}
-                  </div>
-                  <p className="text-[12px] text-[var(--nimi-text-muted)]">{phInfo?.desc ?? ''}</p>
-                </div>
-              </div>
-              {assessment.menarcheStatus === 'occurred' ? (
-                <div className="bg-[var(--nimi-surface-card)] px-4 pb-3">
-                  <StatusBadge tone="info" className="px-1.5 py-0.5 text-[12px]">
-                    {assessment.menarcheDate
-                      ? i18nText('Tanner.timeline.menarcheOccurredWithDate', { date: assessment.menarcheDate.split('T')[0] ?? assessment.menarcheDate })
-                      : i18nText('Tanner.timeline.menarcheOccurred')}
-                  </StatusBadge>
-                </div>
-              ) : null}
-              {assessment.notes ? (
-                <div className="bg-[var(--nimi-surface-card)] px-4 pb-3 text-[12px] text-[var(--nimi-text-muted)]">
-                  {i18nText('Tanner.timeline.notesPrefix')} {assessment.notes}
-                </div>
-              ) : null}
-            </Surface>
-          </TimelineGroup>
+          <Fragment key={group.date}>
+            {group.year !== previousYear ? (
+              <TimelineDivider label={i18nText('Tanner.timeline.yearDivider', { year: group.year })} />
+            ) : null}
+            <TimelineGroup
+              variant="past"
+              date={<time dateTime={group.date}>{formatDateLabel(group.date)}</time>}
+              secondaryLabel={fmtAge(group.rows[0]!.ageMonths)}
+              isLast={index === groups.length - 1}
+            >
+              {group.rows.map((row) => (
+                <TannerRecordCard key={row.assessmentId} assessment={row} isFemale={isFemale} />
+              ))}
+            </TimelineGroup>
+          </Fragment>
         );
       })}
     </Timeline>
+  );
+}
+
+function TannerRecordCard({
+  assessment,
+  isFemale,
+}: {
+  assessment: TannerAssessmentRow;
+  isFemale: boolean;
+}) {
+  const stages = recordedStages(assessment, isFemale);
+  const menarche = isFemale ? tannerMenarcheLabel(assessment) : null;
+  return (
+    <Surface
+      as="article"
+      tone="card"
+      material="solid"
+      elevation="raised"
+      padding="none"
+      className="rounded-2xl p-5"
+    >
+      {/* Fixed proportions keep both axis columns aligned from card to card. */}
+      <div className="flex items-start gap-6">
+        <dl className="m-0 grid min-w-0 flex-[2_1_0%] grid-cols-2 gap-x-6">
+          <AxisCompact axis="primary" label={tannerAxisLabel('primary', isFemale)} stage={stages.primary} />
+          <AxisCompact axis="pubic" label={tannerAxisLabel('pubic', isFemale)} stage={stages.pubic} />
+        </dl>
+        <div className="flex min-w-0 flex-[0.7_1_0%] justify-end">
+          <TannerAssessor
+            assessedBy={assessment.assessedBy}
+            className="max-w-full text-[11.5px] text-[var(--nimi-text-muted)]"
+          />
+        </div>
+      </div>
+      {menarche ? (
+        <p className="mt-3 flex items-center gap-1.5 text-[12px] text-[var(--nimi-text-secondary)]">
+          <CalendarHeart size={13} strokeWidth={1.8} aria-hidden="true" className="shrink-0" />
+          {menarche}
+        </p>
+      ) : null}
+      {assessment.notes ? (
+        <p className="mt-3.5 whitespace-pre-wrap break-words text-[13.5px] leading-[1.75] text-[var(--nimi-text-primary)]">
+          {assessment.notes}
+        </p>
+      ) : null}
+    </Surface>
+  );
+}
+
+function AxisCompact({
+  axis,
+  label,
+  stage,
+}: {
+  axis: TannerAxisKey;
+  label: string;
+  stage: StageDesc | undefined;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[11px] text-[var(--nimi-text-muted)]">{label}</dt>
+      <dd className="m-0 mt-1">
+        {stage ? (
+          <p className="flex flex-wrap items-baseline gap-x-1.5">
+            <span className={cn('text-[15px] font-bold tabular-nums', TANNER_AXIS_TONE[axis].text)}>
+              {stage.code}
+            </span>
+            <span className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">{stage.name}</span>
+          </p>
+        ) : (
+          <p className="text-[13px] font-medium leading-[22px] text-[var(--nimi-text-muted)]">
+            {i18nText('Tanner.redesign.unrecorded')}
+          </p>
+        )}
+        <TannerStageMeter stage={stage?.stage ?? null} axis={axis} className="mt-2 max-w-[150px]" />
+      </dd>
+    </div>
   );
 }

@@ -72,6 +72,18 @@
   border-bottom-right-radius: var(--nimi-radius-xl);
 }
 
+/* Glass cards stacked 16px apart (profile archive group/posture cards) keep
+ * the glass tint and border but drop backdrop-filter. The upper card's base
+ * shadow reaches ~17px into the next card, so whenever the upper card
+ * repaints (hover, data refresh) Chromium redraws just that strip of the
+ * lower card and re-blurs its backdrop from stale pixels that still hold the
+ * lower card's own title: a dark smudge that flickers along its top edge.
+ * The ambient background is already soft, so the blur was not visible. */
+.parentos-stacked-glass-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 .parentos-ai-model-config :where(button.rounded-xl.border) {
   min-height: 46px;
   border-color: var(--nimi-border-subtle);
@@ -142,7 +154,10 @@
   outline: 1px solid var(--nimi-border-subtle);
 }
 
-.parentos-child-birth-date:focus {
+/* Open-state selector: see the kit DatePicker field rule next to
+ * .nimi-date-picker-panel. */
+.parentos-child-birth-date:focus,
+.group\/field:has(> div > .lucide-calendar:not([class~="text-[var(--nimi-text-muted)]"])) > .parentos-child-birth-date {
   border-color: var(--nimi-field-focus);
   box-shadow: 0 0 0 var(--nimi-focus-ring-width) var(--nimi-focus-ring-color);
 }
@@ -171,6 +186,188 @@
   height: 8px;
   border-radius: 9999px;
   background: var(--nimi-action-primary-bg);
+}
+
+/* ── Outdoor goal onboarding hero (outdoor-goal-onboarding.tsx) ──────────
+ * Below 60rem the copy sits on a pale sky wash with the art as a banner
+ * under it, top edge feathered away. From 60rem (keep in sync with the
+ * component's min-[60rem] variants) the section is pinned to the page height
+ * (a size container, so cqh is the page height), the art bleeds to the edges
+ * behind the copy, and the copy column scrolls on its own. */
+.parentos-outdoor-hero {
+  background: linear-gradient(180deg, #eaf3fc 0%, #f6f9fd 100%);
+}
+
+.parentos-outdoor-hero__art {
+  order: 1;
+  flex-shrink: 0;
+  width: 100%;
+  margin-top: -3rem;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 30%);
+}
+
+.parentos-outdoor-hero__veil {
+  display: none;
+}
+
+@media (width >= 60rem) {
+  .parentos-outdoor-hero {
+    container-type: size;
+    /* Continues the art's sky wherever the art stops short of the top. */
+    background: linear-gradient(90deg, #b5defd 0%, #9ccffd 100%);
+  }
+
+  /* Cover the page, but never so large that the child's trailing shoe (at
+   * --parentos-outdoor-art-shoe of the art's width; both it and
+   * --parentos-outdoor-art-aspect are set per art by the component) reaches
+   * into the 460px copy zone: width is capped at
+   * (page width − 460px) / (1 − shoe). A capped art rests on the bottom edge
+   * with its top feathered into the sky; an overflowing one is centered. */
+  .parentos-outdoor-hero__art {
+    --parentos-outdoor-art-w: max(
+      100cqw,
+      min(100cqh * var(--parentos-outdoor-art-aspect), (100cqw - 460px) / (1 - var(--parentos-outdoor-art-shoe)))
+    );
+    --parentos-outdoor-art-gap: calc(100cqh - var(--parentos-outdoor-art-w) / var(--parentos-outdoor-art-aspect));
+    position: absolute;
+    top: max(var(--parentos-outdoor-art-gap) / 2, var(--parentos-outdoor-art-gap));
+    right: 0;
+    width: var(--parentos-outdoor-art-w);
+    max-width: none;
+    margin: 0;
+    mask-image: linear-gradient(to bottom, transparent 0, #000 min(72px, max(0px, var(--parentos-outdoor-art-gap)) * 2));
+  }
+
+  /* Washes out the art under the copy column, fading clear by 520px. */
+  .parentos-outdoor-hero__veil {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #e9f2fc 0%, #f6f9fd 100%);
+    mask-image: linear-gradient(90deg, #000 0, #000 280px, rgb(0 0 0 / 0.72) 380px, transparent 520px);
+  }
+}
+
+/* ── Outdoor weekly tracker (outdoor-page.tsx, outdoor-week-scene.tsx) ───
+ * The page sits in a pale sky, and the goal guide's art becomes a scene: a
+ * band of sky with the art resting on its right, feathered into that sky on
+ * the left and faded out just below the children's feet, with a handwritten
+ * aside on the left. Below 60rem the scene is a full-bleed band under the
+ * week's numbers. From 60rem (keep in sync with the page's min-[60rem]
+ * variants: a centered 1240px grid, 72px top padding, 2.5rem right padding,
+ * a 2.5–3rem column gap) it tops the side column: it bleeds up to the page's
+ * top edge and out to its right edge, and the trend card starts just under
+ * the feet. */
+.parentos-outdoor-tracker {
+  container-type: inline-size;
+  background: linear-gradient(180deg, #e7f1fc 0%, #edf5fd 36rem, #f0f6fd 100%);
+  /* How far down the scene's frame the children's lowest point lands, and
+   * where the frame's sky has faded out. */
+  --parentos-outdoor-feet: 250px;
+  --parentos-outdoor-sky-end: 290px;
+  --parentos-outdoor-art-inset: 0px;
+}
+
+.parentos-outdoor-scene {
+  position: relative;
+  height: 290px;
+  margin: 1.75rem -1.25rem 0;
+}
+
+/* A sky the art's own sky melts into, so the scene reads as one panorama. */
+.parentos-outdoor-scene__frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    #c3e3fc 0,
+    #d3ebfd calc(var(--parentos-outdoor-sky-end) * 0.35),
+    #e3f1fd calc(var(--parentos-outdoor-sky-end) * 0.68),
+    rgb(231 241 252 / 0) var(--parentos-outdoor-sky-end)
+  );
+  mask-image: linear-gradient(180deg, transparent 0, #000 72px);
+}
+
+/* Sized so the children's lowest point (--parentos-outdoor-art-ground of the
+ * art's height, set per art by the component) lands on
+ * --parentos-outdoor-feet, with the art's top a hair over the frame's top.
+ * Feathered into the sky on the left (and on the right once it stops short
+ * of the page edge), and faded out below the feet. */
+.parentos-outdoor-scene__art {
+  position: absolute;
+  top: -8px;
+  right: var(--parentos-outdoor-art-inset);
+  width: auto;
+  height: calc((var(--parentos-outdoor-feet) + 8px) / var(--parentos-outdoor-art-ground));
+  max-width: none;
+  mask-image:
+    linear-gradient(90deg, transparent 0, #000 36%),
+    linear-gradient(270deg, transparent 0, #000 clamp(0px, var(--parentos-outdoor-art-inset) * 3, 7rem)),
+    linear-gradient(
+      180deg,
+      #000 calc(var(--parentos-outdoor-art-ground) * 100% - 1%),
+      transparent calc(var(--parentos-outdoor-art-ground) * 100% + 11%)
+    );
+  mask-composite: intersect;
+}
+
+/* Too crowded beside the art on phone widths. */
+.parentos-outdoor-scene__note {
+  display: none;
+  position: absolute;
+}
+
+@media (width >= 40rem) {
+  .parentos-outdoor-scene {
+    margin-inline: -2.5rem;
+  }
+
+  .parentos-outdoor-scene__note {
+    display: block;
+    top: 3.25rem;
+    left: 2.75rem;
+  }
+}
+
+@media (width >= 60rem) {
+  .parentos-outdoor-tracker {
+    --parentos-outdoor-feet: 300px;
+    --parentos-outdoor-sky-end: 340px;
+    /* From the side column's right edge to the page's: the grid's centering
+     * margin plus its right padding. */
+    --parentos-outdoor-bleed: calc(max(0px, (100cqw - 1240px) / 2) + 2.5rem);
+    /* The art overhangs the column by at most 7rem; on wider pages it stops
+     * short of the page edge and fades out on its right side instead. */
+    --parentos-outdoor-art-inset: max(0px, var(--parentos-outdoor-bleed) - 7rem);
+  }
+
+  /* The trend card starts at the bottom of this block, 337px down the page;
+   * the frame reaches up over the page's top padding. */
+  .parentos-outdoor-scene {
+    height: 265px;
+    margin: 0;
+  }
+
+  .parentos-outdoor-scene__frame {
+    inset: -72px calc(-1 * var(--parentos-outdoor-bleed)) -160px -2.5rem;
+    z-index: -1;
+    mask-image: linear-gradient(90deg, transparent 0, #000 7rem);
+  }
+
+  .parentos-outdoor-scene__note {
+    top: 0.5rem;
+    left: 0.25rem;
+  }
+}
+
+/* Handwritten accent. Long Cang loads from Google Fonts (index.html); the
+ * rest are system handwriting/kai faces for when the CDN is unreachable. */
+.parentos-handwriting {
+  font-family:
+    "Long Cang", "HanziPen SC", "Hannotate SC", "Xingkai SC", "STXingkai",
+    "Kaiti SC", "STKaiti", "KaiTi", cursive;
+  letter-spacing: 0.02em;
 }
 
 .journal-capture-glow {
@@ -357,6 +554,11 @@
  *     "JetBrains Mono"        Loaded via Google Fonts CDN in index.html
  *     "SF Mono" / "Fira Code" / ui-monospace fallbacks
  *
+ *   .parentos-handwriting (decorative accents only, e.g. outdoor onboarding)
+ *     "Long Cang"             Google Fonts CDN; unicode-range slices download
+ *                             only when a page actually renders it
+ *     Kai / handwriting system faces as fallbacks
+ *
  * Weight Scale
  * ────────────
  *   300 Light     Timestamps, secondary captions, muted metadata
@@ -378,6 +580,7 @@
  *   Inter:           300, 400, 500, 600, 700
  *   Noto Sans SC:    300, 400, 500, 600, 700  (600 required to avoid faux-bold)
  *   JetBrains Mono:  400, 500, 700
+ *   Long Cang:       400 (single weight)
  *
  * Known Risk
  * ──────────
@@ -435,6 +638,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
  * layer; unlayered app rules win over Tailwind utility layers. */
 .nimi-date-picker-panel {
   z-index: calc(var(--nimi-z-dialog) + 1);
+}
+/* Same for the local sleep time/date wheel panels in sleep-page-pickers.tsx. */
+.parentos-time-picker-panel {
+  z-index: calc(var(--nimi-z-dialog) + 1);
+}
+/* Kit DatePicker lights its field (focus ring) only while the input has
+ * :focus. Opening it from the calendar icon never focuses the input, and any
+ * click inside the portaled wheel panel moves focus to <body>, so the field
+ * goes dark while its panel is still open. The calendar icon dropping its
+ * muted text class is the field's only open-state signal; hold the same ring
+ * off it for as long as the panel is open. */
+.group\/field:has(> div > .lucide-calendar:not([class~="text-[var(--nimi-text-muted)]"])) > input {
+  box-shadow: 0 0 0 var(--nimi-focus-ring-width) var(--nimi-focus-ring-color);
 }
 
 input[type="time"]::-webkit-calendar-picker-indicator {
@@ -1127,7 +1343,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   background: linear-gradient(135deg, color-mix(in srgb, var(--nimi-action-primary-bg) 58%, var(--nimi-surface-card)) 0%, color-mix(in srgb, var(--nimi-status-info) 42%, var(--nimi-surface-card)) 100%);
   display: grid;
   place-items: center;
-  color: var(--nimi-action-primary-text);
+  /* Pale tint, not a solid action fill: keep dark text for contrast. */
+  color: var(--nimi-text-primary);
   box-shadow: var(--nimi-elevation-base);
   flex-shrink: 0;
 }
@@ -2232,6 +2449,109 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border-radius: var(--nimi-radius-sm);
   font-size: 14px;
   padding-block: 10px;
+}
+
+.report-ai-status,
+.report-ai-notice {
+  align-items: center;
+  border-radius: var(--nimi-radius-lg);
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+}
+
+.report-ai-status {
+  background: var(--nimi-material-glass-regular-bg);
+  border: 1px solid var(--nimi-material-glass-regular-border);
+}
+
+.report-ai-status--ready {
+  padding-block: 10px;
+}
+
+.report-ai-status--pending {
+  background: color-mix(in srgb, var(--nimi-action-primary-bg) 7%, var(--nimi-surface-card));
+  border-color: color-mix(in srgb, var(--nimi-action-primary-bg) 28%, transparent);
+}
+
+.report-ai-notice {
+  background: color-mix(in srgb, var(--nimi-status-warning) 8%, var(--nimi-surface-card));
+  border: 1px solid color-mix(in srgb, var(--nimi-status-warning) 24%, transparent);
+}
+
+.report-ai-status-icon {
+  color: var(--nimi-action-primary-bg);
+  flex-shrink: 0;
+}
+
+.report-ai-status--offline .report-ai-status-icon {
+  color: var(--nimi-text-muted);
+}
+
+.report-ai-status-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.report-ai-status-title {
+  color: var(--nimi-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.report-ai-status-text {
+  color: var(--nimi-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 2px 0 0;
+}
+
+.report-ai-status--ready .report-ai-status-text {
+  margin: 0;
+}
+
+.report-ai-status-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .report-ai-status,
+  .report-ai-notice {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .report-ai-status-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
+
+.report-ai-status-link {
+  color: var(--nimi-action-primary-bg);
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.report-ai-progress {
+  background: color-mix(in srgb, var(--nimi-action-primary-bg) 14%, transparent);
+  border-radius: 999px;
+  height: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.report-ai-progress-fill {
+  background: var(--nimi-action-primary-bg);
+  height: 100%;
+  transition: width var(--nimi-motion-fast);
 }
 
 .report-family-share-row {

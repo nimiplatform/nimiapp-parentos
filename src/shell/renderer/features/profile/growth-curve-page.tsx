@@ -530,7 +530,7 @@ export default function GrowthCurvePage() {
           <GrowthHeroCard
             headline={growthDetailSnapshot.headline}
             trendStats={growthDetailSnapshot.trendStats}
-            selectedMetricDisplayName={growthDetailSnapshot.selectedMetric.displayName || typeInfo?.displayName || selectedType}
+            selectedMetricDisplayName={typeInfo?.displayName || growthDetailSnapshot.selectedMetric.displayName || selectedType}
             selectedMetricUnit={growthDetailSnapshot.selectedMetric.unit || typeInfo?.unit || ''}
             yearlyGrowth={heroYearlyGrowth}
           />

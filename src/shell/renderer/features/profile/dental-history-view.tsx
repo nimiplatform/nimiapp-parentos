@@ -196,6 +196,15 @@ export function DentalHistoryView() {
     }
   };
 
+  const startScanWithPhoto = async (photo: PendingDentalPhoto) => {
+    setScanPhoto(photo);
+    setScanPreviewUrl(`data:${photo.mimeType};base64,${photo.base64}`);
+    setScanCandidates([]);
+    setScanWarnings([]);
+    setScanError(null);
+    await runScan(photo);
+  };
+
   const pickScanPhoto = async () => {
     try {
       const photos = await invoke<DentalPhotoPayload[]>('pick_image_files_as_base64', {
@@ -205,19 +214,29 @@ export function DentalHistoryView() {
       const payload = photos[0];
       if (!payload) return;
       if (!payload.base64) return;
-      const photo: PendingDentalPhoto = {
+      await startScanWithPhoto({
         base64: payload.base64,
         mimeType: payload.mimeType,
         fileName: payload.fileName,
-      };
-      setScanPhoto(photo);
-      setScanPreviewUrl(`data:${payload.mimeType};base64,${payload.base64}`);
-      setScanCandidates([]);
-      setScanWarnings([]);
-      setScanError(null);
-      await runScan(photo);
+      });
     } catch (error) {
       catchLog('dental', 'action:dental-scan-pick-failed')(error);
+      setScanError(getDentalScanDisplayMessage(error));
+    }
+  };
+
+  const dropScanPhoto = async (file: File) => {
+    try {
+      const dataUrl = await readImageFileAsDataUrl(file);
+      const [, base64] = dataUrl.split(',');
+      if (!base64) return;
+      await startScanWithPhoto({
+        base64,
+        mimeType: file.type || 'image/jpeg',
+        fileName: file.name,
+      });
+    } catch (error) {
+      catchLog('dental', 'action:dental-scan-drop-failed')(error);
       setScanError(getDentalScanDisplayMessage(error));
     }
   };
@@ -698,6 +717,7 @@ export function DentalHistoryView() {
         show={showScanModal}
         onClose={closeScanModal}
         onPickImage={pickScanPhoto}
+        onDropImage={dropScanPhoto}
         onAnalyze={reanalyzeScanPhoto}
         onConfirm={confirmScanWrite}
         onFlipCandidates={applyFlippedCandidates}

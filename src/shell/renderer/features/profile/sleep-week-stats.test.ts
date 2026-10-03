@@ -4,8 +4,7 @@ import {
   circularMeanTime,
   computeWeekStats,
   formatMinutesOfDay,
-  last7DayDates,
-  last7DayRecords,
+  recentRecordDays,
   regularityLabel,
   sufficiencyLabel,
   timeStdMinutes,
@@ -31,32 +30,35 @@ function makeRecord(overrides: Partial<SleepRecordRow> = {}): SleepRecordRow {
   };
 }
 
-describe('last7DayDates', () => {
-  it('returns 7 ISO dates ending at today, oldest first', () => {
-    const dates = last7DayDates(new Date(2026, 7, 26, 15, 0, 0));
-    expect(dates).toEqual([
-      '2026-08-20',
-      '2026-08-21',
-      '2026-08-22',
-      '2026-08-23',
-      '2026-08-24',
-      '2026-08-25',
-      '2026-08-26',
-    ]);
-  });
-});
-
-describe('last7DayRecords', () => {
-  it('aligns records to calendar days and keeps gaps as null', () => {
+describe('recentRecordDays', () => {
+  it('returns the most recent recorded days oldest first, ignoring calendar gaps', () => {
     const records = [
-      makeRecord({ recordId: 'a', sleepDate: '2026-08-24' }),
       makeRecord({ recordId: 'b', sleepDate: '2026-08-26' }),
       makeRecord({ recordId: 'old', sleepDate: '2026-08-10' }),
+      makeRecord({ recordId: 'a', sleepDate: '2026-08-24' }),
     ];
-    const days = last7DayRecords(records, new Date(2026, 7, 26, 15, 0, 0));
-    expect(days.map((d) => d.record?.recordId ?? null)).toEqual([
-      null, null, null, null, 'a', null, 'b',
-    ]);
+    const days = recentRecordDays(records);
+    expect(days.map((d) => d.date)).toEqual(['2026-08-10', '2026-08-24', '2026-08-26']);
+    expect(days.map((d) => d.record.recordId)).toEqual(['old', 'a', 'b']);
+  });
+
+  it('caps at 7 days and drops the oldest ones', () => {
+    const records = Array.from({ length: 10 }, (_, i) =>
+      makeRecord({ recordId: `r${i}`, sleepDate: `2026-08-${String(10 + i).padStart(2, '0')}` }),
+    );
+    const days = recentRecordDays(records);
+    expect(days).toHaveLength(7);
+    expect(days[0]?.date).toBe('2026-08-13');
+    expect(days[6]?.date).toBe('2026-08-19');
+  });
+
+  it('keeps one record per date and strips ISO time parts', () => {
+    const records = [
+      makeRecord({ recordId: 'first', sleepDate: '2026-08-26T00:00:00.000Z' }),
+      makeRecord({ recordId: 'second', sleepDate: '2026-08-26' }),
+    ];
+    const days = recentRecordDays(records);
+    expect(days).toEqual([{ date: '2026-08-26', record: records[1] }]);
   });
 });
 
@@ -131,24 +133,40 @@ describe('sufficiencyLabel', () => {
 });
 
 describe('computeWeekStats', () => {
-  const today = new Date(2026, 7, 26, 15, 0, 0);
-
-  it('aggregates the last 7 calendar days', () => {
+  it('aggregates the most recent recorded days regardless of how old they are', () => {
     const records = [
       makeRecord({ recordId: '1', sleepDate: '2026-08-24', durationMinutes: 600, napMinutes: 120, bedtime: '20:00' }),
       makeRecord({ recordId: '2', sleepDate: '2026-08-25', durationMinutes: 620, napMinutes: 110, bedtime: '20:10' }),
       makeRecord({ recordId: '3', sleepDate: '2026-08-26', durationMinutes: 640, napMinutes: 130, bedtime: '19:50' }),
-      makeRecord({ recordId: 'old', sleepDate: '2026-08-01', durationMinutes: 999, napMinutes: 999 }),
     ];
-    const stats = computeWeekStats(records, 20, today);
+    const stats = computeWeekStats(records, 20);
     expect(stats.daysWithRecords).toBe(3);
     expect(stats.avgTotalMin).toBe(740);
     expect(stats.avgNightMin).toBe(620);
     expect(stats.avgNapMin).toBe(120);
     expect(stats.avgBedtimeMin).toBe(20 * 60);
-    // Only 3 days in the window → fail-close to insufficient.
+    // Only 3 recorded days → fail-close to insufficient.
     expect(stats.regularity).toBe('insufficient');
     expect(stats.sufficiency).toBe('insufficient');
+  });
+
+  it('only counts the 7 most recent recorded days', () => {
+    const records = [
+      makeRecord({ recordId: 'old', sleepDate: '2026-08-01', durationMinutes: 999, napMinutes: 999, bedtime: '23:00' }),
+      ...Array.from({ length: 7 }, (_, i) =>
+        makeRecord({
+          recordId: `r${i}`,
+          sleepDate: `2026-08-${20 + i}`,
+          durationMinutes: 630,
+          napMinutes: 120,
+          bedtime: '20:00',
+        }),
+      ),
+    ];
+    const stats = computeWeekStats(records, 20);
+    expect(stats.daysWithRecords).toBe(7);
+    expect(stats.avgTotalMin).toBe(750);
+    expect(stats.bedtimeStdMin).toBe(0);
   });
 
   it('reports within-range and good regularity with enough samples', () => {
@@ -161,7 +179,7 @@ describe('computeWeekStats', () => {
         bedtime: index % 2 === 0 ? '20:00' : '20:10',
       }),
     );
-    const stats = computeWeekStats(records, 20, today);
+    const stats = computeWeekStats(records, 20);
     expect(stats.sufficiency).toBe('within');
     expect(stats.regularity).toBe('good');
     expect(stats.bedtimeStdMin).toBe(5);
@@ -172,7 +190,7 @@ describe('computeWeekStats', () => {
       makeRecord({ recordId: '1', sleepDate: '2026-08-25', bedtime: null, durationMinutes: null, napMinutes: null }),
       makeRecord({ recordId: '2', sleepDate: '2026-08-26', bedtime: '20:00', durationMinutes: 600, napMinutes: null }),
     ];
-    const stats = computeWeekStats(records, 20, today);
+    const stats = computeWeekStats(records, 20);
     expect(stats.daysWithRecords).toBe(2);
     expect(stats.totalSampleDays).toBe(1);
     expect(stats.bedtimeSampleDays).toBe(1);

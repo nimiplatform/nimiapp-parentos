@@ -1,5 +1,5 @@
 import { cn } from '@nimiplatform/kit/ui';
-import { forwardRef, useCallback, useEffect, useRef, useState, type ReactNode, type RefObject, type WheelEvent } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react';
 import {
@@ -22,6 +22,11 @@ const VISIBLE_ROWS = 5;
 const PANEL_H = ITEM_H * VISIBLE_ROWS;
 const PAD_ROWS = Math.floor(VISIBLE_ROWS / 2);
 const WHEEL_STEP_THRESHOLD_PX = 72;
+// Same focus ring as the kit DatePicker field. It is also held while the
+// panel is open, because clicking the portaled panel moves focus off the
+// input and would otherwise drop the highlight mid-selection.
+const FIELD_FOCUS_RING_CLASS = 'focus:ring-[length:var(--nimi-focus-ring-width)] focus:ring-[var(--nimi-focus-ring-color)]';
+const FIELD_OPEN_RING_CLASS = 'ring-[length:var(--nimi-focus-ring-width)] ring-[var(--nimi-focus-ring-color)]';
 
 type DrumColumnProps = {
   items: number[];
@@ -56,6 +61,10 @@ function DrumColumn({
   }, [itemHeight]);
 
   useEffect(() => {
+    // While a scroll gesture is still settling, the settle path owns the
+    // landing position; forcing a jump back to `selected` here would yank
+    // the column out from under an in-flight drag or wheel step.
+    if (scrollTimer.current) return;
     const idx = items.indexOf(selected);
     if (idx >= 0) scrollToIndex(idx, false);
   }, [items, selected, scrollToIndex]);
@@ -74,33 +83,49 @@ function DrumColumn({
     scrollToIndex(clamped, true);
   }, [itemHeight, items, onSelect, scrollToIndex, selected]);
 
+  const scheduleSettle = useCallback(() => {
+    if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    scrollTimer.current = setTimeout(() => {
+      scrollTimer.current = null;
+      settleSelection();
+    }, 80);
+  }, [settleSelection]);
+
   const handleScroll = () => {
     const el = colRef.current;
     if (el) setScrollTop(el.scrollTop);
-    if (scrollTimer.current) clearTimeout(scrollTimer.current);
-    scrollTimer.current = setTimeout(() => {
-      settleSelection();
-    }, 80);
+    scheduleSettle();
   };
 
-  const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
+  // The panel portals to document.body, outside the Radix dialog that hosts
+  // the form. The dialog's scroll lock (react-remove-scroll) cancels every
+  // wheel event whose target is outside the dialog, and React's own `onWheel`
+  // is registered passive so it cannot claim the event first. Bind a native,
+  // non-passive listener directly on the column, stop propagation so the
+  // document-level lock never sees it, and step the drum programmatically.
+  useEffect(() => {
     const el = colRef.current;
     if (!el) return;
-    event.preventDefault();
-    const rawDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    const normalizedDelta = rawDelta * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? itemHeight * 2 : 1);
-    wheelCarry.current += normalizedDelta;
+    const listener = (event: globalThis.WheelEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const rawDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      const normalizedDelta = rawDelta * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? itemHeight * 2 : 1);
+      wheelCarry.current += normalizedDelta;
 
-    if (Math.abs(wheelCarry.current) < WHEEL_STEP_THRESHOLD_PX) return;
+      if (Math.abs(wheelCarry.current) < WHEEL_STEP_THRESHOLD_PX) return;
 
-    const direction = Math.sign(wheelCarry.current);
-    wheelCarry.current = 0;
+      const direction = Math.sign(wheelCarry.current);
+      wheelCarry.current = 0;
 
-    const currentIdx = Math.round(el.scrollTop / itemHeight);
-    const nextIdx = Math.max(0, Math.min(items.length - 1, currentIdx + direction));
-    scrollToIndex(nextIdx, false);
-    handleScroll();
-  };
+      const currentIdx = Math.round(el.scrollTop / itemHeight);
+      const nextIdx = Math.max(0, Math.min(items.length - 1, currentIdx + direction));
+      scrollToIndex(nextIdx, false);
+      scheduleSettle();
+    };
+    el.addEventListener('wheel', listener, { passive: false });
+    return () => el.removeEventListener('wheel', listener);
+  }, [itemHeight, items.length, scheduleSettle, scrollToIndex]);
 
   return (
     <div className="flex-1 relative" aria-label={label}>
@@ -111,7 +136,6 @@ function DrumColumn({
         ref={colRef}
         className="time-picker-col overflow-y-auto"
         onScroll={handleScroll}
-        onWheel={handleWheel}
         style={{
           height: panelHeight,
           scrollSnapType: 'y mandatory',
@@ -226,11 +250,11 @@ export function TimePickerInput({
           type="text"
           readOnly
           value={value}
-          className={cn(`w-full cursor-pointer border border-[var(--nimi-border-subtle)] text-[var(--nimi-text-primary)] outline-none transition-shadow focus:ring-2 focus:ring-[var(--nimi-ring)] ${
+          className={cn(`w-full cursor-pointer border border-[var(--nimi-border-subtle)] text-[var(--nimi-text-primary)] outline-none transition-shadow ${FIELD_FOCUS_RING_CLASS} ${
             isSmall
               ? 'rounded-2xl bg-[var(--nimi-field-bg)] pl-2 pr-7 py-1 text-[14px]'
               : 'h-12 rounded-2xl bg-[var(--nimi-field-bg)] pl-3 pr-9 text-[14px]'
-          }`)}
+          }`, open && FIELD_OPEN_RING_CLASS)}
         />
         <Icon size={iconSize} strokeWidth={1.5} className={`absolute ${isSmall ? 'right-2' : 'right-3'} text-[var(--nimi-text-muted)] transition-colors cursor-pointer ${open ? 'text-[var(--nimi-text-primary)]' : 'group-focus-within/field:text-[var(--nimi-text-primary)]'}`} />
       </div>
@@ -267,11 +291,17 @@ const TimePickerPanel = forwardRef<HTMLDivElement, {
   return (
     <div
       ref={ref}
-      className="fixed z-[120] overflow-hidden rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-overlay)] shadow-[var(--nimi-elevation-floating)]"
+      className="parentos-time-picker-panel fixed overflow-hidden rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-overlay)] shadow-[var(--nimi-elevation-floating)]"
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
       style={{
         left,
         top,
         width,
+        // Radix modal dialogs set `pointer-events: none` on <body>; this panel
+        // portals to <body> so it must opt back in or it cannot be clicked or
+        // wheel-scrolled at all.
+        pointerEvents: 'auto',
       }}
     >
       <div className="absolute inset-x-0 pointer-events-none z-[5] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_10%,transparent)]" style={{ top: PAD_ROWS * ITEM_H, height: ITEM_H }} />
@@ -324,7 +354,7 @@ export function DatePickerInput({
           type="text"
           readOnly
           value={formatDateDisplay(value)}
-          className="h-12 w-full cursor-pointer rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-field-bg)] pl-3 pr-9 text-[14px] text-[var(--nimi-text-primary)] outline-none transition-shadow focus:ring-2 focus:ring-[var(--nimi-ring)]"
+          className={cn(`h-12 w-full cursor-pointer rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-field-bg)] pl-3 pr-9 text-[14px] text-[var(--nimi-text-primary)] outline-none transition-shadow ${FIELD_FOCUS_RING_CLASS}`, open && FIELD_OPEN_RING_CLASS)}
         />
         <Calendar size={16} strokeWidth={1.5} className={`absolute right-2.5 transition-colors cursor-pointer ${open ? 'text-[var(--nimi-text-primary)]' : 'text-[var(--nimi-text-muted)] group-focus-within/field:text-[var(--nimi-text-primary)]'}`} />
       </div>
@@ -395,11 +425,14 @@ const DatePickerPanel = forwardRef<HTMLDivElement, {
   return (
     <div
       ref={ref}
-      className="fixed z-[120] overflow-hidden rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-overlay)] p-3 shadow-[var(--nimi-elevation-floating)]"
+      className="parentos-time-picker-panel fixed overflow-hidden rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-overlay)] p-3 shadow-[var(--nimi-elevation-floating)]"
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
       style={{
         left,
         top,
         width,
+        pointerEvents: 'auto',
       }}
     >
       <div className="mb-3 space-y-2">

@@ -1,4 +1,4 @@
-import { Button, Surface, TextField } from '@nimiplatform/kit/ui';
+import { Button, DashedAddButton, Surface, TextField } from '@nimiplatform/kit/ui';
 import { useEffect, useRef, useState } from 'react';
 import {
   attachOrthodonticPhoto,
@@ -291,6 +291,7 @@ export function OrthodonticPhotoCaptureModal({
 
 // ── Slot UI ───────────────────────────────────────────────
 
+// @nimi-authority: rule.parentos.ortho.r001
 function PhotoSlot({
   label,
   slot,
@@ -304,6 +305,7 @@ function PhotoSlot({
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     if (!slot.file) {
@@ -354,72 +356,97 @@ function PhotoSlot({
         alignItems: 'center',
       }}
     >
-      <div
-        className="rounded-xl bg-[var(--nimi-surface-active)] text-[var(--nimi-text-muted)]"
-        style={{
-          width: 64,
-          height: 64,
-          overflow: 'hidden',
-          flexShrink: 0,
-          display: 'grid',
-          placeItems: 'center',
-          fontSize: 11,
-        }}
-      >
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt={i18nText('Orthodontic.photoCapture.previewAlt', { label })}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          <span>{label}</span>
-        )}
-      </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-        <div className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">
-          {label}
-        </div>
-        {slot.file ? (
+      {slot.file ? (
+        <>
           <div
-            className="text-[12px] text-[var(--nimi-text-muted)]"
+            className="rounded-xl bg-[var(--nimi-surface-active)] text-[var(--nimi-text-muted)]"
             style={{
-              whiteSpace: 'nowrap',
+              width: 64,
+              height: 64,
               overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              flexShrink: 0,
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 11,
             }}
           >
-            {slot.file.name}
+            {previewUrl ? (
+              <img
+                src={previewUrl}
+                alt={i18nText('Orthodontic.photoCapture.previewAlt', { label })}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <span>{label}</span>
+            )}
           </div>
-        ) : (
-          <div className="text-[12px] text-[var(--nimi-text-muted)]">
-            {i18nText('Orthodontic.photoCapture.uploadHint')}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+            <div className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">
+              {label}
+            </div>
+            {slot.file ? (
+              <div
+                className="text-[12px] text-[var(--nimi-text-muted)]"
+                style={{
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {slot.file.name}
+              </div>
+            ) : (
+              <div className="text-[12px] text-[var(--nimi-text-muted)]">
+                {i18nText('Orthodontic.photoCapture.uploadHint')}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        <Button
-          onClick={() => inputRef.current?.click()}
-          tone="secondary"
-          size="sm"
-          className="text-[12px]"
+          <div style={{ display: 'flex', gap: 6 }}>
+            <Button
+              onClick={() => inputRef.current?.click()}
+              tone="secondary"
+              size="sm"
+              className="text-[12px]"
+            >
+              {slot.file ? i18nText('Orthodontic.photoCapture.replace') : i18nText('Orthodontic.photoCapture.choosePhoto')}
+            </Button>
+            {slot.file && (
+              <Button
+                onClick={() => {
+                  if (inputRef.current) inputRef.current.value = '';
+                  onChange(EMPTY_SLOT);
+                }}
+                tone="ghost"
+                size="sm"
+                className="text-[12px]"
+              >
+                {i18nText('Orthodontic.photoCapture.clear')}
+              </Button>
+            )}
+          </div>
+        </>
+      ) : (
+        <div
+          className="w-full space-y-2"
+          onDragOver={(event) => { event.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragOver(false);
+            const file = event.dataTransfer.files[0];
+            if (file) void handleFile(file);
+          }}
         >
-          {slot.file ? i18nText('Orthodontic.photoCapture.replace') : i18nText('Orthodontic.photoCapture.choosePhoto')}
-        </Button>
-        {slot.file && (
-          <Button
-            onClick={() => {
-              if (inputRef.current) inputRef.current.value = '';
-              onChange(EMPTY_SLOT);
-            }}
-            tone="ghost"
-            size="sm"
-            className="text-[12px]"
-          >
-            {i18nText('Orthodontic.photoCapture.clear')}
-          </Button>
-        )}
-      </div>
+          <p className="text-[13px] font-medium text-[var(--nimi-text-muted)]">{label}</p>
+          <DashedAddButton
+            shape="tile"
+            active={dragOver}
+            onClick={() => inputRef.current?.click()}
+            label={i18nText('Profile.photoGrid.uploadHint', { max: 1 })}
+          />
+          <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Orthodontic.photoCapture.uploadHint')}</p>
+        </div>
+      )}
       <input
         ref={inputRef}
         type="file"

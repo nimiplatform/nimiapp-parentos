@@ -1,8 +1,10 @@
-import '@nimiplatform/kit/ui';
+import { Surface, cn } from '@nimiplatform/kit/ui';
 import { Link } from 'react-router-dom';
+import { ArrowUpRight, Bone, Percent, Ruler } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { MeasurementRow } from '../../bridge/sqlite-bridge.js';
+import { formatTannerDate } from './tanner-page-shared.js';
 import { i18nText } from '../../i18n/index.js';
-
 
 type TannerOverviewCardsProps = {
   boneAgeMeasurements: MeasurementRow[];
@@ -10,120 +12,141 @@ type TannerOverviewCardsProps = {
   heightMeasurements: MeasurementRow[];
 };
 
-const MIN_VELOCITY_GAP_DAYS = 60;
-const DAYS_PER_MONTH = 30.44;
+type MeasurementTile = {
+  key: string;
+  label: string;
+  row: MeasurementRow | undefined;
+  unit: string;
+  icon: ReactNode;
+  iconClassName: string;
+};
 
-function sortByMeasuredAtDesc(rows: MeasurementRow[]): MeasurementRow[] {
-  return [...rows].sort((left, right) => right.measuredAt.localeCompare(left.measuredAt));
+const ICON_PROPS = { size: 16, strokeWidth: 1.6 } as const;
+
+function sorted(rows: MeasurementRow[]) {
+  return [...rows].sort((a, b) => b.measuredAt.localeCompare(a.measuredAt));
 }
 
-/**
- * Annualized height velocity from the two most recent height records at least
- * 60 days apart. Objective description only — no PHV norms, no adult-height
- * prediction (no admitted reference dataset, see
- * defer/parentos-puberty-reference-gaps.defer.md).
- */
-function computeHeightVelocity(sortedDesc: MeasurementRow[]): { months: number; delta: number; annualized: number } | null {
-  const latest = sortedDesc[0];
-  if (!latest) return null;
-  const latestTime = Date.parse(latest.measuredAt);
-  if (Number.isNaN(latestTime)) return null;
-  for (let index = 1; index < sortedDesc.length; index += 1) {
-    const earlier = sortedDesc[index];
-    if (!earlier) continue;
-    const earlierTime = Date.parse(earlier.measuredAt);
-    if (Number.isNaN(earlierTime)) continue;
-    const gapDays = (latestTime - earlierTime) / (24 * 60 * 60 * 1000);
-    if (gapDays >= MIN_VELOCITY_GAP_DAYS) {
-      const months = gapDays / DAYS_PER_MONTH;
-      const delta = latest.value - earlier.value;
-      return { months, delta, annualized: (delta * 12) / months };
-    }
-  }
-  return null;
-}
-
+/** Supporting measurements, each with its own measurement date; shown after the records. */
+// @nimi-authority: rule.parentos.prof.r012
 export function TannerOverviewCards({
   boneAgeMeasurements,
   bodyFatMeasurements,
   heightMeasurements,
 }: TannerOverviewCardsProps) {
-  if (boneAgeMeasurements.length === 0 && bodyFatMeasurements.length === 0 && heightMeasurements.length === 0) {
-    return null;
-  }
+  const heights = sorted(heightMeasurements);
+  const height = heights[0];
+  const earlier = height
+    ? heights.find(
+        (row) => Date.parse(height.measuredAt) - Date.parse(row.measuredAt) >= 60 * 86400000,
+      )
+    : undefined;
+  const heightDelta = height && earlier ? height.value - earlier.value : null;
+  const tiles = (
+    [
+      {
+        key: 'height',
+        label: i18nText('Tanner.overview.height'),
+        row: height,
+        unit: 'cm',
+        icon: <Ruler {...ICON_PROPS} />,
+        iconClassName:
+          'bg-[color-mix(in_srgb,var(--nimi-color-indigo)_12%,transparent)] text-[var(--nimi-color-indigo)]',
+      },
+      {
+        key: 'bone-age',
+        label: i18nText('Tanner.overview.boneAge'),
+        row: sorted(boneAgeMeasurements)[0],
+        unit: i18nText('Common.unit.year'),
+        icon: <Bone {...ICON_PROPS} />,
+        iconClassName:
+          'bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_14%,transparent)] text-[color-mix(in_srgb,var(--nimi-action-primary-bg)_75%,var(--nimi-text-primary))]',
+      },
+      {
+        key: 'body-fat',
+        label: i18nText('Tanner.overview.bodyFat'),
+        row: sorted(bodyFatMeasurements)[0],
+        unit: '%',
+        icon: <Percent {...ICON_PROPS} />,
+        iconClassName: 'bg-[var(--nimi-surface-active)] text-[var(--nimi-text-muted)]',
+      },
+    ] satisfies MeasurementTile[]
+  ).filter((tile) => tile.row);
 
   return (
-    <div className="grid grid-cols-2 gap-3 mb-5">
-      {(() => {
-        const latest = sortByMeasuredAtDesc(heightMeasurements)[0];
-        if (!latest) return <div />;
-        const velocity = computeHeightVelocity(sortByMeasuredAtDesc(heightMeasurements));
-        return (
-          <div className="rounded-2xl bg-[var(--nimi-surface-panel)] p-4">
-            <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Tanner.overview.height')}</p>
-            <p className="text-[20px] font-bold mt-1 text-[var(--nimi-text-primary)]">{latest.value} cm</p>
-            <p className="text-[12px] mt-1 text-[var(--nimi-text-muted)]">
-              {velocity
-                ? i18nText('Tanner.overview.heightVelocity', {
-                  months: Math.round(velocity.months),
-                  delta: velocity.delta.toFixed(1),
-                  annualized: velocity.annualized.toFixed(1),
-                })
-                : i18nText('Tanner.overview.heightVelocityInsufficient')}
-            </p>
-            <div className="flex items-center gap-3 mt-1.5">
-              <span className="text-[12px] text-[var(--nimi-text-muted)]">{latest.measuredAt.split('T')[0]}</span>
-              <Link to="/profile/growth?metric=growth.height" className="text-[12px] hover:underline text-[var(--nimi-action-primary-bg)]">
-                {i18nText('Tanner.overview.heightGrowthCurveLink')}
-              </Link>
-            </div>
-          </div>
-        );
-      })()}
-      {(() => {
-        const latest = sortByMeasuredAtDesc(boneAgeMeasurements)[0];
-        if (!latest) return <div />;
-        const actualYears = latest.ageMonths / 12;
-        const diff = latest.value - actualYears;
-        const status = Math.abs(diff) <= 1
-          ? { label: i18nText('Tanner.overview.boneAgeMatched'), className: 'border-[color-mix(in_srgb,var(--nimi-status-success)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-success)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-success)]', dot: 'bg-[var(--nimi-status-success)]' }
-          : Math.abs(diff) > 2
-            ? { label: i18nText('Tanner.overview.boneAgeDeviationLarge'), className: 'border-[color-mix(in_srgb,var(--nimi-status-warning)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-warning)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-warning)]', dot: 'bg-[var(--nimi-status-warning)]' }
-            : diff > 1
-              ? { label: i18nText('Tanner.overview.boneAgeAhead', { years: Math.abs(diff).toFixed(1) }), className: 'border-[color-mix(in_srgb,var(--nimi-status-warning)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-warning)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-warning)]', dot: 'bg-[var(--nimi-status-warning)]' }
-              : { label: i18nText('Tanner.overview.boneAgeBehind', { years: Math.abs(diff).toFixed(1) }), className: 'border-[color-mix(in_srgb,var(--nimi-status-info)_30%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-info)_8%,var(--nimi-surface-card))] text-[var(--nimi-status-info)]', dot: 'bg-[var(--nimi-status-info)]' };
-        return (
-          <div className={`rounded-2xl border p-4 ${status.className}`}>
-            <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Tanner.overview.boneAge')}</p>
-            <p className="text-[20px] font-bold mt-1 text-[var(--nimi-text-primary)]">{latest.value} {i18nText('Common.unit.year')}</p>
-            <div className="flex items-center gap-1 mt-1">
-              <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
-              <span className="text-[13px]">{status.label}</span>
-            </div>
-            <p className="text-[12px] mt-1 text-[var(--nimi-text-muted)]">{i18nText('Tanner.overview.boneAgeCaption')}</p>
-            <p className="text-[12px] mt-1 text-[var(--nimi-text-muted)]">{latest.measuredAt.split('T')[0]}</p>
-          </div>
-        );
-      })()}
-      {(() => {
-        const sorted = sortByMeasuredAtDesc(bodyFatMeasurements);
-        const latest = sorted[0];
-        if (!latest) return <div />;
-        const previous = sorted[1];
-        const delta = previous ? latest.value - previous.value : null;
-        return (
-          <div className="rounded-2xl bg-[var(--nimi-surface-panel)] p-4">
-            <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Tanner.overview.bodyFat')}</p>
-            <p className="text-[20px] font-bold mt-1 text-[var(--nimi-text-primary)]">{latest.value}%</p>
-            {delta != null ? (
-              <p className="text-[12px] mt-1 text-[var(--nimi-text-muted)]">
-                {i18nText('Tanner.overview.bodyFatDelta', { delta: `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}` })}
-              </p>
-            ) : null}
-            <p className="text-[12px] mt-1 text-[var(--nimi-text-muted)]">{latest.measuredAt.split('T')[0]}</p>
-          </div>
-        );
-      })()}
-    </div>
+    <section aria-labelledby="tanner-measurements">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-1">
+        <h2
+          id="tanner-measurements"
+          className="m-0 text-[15px] font-semibold text-[var(--nimi-text-primary)]"
+        >
+          {i18nText('Tanner.redesign.measurements')}
+        </h2>
+        <Link
+          to="/profile/growth?metric=growth.height"
+          className="flex items-center gap-1 text-[12.5px] text-[color-mix(in_srgb,var(--nimi-action-primary-bg)_75%,var(--nimi-text-primary))] no-underline hover:underline"
+        >
+          {i18nText('Tanner.overview.heightGrowthCurveLink')}
+          <ArrowUpRight size={14} />
+        </Link>
+      </div>
+      {tiles.length ? (
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
+          {tiles.map((tile) => {
+            const row = tile.row!;
+            return (
+              <Surface
+                key={tile.key}
+                tone="card"
+                material="solid"
+                elevation="raised"
+                padding="md"
+                className="flex items-start gap-3 rounded-2xl"
+              >
+                <div
+                  className={cn(
+                    'grid h-8 w-8 shrink-0 place-items-center rounded-xl',
+                    tile.iconClassName,
+                  )}
+                >
+                  {tile.icon}
+                </div>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <div className="text-[11px] tracking-[0.02em] text-[var(--nimi-text-muted)]">
+                    {tile.label}
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <div className="text-[22px] font-bold leading-[1.1] tabular-nums text-[var(--nimi-text-primary)]">
+                      {row.value}
+                    </div>
+                    <div className="font-mono text-[11px] text-[var(--nimi-text-muted)]">
+                      {tile.unit}
+                    </div>
+                  </div>
+                  <time
+                    dateTime={row.measuredAt.slice(0, 10)}
+                    className="mt-0.5 text-[11px] text-[var(--nimi-text-muted)]"
+                  >
+                    {formatTannerDate(row.measuredAt)}
+                  </time>
+                  {tile.key === 'height' && earlier && heightDelta != null ? (
+                    <p className="mt-1.5 text-[11.5px] leading-[1.5] text-[var(--nimi-text-secondary)]">
+                      {i18nText('Tanner.redesign.heightDelta', {
+                        from: formatTannerDate(earlier.measuredAt),
+                        delta: `${heightDelta > 0 ? '+' : ''}${heightDelta.toFixed(1)}`,
+                      })}
+                    </p>
+                  ) : null}
+                </div>
+              </Surface>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="rounded-2xl border border-dashed border-[var(--nimi-border-subtle)] px-5 py-4 text-[13px] leading-[1.7] text-[var(--nimi-text-muted)]">
+          {i18nText('Tanner.redesign.noMeasurements')}
+        </p>
+      )}
+    </section>
   );
 }

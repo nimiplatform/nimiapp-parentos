@@ -43,7 +43,7 @@ export function OutdoorSummaryCard({ childId }: { childId: string }) {
   return (
     <Surface
       as={Link}
-      to="/profile"
+      to="/profile/outdoor"
       data-testid="vision-outdoor-summary"
       tone="card"
       material="glass-regular"

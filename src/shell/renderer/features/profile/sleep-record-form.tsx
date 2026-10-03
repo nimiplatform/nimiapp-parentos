@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock, Moon, Plus, Sun, X } from 'lucide-react';
+import { Clock, Moon, Sun, X } from 'lucide-react';
 import { computeAgeMonths, computeAgeMonthsAt } from '../../app-shell/app-store.js';
 import { upsertSleepRecord } from '../../bridge/sqlite-bridge.js';
 import type { SleepRecordRow } from '../../bridge/sqlite-bridge.js';
@@ -20,7 +20,7 @@ import {
   unpackNotes,
   unpackNapRows,
 } from './sleep-page-shared.js';
-import { Button, DatePicker, TextField } from '@nimiplatform/kit/ui';
+import { Button, DashedAddButton, DatePicker, TextField } from '@nimiplatform/kit/ui';
 import { AppSelect } from '../../app-shell/app-select.js';
 import {
   FormField,
@@ -64,7 +64,6 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
     initialNotes.nightWakings != null && initialNotes.nightWakings > 0 ? String(initialNotes.nightWakings) : '',
   );
   const [napRows, setNapRows] = useState<NapRow[]>(() => unpackNapRows(initialNotes.napNotes));
-  const [napAddHover, setNapAddHover] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -213,34 +212,12 @@ export function SleepFormContent({ child, initialRecord, onSaved, onClose }: Sle
               ))}
             </div>
 
-            <button
+            <DashedAddButton
+              shape="tile"
               onClick={addNapRow}
-              onMouseEnter={() => setNapAddHover(true)}
-              onMouseLeave={() => setNapAddHover(false)}
-              className="mt-2 flex w-full cursor-pointer flex-col items-center justify-center gap-1 py-3"
-              style={{
-                borderRadius: HEALTH_MODAL_TOKENS.fieldRadius,
-                border: `2px dashed ${napAddHover ? 'var(--nimi-action-primary-bg)' : '#d0d0cc'}`,
-                background: 'var(--nimi-field-bg)',
-                transition: 'border-color 0.25s ease',
-              }}
-            >
-              <Plus
-                size={18}
-                strokeWidth={1.5}
-                style={{
-                  color: napAddHover ? 'var(--nimi-text-primary)' : '#b0b0aa',
-                  transform: napAddHover ? 'scale(1.15)' : 'scale(1)',
-                  transition: 'color 0.25s ease, transform 0.25s ease',
-                }}
-              />
-              <span
-                className="text-[13px] font-medium"
-                style={{ color: napAddHover ? 'var(--nimi-text-primary)' : '#a0a0a0', transition: 'color 0.25s ease' }}
-              >
-                {i18nText('Sleep.form.addNap', { label: i18nText(napKind === 'daytime' ? 'Sleep.form.shortNap' : 'Sleep.form.afternoonNap') })}
-              </span>
-            </button>
+              className="mt-2"
+              label={i18nText('Sleep.form.addNap', { label: i18nText(napKind === 'daytime' ? 'Sleep.form.shortNap' : 'Sleep.form.afternoonNap') })}
+            />
           </div>
 
           <FormGrid cols={2}>

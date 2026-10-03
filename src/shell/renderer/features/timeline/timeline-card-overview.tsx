@@ -151,17 +151,17 @@ export function ChildContextCard({ child, ageMonths }: { child: ChildProfile; ag
         boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 14px rgba(15,23,42,0.04), 0 18px 36px rgba(15,23,42,0.04)',
       }}
     >
-      <div className="relative flex h-full flex-col items-center overflow-hidden px-6 pb-6 pt-12" style={{ borderRadius: 24, isolation: 'isolate' }}>
+      <div className="relative flex h-full flex-col items-center overflow-hidden px-6 pb-6 pt-16" style={{ borderRadius: 24, isolation: 'isolate' }}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ backgroundImage: meshBackground, filter: 'blur(24px)', zIndex: 0 }} />
         <div
           className="relative nimi-material-glass-regular bg-[var(--nimi-material-glass-regular-bg)] border border-[var(--nimi-material-glass-regular-border)] backdrop-blur-[var(--nimi-backdrop-blur-regular)]"
-          style={{ width: 120, height: 120, padding: 4, borderRadius: '50%', boxShadow: '0 4px 14px rgba(15,23,42,0.06)' }}
+          style={{ width: 108, height: 108, padding: 4, borderRadius: '50%', boxShadow: '0 4px 14px rgba(15,23,42,0.06)' }}
           data-nimi-material="glass-regular"
           data-nimi-tone="card"
         >
           <ChildAvatar child={child} ageMonths={ageMonths} className="h-full w-full rounded-full object-cover" />
         </div>
-        <div className="relative mt-6 max-w-full text-center">
+        <div className="relative mt-5 max-w-full text-center">
           <h2 className="truncate text-[24px] font-semibold tracking-tight" style={{ color: '#1d1d1f', letterSpacing: '-0.3px' }}>
             {child.displayName}
           </h2>

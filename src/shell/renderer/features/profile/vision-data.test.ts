@@ -8,6 +8,7 @@ import {
   deriveMeasurementExamKind,
   describeReferenceStatus,
   findLatestFullRecord,
+  getAxialRef,
   groupByDate,
   parseExamMeta,
   parseScreeningEvent,
@@ -142,6 +143,21 @@ describe('computeGlanceMetrics', () => {
       { label: '眼轴', od: 22.79, os: 22.77, status: 'ok', tag: '已记录' },
       { label: '裸眼视力', od: 1.0, os: 1.0, status: 'ok', tag: '达标' },
     ]);
+  });
+
+  it('adds same-age axial reserve (P75 critical − AL) to the axial chip when gender is known', () => {
+    const records = groupByDate([
+      m('axial-length-right', 22.79, '2026-01-10'),
+      m('axial-length-left', 22.77, '2026-01-10'),
+    ]);
+    const latest = findLatestFullRecord(records)!;
+    const ref = getAxialRef(latest.ageMonths, 'male')!;
+    const axial = computeGlanceMetrics(latest, 'male')[1]!;
+    expect(axial.surplus).toEqual({
+      od: +(ref.critical - 22.79).toFixed(2),
+      os: +(ref.critical - 22.77).toFixed(2),
+    });
+    expect(computeGlanceMetrics(latest)[1]!.surplus).toBeUndefined();
   });
 
   it('returns placeholder chips when there are no records', () => {

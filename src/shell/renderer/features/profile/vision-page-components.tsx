@@ -22,7 +22,7 @@ import { GROWTH_STANDARDS } from '../../knowledge-base/index.js';
 import type { GrowthTypeId } from '../../knowledge-base/gen/growth-standards.gen.js';
 import { AppSelect } from '../../app-shell/app-select.js';
 import { ulid, isoNow } from '../../bridge/ulid.js';
-import { buildReferenceBand, CHART_OPTIONS, describeReferenceStatus } from './vision-data.js';
+import { buildReferenceBand, CHART_OPTIONS, describeReferenceStatus, fmtAge } from './vision-data.js';
 import type { ReferencePoint } from './vision-data.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -174,6 +174,54 @@ export function ScreeningModal({
           {t('Profile.rich.common.save')}
         </Button>
       </ModalFooter>
+    </HealthRecordModalShell>
+  );
+}
+
+/* ── RecordKindChooser — one entry point, pick screening vs refraction ─ */
+
+export type VisionRecordKind = 'screening' | 'quantitative';
+
+export function RecordKindChooser({
+  onPick,
+  onClose,
+}: {
+  onPick: (kind: VisionRecordKind) => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const options: ReadonlyArray<{ kind: VisionRecordKind; emoji: string; titleKey: string; descKey: string }> = [
+    { kind: 'screening', emoji: '👁️', titleKey: 'chooserScreeningTitle', descKey: 'chooserScreeningDesc' },
+    { kind: 'quantitative', emoji: '📋', titleKey: 'chooserQuantitativeTitle', descKey: 'chooserQuantitativeDesc' },
+  ];
+
+  return (
+    <HealthRecordModalShell open size="S" onClose={onClose}>
+      <ModalHeader title={t('Profile.rich.vision.chooserTitle')} icon="➕" onClose={onClose} />
+      <ModalContent>
+        <div className="flex flex-col gap-3">
+          {options.map((option) => (
+            <button
+              key={option.kind}
+              type="button"
+              onClick={() => onPick(option.kind)}
+              className="flex w-full items-start gap-3 rounded-2xl border border-[var(--nimi-field-border)] bg-[var(--nimi-surface-panel)] px-4 py-3.5 text-left transition-all hover:border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_45%,var(--nimi-border-subtle))] hover:bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_8%,var(--nimi-surface-card))]"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--nimi-surface-card)] text-[18px]">
+                {option.emoji}
+              </span>
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">
+                  {t(`Profile.rich.vision.${option.titleKey}`)}
+                </span>
+                <span className="text-[12.5px] leading-snug text-[var(--nimi-text-muted)]">
+                  {t(`Profile.rich.vision.${option.descKey}`)}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </ModalContent>
     </HealthRecordModalShell>
   );
 }
@@ -535,6 +583,9 @@ export function TrendChartCard({
 }) {
   const { t } = useTranslation();
   const typeInfo = GROWTH_STANDARDS.find((s) => s.typeId === chartType);
+  // 'decimal' is the stored notation token for decimal visual acuity, not a
+  // display unit — acuity values render bare.
+  const displayUnit = typeInfo?.unit && typeInfo.unit !== 'decimal' ? typeInfo.unit : '';
   const chartData = measurements
     .filter((m) => m.typeId === chartType)
     .sort((a, b) => a.ageMonths - b.ageMonths)
@@ -599,18 +650,19 @@ export function TrendChartCard({
               <XAxis
                 dataKey="age"
                 tick={{ fontSize: 10 }}
-                label={{ value: i18nText('Vision.chart.ageMonthsAxis'), position: 'insideBottom', offset: -4, fontSize: 10 }}
+                tickFormatter={(age: number) => fmtAge(age)}
+                label={{ value: i18nText('Vision.chart.ageAxis'), position: 'insideBottom', offset: -4, fontSize: 10 }}
               />
               <YAxis
                 tick={{ fontSize: 10 }}
-                label={{ value: typeInfo?.unit ?? '', angle: -90, position: 'insideLeft', fontSize: 10 }}
+                label={{ value: displayUnit, angle: -90, position: 'insideLeft', fontSize: 10 }}
               />
               <Tooltip
                 formatter={(v, name) => {
                   const text = Array.isArray(v) ? `${v[0]}~${v[1]}` : `${v}`;
-                  return [`${text}${typeInfo?.unit ? ` ${typeInfo.unit}` : ''}`, name];
+                  return [`${text}${displayUnit ? ` ${displayUnit}` : ''}`, name];
                 }}
-                labelFormatter={(a) => i18nText('Vision.chart.ageMonthsTooltip', { months: a })}
+                labelFormatter={(a) => fmtAge(Number(a))}
               />
               {reference?.kind === 'band' && (
                 <Area

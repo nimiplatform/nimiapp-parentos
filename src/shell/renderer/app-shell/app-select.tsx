@@ -3,6 +3,13 @@ import { SelectField, type SelectFieldOption, type SelectFieldProps } from '@nim
 
 export type AppSelectOption = SelectFieldOption;
 
+// Kit SelectField lights its trigger (blue border + focus ring) only on
+// :focus, but Radix moves focus into the listbox while the dropdown is open,
+// so the field goes dark exactly while it is in use. Hold that same look for
+// as long as the dropdown is open.
+const OPEN_HIGHLIGHT_CLASS =
+  'data-[state=open]:border-[var(--nimi-field-focus)] data-[state=open]:ring-[length:var(--nimi-focus-ring-width)] data-[state=open]:ring-[var(--nimi-focus-ring-color)]';
+
 export interface AppSelectProps {
   value: string;
   onChange: (value: string) => void;
@@ -30,6 +37,7 @@ export function AppSelect({ value, onChange, options, placeholder, className, co
       placeholder={placeholder}
       aria-label={ariaLabel}
       className={className}
+      selectClassName={OPEN_HIGHLIGHT_CLASS}
       contentLayer={contentLayer}
     />
   );

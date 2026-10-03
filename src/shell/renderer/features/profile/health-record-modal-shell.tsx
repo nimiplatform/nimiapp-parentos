@@ -23,7 +23,6 @@
  */
 
 import {
-  useRef,
   type CSSProperties,
   type ReactNode,
 } from 'react';
@@ -176,75 +175,58 @@ export function HealthRecordSidebar({ items, selected, onSelect, title, footer }
   );
 }
 
-/* ── SmartInputButton ──────────────────────────────────────────────────── */
+/* ── SmartRecognizeButton ──────────────────────────────────────────────── */
 
-type SmartInputButtonProps = {
-  loading: boolean;
-  error: string | null;
-  imageName: string | null;
-  accept?: string;
-  hint?: string;
-  onUpload: (file: File) => void;
+/**
+ * Canonical "智能识别" action used everywhere a form can be filled from a
+ * photo / report via AI. Compact primary pill with the scan glyph; every
+ * OCR / AI-recognition entry point in ParentOS must render this so the
+ * affordance looks identical across vision, growth, dental and medical.
+ */
+export function SmartRecognizeIcon({ size = 13 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M7 12h10" />
+    </svg>
+  );
+}
+
+type SmartRecognizeButtonProps = {
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  title?: string;
+  className?: string;
 };
 
-export function SmartInputButton({
-  loading,
-  error,
-  imageName,
-  accept = 'image/*',
-  hint,
-  onUpload,
-}: SmartInputButtonProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const status = loading
-    ? imageName
-      ? i18nText('HealthCapture.ai.recognizingFile', { imageName })
-      : i18nText('HealthCapture.ai.recognizing')
-    : error
-      ? error
-      : imageName
-        ? i18nText('HealthCapture.ai.extractedFromFile', { imageName })
-        : (hint ?? i18nText('HealthCapture.ai.uploadHint'));
-  const statusClass = loading
-    ? 'text-[var(--nimi-action-primary-bg)]'
-    : error
-      ? 'text-[var(--nimi-status-danger)]'
-      : imageName
-        ? 'text-[var(--nimi-action-primary-bg)]'
-        : 'text-[var(--nimi-text-muted)]';
-
+export function SmartRecognizeButton({ children, onClick, disabled, title, className }: SmartRecognizeButtonProps) {
   return (
-    <div
-      className="rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)] p-3"
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={[
+        'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[12px] px-3 text-[13px] font-medium text-white transition-all hover:opacity-90 disabled:opacity-50',
+        className ?? '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      style={{ background: 'var(--nimi-action-primary-bg)' }}
     >
-      <input
-        ref={inputRef}
-        type="file"
-        accept={accept}
-        className="hidden"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) onUpload(file);
-          event.target.value = '';
-        }}
-      />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={loading}
-        className="flex w-full items-center gap-2 rounded-xl bg-[var(--nimi-action-primary-bg)] px-3 py-2.5 text-[13px] font-semibold text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)] transition-all hover:bg-[var(--nimi-action-primary-bg-hover)] disabled:opacity-50"
-      >
-        <span aria-hidden="true" className="text-[16px]">
-          {loading ? '⏳' : '🤖'}
-        </span>
-        <span className="flex-1 text-left truncate">
-          {loading ? i18nText('HealthCapture.ai.recognizing') : i18nText('HealthCapture.ai.smartCapture')}
-        </span>
-      </button>
-      <p className={`mt-2 text-[11px] leading-snug ${statusClass}`}>
-        {status}
-      </p>
-    </div>
+      <SmartRecognizeIcon />
+      {children}
+    </button>
   );
 }
 

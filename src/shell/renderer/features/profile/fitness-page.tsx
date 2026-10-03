@@ -149,19 +149,17 @@ function buildEditTarget(entry: FitnessEntry): FitnessEditTarget {
     const distance = entry.valuesByMetric.get('fitness.activity_distance')?.valueNumber;
     const intensity = entry.valuesByMetric.get('fitness.activity_intensity')?.valueText ?? '';
     formEntry = {
-      category,
-      standardValues: {},
-      footArch: '',
+      ...makeEntry(category),
       duration: duration != null ? String(duration) : '',
       distance: distance != null ? String(distance) : '',
       intensity,
     };
   }
+  formEntry.notes = entry.notes ?? '';
   return {
     eventId: entry.eventId,
     date: entry.date,
     source: entry.source ?? 'self',
-    notes: entry.notes ?? '',
     entry: formEntry,
   };
 }

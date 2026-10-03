@@ -83,13 +83,24 @@ export interface PhotoBarProps {
   inputRef: React.RefObject<HTMLInputElement | null>;
 }
 
-export function PhotoBar({ drafts, onRemove, inputRef }: PhotoBarProps) {
+// @nimi-authority: rule.parentos.jour.r004
+export function PhotoBar({ drafts, onAdd, onRemove, inputRef }: PhotoBarProps) {
+  const [dragOver, setDragOver] = useState(false);
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div
+      className="grid grid-cols-3 gap-2"
+      onDragOver={(event) => { event.preventDefault(); setDragOver(true); }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(event) => {
+        event.preventDefault();
+        setDragOver(false);
+        if (drafts.length < 9) onAdd(event.dataTransfer.files);
+      }}
+    >
       {/* Photo previews */}
       {drafts.map((d, i) => (
-        <div key={i} className="relative w-14 h-14 shrink-0">
-          <img src={d.previewUrl} alt="" className="h-14 w-14 parentos-radius-sm object-cover" />
+        <div key={i} className="relative">
+          <img src={d.previewUrl} alt="" className="h-24 w-full rounded-2xl object-cover" />
           <button onClick={() => onRemove(i)}
             className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--nimi-status-danger)] text-[12px] leading-none text-[var(--nimi-action-primary-text)]">
             ✕
@@ -98,7 +109,13 @@ export function PhotoBar({ drafts, onRemove, inputRef }: PhotoBarProps) {
       ))}
 
       {drafts.length < 9 && (
-        <DashedAddButton shape="thumb" onClick={() => inputRef.current?.click()} label={i18nText('Journal.photoBar.add')} />
+        <DashedAddButton
+          shape="tile"
+          active={dragOver}
+          className={drafts.length === 0 ? 'col-span-3' : undefined}
+          onClick={() => inputRef.current?.click()}
+          label={drafts.length === 0 ? i18nText('Profile.photoGrid.uploadHint', { max: 9 }) : i18nText('Journal.photoBar.add')}
+        />
       )}
     </div>
   );

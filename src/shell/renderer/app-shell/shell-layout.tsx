@@ -196,7 +196,11 @@ export function ShellLayout({ children }: { children: ReactNode }) {
   }, [activeChildId]);
 
   return (
-    <AmbientBackground variant="mesh" className="isolate flex h-full overflow-hidden">
+    // overflow-clip, not overflow-hidden: the kit's mesh halo extends 100px
+    // below the root, and an overflow-hidden root stays programmatically
+    // scrollable, so a page's scrollIntoView() would lift the whole shell and
+    // leave a blank strip at the bottom of the window.
+    <AmbientBackground variant="mesh" className="isolate flex h-full overflow-clip">
       {/* Sidebar — transparent, shares global bg */}
       {hasActiveChild ? (
         <nav

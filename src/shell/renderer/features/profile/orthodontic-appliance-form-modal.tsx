@@ -1,9 +1,10 @@
-import { Button, cn, DatePicker, SelectField, TextField, TextareaField } from '@nimiplatform/kit/ui';
+import { Button, cn, DatePicker, TextField, TextareaField } from '@nimiplatform/kit/ui';
 import { useState } from 'react';
 import {
   insertOrthodonticAppliance,
   type OrthodonticApplianceType,
 } from '../../bridge/sqlite-bridge.js';
+import { AppSelect } from '../../app-shell/app-select.js';
 import { computeAgeMonthsAt } from '../../app-shell/app-store.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
@@ -143,9 +144,9 @@ export function ApplianceFormModal({
             <InlineError>{i18nText('Orthodontic.modal.appliance.noEligibleTypes')}</InlineError>
           )}
           <FormField label={i18nText('Orthodontic.modal.appliance.typeLabel')}>
-            <SelectField
+            <AppSelect
               value={applianceType}
-              onValueChange={(v) => handleTypeChange(v as OrthodonticApplianceType)}
+              onChange={(v) => handleTypeChange(v as OrthodonticApplianceType)}
               options={eligibleTypes.map((o) => ({ value: o.value, label: o.label }))}
               contentLayer="dialog"
               className="min-h-12"
@@ -221,9 +222,9 @@ export function ApplianceFormModal({
             <TextField type="number" value={reviewIntervalDays} onChange={(event) => setReviewIntervalDays(event.target.value)} className="w-full min-h-12" inputClassName={NUMBER_INPUT_CLASS} />
           </FormField>
           <FormField label={i18nText('Orthodontic.modal.appliance.initialPhase')}>
-            <SelectField
+            <AppSelect
               value={currentPhase}
-              onValueChange={setCurrentPhase}
+              onChange={setCurrentPhase}
               placeholder={i18nText('Orthodontic.modal.appliance.initialPhasePlaceholder')}
               options={APPLIANCE_PHASES[applianceType].map((p) => ({ value: p.phaseId, label: p.label }))}
               contentLayer="dialog"

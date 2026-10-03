@@ -1,6 +1,10 @@
 import { Button, IconButton, Surface } from '@nimiplatform/kit/ui';
 import { useState } from 'react';
 import { i18nText } from '../../i18n/index.js';
+import postureGuideCobbHeroUrl from './assets/posture-guide-cobb-hero.webp';
+import postureGuideFootArchHeroUrl from './assets/posture-guide-foot-arch-hero.webp';
+import postureGuideHeroUrl from './assets/posture-guide-hero.webp';
+import postureGuideObserveHeroUrl from './assets/posture-guide-observe-hero.webp';
 
 
 /* ── Guide data ── */
@@ -13,8 +17,37 @@ interface GuideSection {
   warning?: { title: string; body: string };
 }
 
+/** Banner art (cut to the header's 100/23 ratio) and how the copy sits on it. */
+interface GuideHero {
+  src: string;
+  /** object-position: the side of the art kept when wrapped copy makes the banner taller. */
+  imageClassName: string;
+  /** Title width cap for art that leaves the copy less room. */
+  titleClassName?: string;
+}
+
+// Left ~45% is open sky and the children start around the middle, so a
+// taller banner crops the empty left side.
+const SHARED_HERO: GuideHero = { src: postureGuideHeroUrl, imageClassName: 'object-right' };
+
+// Step 1 of the four-step art starts ~29% in: long (English) titles wrap
+// before reaching it, and a taller banner crops the right edge instead of
+// the sky the copy sits on.
+const OBSERVE_HERO: GuideHero = {
+  src: postureGuideObserveHeroUrl,
+  imageClassName: 'object-left',
+  titleClassName: 'max-w-[8em] text-balance',
+};
+
+// The Cobb and foot-arch scenes start just short of halfway, so like the
+// shared hero a taller banner crops the empty left side.
+const COBB_HERO: GuideHero = { src: postureGuideCobbHeroUrl, imageClassName: 'object-right' };
+const FOOT_ARCH_HERO: GuideHero = { src: postureGuideFootArchHeroUrl, imageClassName: 'object-right' };
+
 interface GuideStep {
   title: string;
+  /** Defaults to SHARED_HERO. */
+  hero?: GuideHero;
   sections: GuideSection[];
 }
 
@@ -50,6 +83,7 @@ const GUIDE_STEPS: GuideStep[] = [
   },
   {
     title: i18nText('PostureGuide.steps.observe.title'),
+    hero: OBSERVE_HERO,
     sections: [
       {
         heading: i18nText('PostureGuide.steps.observe.preparation.heading'),
@@ -87,6 +121,7 @@ const GUIDE_STEPS: GuideStep[] = [
   },
   {
     title: i18nText('PostureGuide.steps.cobb.title'),
+    hero: COBB_HERO,
     sections: [
       {
         heading: i18nText('PostureGuide.steps.cobb.definition.heading'),
@@ -125,6 +160,7 @@ const GUIDE_STEPS: GuideStep[] = [
   },
   {
     title: i18nText('PostureGuide.steps.footArch.title'),
+    hero: FOOT_ARCH_HERO,
     sections: [
       {
         heading: i18nText('PostureGuide.steps.footArch.why.heading'),
@@ -226,30 +262,41 @@ export function PostureGuide({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
   const current = GUIDE_STEPS[step];
   if (!current) return null;
+  const hero = current.hero ?? SHARED_HERO;
 
   return (
     <Surface tone="card" elevation="raised" padding="none" className="mb-5 overflow-hidden rounded-3xl">
-      {/* Step header */}
-      <div className="bg-[image:var(--nimi-surface-hero)] px-5 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[12px] text-white/60">{i18nText('PostureGuide.ui.eyebrow')}</span>
-          <IconButton
-            aria-label={i18nText('PostureGuide.ui.close')}
-            icon="✕"
-            onClick={onClose}
-            size="sm"
-            tone="ghost"
-            className="h-6 min-h-6 w-6 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
-          />
-        </div>
-        <h3 className="text-[16px] font-bold text-white mb-3">{current.title}</h3>
-        {/* Step indicators */}
-        <div className="flex items-center gap-1">
-          {GUIDE_STEPS.map((_, i) => (
-            <button key={i} onClick={() => setStep(i)}
-              className={`h-[6px] rounded-full transition-all ${i === step ? 'w-6 bg-white' : 'w-[6px] bg-white/30 hover:bg-white/50'}`} />
-          ))}
-          <span className="text-[12px] text-white/50 ml-2">{step + 1}/{GUIDE_STEPS.length}</span>
+      {/* Step header: full-bleed banner at the 100/23 ratio every step's art is
+          cut to, so paging never shifts the content. When wrapped copy outgrows
+          the ratio the banner grows with it (no min-height/overflow here: either
+          would break that) and object-cover crops the art on the side its
+          GuideHero says the copy can spare. */}
+      <div className="relative flex aspect-[100/23] items-center bg-[#dcf2fd]">
+        <img
+          src={hero.src}
+          alt=""
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 h-full w-full select-none object-cover ${hero.imageClassName}`}
+        />
+        <IconButton
+          aria-label={i18nText('PostureGuide.ui.close')}
+          icon="✕"
+          onClick={onClose}
+          size="sm"
+          tone="ghost"
+          className="absolute right-4 top-4 z-10 h-7 min-h-7 w-7 border-transparent bg-white/60 hover:bg-white/90"
+        />
+        <div className="relative flex max-w-[44%] flex-col px-6 py-4">
+          <span className="mb-2 text-[12px] text-[var(--nimi-text-secondary)]">{i18nText('PostureGuide.ui.eyebrow')}</span>
+          <h3 className={`mb-3 text-[20px] font-bold leading-snug text-[var(--nimi-text-primary)] ${hero.titleClassName ?? ''}`}>{current.title}</h3>
+          {/* Step indicators */}
+          <div className="flex items-center gap-1">
+            {GUIDE_STEPS.map((_, i) => (
+              <button key={i} onClick={() => setStep(i)}
+                className={`h-[6px] rounded-full transition-all ${i === step ? 'w-6 bg-[var(--nimi-action-primary-bg)]' : 'w-[6px] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_30%,transparent)] hover:bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_50%,transparent)]'}`} />
+            ))}
+            <span className="ml-2 text-[12px] text-[var(--nimi-text-secondary)]">{step + 1}/{GUIDE_STEPS.length}</span>
+          </div>
         </div>
       </div>
 

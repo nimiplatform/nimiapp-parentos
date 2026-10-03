@@ -42,7 +42,7 @@ export function SleepWeekOverview({
   ageMonths: number;
 }) {
   const stats: SleepWeekStats = useMemo(
-    () => computeWeekStats(records, ageMonths, new Date()),
+    () => computeWeekStats(records, ageMonths),
     [records, ageMonths],
   );
 

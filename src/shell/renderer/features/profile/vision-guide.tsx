@@ -1,6 +1,7 @@
 import { Button, IconButton, Surface } from '@nimiplatform/kit/ui';
 import { useState } from 'react';
 import { i18nText } from '../../i18n/index.js';
+import visionGuideHeroUrl from './assets/vision-guide-hero.webp';
 
 
 /* ================================================================
@@ -170,27 +171,33 @@ export function VisionGuide({ onClose }: { onClose: () => void }) {
   return (
     <Surface tone="card" elevation="raised" padding="none" className="mb-5 overflow-hidden rounded-3xl">
       {/* Step header */}
-      <div className="bg-[image:var(--nimi-surface-hero)] px-5 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[12px] text-white/60">{i18nText('Vision.guide.stepLabel')}</span>
-          <IconButton
-            aria-label={i18nText('Vision.guide.closeAria')}
-            icon="✕"
-            onClick={onClose}
-            size="sm"
-            tone="ghost"
-            className="h-6 min-h-6 w-6 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
-          />
+      <div className="relative flex items-stretch gap-4 bg-[image:var(--nimi-surface-hero)] px-5 py-4">
+        <IconButton
+          aria-label={i18nText('Vision.guide.closeAria')}
+          icon="✕"
+          onClick={onClose}
+          size="sm"
+          tone="ghost"
+          className="absolute right-4 top-4 z-10 h-6 min-h-6 w-6 border-transparent"
+        />
+        <div className="flex min-w-0 flex-1 flex-col justify-between">
+          <span className="mb-3 text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Vision.guide.stepLabel')}</span>
+          <h3 className="text-[16px] font-bold text-[var(--nimi-text-primary)] mb-3">{i18nText(current.titleKey)}</h3>
+          {/* Step indicators */}
+          <div className="flex items-center gap-1">
+            {GUIDE_STEPS.map((_, i) => (
+              <button key={i} onClick={() => setStep(i)}
+                className={`h-[6px] rounded-full transition-all ${i === step ? 'w-6 bg-[var(--nimi-action-primary-bg)]' : 'w-[6px] bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_30%,transparent)] hover:bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_50%,transparent)]'}`} />
+            ))}
+            <span className="text-[12px] text-[var(--nimi-text-muted)] ml-2">{step + 1}/{GUIDE_STEPS.length}</span>
+          </div>
         </div>
-        <h3 className="text-[16px] font-bold text-white mb-3">{i18nText(current.titleKey)}</h3>
-        {/* Step indicators */}
-        <div className="flex items-center gap-1">
-          {GUIDE_STEPS.map((_, i) => (
-            <button key={i} onClick={() => setStep(i)}
-              className={`h-[6px] rounded-full transition-all ${i === step ? 'w-6 bg-white' : 'w-[6px] bg-white/30 hover:bg-white/50'}`} />
-          ))}
-          <span className="text-[12px] text-white/50 ml-2">{step + 1}/{GUIDE_STEPS.length}</span>
-        </div>
+        <img
+          src={visionGuideHeroUrl}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none mr-10 hidden h-[132px] w-auto shrink-0 select-none object-contain sm:block"
+        />
       </div>
 
       {/* Content */}

@@ -1,11 +1,15 @@
 import { Surface } from '@nimiplatform/kit/ui';
+import { ChevronRight, Eye } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getMeasurements, type MeasurementRow } from '../../bridge/sqlite-bridge.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
-import { EYE_SET, fmtAge, groupByDate } from '../profile/vision-data.js';
+import { EYE_SET, groupByDate } from '../profile/vision-data.js';
 import { i18nText } from '../../i18n/index.js';
+import { parseDate } from './outdoor-helpers.js';
 
+
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-[length:var(--nimi-focus-ring-width)] focus-visible:ring-[color:var(--nimi-focus-ring-color)]';
 
 function daysBetween(fromISO: string, toISO: string): number {
   const a = new Date(fromISO);
@@ -20,12 +24,24 @@ function formatElapsed(days: number): string {
   return i18nText('Common.relative.yearsAgo', { years: Math.round(days / 365) });
 }
 
+/** "8月15日" this year, the full ISO date for older exams. */
+function formatExamDate(isoDate: string, todayISO: string): string {
+  if (isoDate.slice(0, 4) !== todayISO.slice(0, 4)) return isoDate;
+  const d = parseDate(isoDate);
+  return i18nText('Outdoor.date.shortMonthDay', { month: d.getMonth() + 1, day: d.getDate() });
+}
+
+/** Acuity reads as "1.0", not "1"; other values keep their recorded precision. */
+function formatAcuity(value: number | undefined): string {
+  if (value == null) return '–';
+  return Number.isInteger(value) ? value.toFixed(1) : String(value);
+}
+
 /**
- * Compact link-card shown on the outdoor page. Closes the narrative loop:
- * outdoor time feeds into myopia prevention, so the user sees the latest
- * vision exam snapshot and can jump to the full vision record.
+ * Closes the myopia-prevention loop on the outdoor page: why outdoor time
+ * matters, then the latest vision exam as a link into the vision archive.
  */
-export function VisionSummaryCard({ childId }: { childId: string }) {
+export function VisionSummaryCard({ childId, className = '' }: { childId: string; className?: string }) {
   const [measurements, setMeasurements] = useState<MeasurementRow[]>([]);
 
   useEffect(() => {
@@ -41,77 +57,76 @@ export function VisionSummaryCard({ childId }: { childId: string }) {
 
   const todayISO = new Date().toISOString().slice(0, 10);
 
-  if (!latestRecord) {
-    return (
-      <Surface
-        as={Link}
-        to="/profile"
-        data-testid="outdoor-vision-summary"
-        tone="card"
-        material="glass-regular"
-        elevation="base"
-        padding="md"
-        interactive
-        className="mb-6 block no-underline"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Outdoor.visionSummary.profileTitle')}</span>
-            <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.noExamRecords')}</span>
-          </div>
-          <span className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.addRecord')}</span>
-        </div>
-      </Surface>
-    );
-  }
-
-  const vr = latestRecord.data.get('vision-right');
-  const vl = latestRecord.data.get('vision-left');
-  const ar = latestRecord.data.get('axial-length-right');
-  const al = latestRecord.data.get('axial-length-left');
-  const elapsed = formatElapsed(daysBetween(latestRecord.date, todayISO));
-
+  const vr = latestRecord?.data.get('vision-right');
+  const vl = latestRecord?.data.get('vision-left');
+  const ar = latestRecord?.data.get('axial-length-right');
+  const al = latestRecord?.data.get('axial-length-left');
   const hasVision = vr != null || vl != null;
   const hasAxial = ar != null || al != null;
 
   return (
     <Surface
-      as={Link}
-      to="/profile"
-      data-testid="outdoor-vision-summary"
+      as="section"
+      aria-labelledby="outdoor-vision-title"
       tone="card"
-      material="glass-regular"
+      material="glass-thick"
       elevation="base"
-      padding="md"
-      interactive
-      className="mb-6 block no-underline"
+      padding="none"
+      className={`min-w-0 rounded-[20px] px-6 pb-6 pt-5 ${className}`}
     >
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Outdoor.visionSummary.latestExam')}</span>
-          <span className="text-[12px] text-[var(--nimi-text-muted)]">{latestRecord.date} · {elapsed}</span>
-        </div>
-        <span className="text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.viewProfile')}</span>
-      </div>
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        {hasVision && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.uncorrectedVision')}</span>
-            <span className="text-[16px] font-bold tabular-nums text-[var(--nimi-text-primary)]">
-              R {vr ?? '—'} {i18nText('Outdoor.visionSummary.leftEyeSeparator')} {vl ?? '—'}
+      <h3 id="outdoor-vision-title" className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">
+        {i18nText('Outdoor.visionSummary.profileTitle')}
+      </h3>
+      <p className="mt-1.5 text-[13px] leading-[1.6] text-[var(--nimi-text-muted)]">
+        {i18nText('Outdoor.visionSummary.why')}
+      </p>
+
+      <Link
+        to="/profile/vision"
+        data-testid="outdoor-vision-summary"
+        className={`group mt-4 flex items-center gap-4 rounded-2xl bg-white/85 px-5 py-4 no-underline shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--nimi-text-primary)_6%,transparent)] transition-colors hover:bg-white ${FOCUS_RING}`}
+      >
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_13%,transparent)] text-[color-mix(in_srgb,var(--nimi-action-primary-bg)_84%,var(--nimi-text-primary))]">
+          <Eye size={21} strokeWidth={1.8} aria-hidden="true" />
+        </span>
+        {latestRecord ? (
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-baseline gap-x-2.5">
+              <span className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Outdoor.visionSummary.latestExam')}</span>
+              <span className="text-[12.5px] text-[var(--nimi-text-muted)]">
+                {formatExamDate(latestRecord.date, todayISO)} · {formatElapsed(daysBetween(latestRecord.date, todayISO))}
+              </span>
             </span>
-          </div>
+            {hasVision || hasAxial ? (
+              <span className="mt-1.5 flex flex-col gap-0.5 text-[13.5px] leading-[1.6] tabular-nums text-[var(--nimi-text-secondary)]">
+                {hasVision ? (
+                  <span>
+                    <span className="text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.uncorrectedVision')}</span>
+                    {' '}R {formatAcuity(vr)} {i18nText('Outdoor.visionSummary.leftEyeSeparator')} {formatAcuity(vl)}
+                  </span>
+                ) : null}
+                {hasAxial ? (
+                  <span>
+                    <span className="text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.axialLength')}</span>
+                    {' '}R {ar ?? '–'} {i18nText('Outdoor.visionSummary.leftEyeSeparator')} {al ?? '–'} mm
+                  </span>
+                ) : null}
+              </span>
+            ) : null}
+          </span>
+        ) : (
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Outdoor.visionSummary.noExamRecords')}</span>
+            <span className="mt-0.5 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.addRecord')}</span>
+          </span>
         )}
-        {hasAxial && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.visionSummary.axialLength')}</span>
-            <span className="text-[16px] font-bold tabular-nums text-[var(--nimi-text-primary)]">
-              R {ar != null ? `${ar}mm` : '—'} {i18nText('Outdoor.visionSummary.leftEyeSeparator')} {al != null ? `${al}mm` : '—'}
-            </span>
-          </div>
-        )}
-        <span className="ml-auto text-[12px] text-[var(--nimi-text-muted)]">{fmtAge(latestRecord.ageMonths)}</span>
-      </div>
+        <ChevronRight
+          size={17}
+          strokeWidth={1.8}
+          aria-hidden="true"
+          className="shrink-0 text-[var(--nimi-text-muted)] transition-transform group-hover:translate-x-0.5"
+        />
+      </Link>
     </Surface>
   );
 }

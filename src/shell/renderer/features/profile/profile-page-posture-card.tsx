@@ -37,7 +37,7 @@ export function ProfilePostureCard({ childId }: { childId: string }) {
       material="glass-regular"
       padding="none"
       tone="card"
-      className="overflow-hidden rounded-2xl shadow-[var(--nimi-elevation-base)]"
+      className="parentos-stacked-glass-card overflow-hidden rounded-2xl shadow-[var(--nimi-elevation-base)]"
     >
       <Link
         to="/profile/posture"

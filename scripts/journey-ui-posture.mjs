@@ -107,7 +107,7 @@ async function main() {
       showsAccessCard: bodyText.includes('Nimi 访问'),
       showsConnected: bodyText.includes('已连接'),
       showsDeclaredCapability: bodyText.includes('text.generate'),
-      showsLocalRoute: bodyText.includes('本地路由'),
+      showsModelsCard: bodyText.includes('AI 模型'),
       showsFeatureGapInfo: bodyText.includes('暂不可用'),
       machineCodeOutsideDetails: /local-app-|runtime-service-|protected-carrier|session-bound/u
         .test(bodyText.replace(/技术详情[\s\S]*/u, '')),

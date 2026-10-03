@@ -39,7 +39,8 @@ export function WelcomePage() {
   }
 
   return (
-    <AmbientBackground variant="mesh" className="relative flex h-full overflow-hidden">
+    // overflow-clip keeps the mesh halo's overflow unscrollable (see ShellLayout).
+    <AmbientBackground variant="mesh" className="relative flex h-full overflow-clip">
       <div
         data-testid="parentos-welcome-page"
         className="relative min-w-0 flex-1 overflow-y-auto px-5 pb-8 pt-6 sm:px-8 lg:px-[60px] lg:pb-10 lg:pt-10"

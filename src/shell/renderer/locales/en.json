@@ -387,6 +387,8 @@
         "tannerBreastStage": "Tanner breast stage",
         "tannerGenitalStage": "Tanner genital stage",
         "tannerPubicHairStage": "Tanner pubic hair stage",
+        "menarcheStatus": "Menarche status",
+        "menarcheDate": "Menarche date",
         "boneAgeYears": "Bone age",
         "bodyFatPercentage": "Body fat percentage",
         "milestone": "Development milestone"
@@ -493,9 +495,13 @@
         "reminderSettings": "Reminder settings",
         "smartRecognize": "Smart recognition",
         "recognizing": "Recognizing...",
-        "addScreening": "Add screening",
-        "recordData": "Record data",
-        "screeningModalTitle": "Add screening record",
+        "recordExam": "Record exam",
+        "chooserTitle": "What are you recording?",
+        "chooserScreeningTitle": "Screening result",
+        "chooserScreeningDesc": "Red reflex, cover test and similar checks done by a doctor. Records pass or refer only, no prescription numbers",
+        "chooserQuantitativeTitle": "Refraction / axial length",
+        "chooserQuantitativeDesc": "Sphere, cylinder and corrected acuity from the prescription, plus axial length",
+        "screeningModalTitle": "Record screening result",
         "screeningItem": "Screening item",
         "screeningResult": "Result",
         "hospitalOrClinic": "Hospital / clinic",
@@ -793,13 +799,6 @@
   "HealthCapture": {
     "title": "Add health data",
     "close": "Close",
-    "ai": {
-      "recognizing": "Recognizing...",
-      "recognizingFile": "Recognizing {{imageName}}...",
-      "extractedFromFile": "✓ Extracted from {{imageName}}",
-      "uploadHint": "Upload an image for AI autofill",
-      "smartCapture": "Smart capture"
-    },
     "sidebar": {
       "posture": "Posture",
       "vaccine": "Vaccines"
@@ -978,7 +977,9 @@
       "historyHint": " · already in history"
     },
     "upload": {
-      "title": "Choose a panoramic dental image or oral photo",
+      "title": "Oral photo",
+      "dropzoneLabel": "Click or drag to upload an oral photo (1 photo)",
+      "dropzoneDescription": "Panoramic X-ray, intraoral, or occlusal photo",
       "hint": "Tip: occlusal photos or front smile photos work best for erupted teeth. Panoramic X-rays can also help identify unerupted permanent tooth buds in the jaw."
     },
     "previewAlt": "Dental preview",
@@ -1238,11 +1239,6 @@
       "remainingDaysPlan": "{{days}} days left this week. Add more outdoor time where possible",
       "pacePlan": "{{days}} days left this week. Add about {{pace}} minutes per day to approach the goal"
     },
-    "heatmap": {
-      "future": "{{date}} · Future",
-      "minutes": "{{date}} · {{minutes}} minutes",
-      "noRecord": "{{date}} · No record"
-    },
     "capture": {
       "invalidDuration": "Enter a valid activity duration in minutes",
       "saveFailed": "Save failed. Try again",
@@ -1258,13 +1254,13 @@
     },
     "visionSummary": {
       "profileTitle": "Vision profile",
-      "noExamRecords": "No exam records yet",
-      "addRecord": "Add →",
+      "noExamRecords": "No vision exams yet",
+      "addRecord": "Add the first vision exam",
       "latestExam": "Latest vision exam",
-      "viewProfile": "View profile →",
       "uncorrectedVision": "Unaided",
       "leftEyeSeparator": "· L",
-      "axialLength": "Axial length"
+      "axialLength": "Axial length",
+      "why": "Time outdoors helps lower myopia risk. Keep up regular eye checks too."
     },
     "date": {
       "shortMonthDay": "{{month}}/{{day}}",
@@ -1279,92 +1275,113 @@
         "sat": "Sat"
       }
     },
-    "professional": {
-      "notRecorded": "No records for this period.",
-      "edited": "· Edited",
-      "included": "Included",
-      "hidden": "Hidden",
-      "includeAria": "Include {{title}} in the share version",
-      "save": "Save",
-      "cancel": "Cancel",
-      "edit": "Edit",
-      "restoreAi": "Restore AI original",
-      "copySuccess": "Copied",
-      "copyFailed": "Copy failed",
-      "eyebrow": "SHARE · for teachers / doctors",
-      "titlePrefix": "Concise version ·",
-      "close": "Close",
-      "introTitle": "Concise version notes:",
-      "introBody": "AI generates this in an objective medical/education record style. Parents can edit or hide sensitive content section by section; unchecked sections will not appear in exports or copied text.",
-      "emptyTitle": "This report does not have a concise version yet.",
-      "emptyBody": "Return to the report page and regenerate from Advanced options. AI will create the concise version at the same time.",
-      "copy": "Copy concise version",
-      "savePdf": "Save as PDF"
-    },
-    "notes": {
-      "save": "Save",
-      "cancel": "Cancel",
-      "kicker": "Parent note",
-      "edit": "Edit",
-      "delete": "Delete",
-      "add": "Add my note",
-      "placeholder": "Write a note, such as added context, a question, or details you want a clinician to see...",
-      "saveNote": "Save note"
-    },
     "page": {
       "backToProfile": "← Back to profile",
       "selectChildFirst": "Add a child profile first",
       "loading": "Loading…",
+      "loadError": {
+        "title": "Couldn't load outdoor records",
+        "retry": "Retry"
+      },
       "goalOnboarding": {
+        "eyebrow": "Healthy growth",
         "title": "Weekly outdoor goal",
-        "visionProtection": "Enough outdoor activity is an important way to protect vision. Research shows that more than 2 total hours outdoors per day can help reduce myopia risk.",
-        "recordingHelp": "Record daily outdoor duration so you can see whether the child has enough outdoor activity each week.",
-        "setGoal": "Set weekly goal"
+        "tagline": "A little more time outdoors,\na wider world to see",
+        "description": "Two hours outdoors a day can help lower myopia risk. Log it and see each week at a glance.",
+        "setGoal": "Set weekly goal",
+        "note": "Step outside,\nmeet a healthier you!"
       },
       "goalSetup": {
-        "title": "Set weekly outdoor goal",
-        "hint": "Suggested: 630 minutes per week, about 90 minutes per day",
+        "eyebrow": "Weekly goal",
+        "title": "How long outdoors each week?",
+        "tagline": "Pick a pace that suits your child. You can change it anytime.",
+        "inputAria": "Weekly outdoor goal in minutes",
+        "decrease": "10 fewer minutes a day",
+        "increase": "10 more minutes a day",
         "minutesPerWeek": "minutes / week",
-        "confirm": "Confirm",
-        "cancel": "Cancel"
-      },
-      "week": {
-        "previous": "← Previous week",
-        "current": "This week",
-        "next": "Next week →"
+        "dailyAverage": "about {{minutes}} min a day",
+        "valueText": "{{weekly}} minutes a week, about {{daily}} minutes a day",
+        "presetsAria": "Common goals",
+        "dailyPreset": "{{hours}} h/day",
+        "suggested": "Suggested",
+        "confirm": "Save goal",
+        "cancel": "Cancel",
+        "saveFailed": "Couldn't save the goal. Please try again.",
+        "note": "Weekend play\ncounts too!"
       },
       "minuteUnit": "minutes",
       "progressAriaLabel": "Outdoor goal completion this week",
-      "addRecord": "+ Record outdoor activity",
-      "heatmap": {
-        "title": "Outdoor activity heatmap",
-        "subtitle": "Last {{weeks}} weeks · daily target {{minutes}} minutes",
-        "less": "Less",
-        "more": "More"
-      },
-      "records": {
-        "thisWeek": "This week's records",
-        "selectedWeek": "Selected week records",
-        "backfill": "Backfill",
-        "empty": "No records yet",
-        "edit": "Edit"
-      },
-      "goalFooter": {
-        "currentGoal": "Weekly goal: {{minutes}} minutes",
-        "change": "Change"
-      },
       "recordModal": {
-        "editTitle": "Edit record",
-        "createTitle": "Record outdoor activity",
-        "date": "Date",
-        "durationMinutes": "Duration (minutes)",
-        "customMinutes": "Custom minutes",
-        "noteOptional": "Note (optional)",
-        "notePlaceholder": "Example: walk in the community park",
+        "editTitle": "Edit outdoor record",
+        "createTitle": "Log time outdoors",
+        "date": "Which day",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "dayBeforeYesterday": "2 days ago",
+        "duration": "How long outdoors",
+        "durationMinutes": "Time outdoors in minutes",
+        "decrease": "10 minutes less",
+        "increase": "10 minutes more",
+        "noteOptional": "What did you do? (optional)",
+        "notePlaceholder": "e.g. park walk, bike ride, football",
         "delete": "Delete",
+        "confirmDelete": "Confirm delete",
+        "keep": "Keep",
         "cancel": "Cancel",
         "saving": "Saving…",
-        "save": "Save"
+        "save": "Save",
+        "saveFailed": "Couldn't save. Please try again."
+      },
+      "tracker": {
+        "thisWeek": "This week outdoors",
+        "pastWeek": "Looking back",
+        "previousWeek": "Previous week",
+        "nextWeek": "Next week",
+        "backToThisWeek": "Back to this week",
+        "ofGoal": "/ {{minutes}} min",
+        "status": {
+          "empty": "Not started",
+          "onTrack": "On track",
+          "behind": "Behind pace",
+          "complete": "Goal met",
+          "pastIncomplete": "Goal missed"
+        },
+        "days": {
+          "aria": "Time outdoors each day this week",
+          "today": "Today",
+          "logged": "{{date}}: {{minutes}} min outdoors. Log more",
+          "empty": "{{date}}: nothing logged. Log this day",
+          "future": "{{date}}: not yet",
+          "legend": "Full sun · {{minutes}} min outdoors that day"
+        },
+        "logToday": "Log today's time outdoors",
+        "backfill": "Fill in this week",
+        "weeklyGoal": "Weekly goal {{minutes}} min",
+        "changeGoal": "Change",
+        "sceneNote": "Go outside,\ncollect a bigger world",
+        "journal": {
+          "titleCurrent": "Outdoor time this week",
+          "titlePast": "Outdoor time that week",
+          "summary": "Outings: {{count}} · {{minutes}} min total",
+          "emptyCurrent": "Nothing logged this week yet. Log each outing when you get home, or tap a day above to fill it in.",
+          "emptyPast": "Nothing logged that week. Tap a day above to fill it in.",
+          "editAria": "Edit the outdoor record for {{date}}",
+          "noNote": "No note"
+        },
+        "trend": {
+          "title": "Last {{weeks}} weeks",
+          "summary": "Weeks on goal: {{count}}",
+          "add": "Add a day",
+          "unit": "min",
+          "goal": "Goal {{minutes}}",
+          "thisWeek": "This week",
+          "bar": "{{range}}: {{minutes}} min",
+          "barMet": "{{range}}: {{minutes}} min, goal met"
+        }
+      },
+      "duration": {
+        "minutes": "{{minutes}} min",
+        "hours": "{{hours}} h"
       }
     }
   },
@@ -2637,7 +2654,7 @@
       "tabActivity": "🏃 Daily activity",
       "addAnotherEvent": "Add another event",
       "notes": "Notes",
-      "notesPlaceholder": "Optional",
+      "notesPlaceholder": "Optional — how your child felt or performed",
       "cancel": "Cancel",
       "saving": "Saving...",
       "save": "Save",
@@ -2972,7 +2989,8 @@
     "result": {
       "pass": "Pass",
       "refer": "Referral",
-      "fail": "Not passed"
+      "fail": "Not passed",
+      "inconclusive": "Inconclusive"
     },
     "symptom": {
       "fever": "Fever",
@@ -3054,33 +3072,48 @@
       "emptyDescription": "Record clinic visits, checkups, medication, and related information.",
       "noMatchTitle": "No matching records found",
       "noMatchDescription": "Try adjusting the filters.",
+      "clearFilters": "Clear filters",
       "searchResultCount": "{{count}} matching records found",
-      "recordCount": "{{count}} records",
-      "dayOfMonth": "Day {{day}}",
+      "duration": "{{days}} days",
+      "yearDivider": "{{year}}",
       "edit": "Edit",
       "aiAnalysis": "AI analysis",
       "collapse": "Collapse"
     },
     "analysis": {
-      "title": "Smart analysis",
       "aiLoading": "AI analyzing",
       "deepAnalyze": "Deep AI analysis",
-      "diagnosisSummary": "Diagnosis summary",
-      "medicationSummary": "Medication summary",
-      "countSuffix": "x{{count}}",
-      "eventTypeCount": "{{count}} times",
-      "frequentHospitals": "Frequent providers: {{hospitals}}",
+      "countSuffix": "×{{count}}",
       "aiInsightTitle": "AI overall analysis"
+    },
+    "overview": {
+      "title": "Care overview",
+      "context": "Based on {{total}} records",
+      "reasons": "Visit reasons",
+      "medications": "Medications",
+      "hospitals": "Usual providers",
+      "showRelated": "Show related records"
+    },
+    "kpi": {
+      "recentYear": "Past 12 months",
+      "sinceLast": "Since last visit",
+      "medications": "Medications",
+      "labReports": "Lab reports"
+    },
+    "unit": {
+      "visits": "visits",
+      "days": "days",
+      "kinds": "kinds",
+      "reports": "reports"
     },
     "page": {
       "title": "Medical records",
-      "hideAnalysis": "Hide analysis",
-      "smartAnalysis": "Smart analysis",
-      "addEvent": "Add event",
+      "addEvent": "Add record",
       "dataContext": "{{count}} medical records",
       "searchPlaceholder": "Search diagnosis, hospital, medication...",
+      "searchAria": "Search records",
       "clearSearch": "Clear",
-      "allTypes": "All types",
+      "allTypes": "All",
       "filterTypeAria": "Filter medical event type"
     }
   },
@@ -4014,88 +4047,26 @@
   },
   "Tanner": {
     "page": {
-      "title": "Puberty development assessment",
+      "title": "Puberty development records",
       "breastStageLabel": "Breast development (B stage)",
       "genitalStageLabel": "External genital development (G stage)",
-      "guideToggle": "Assessment guide",
-      "addAssessment": "Add assessment",
-      "assessmentDataContext": "{{count}} assessments",
-      "summary": "{{gender}} · {{count}} assessments",
-      "historyTitle": "Assessment records ({{count}})",
-      "historyEmpty": "No assessment records yet",
+      "guideToggle": "Entry guide",
+      "addAssessment": "Add record",
+      "assessmentDataContext": "{{count}} records",
       "gender": {
         "female": "Girl",
         "male": "Boy"
       },
       "reference": {
         "title": "Reference standards",
-        "tannerStandard": "Tanner staging standard",
         "tannerCitation": "Marshall WA, Tanner JM. Variations in pattern of pubertal changes in girls/boys.",
-        "tannerJournal": "Arch Dis Child 1969;44:291-303 / 1970;45:13-23",
-        "chinaReference": "Chinese pediatric puberty reference",
-        "chinaCitation": "Subspecialty Group of Endocrinologic, Hereditary and Metabolic Diseases, Chinese Pediatric Society. Expert consensus on diagnosis and treatment of central precocious puberty (2022).",
-        "normalTiming": "Girls commonly reach B2 at 8-13 years · Boys commonly reach G2 at 9-14 years"
+        "tannerJournal": "Arch Dis Child 1969;44:291-303 / 1970;45:13-23"
       },
       "guide": {
-        "title": "What is Tanner staging?",
-        "description": "Tanner staging is an internationally used puberty assessment standard. It divides {{bodySystem}} and pubic hair development into 5 stages each.",
-        "bodySystem": {
-          "breast": "breast development",
-          "genital": "external genital development"
-        },
-        "howToJudgeTitle": "How to judge it",
-        "howToJudgeFemale": "Observe breast size, shape, and areola changes. B1 is prepubertal with no development. B2, the breast bud stage, means a small firm area appears under the nipple and is often the first puberty signal. If B2 appears before age 8, consult a professional to rule out precocious puberty.",
-        "howToJudgeMale": "Observe testicular size and penile length changes. G1 is prepubertal. G2 means the testes begin to enlarge, usually measured with an orchidometer at more than 4 mL. If G2 appears before age 9, consult a professional to rule out precocious puberty.",
-        "timingTitle": "Typical development timing",
-        "primarySignalFemale": "Breast development B2 appears",
-        "primarySignalMale": "Testicular enlargement G2 appears",
-        "primaryTimingFemale": "Common range: 8-13 years · average 10.5 years",
-        "primaryTimingMale": "Common range: 9-14 years · average 11.5 years",
-        "primaryAttentionFemale": "If it appears before age 8, consult a professional",
-        "primaryAttentionMale": "If it appears before age 9, consult a professional",
-        "pubicHairSignal": "Pubic hair PH2 appears",
-        "pubicHairTimingFemale": "Usually appears 6-12 months after B2",
-        "pubicHairTimingMale": "Usually appears at the same time as G2 or soon after",
-        "pubicHairNote": "Isolated early pubic hair may reflect premature adrenarche",
-        "medicalHelpTitle": "When to seek medical care",
-        "medicalEarlyFemale": "Breast development (B2) before age 8 may indicate precocious puberty",
-        "medicalEarlyMale": "Testicular enlargement (G2) before age 9 may indicate precocious puberty",
-        "medicalDelayFemale": "No development signs by age 13 may indicate delayed puberty",
-        "medicalDelayMale": "No development signs by age 14 may indicate delayed puberty",
-        "medicalRapidProgress": "Development progresses too quickly, such as crossing 2 stages within 1 year, or is accompanied by accelerated height growth",
-        "medicalBoneAge": "Use bone age assessment to help evaluate developmental progress",
         "confirm": "Got it"
       }
     },
-    "action": {
-      "collapse": "Collapse",
-      "expand": "Expand",
-      "steps": "Steps"
-    },
-    "guidePanel": {
-      "aiDescription": "Puberty guidance for {{childName}} ({{ageLabel}}, {{gender}})",
-      "askAdvisor": "Ask Advisor",
-      "actionSteps": "Action steps",
-      "resources": "Reference resources",
-      "resourcePrefix": "Resource:",
-      "whenPrefix": "When to do this: ",
-      "titleWithAssessment": "Current-stage guidance",
-      "titleWithoutAssessment": "Age-based guidance",
-      "subtitle": "{{stageTitle}} · Actionable guidance based on {{mode}}",
-      "modeStage": "assessment stage",
-      "modeAge": "age",
-      "commonWindow": "Typical timing: {{primary}}; pubic hair: {{pubicHair}}",
-      "menarcheOccurredWithDate": "Menarche occurred · {{date}}",
-      "progressionFast": "Observed stage progression of 2 or more stages within the past 12 months; consider consulting a professional",
-      "progressionStable": "Stage progression over the past 12 months has been steady",
-      "nextStageTitle": "Next stage preview"
-    },
     "referenceNotes": {
-      "title": "Reference notes",
-      "a": "[A] Subspecialty Group of Endocrinologic, Hereditary and Metabolic Diseases, Chinese Pediatric Society. Expert consensus on diagnosis and treatment of central precocious puberty (2022).",
-      "b": "[B] Chinese Dietary Reference Intakes (2023 edition).",
-      "c": "[C] Marshall WA, Tanner JM. Variations in pattern of pubertal changes.",
-      "d": "[D] Rosenfield RL, Cooke DW, Radovick S. Puberty and its disorders.",
       "disclaimer": "This content is for family observation and communication only. It does not replace medical diagnosis."
     },
     "form": {
@@ -4108,7 +4079,7 @@
       "boneAgePlaceholder": "e.g. 11.5",
       "bodyFat": "Body fat percentage (optional)",
       "bodyFatPlaceholder": "e.g. 18.5",
-      "menarcheStatus": "Has menarche occurred",
+      "menarcheStatus": "Menarche status (optional)",
       "menarcheNotYet": "Not yet",
       "menarcheOccurred": "Occurred",
       "menarcheDate": "Menarche date",
@@ -4124,463 +4095,155 @@
       "physician": "Clinician assessment"
     },
     "timeline": {
-      "emptyTitle": "No assessment records yet",
-      "emptySubtitle": "After the first assessment, ParentOS can provide more precise stage-based reminders.",
-      "secondaryWithAssessor": "{{age}} · {{assessor}}",
       "breastStage": "Breast stage",
       "genitalStage": "Genital stage",
       "pubicHairStage": "Pubic hair stage",
-      "changed": "Changed",
       "menarcheOccurred": "Menarche occurred",
       "menarcheOccurredWithDate": "Menarche occurred · {{date}}",
-      "notesPrefix": "Notes:"
+      "yearDivider": "{{year}}"
     },
     "overview": {
-      "boneAgeMatched": "Bone age aligned",
-      "boneAgeAhead": "Bone age {{years}} years ahead",
-      "boneAgeBehind": "Bone age {{years}} years lower than chronological age",
-      "boneAgeDeviationLarge": "Bone age differs by more than ±2 years; consider consulting a pediatric endocrinology clinic",
-      "boneAgeCaption": "A bone age within ±1 year of chronological age is a common range; for reference only",
       "boneAge": "Bone age",
       "bodyFat": "Body fat",
-      "bodyFatDelta": "vs previous {{delta}}",
       "height": "Height",
-      "heightVelocity": "Records show {{delta}} cm of height growth over the past {{months}} months (annualized about {{annualized}} cm)",
-      "heightVelocityInsufficient": "Not enough height records to estimate growth velocity yet",
       "heightGrowthCurveLink": "View growth curve"
     },
     "stage": {
       "breast": {
         "1": {
           "title": "B1 · Prepubertal",
-          "desc": "Only the nipple is slightly raised; there is no breast tissue development, similar to early childhood.",
-          "howToJudge": "👀 Observe: the chest is flat as in childhood. Gently touch under the nipple; there should be no firm lump."
+          "desc": "Only the nipple is slightly raised; there is no breast tissue development, similar to early childhood."
         },
         "2": {
           "title": "B2 · Breast bud",
-          "desc": "A small firm lump appears under the nipple, about coin-sized, with slight areola enlargement. This is often the first puberty signal.",
-          "howToJudge": "👆 Palpate: press gently under the nipple with the fingertip. A small firm nodule about 1-2 cm may be felt. The areola may be slightly darker and larger. If this appears before age 8, consult a professional to rule out precocious puberty."
+          "desc": "A small firm lump appears under the nipple, about coin-sized, with slight areola enlargement. This is often the first puberty signal."
         },
         "3": {
           "title": "B3 · Mid development",
-          "desc": "The breast is visibly raised beyond the chest wall from the side, while the areola and breast still form one smooth contour.",
-          "howToJudge": "👀 Side view: the breast clearly protrudes from the chest wall, but the areola has not formed a separate mound. The outline remains a smooth curve."
+          "desc": "The breast is visibly raised beyond the chest wall from the side, while the areola and breast still form one smooth contour."
         },
         "4": {
           "title": "B4 · Areola mound",
-          "desc": "The areola and nipple form a second small mound, like a smaller hill on the breast.",
-          "howToJudge": "👀 Front view: the areola area protrudes as a small disc above the breast, creating a two-layer appearance. Not every girl goes through this stage clearly."
+          "desc": "The areola and nipple form a second small mound, like a smaller hill on the breast."
         },
         "5": {
           "title": "B5 · Mature stage",
-          "desc": "The breast has an adult contour. The areola has receded into the breast contour and only the nipple projects.",
-          "howToJudge": "👀 Observe: the breast has a mature rounded contour. The areola that protruded in B4 has receded and blends into the breast surface, with only the nipple projecting."
+          "desc": "The breast has an adult contour. The areola has receded into the breast contour and only the nipple projects."
         }
       },
       "genital": {
         "1": {
           "title": "G1 · Prepubertal",
-          "desc": "The testes, scrotum, and penis look the same as in early childhood. Testicular volume is under 4 mL.",
-          "howToJudge": "📏 Reference: the testes are close to peanut size (long axis under 2.5 cm, about 1-3 mL). The scrotal skin is light in color and similar in texture to nearby skin."
+          "desc": "The testes, scrotum, and penis look the same as in early childhood. Testicular volume is under 4 mL."
         },
         "2": {
           "title": "G2 · Early stage",
-          "desc": "The testes begin to enlarge (volume at least 4 mL), usually the first puberty signal for boys. The penis has not changed much yet.",
-          "howToJudge": "📏 Reference: the testes grow from peanut size to about grape size (long axis about 2.5-3 cm, about 4-6 mL). The scrotal skin begins to thin and redden. The penis itself has not lengthened yet. If this appears before age 9, consult a professional to rule out precocious puberty."
+          "desc": "The testes begin to enlarge (volume at least 4 mL), usually the first puberty signal for boys. The penis has not changed much yet."
         },
         "3": {
           "title": "G3 · Mid development",
-          "desc": "The penis begins to lengthen, without much thickening yet, and the testes continue to enlarge to about 8-10 mL.",
-          "howToJudge": "📏 Reference: the testes are about longan or cherry size (long axis about 3-3.5 cm, about 8-10 mL). The penis is clearly longer than before, while thickness changes are still limited."
+          "desc": "The penis begins to lengthen, without much thickening yet, and the testes continue to enlarge to about 8-10 mL."
         },
         "4": {
           "title": "G4 · Near mature",
-          "desc": "The penis grows further and thickens, the glans is more distinct, and the testes are about 12-15 mL.",
-          "howToJudge": "📏 Reference: the testes are about chestnut size (long axis about 4-4.5 cm, about 12-15 mL). The penis is both longer and thicker. The glans contour is clear and scrotal color is noticeably darker."
+          "desc": "The penis grows further and thickens, the glans is more distinct, and the testes are about 12-15 mL."
         },
         "5": {
           "title": "G5 · Mature stage",
-          "desc": "External genitalia have reached adult size. Testicular volume is about 15-25 mL.",
-          "howToJudge": "📏 Reference: the testes are about jujube or small egg size (long axis about 4.5-5 cm, about 15-25 mL). Overall external genital appearance is adult-like."
+          "desc": "External genitalia have reached adult size. Testicular volume is about 15-25 mL."
         }
       },
       "pubicHairFemale": {
         "1": {
           "title": "PH1 · No pubic hair",
-          "desc": "There is no pubic hair in the genital area, only fine vellus hair similar to the abdomen.",
-          "howToJudge": "👀 Observe: it looks like childhood, with only very fine light vellus hair that is barely visible."
+          "desc": "There is no pubic hair in the genital area, only fine vellus hair similar to the abdomen."
         },
         "2": {
           "title": "PH2 · Sparse appearance",
-          "desc": "A small amount of longer, slightly darker hair appears, usually along the labia majora.",
-          "howToJudge": "👀 Observe: a few to a dozen longer, slightly darker hairs may be visible. They are usually straight or slightly curved and mainly appear along the labia majora."
+          "desc": "A small amount of longer, slightly darker hair appears, usually along the labia majora."
         },
         "3": {
           "title": "PH3 · More and coarser",
-          "desc": "Hair becomes more numerous, coarser, curlier, darker, and starts spreading toward the pubic area.",
-          "howToJudge": "👀 Observe: there is enough hair to describe as a small cluster. It starts curling, becomes clearly dark, and spreads toward the lower abdomen."
+          "desc": "Hair becomes more numerous, coarser, curlier, darker, and starts spreading toward the pubic area."
         },
         "4": {
           "title": "PH4 · Near adult",
-          "desc": "Hair texture is close to adult pubic hair: coarse and curly, with wider coverage but not yet extending to the inner thighs.",
-          "howToJudge": "👀 Observe: the hair is dense and adult-like in texture, coarse and curly, but the distribution has not yet reached the inner upper thighs."
+          "desc": "Hair texture is close to adult pubic hair: coarse and curly, with wider coverage but not yet extending to the inner thighs."
         },
         "5": {
           "title": "PH5 · Adult pattern",
-          "desc": "Hair distribution and density are adult-like, extending to the inner thighs in an inverted-triangle pattern.",
-          "howToJudge": "👀 Observe: distribution and density are adult-like and extend to the inner upper thighs."
+          "desc": "Hair distribution and density are adult-like, extending to the inner thighs in an inverted-triangle pattern."
         }
       },
       "pubicHairMale": {
         "1": {
           "title": "PH1 · No pubic hair",
-          "desc": "There is no pubic hair in the genital area, only fine vellus hair similar to the abdomen.",
-          "howToJudge": "👀 Observe: it looks like childhood, with only very fine light vellus hair that is barely visible."
+          "desc": "There is no pubic hair in the genital area, only fine vellus hair similar to the abdomen."
         },
         "2": {
           "title": "PH2 · Sparse appearance",
-          "desc": "A small amount of longer, slightly darker hair appears, usually at the base of the penis.",
-          "howToJudge": "👀 Observe: a few to a dozen longer, slightly darker hairs may be visible. They are usually straight or slightly curved and mainly appear at the base of the penis."
+          "desc": "A small amount of longer, slightly darker hair appears, usually at the base of the penis."
         },
         "3": {
           "title": "PH3 · More and coarser",
-          "desc": "Hair becomes more numerous, coarser, curlier, darker, and starts spreading toward the pubic area.",
-          "howToJudge": "👀 Observe: there is enough hair to describe as a small cluster. It starts curling, becomes clearly dark, and spreads toward the lower abdomen."
+          "desc": "Hair becomes more numerous, coarser, curlier, darker, and starts spreading toward the pubic area."
         },
         "4": {
           "title": "PH4 · Near adult",
-          "desc": "Hair texture is close to adult pubic hair: coarse and curly, with wider coverage but not yet extending to the inner thighs.",
-          "howToJudge": "👀 Observe: the hair is dense and adult-like in texture, coarse and curly, but the distribution has not yet reached the inner upper thighs."
+          "desc": "Hair texture is close to adult pubic hair: coarse and curly, with wider coverage but not yet extending to the inner thighs."
         },
         "5": {
           "title": "PH5 · Adult pattern",
-          "desc": "Hair distribution and density are adult-like, extending to the inner thighs in a diamond-shaped pattern.",
-          "howToJudge": "👀 Observe: distribution and density are adult-like and extend to the inner upper thighs."
+          "desc": "Hair distribution and density are adult-like, extending to the inner thighs in a diamond-shaped pattern."
         }
       }
     },
-    "guidance": {
-      "section": {
-        "physical": "Physical development",
-        "psychological": "Psychological guidance",
-        "nutrition": "Nutrition",
-        "checkups": "Checks",
-        "parentTips": "Parent tips"
-      },
-      "female": {
-        "1": {
-          "title": "Prepubertal stage (B1/PH1)"
-        },
-        "2": {
-          "title": "Puberty onset (B2) - key period"
-        },
-        "3": {
-          "title": "Rapid development (B3)"
-        },
-        "4": {
-          "title": "Near mature (B4)"
-        },
-        "5": {
-          "title": "Mature development (B5/PH5)"
-        }
-      },
-      "male": {
-        "1": {
-          "title": "Prepubertal stage (G1/PH1)"
-        },
-        "2": {
-          "title": "Puberty onset (G2) - key period"
-        },
-        "3": {
-          "title": "Rapid development (G3)"
-        },
-        "4": {
-          "title": "Near mature (G4)"
-        },
-        "5": {
-          "title": "Mature development (G5/PH5)"
-        }
-      },
-      "item": {
-        "femalePrepubertalSleepExercise": "Maintain enough sleep (9-12 hours/day for ages 6-12) and regular activity [B]",
-        "growthVelocityWindow": "Watch height growth velocity; the prepubertal period is the final window for catch-up growth [C]",
-        "bodyBasicsBooks": "Start basic body-awareness education with picture books or age-appropriate reading",
-        "openCommunicationFull": "Build open parent-child communication so the child knows body changes are normal",
-        "calcium4To10": "Calcium target: 600 mg/day at ages 4-10, 800 mg/day from age 11 [B]",
-        "vitaminDWithTest": "Vitamin D: 10 micrograms (400 IU)/day; consider checking 25-OH vitamin D [B]",
-        "avoidSugarFatPrecocious": "Limit high-sugar, high-fat, high-calorie foods; obesity may contribute to earlier puberty [A]",
-        "femaleEarlyBreastCheck": "Breast development before age 7.5 in girls should be evaluated for precocious puberty [A]",
-        "routineGrowthCurveCheck": "Use routine checkups to monitor height and weight curves",
-        "dietHabitFoundation": "Do not skip building eating habits just because the child is still young",
-        "reduceBpa": "Reduce exposure to environmental endocrine disruptors such as BPA",
-        "femaleGrowthSpurtStarting": "The pubertal growth spurt is about to begin [C]",
-        "trainingBra": "A puberty-stage bra can be introduced to protect the developing breast",
-        "pubertyDuration": "Sexual development usually takes 3-4 years, with each stage lasting about 1 year [A]",
-        "femalePubertyEducation": "Teach puberty topics: menstruation, body changes, and privacy protection",
-        "hormoneMoodNormal": "Mood fluctuation can be a normal response to hormonal change [C]",
-        "bodyPrivacyProtection": "Teach the child to protect body privacy",
-        "femaleIronPreparation": "Iron needs begin to rise in preparation for menstruation [B]",
-        "calcium11": "Calcium target from age 11: 800 mg/day [B]",
-        "femaleProtein10To12": "Protein: 50 g/day at ages 10-11, 60 g/day from age 12 [B]",
-        "boneAgeAdultHeight": "Consider bone age assessment to evaluate development and adult height projection [A]",
-        "femaleB2TimingReferral": "If B2 appears before age 7.5 or after age 13, see pediatric endocrinology [A]",
-        "heightEveryHalfYear": "Measure height every 6 months and record growth velocity",
-        "femalePubertyStartWindow": "This is the starting point of puberty; major body changes will occur over the next 3-4 years [A]",
-        "menarcheAfterB2": "Menarche usually arrives about 2-3 years after B2 [C]",
-        "prepareMenstrualSupplies": "Prepare menstrual products in advance",
-        "femalePhvBeforeMenarche": "Peak height velocity usually occurs about 1 year before menarche [C]",
-        "femaleFatRedistribution": "Body fat begins to redistribute, with hips and thighs becoming fuller [C]",
-        "healthyBodyImage": "Interest in appearance is normal; guide a healthy body image",
-        "peerComparisonMood": "More obvious mood changes and peer comparison may appear",
-        "ironCalciumZincVitaminD": "Iron, calcium, zinc, and vitamin D are priority nutrients [B]",
-        "avoidDieting": "Avoid dieting for weight loss; protect nutrition quality",
-        "menarcheSoon": "Menarche may arrive within the next 6-12 months [C]",
-        "earlyMenstrualIrregular": "Irregular periods are common during the first 1-2 years after menarche",
-        "menstrualEmergencyKit": "Prepare a menstrual emergency kit for the school bag (pads, underwear, wipes)",
-        "talkMenstruationFear": "Talk about menstruation to reduce fear",
-        "menarcheAroundB4": "Most girls have menarche around this stage [C]",
-        "postMenarcheGrowthSlow": "Height growth slows after menarche [C]",
-        "bodyShapeMaturing": "Body shape is moving toward maturity",
-        "selfAwarenessBodyAnxiety": "Self-awareness increases and body anxiety may appear",
-        "bodyFunctionFocus": "Guide attention toward body function rather than appearance",
-        "menstrualIron": "During menstruation, pay attention to iron intake such as red meat and animal liver [B]",
-        "balancedNoTonic": "Keep meals balanced; extra tonic-style supplementation is not recommended",
-        "irregular2YearsSeekCare": "If periods remain very irregular 2 years after menarche, seek medical care",
-        "hpvTiming": "Pay attention to HPV vaccination timing",
-        "crampsWarmRest": "Menstrual cramps are common; warmth and rest are usually enough for mild discomfort",
-        "openDialogue": "Keep the conversation open",
-        "developmentMostlyCompleteFemale": "Body development is mostly complete and height growth is close to stopping [C]",
-        "cycleRegularizing": "Menstrual cycles gradually become more regular",
-        "moodStabilizing": "Puberty-related mood fluctuation gradually stabilizes",
-        "positiveBodyImageConfidence": "Help build a positive body image and confidence",
-        "maintenanceNutritionCalciumIron": "Shift to maintenance nutrition while preserving calcium and iron intake [B]",
-        "annualCheckup": "Routine annual checkup",
-        "abnormalMenstrualCare": "Seek care for abnormal menstruation, such as very heavy, very light, or severe pain",
-        "pubertyHardPartPassing": "The hardest part of puberty is nearing its end; offer each other some acknowledgment",
-        "maleSleepExercise": "Maintain enough sleep (9-12 hours/day for ages 6-12) and physical activity [B]",
-        "maleGrowthSpurtLater": "The pubertal growth spurt in boys is usually 1-2 years later than in girls [D]",
-        "basicBodyEducation": "Start basic body-awareness education",
-        "openCommunicationHabit": "Build an open parent-child communication habit",
-        "vitaminD": "Vitamin D: 10 micrograms (400 IU)/day [B]",
-        "avoidHighCaloriePubertyTiming": "Limit high-calorie foods; obesity may affect puberty timing [A]",
-        "maleEarlyTestisCheck": "Testicular enlargement before age 9 in boys should be evaluated for precocious puberty [A]",
-        "malePubertyLaterNoAnxiety": "Boys usually start puberty 1-2 years later than girls; this alone does not need anxiety [D]",
-        "reduceEndocrineDisruptors": "Reduce exposure to environmental endocrine disruptors",
-        "testicularEnlargementFirstSignal": "Testicular enlargement (at least 4 mL) is the first puberty signal in boys [D]",
-        "maleGrowthSpurtAfterG2": "Height acceleration usually begins 1-2 years after G2 [D]",
-        "pubertyDurationMale": "Sexual development usually takes 3-4 years, with each stage lasting about 1 year [A]",
-        "malePubertyEducation": "Teach puberty topics: body changes, nocturnal emission, and privacy [A]",
-        "maleBodyCuriosityAnxiety": "Curiosity or unease about body changes may appear",
-        "maleProteinIncrease": "Protein needs rise: 50 g/day at ages 10-11, 65 g/day from age 12 [B]",
-        "zincImportant": "Zinc matters: 8-10 mg/day from seafood, lean meat, and nuts [B]",
-        "boneAgeProgress": "Consider bone age assessment to evaluate development progress [A]",
-        "maleG2TimingReferral": "If G2 appears before age 9 or after age 14, see pediatric endocrinology [A]",
-        "heightEveryHalfYearShort": "Measure height every 6 months",
-        "maleMayNotInitiateTalk": "Boys may not initiate conversations about body changes; caregivers need to choose the right moment",
-        "sameGenderCaregiver": "A same-gender caregiver can handle the conversation when appropriate",
-        "onlineSearchGuidance": "Notice whether the child is searching online and guide accurate understanding",
-        "maleHeightRapidGrowth": "Height begins to grow rapidly [D]",
-        "voiceChanging": "Voice change begins [D]",
-        "acneFirstEmission": "Acne and first nocturnal emission may appear [D]",
-        "moodIrritableWithdrawn": "Mood swings may intensify, with irritability or withdrawal",
-        "curiosityTowardOppositeSex": "Curiosity about the opposite sex can be normal",
-        "strongerSelfEsteemCommunication": "Self-esteem strengthens; pay attention to communication style",
-        "higherEnergyProtein": "Energy and protein needs rise significantly [B]",
-        "doNotRestrictCarbs": "Do not intentionally restrict staple foods; carbohydrates provide energy",
-        "milkSoyCalcium": "Use milk or soy milk to support calcium intake [B]",
-        "scoliosisRapidGrowth": "Watch for scoliosis, which is more common during rapid growth",
-        "severeAcneDermatology": "See dermatology if acne is severe",
-        "nocturnalEmissionNormal": "Nocturnal emission is normal; explain it early to prevent fear [D]",
-        "faceCleaningAcne": "Teach face cleaning habits to help prevent acne",
-        "exerciseGrowthHormone": "Regular activity supports growth hormone secretion",
-        "malePhv": "Height growth reaches peak height velocity [D]",
-        "muscleMassIncrease": "Muscle mass increases noticeably [D]",
-        "bodyHairVoiceDeep": "Body hair such as underarm hair and facial hair appears, and the voice becomes fully deeper [D]",
-        "independence": "Independence increases",
-        "autonomyWithBoundaries": "More autonomy is needed, along with boundaries",
-        "protein15To17": "Protein: 75 g/day at ages 15-17 [B]",
-        "sportsCarbsWater": "Higher activity needs more carbohydrates and water",
-        "spinePostureMonitor": "Continue monitoring spinal posture",
-        "sportsInjuryPrevention": "Prevent sports injuries while growth plates are not yet closed",
-        "privacyOpenDoor": "Respect privacy while keeping a communication door open",
-        "sexEducationValues": "Guide accurate sexual knowledge and values",
-        "developmentMostlyCompleteMale": "Body development is mostly complete and height growth is close to stopping as growth plates close [D]",
-        "muscleFilling": "Muscle continues to fill out",
-        "identityBuilding": "Self-identity gradually takes shape",
-        "maintenanceBalanced": "Shift to maintenance nutrition and keep meals balanced [B]",
-        "maintainParentChildRelationship": "Continue maintaining a strong parent-child relationship"
-      },
-      "detail": {
-        "bodyBasicsBooks": {
-          "steps": {
-            "1": "Naturally teach the correct names of body parts during bathing",
-            "2": "Use the swimsuit rule for privacy: areas covered by a swimsuit are private",
-            "3": "Read age-appropriate books and introduce the topic naturally over time"
-          },
-          "resources": {
-            "1": "Picture books: Our Bodies, Where Willy Went, and similar body-safety books",
-            "2": "Age-appropriate body-safety animations"
-          },
-          "when": "During bathing, changing clothes, or parent-child reading"
-        },
-        "openCommunication": {
-          "steps": {
-            "1": "Open with \"Have you noticed...\" rather than waiting for the child to ask",
-            "2": "Use correct names when answering questions; do not avoid or shame the topic",
-            "3": "Tell the child that any body-related question can be asked at home"
-          },
-          "when": "Use natural moments such as TV scenes or conversations after school, rather than a formal meeting"
-        },
-        "femalePubertyEducation": {
-          "steps": {
-            "1": "Explain what menstruation is, why it happens, and how to use pads",
-            "2": "Practice using pads or liners at home if needed",
-            "3": "Talk about bra choice and reassure that breast development is normal",
-            "4": "Emphasize that these are signs of growing up, not reasons for shame or fear"
-          },
-          "resources": {
-            "1": "Books about puberty for girls and body literacy",
-            "2": "Period-tracking apps can be suitable for older children who record cycles themselves"
-          },
-          "when": "Start soon after B2 appears; do not wait until menstruation starts"
-        },
-        "malePubertyEducation": {
-          "steps": {
-            "1": "Explain that body changes such as voice change, facial hair, and height growth are normal",
-            "2": "Explain nocturnal emission: wet underwear at night can be a normal sign of maturation, not illness",
-            "3": "Teach correct washing and underwear-changing habits",
-            "4": "Discuss privacy protection and respect for other people's bodies"
-          },
-          "resources": {
-            "1": "Books about puberty for boys"
-          },
-          "when": "After G2 appears, choose a relaxed moment such as a walk or drive rather than a formal meeting"
-        },
-        "calcium4To10": {
-          "steps": {
-            "1": "Offer 1-2 cups of milk or yogurt daily; 250 mL milk provides about 300 mg calcium",
-            "2": "Tofu, dried shrimp, and sesame paste can also provide calcium",
-            "3": "Routine calcium tablets are not needed when food intake is adequate"
-          },
-          "when": "One cup at breakfast and one before bed is often easiest"
-        },
-        "vitaminDWithTest": {
-          "steps": {
-            "1": "Aim for at least 1 hour of outdoor activity daily, even on cloudy days",
-            "2": "If sun exposure is limited, vitamin D drops at 400 IU/day can be considered",
-            "3": "Check serum 25-OH vitamin D during annual physical exams when possible",
-            "4": "Target: above 20 ng/mL, with above 30 ng/mL generally considered sufficient"
-          },
-          "when": "Pay closer attention in winter, heavy pollution, or low-outdoor-activity periods"
-        },
-        "femaleIronPreparation": {
-          "steps": {
-            "1": "Serve red meat such as beef or lean pork 2-3 times per week",
-            "2": "Use animal liver once per week, about 25-50 g",
-            "3": "Pair dark vegetables with vitamin C fruit to support absorption",
-            "4": "Avoid taking iron-rich meals with milk, tea, or coffee because absorption can be reduced"
-          }
-        },
-        "boneAge": {
-          "steps": {
-            "1": "Book pediatric endocrinology or child health clinic care",
-            "2": "Take a left-hand and wrist X-ray; it is a single image with very low radiation",
-            "3": "The clinician compares it with a standard atlas to read bone age",
-            "4": "A bone age and chronological age gap greater than 1 year needs attention"
-          },
-          "when": "Do the first check when puberty starts, then recheck yearly if clinically needed"
-        },
-        "femaleEarlyBreastCheck": {
-          "steps": {
-            "1": "First confirm true breast development with a palpable firm lump, not only body fat",
-            "2": "Book pediatric endocrinology",
-            "3": "The clinician may order bone age imaging, sex hormone tests, and ultrasound",
-            "4": "If central precocious puberty is confirmed, earlier GnRHa treatment is more effective [A]"
-          },
-          "when": "Seek care promptly after noticing breast changes; do not wait passively"
-        },
-        "maleEarlyTestisCheck": {
-          "steps": {
-            "1": "Reference threshold: testicular volume at least 4 mL or long axis at least 2.5 cm [A]",
-            "2": "Book pediatric endocrinology",
-            "3": "The clinician may perform stimulation testing and imaging",
-            "4": "Precocious puberty is less common in boys than girls, but cause evaluation is more important [A]"
-          },
-          "when": "Seek care promptly after noticing changes"
-        },
-        "menarcheAfterB2": {
-          "steps": {
-            "1": "Menarche usually occurs about 2-3 years after B2 breast development begins",
-            "2": "Typical menarche age is 9-15 years",
-            "3": "Height growth is fastest in the year before menarche and slows after menarche",
-            "4": "Prepare pads early and teach how to use them"
-          },
-          "resources": {
-            "1": "Prepare a school-bag menstrual kit: 2 day pads, 1 pair of underwear, wipes, and a sealable bag"
-          },
-          "when": "Start preparing once B2 appears"
-        },
-        "nocturnalEmissionNormal": {
-          "steps": {
-            "1": "Tell the child that wet underwear during sleep can be a normal maturity signal",
-            "2": "It is not a bad act and does not need shame",
-            "3": "Teach changing underwear and cleaning independently",
-            "4": "If the child feels embarrassed, keep a clean pair of underwear nearby"
-          },
-          "when": "Discuss this before G3 rather than waiting until the child discovers it with fear"
-        },
-        "menstrualIron": {
-          "steps": {
-            "1": "During menstruation, serve red meat (beef, lean pork) 2-3 times a week, about 50-75 g each time",
-            "2": "Add liver (chicken or pork, 25-50 g) once a week, paired with dark leafy vegetables",
-            "3": "Pair meals with vitamin C-rich fruit (oranges, kiwi) to support iron absorption",
-            "4": "Avoid strong tea or coffee with iron-rich meals, as they can reduce absorption"
-          },
-          "when": "Focus on iron intake during the period and the week after it"
-        },
-        "irregular2YearsSeekCare": {
-          "steps": {
-            "1": "Irregular cycles are common in the first 1-2 years after menarche; start by logging each period on a calendar",
-            "2": "Note cycles that stay shorter than 21 days or longer than 45 days, or bleeding that lasts more than 8 days",
-            "3": "If cycles are still very irregular 2 years after menarche, consider consulting a professional",
-            "4": "Bring the period log to the visit so the clinician can see the pattern"
-          },
-          "when": "Keep observing after menarche; act if cycles remain irregular at the 2-year mark"
-        },
-        "hpvTiming": {
-          "steps": {
-            "1": "HPV vaccination is usually advised for girls aged 9-14, with the best protection when given early",
-            "2": "Ask your community health center or child health clinic about available vaccine types and schedules",
-            "3": "Before vaccination, tell the clinician about the child's health status and vaccination history"
-          },
-          "when": "Planning can start at age 9; consult a vaccination clinic early"
-        },
-        "crampsWarmRest": {
-          "steps": {
-            "1": "Mild lower-abdominal discomfort during a period is common; a warm compress over clothing can help",
-            "2": "Prioritize rest and sleep, avoid intense exercise; gentle walking may ease discomfort",
-            "3": "Offer warm drinks and keep warm; avoid very cold food and drinks",
-            "4": "If pain interferes with school or daily activities, consider consulting a professional"
-          }
-        },
-        "growthVelocityWindow": {
-          "steps": {
-            "1": "Measure height at the same time of day every 3-6 months and log it on the growth curve",
-            "2": "Before puberty, about 5-6 cm of growth per year is a common pace, with wide individual variation",
-            "3": "Once puberty starts, height enters a rapid-growth phase and then gradually slows",
-            "4": "If growth stays clearly lower than usual over a full year, consider consulting a professional for an evaluation"
-          }
-        },
-        "scoliosisRapidGrowth": {
-          "steps": {
-            "1": "During rapid growth, check monthly: have the child stand naturally and look from behind at whether both shoulders are level",
-            "2": "Forward-bend check: with legs straight, bend forward 90 degrees and observe whether the two sides of the back look symmetric",
-            "3": "If you observe uneven shoulders or one side of the back protruding, consult a professional for further evaluation",
-            "4": "Encourage good sitting posture and alternate shoulders when carrying a backpack to avoid long-term one-sided load"
-          },
-          "when": "Monthly during rapid growth (around B3 for girls, G3 for boys)"
-        }
-      }
+    "redesign": {
+      "emptyTitle": "No puberty records yet",
+      "emptyDescription": "Save existing assessments and observation notes to review changes over time. No stage can be shown until it has been recorded.",
+      "firstRecord": "Add first record",
+      "howToRecord": "How to record",
+      "latest": "Latest record",
+      "history": "Earlier records",
+      "datedRecord": "These values describe the recorded date, not an assessment of the child's current stage. Each axis is recorded separately, without a combined score.",
+      "saved": "Record saved.",
+      "loading": "Loading puberty records…",
+      "loadError": "Unable to load puberty records. Please try again.",
+      "retry": "Retry",
+      "unrecorded": "Not recorded",
+      "assessorMissing": "Assessor not recorded",
+      "measurements": "Related growth measurements",
+      "noMeasurements": "No related measurements yet. Recorded height, bone age and body fat will appear here.",
+      "heightDelta": "{{delta}} cm since {{from}}",
+      "guideIntro": "Learn about body changes during puberty and how to support your child. This general information does not determine your child’s stage.",
+      "recordStep1": "Choose the assessment date and assessor, distinguishing professional assessment, parent observation and self-assessment.",
+      "recordStep2": "Select each stage from an existing assessment. If unsure, ask a professional first. Do not use stage 1 for an unrecorded value.",
+      "recordStep3": "Optionally add menarche information, existing measurements and observation notes. Saved records are ordered by assessment date.",
+      "stages": "Understanding Tanner stages",
+      "stageReferenceOnly": "These definitions are for reference. Reading a stage does not change the child's record.",
+      "communication": "Talking about body changes",
+      "communicationBody": "Listen to your child's questions and respond in plain language. Respect their privacy and wishes, explain why you are recording information, and avoid comparisons with other children. Leave room for uncertainty or not wanting to talk yet.",
+      "professional": "When to ask a professional",
+      "professionalBody": "If you are unsure about a stage, have questions about body changes, or your child reports physical discomfort, bring relevant dates, notes and existing records to a professional. A professional can decide whether an examination is needed.",
+      "formIntro": "Explicitly select both stages from an existing assessment. Ask a professional if unsure. Menarche information and related measurements are optional.",
+      "selectStages": "Please select both stages explicitly. Confirm uncertain values instead of substituting stage 1.",
+      "invalidDate": "The assessment date must be between the birth date and today.",
+      "invalidMenarcheDate": "Enter a menarche date between the birth date and the assessment date.",
+      "invalidMeasurement": "Enter valid positive measurements. Body fat cannot exceed 100%.",
+      "saveError": "Saving failed. Your entries have been kept. Please try again.",
+      "partialSaveError": "Some records were saved, but a later step failed. Saved fields are locked. Select Save to continue without resubmitting successful records.",
+      "trendTitle": "Changes observed in the records",
+      "trendWatch": "{{axis}}: stage {{previous}} on {{from}} to stage {{latest}} on {{to}}. This meets the attention threshold of at least 2 stages within 12 months. Consider discussing these records with a professional.",
+      "explainRecords": "Summarize records with AI",
+      "hideAI": "Hide AI summary",
+      "recordGuideIntro": "Save existing assessments so you can review them by date. Follow these three steps when recording."
+    },
+    "entryGuide": {
+      "title": "Puberty record entry guide",
+      "support": "Communication and professional support",
+      "close": "Close entry guide",
+      "previous": "Previous",
+      "next": "Next"
     }
   },
   "Dental": {
@@ -4984,8 +4647,7 @@
       "rightIop": "Right IOP",
       "leftIop": "Left IOP",
       "hyperopiaReserve": "Hyperopia reserve",
-      "ageMonthsAxis": "Age in months",
-      "ageMonthsTooltip": "{{months}} months",
+      "ageAxis": "Age",
       "sameAgeReferenceRange": "Same-age reference range",
       "sameAgeMedianP50": "Same-age median P50",
       "sameAgeCriticalP75": "Same-age threshold P75",
@@ -5025,7 +4687,8 @@
       "myopia": "Myopia",
       "recorded": "Recorded",
       "standard": "Meets target",
-      "observe": "Observe"
+      "observe": "Observe",
+      "overCritical": "Over threshold"
     },
     "pupil": {
       "undilated": "Undilated",
@@ -5669,12 +5332,12 @@
       "tabDuration": "Duration",
       "tabBedtime": "Bedtime",
       "tabWake": "Wake time",
-      "avg7d": "7-day avg {{value}}",
-      "avgBedtime7d": "7-day avg bedtime {{value}}",
-      "avgWake7d": "7-day avg wake time {{value}}"
+      "avgRecent": "Last 7 records avg {{value}}",
+      "avgBedtimeRecent": "Last 7 records avg bedtime {{value}}",
+      "avgWakeRecent": "Last 7 records avg wake time {{value}}"
     },
     "overview": {
-      "title": "Last 7 days",
+      "title": "Last 7 records",
       "avgTotal": "Avg daily sleep",
       "night": "Night sleep",
       "nap": "Daytime naps",

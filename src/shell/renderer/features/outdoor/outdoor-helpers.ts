@@ -270,99 +270,76 @@ export function formatShortDate(dateStr: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+/** "9月28日 周一" — a day as the tracker names it. */
+export function formatDayLabel(dateStr: string): string {
+  const d = parseDate(dateStr);
+  const monthDay = i18nText('Outdoor.date.shortMonthDay', { month: d.getMonth() + 1, day: d.getDate() });
+  return `${monthDay} ${weekdayLabel(d)}`;
+}
+
 export const DEFAULT_OUTDOOR_GOAL_MINUTES = 630;
+
+/** One goal-stepper tap: ten minutes more (or fewer) outdoors a day. */
+export const OUTDOOR_GOAL_STEP_MINUTES = 7 * 10;
+
+/** A weekly goal can't hold more minutes than the week has. */
+export const MAX_OUTDOOR_GOAL_MINUTES = 7 * 24 * 60;
+
+/** Goal quick picks as minutes outdoors per day; the goal itself is stored per week. */
+export const OUTDOOR_GOAL_DAILY_PRESETS = [60, 90, 120] as const;
+
+/**
+ * The weekly goal one stepper tap away. A hand-typed goal off the step grid
+ * snaps to the next grid value in the tap's direction; at either bound the
+ * goal comes back unchanged.
+ */
+export function stepOutdoorGoalMinutes(minutes: number, direction: 1 | -1): number {
+  const step = OUTDOOR_GOAL_STEP_MINUTES;
+  const next = direction > 0
+    ? (Math.floor(minutes / step) + 1) * step
+    : (Math.ceil(minutes / step) - 1) * step;
+  const clamped = Math.min(MAX_OUTDOOR_GOAL_MINUTES, Math.max(step, next));
+  // Clamping must never move the goal against the tap (e.g. "−" below one step).
+  return direction > 0 ? Math.max(minutes, clamped) : Math.min(minutes, clamped);
+}
 
 /** Quick-select duration presets in minutes. */
 export const DURATION_PRESETS = [30, 60, 90, 120] as const;
 
-// ── Heatmap (multi-week daily intensity grid) ────────────
+/** Duration a new record starts from before the parent adjusts it. */
+export const DEFAULT_RECORD_MINUTES = 60;
 
-export type HeatmapLevel = 0 | 1 | 2 | 3 | 4;
+/** One duration-stepper tap. */
+export const RECORD_STEP_MINUTES = 10;
 
-export interface HeatmapCell {
-  date: string;
-  minutes: number;
-  /** minutes ÷ daily target. 0 when no record. */
-  ratio: number;
-  level: HeatmapLevel;
-  isFuture: boolean;
-  isToday: boolean;
+/** A single record can't hold more minutes than the day has. */
+export const MAX_RECORD_MINUTES = 24 * 60;
+
+/**
+ * The record duration one stepper tap away. Like the goal stepper, a
+ * hand-typed value off the step grid snaps to the next grid value in the
+ * tap's direction, and the bounds hand the value back unchanged.
+ */
+export function stepRecordMinutes(minutes: number, direction: 1 | -1): number {
+  const step = RECORD_STEP_MINUTES;
+  const next = direction > 0
+    ? (Math.floor(minutes / step) + 1) * step
+    : (Math.ceil(minutes / step) - 1) * step;
+  const clamped = Math.min(MAX_RECORD_MINUTES, Math.max(step, next));
+  return direction > 0 ? Math.max(minutes, clamped) : Math.min(minutes, clamped);
 }
 
-export interface HeatmapMonthLabel {
-  /** Column (week) index where this month's first Monday falls. */
-  weekIndex: number;
-  label: string;
+/** "45 分钟" below an hour, "1.5 小时" on the half hour, "75 分钟" otherwise. */
+export function formatOutdoorDuration(minutes: number): string {
+  return minutes >= 60 && minutes % 30 === 0
+    ? i18nText('Outdoor.page.duration.hours', { hours: minutes / 60 })
+    : i18nText('Outdoor.page.duration.minutes', { minutes });
 }
 
-export interface Heatmap {
-  weeksBack: number;
-  dailyTargetMinutes: number;
-  /** weeks[col] = 7 cells (Monday → Sunday), oldest week first. */
-  weeks: HeatmapCell[][];
-  monthLabels: HeatmapMonthLabel[];
+/** The weekly goal spread evenly over seven days, as the day suns measure it. */
+export function dailyTargetMinutes(goalMinutes: number): number {
+  return Math.round(goalMinutes / 7);
 }
 
-export function ratioToHeatmapLevel(ratio: number, hasRecord: boolean): HeatmapLevel {
-  if (!hasRecord) return 0;
-  if (ratio < 0.5) return 1;
-  if (ratio < 1) return 2;
-  if (ratio < 1.5) return 3;
-  return 4;
-}
-
-export function computeHeatmap(
-  records: OutdoorRecordRow[],
-  goalMinutes: number,
-  weeksBack: number,
-  today?: string,
-): Heatmap {
-  const todayStr = today ?? fmtDate(new Date());
-  const currentWeekStart = getWeekStart(parseDate(todayStr));
-  const dailyTarget = goalMinutes / 7;
-
-  const minuteMap = new Map<string, number>();
-  for (const r of records) {
-    minuteMap.set(r.activityDate, (minuteMap.get(r.activityDate) ?? 0) + r.durationMinutes);
-  }
-
-  const weeks: HeatmapCell[][] = [];
-  const monthLabels: HeatmapMonthLabel[] = [];
-  let lastMonth = -1;
-
-  for (let w = weeksBack - 1; w >= 0; w--) {
-    const weekStart = shiftWeek(currentWeekStart, -w);
-    const base = parseDate(weekStart);
-    const col: HeatmapCell[] = [];
-    for (let d = 0; d < 7; d++) {
-      const cursor = new Date(base);
-      cursor.setDate(cursor.getDate() + d);
-      const dateStr = fmtDate(cursor);
-      const minutes = minuteMap.get(dateStr) ?? 0;
-      const ratio = dailyTarget > 0 ? minutes / dailyTarget : 0;
-      col.push({
-        date: dateStr,
-        minutes,
-        ratio,
-        level: ratioToHeatmapLevel(ratio, minutes > 0),
-        isFuture: dateStr > todayStr,
-        isToday: dateStr === todayStr,
-      });
-    }
-
-    const colIdx = weeks.length;
-    const mondayMonth = base.getMonth();
-    if (mondayMonth !== lastMonth) {
-      monthLabels.push({ weekIndex: colIdx, label: i18nText('Outdoor.date.monthLabel', { month: mondayMonth + 1 }) });
-      lastMonth = mondayMonth;
-    }
-    weeks.push(col);
-  }
-
-  return {
-    weeksBack,
-    dailyTargetMinutes: Math.round(dailyTarget),
-    weeks,
-    monthLabels,
-  };
-}
+/** How many recent weeks the trend strip shows, current week included. */
+export const OUTDOOR_TREND_WEEKS = 12;

@@ -72,6 +72,28 @@ export function GlanceChip({ metric }: { metric: GlanceMetric }) {
           <span className="text-[10px] -ml-1" style={{ color: 'var(--nimi-fg-3)' }}>{metric.unit}</span>
         )}
       </div>
+      {metric.surplus && (
+        <div
+          className="mt-2 flex items-baseline gap-2.5 border-t border-[var(--nimi-border-subtle)] pt-2"
+          style={{ fontFamily: MONO }}
+        >
+          <span className="text-[11px] font-medium" style={{ color: 'var(--nimi-fg-3)', fontFamily: 'inherit' }}>
+            {i18nText('Vision.reference.surplus')}
+          </span>
+          {([['OD', metric.surplus.od], ['OS', metric.surplus.os]] as const).map(([eye, v]) => (
+            <span key={eye}>
+              <span className="text-[9px] tracking-[0.08em]" style={{ color: 'var(--nimi-fg-4)' }}>{eye} </span>
+              <span
+                className="text-[14px] font-semibold"
+                style={{ color: v == null ? 'var(--nimi-fg-4)' : surplusColorTone(v) }}
+              >
+                {v == null ? '—' : fmtSigned(v)}
+              </span>
+            </span>
+          ))}
+          <span className="text-[10px] -ml-1" style={{ color: 'var(--nimi-fg-3)' }}>mm</span>
+        </div>
+      )}
     </div>
   );
 }

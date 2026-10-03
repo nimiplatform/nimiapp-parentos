@@ -1,31 +1,40 @@
 import { Button } from '@nimiplatform/kit/ui';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
 import { getMedicalEvents } from '../../bridge/sqlite-bridge.js';
 import type { MedicalEventRow } from '../../bridge/sqlite-bridge.js';
-import { AppSelect } from '../../app-shell/app-select.js';
 import { AISummaryCard } from './ai-summary-card.js';
-import { ParentosAiMascotStatic } from './parentos-ai-mascot-button.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { NoActiveChildPlaceholder } from './_shared/no-active-child-placeholder.js';
 import { ProfileDetailShell } from './_shared/profile-detail-shell.js';
-import { MedicalEventsAnalysisPanel } from './medical-events-analysis-panel.js';
 import { MedicalEventsForm } from './medical-events-form.js';
+import { MedicalEventsKpiStrip, MedicalEventsOverviewCard } from './medical-events-overview.js';
 import {
+  computeMedicalKpis,
   EVENT_TYPE_LABELS,
+  parseLabReport,
+  summarizeMedications,
+  summarizeVisitReasons,
+  VISIT_TYPES,
 } from './medical-events-page-shared.js';
-import { MedicalEventsTimeline } from './medical-events-timeline.js';
+import { MedicalEventsHistorySection, type MedicalFilterTab } from './medical-events-timeline.js';
 import { useMedicalEventsFormState } from './medical-events-page-form-state.js';
 import { useMedicalEventsInsights } from './medical-events-page-insights.js';
 import { i18nText } from '../../i18n/index.js';
 
 
+/**
+ * Medical records archive — laid out like the other archive pages:
+ *   KPI strip → overview (reasons / medications / providers, on-demand AI
+ *   insight) → date-grouped history timeline with type tabs and search.
+ */
 export default function MedicalEventsPage() {
   const { activeChildId, children } = useAppStore();
   const child = children.find((c) => c.childId === activeChildId);
   const [events, setEvents] = useState<MedicalEventRow[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const historyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (activeChildId) {
@@ -36,26 +45,39 @@ export default function MedicalEventsPage() {
   const formState = useMedicalEventsFormState(child, events, setEvents);
   const insights = useMedicalEventsInsights(child, events);
 
-  // ── Search & filter ──
+  const presentTypes = useMemo<string[]>(
+    () => VISIT_TYPES.filter((type) => events.some((event) => event.eventType === type)),
+    [events],
+  );
+  // A tab disappears once its last record is edited away; fall back to "all".
+  const activeFilter = presentTypes.includes(filterType) ? filterType : 'all';
+
   const filteredEvents = useMemo(() => {
     let result = [...events];
-    if (filterType !== 'all') {
-      result = result.filter((e) => e.eventType === filterType);
+    if (activeFilter !== 'all') {
+      result = result.filter((event) => event.eventType === activeFilter);
     }
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      result = result.filter(
-        (e) =>
-          e.title.toLowerCase().includes(q) ||
-          (e.hospital?.toLowerCase().includes(q) ?? false) ||
-          (e.medication?.toLowerCase().includes(q) ?? false) ||
-          (e.notes?.toLowerCase().includes(q) ?? false),
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      result = result.filter((event) =>
+        [
+          event.title,
+          event.hospital,
+          event.medication,
+          event.dosage,
+          // Lab reports store their values as JSON; only free-text notes are searchable.
+          parseLabReport(event.notes) ? null : event.notes,
+        ].some((field) => field?.toLowerCase().includes(query)),
       );
     }
     return result.sort(
       (a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime(),
     );
-  }, [events, filterType, searchQuery]);
+  }, [events, activeFilter, searchQuery]);
+
+  const kpis = useMemo(() => computeMedicalKpis(events), [events]);
+  const visitReasons = useMemo(() => summarizeVisitReasons(events), [events]);
+  const medications = useMemo(() => summarizeMedications(events), [events]);
 
   if (!child) {
     return (
@@ -66,33 +88,28 @@ export default function MedicalEventsPage() {
   }
 
   const ageMonths = computeAgeMonths(child.birthDate);
+  const filterTabs: MedicalFilterTab[] = presentTypes.length > 1
+    ? [
+        { key: 'all', label: i18nText('MedicalEvents.page.allTypes') },
+        ...presentTypes.map((type) => ({ key: type, label: EVENT_TYPE_LABELS[type] ?? type })),
+      ]
+    : [];
+
+  const showRelatedRecords = (keyword: string) => {
+    setFilterType('all');
+    setSearchQuery(keyword);
+    historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <ProfileDetailShell
       title={i18nText('MedicalEvents.page.title')}
-      actions={
-        <>
-          {events.length > 0 ? (
-            <Button
-              tone={insights.showAnalysis ? 'secondary' : 'primary'}
-              size="sm"
-              onClick={() => {
-                insights.setShowAnalysis(!insights.showAnalysis);
-                if (!insights.showAnalysis && !insights.aiInsight) void insights.generateAIInsight();
-              }}
-              className="rounded-2xl"
-            >
-              <ParentosAiMascotStatic size={18} />
-              {insights.showAnalysis ? i18nText('MedicalEvents.page.hideAnalysis') : i18nText('MedicalEvents.page.smartAnalysis')}
-            </Button>
-          ) : null}
-          {!formState.showForm ? (
-            <Button tone="primary" size="sm" onClick={() => formState.setShowForm(true)} className="rounded-2xl">
-              {i18nText('MedicalEvents.page.addEvent')}
-            </Button>
-          ) : null}
-        </>
-      }
+      actions={!formState.showForm ? (
+        <Button tone="primary" size="md" onClick={() => formState.setShowForm(true)}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          {i18nText('MedicalEvents.page.addEvent')}
+        </Button>
+      ) : null}
       aiSummary={
         <AISummaryCard domain="medical" childName={child.displayName} childId={child.childId}
           ageLabel={i18nText('Common.age.yearsMonths', { years: Math.floor(ageMonths / 12), months: ageMonths % 12 })} gender={child.gender}
@@ -100,50 +117,25 @@ export default function MedicalEventsPage() {
         />
       }
     >
-      {events.length > 0 && insights.analysis && insights.showAnalysis ? (
-        <MedicalEventsAnalysisPanel
-          analysis={insights.analysis}
-          aiInsight={insights.aiInsight}
-          aiLoading={insights.aiLoading}
-          onRefresh={() => { void insights.generateAIInsight(true); }}
-          onSelectDiagnosis={(diagnosis) => {
-            setSearchQuery(diagnosis);
-            insights.setShowAnalysis(false);
-          }}
-          onSelectMedication={(name) => {
-            setSearchQuery(name);
-            insights.setShowAnalysis(false);
-          }}
-        />
+      {events.length > 0 ? (
+        <>
+          <MedicalEventsKpiStrip kpis={kpis} />
+          <MedicalEventsOverviewCard
+            totalEvents={events.length}
+            reasons={visitReasons}
+            medications={medications}
+            hospitals={insights.analysis?.frequentHospitals ?? []}
+            alerts={insights.analysis?.alerts ?? []}
+            aiInsight={insights.aiInsight}
+            aiLoading={insights.aiLoading}
+            // First request may reuse today's cached insight; later ones refresh it.
+            onRequestAi={() => { void insights.generateAIInsight(insights.aiInsight !== null); }}
+            onSelectKeyword={showRelatedRecords}
+          />
+        </>
       ) : null}
 
-      {/* ── Search & Filter ── */}
-      {events.length > 0 && (
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <div className="relative flex-1 min-w-48">
-            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke={'var(--nimi-text-muted)'} strokeWidth="2" strokeLinecap="round">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-            </svg>
-            <input placeholder={i18nText('MedicalEvents.page.searchPlaceholder')} value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)] py-1.5 pl-8 pr-14 text-sm text-[var(--nimi-text-primary)]" />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[13px] text-[var(--nimi-text-muted)]">{i18nText('MedicalEvents.page.clearSearch')}</button>
-            )}
-          </div>
-          <AppSelect
-            value={filterType}
-            onChange={setFilterType}
-            options={[{ value: 'all', label: i18nText('MedicalEvents.page.allTypes') }, ...Object.entries(EVENT_TYPE_LABELS).map(([val, label]) => ({ value: val, label }))]}
-            aria-label={i18nText('MedicalEvents.page.filterTypeAria')}
-            className="w-40 shrink-0"
-          />
-        </div>
-      )}
-
-      {/* ── Add Form ── */}
+      {/* ── Add / edit form (modal) ── */}
       {formState.showForm ? (
         <MedicalEventsForm
           editingEventId={formState.editingEventId}
@@ -184,18 +176,22 @@ export default function MedicalEventsPage() {
         />
       ) : null}
 
-      <section>
-        <MedicalEventsTimeline
-          events={events}
+      <div ref={historyRef} className="scroll-mt-4">
+        <MedicalEventsHistorySection
+          totalCount={events.length}
           filteredEvents={filteredEvents}
+          filterTabs={filterTabs}
+          filterType={activeFilter}
+          onFilterTypeChange={setFilterType}
           searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
           eventAiLoading={insights.eventAiLoading}
           eventAiResult={insights.eventAiResult}
           onEdit={formState.startEditing}
           onAnalyze={(event) => { void insights.analyzeEvent(event); }}
           onCloseAI={insights.closeEventAnalysis}
         />
-      </section>
+      </div>
     </ProfileDetailShell>
   );
 }

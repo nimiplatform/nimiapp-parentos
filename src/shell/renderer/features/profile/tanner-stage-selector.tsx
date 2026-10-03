@@ -1,71 +1,45 @@
-import '@nimiplatform/kit/ui';
-import { useState } from 'react';
+import { useId } from 'react';
 import type { StageDesc } from './tanner-page-shared.js';
-import { i18nText } from '../../i18n/index.js';
-
 
 type TannerStageSelectorProps = {
   stages: StageDesc[];
-  value: number;
+  value: number | null;
   onChange: (stage: number) => void;
   label: string;
 };
 
-export function TannerStageSelector({
-  stages,
-  value,
-  onChange,
-  label,
-}: TannerStageSelectorProps) {
-  const [expandedStage, setExpandedStage] = useState<number | null>(null);
-
+export function TannerStageSelector({ stages, value, onChange, label }: TannerStageSelectorProps) {
+  const name = useId();
   return (
-    <div className="mb-5">
-      <p className="text-[14px] font-semibold mb-2 text-[var(--nimi-text-primary)]">{label}</p>
-      <div className="space-y-1.5">
-        {stages.map((stage) => {
-          const active = value === stage.stage;
-          const expanded = expandedStage === stage.stage;
-          return (
-            <div
-              key={stage.stage}
-              className={`overflow-hidden rounded-2xl transition-all ${active ? 'bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)]' : 'bg-[var(--nimi-surface-panel)] text-[var(--nimi-text-primary)]'}`}
-            >
-              <button onClick={() => onChange(stage.stage)} className="w-full text-left p-3">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[13px] font-bold ${active ? 'bg-[color-mix(in_srgb,var(--nimi-action-primary-text)_25%,transparent)] text-[var(--nimi-action-primary-text)]' : 'bg-[var(--nimi-surface-card)] text-[var(--nimi-text-muted)]'}`}
-                  >
-                    {stage.stage}
-                  </div>
-                  <span className="text-[14px] font-semibold flex-1">{stage.title}</span>
-                  <span
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setExpandedStage(expanded ? null : stage.stage);
-                    }}
-                    className={`cursor-pointer rounded px-1.5 py-0.5 text-[12px] transition-colors ${active ? 'bg-[color-mix(in_srgb,var(--nimi-action-primary-text)_20%,transparent)] text-[var(--nimi-action-primary-text)]' : 'bg-[var(--nimi-surface-card)] text-[var(--nimi-text-muted)]'}`}
-                  >
-                    {expanded ? i18nText('Tanner.action.collapse') : i18nText('Tanner.action.expand')}
-                  </span>
-                </div>
-                <p className={`ml-8 mt-1 text-[12px] leading-relaxed ${active ? 'text-[color-mix(in_srgb,var(--nimi-action-primary-text)_80%,transparent)]' : 'text-[var(--nimi-text-muted)]'}`}>
-                  {stage.desc}
-                </p>
-              </button>
-              {expanded ? (
-                <div className="px-3 pb-3 ml-8">
-                  <div
-                    className={`rounded-2xl p-2.5 text-[12px] leading-relaxed ${active ? 'bg-[color-mix(in_srgb,var(--nimi-action-primary-text)_15%,transparent)] text-[color-mix(in_srgb,var(--nimi-action-primary-text)_90%,transparent)]' : 'border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-card)] text-[var(--nimi-text-primary)]'}`}
-                  >
-                    {stage.howToJudge}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
+    <fieldset className="min-w-0">
+      <legend className="mb-3 text-sm font-semibold text-[var(--nimi-text-primary)]">
+        {label}
+      </legend>
+      <div className="space-y-2">
+        {stages.map((stage) => (
+          <label
+            key={stage.stage}
+            className="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--nimi-border-subtle)] p-3 transition-colors has-[:checked]:border-[var(--nimi-action-primary-bg)] has-[:checked]:bg-[var(--nimi-surface-panel)] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-[var(--nimi-action-primary-bg)]"
+          >
+            <input
+              type="radio"
+              name={name}
+              value={stage.stage}
+              checked={value === stage.stage}
+              onChange={() => onChange(stage.stage)}
+              className="mt-1 shrink-0 accent-[var(--nimi-action-primary-bg)]"
+            />
+            <span>
+              <span className="block text-sm font-medium text-[var(--nimi-text-primary)]">
+                {stage.title}
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-[var(--nimi-text-secondary)]">
+                {stage.desc}
+              </span>
+            </span>
+          </label>
+        ))}
       </div>
-    </div>
+    </fieldset>
   );
 }

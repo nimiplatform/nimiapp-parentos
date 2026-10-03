@@ -43,6 +43,8 @@ export const METRIC_LABEL_KEYS: Record<string, string> = {
   'development.tanner_breast_stage': 'Profile.metrics.development.tannerBreastStage',
   'development.tanner_genital_stage': 'Profile.metrics.development.tannerGenitalStage',
   'development.tanner_pubic_hair_stage': 'Profile.metrics.development.tannerPubicHairStage',
+  'development.menarche_status': 'Profile.metrics.development.menarcheStatus',
+  'development.menarche_date': 'Profile.metrics.development.menarcheDate',
   'development.bone_age_years': 'Profile.metrics.development.boneAgeYears',
   'development.body_fat_percentage': 'Profile.metrics.development.bodyFatPercentage',
   'sleep.duration_minutes': 'Profile.metrics.sleep.durationMinutes',

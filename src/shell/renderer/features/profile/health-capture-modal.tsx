@@ -7,11 +7,7 @@ import { GrowthAddRecordContent } from './growth-capture-content.js';
 import { VisionBatchFormContent } from './vision-batch-form.js';
 import { SleepFormContent } from './sleep-record-form.js';
 import { FitnessAssessmentFormContent } from './fitness-assessment-form.js';
-import {
-  EMPTY_SMART_INPUT_STATE,
-  MedicalEventFormContent,
-  type SmartInputState,
-} from './medical-events-form.js';
+import { MedicalEventFormContent } from './medical-events-form.js';
 import { MilestoneCaptureContent } from './milestone-capture-form.js';
 import { OutdoorCaptureContent } from './outdoor-capture-form.js';
 import { DentalCaptureContent } from './dental-capture-form.js';
@@ -30,7 +26,6 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
-  SmartInputButton,
 } from './health-record-modal-shell.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -161,7 +156,6 @@ function SidebarHealthCaptureModal({
         ? 'milestone'
         : 'tanner';
   const [developmentTab, setDevelopmentTab] = useState<'milestone' | 'tanner'>(initialDevelopmentTab);
-  const [smartInput, setSmartInput] = useState<SmartInputState>(EMPTY_SMART_INPUT_STATE);
   const { children } = useAppStore();
   const child = children.find((item) => item.childId === childId);
 
@@ -244,7 +238,6 @@ function SidebarHealthCaptureModal({
           }}
           onSaved={handleSavedFromGroup}
           onClose={onClose}
-          onSmartInputStateChange={setSmartInput}
         />
       );
     }
@@ -326,16 +319,6 @@ function SidebarHealthCaptureModal({
             items={sidebarItems}
             selected={selectedGroupId}
             onSelect={setSelectedGroupId}
-            footer={
-              smartInput.onUpload ? (
-                <SmartInputButton
-                  loading={smartInput.loading}
-                  error={smartInput.error}
-                  imageName={smartInput.imageName}
-                  onUpload={smartInput.onUpload}
-                />
-              ) : null
-            }
           />
         )
       }

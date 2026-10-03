@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Button, DatePicker, SelectField, TextField } from '@nimiplatform/kit/ui';
+import { Button, DatePicker, TextField } from '@nimiplatform/kit/ui';
+import { AppSelect } from '../../app-shell/app-select.js';
 import { computeAgeMonthsAt } from '../../app-shell/app-store.js';
 import { insertVaccineRecord } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
@@ -104,9 +105,9 @@ export function VaccineCaptureContent({ child, onSaved, onClose }: VaccineCaptur
           <SectionCard title={i18nText('Vaccine.capture.section.vaccination')}>
             <div className="space-y-3">
               <FormField label={i18nText('Vaccine.capture.field.name')} required>
-                <SelectField
+                <AppSelect
                   value={selectedRuleId}
-                  onValueChange={setSelectedRuleId}
+                  onChange={setSelectedRuleId}
                   options={VACCINE_RULES.map((rule) => ({ value: rule.ruleId, label: rule.title }))}
                   placeholder={i18nText('Vaccine.capture.field.rulePlaceholder')}
                   contentLayer="dialog"

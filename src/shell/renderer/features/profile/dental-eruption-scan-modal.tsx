@@ -1,4 +1,4 @@
-import { Button, cn, DatePicker, OverlayShell, StatusBadge, Surface } from '@nimiplatform/kit/ui';
+import { Button, cn, DashedAddButton, DatePicker, OverlayShell, StatusBadge, Surface } from '@nimiplatform/kit/ui';
 import { useMemo, useState } from 'react';
 import {
   PERM_LOWER_L,
@@ -24,6 +24,7 @@ export interface DentalEruptionScanModalProps {
   show: boolean;
   onClose: () => void;
   onPickImage: () => Promise<void>;
+  onDropImage?: (file: File) => Promise<void>;
   onAnalyze: () => Promise<void>;
   onConfirm: (input: {
     eventDate: string;
@@ -104,6 +105,7 @@ function pickToothClassName(input: {
 export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
   const [toothSet, setToothSet] = useState<'primary' | 'permanent'>('primary');
   const [deselected, setDeselected] = useState<Set<string>>(new Set());
+  const [dragOver, setDragOver] = useState(false);
 
   const candidateMap = useMemo(() => {
     const map = new Map<string, DentalEruptionCandidate>();
@@ -212,19 +214,28 @@ export function DentalEruptionScanModal(props: DentalEruptionScanModalProps) {
           ) : null}
 
           {props.stage === 'upload' ? (
-            <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{i18nText('DentalEruptionScan.upload.title')}</p>
-              <p className="max-w-[420px] text-[13px] text-[var(--nimi-text-muted)]">
-                {i18nText('DentalEruptionScan.upload.hint')}
-              </p>
-              <Button
+            <div
+              className="space-y-2"
+              onDragOver={(event) => { event.preventDefault(); setDragOver(true); }}
+              onDragEnter={(event) => { event.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragOver(false);
+                const file = event.dataTransfer.files?.[0];
+                if (file && props.onDropImage) void props.onDropImage(file);
+              }}
+            >
+              <p className="text-[13px] font-medium text-[var(--nimi-text-muted)]">{i18nText('DentalEruptionScan.upload.title')}</p>
+              <DashedAddButton
+                shape="dropzone"
+                active={dragOver}
                 onClick={() => void props.onPickImage()}
-                tone="primary"
-                size="md"
-                className="mt-2"
-              >
-                {i18nText('DentalEruptionScan.action.pickPhoto')}
-              </Button>
+                label={i18nText('DentalEruptionScan.upload.dropzoneLabel')}
+                description={i18nText('DentalEruptionScan.upload.dropzoneDescription')}
+                aria-label={i18nText('DentalEruptionScan.action.pickPhoto')}
+              />
+              <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('DentalEruptionScan.upload.hint')}</p>
             </div>
           ) : null}
 

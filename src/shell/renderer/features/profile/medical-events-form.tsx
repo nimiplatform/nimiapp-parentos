@@ -34,6 +34,7 @@ import {
   ModalFooter,
   ModalHeader,
   SectionCard,
+  SmartRecognizeButton,
 } from './health-record-modal-shell.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -48,30 +49,14 @@ export function MedicalEventsForm(props: MedicalEventsFormProps) {
   );
 }
 
-export type SmartInputState = {
-  loading: boolean;
-  error: string | null;
-  imageName: string | null;
-  onUpload: ((file: File) => void) | null;
-};
-
-export const EMPTY_SMART_INPUT_STATE: SmartInputState = {
-  loading: false,
-  error: null,
-  imageName: null,
-  onUpload: null,
-};
-
 export function MedicalEventFormContent({
   child,
   onSaved,
   onClose,
-  onSmartInputStateChange,
 }: {
   child: MedicalEventsChildContext;
   onSaved?: () => void;
   onClose: () => void;
-  onSmartInputStateChange?: (state: SmartInputState) => void;
 }) {
   const [events, setEvents] = useState<MedicalEventRow[]>([]);
 
@@ -91,29 +76,6 @@ export function MedicalEventFormContent({
     (file: File) => { void formState.handleOCRUpload(file); },
     [formState.handleOCRUpload],
   );
-
-  const smartInputHoisted = onSmartInputStateChange != null;
-
-  useEffect(() => {
-    if (!onSmartInputStateChange) return;
-    onSmartInputStateChange({
-      loading: formState.ocrLoading,
-      error: formState.ocrError,
-      imageName: formState.ocrImageName,
-      onUpload: handleOCRUpload,
-    });
-  }, [
-    onSmartInputStateChange,
-    formState.ocrLoading,
-    formState.ocrError,
-    formState.ocrImageName,
-    handleOCRUpload,
-  ]);
-
-  useEffect(() => {
-    if (!onSmartInputStateChange) return;
-    return () => onSmartInputStateChange(EMPTY_SMART_INPUT_STATE);
-  }, [onSmartInputStateChange]);
 
   return (
     <MedicalEventsFormBody
@@ -149,7 +111,6 @@ export function MedicalEventFormContent({
       ocrInputRef={formState.ocrInputRef}
       submitError={formState.submitError}
       saving={formState.saving}
-      hideInlineSmartInput={smartInputHoisted}
       onClose={onClose}
       onSubmit={() => { void formState.submitForm(); }}
       onOCRUpload={handleOCRUpload}
@@ -190,7 +151,6 @@ type MedicalEventsFormProps = {
   ocrInputRef: RefObject<HTMLInputElement | null>;
   submitError: string | null;
   saving: boolean;
-  hideInlineSmartInput?: boolean;
   onClose: () => void;
   onSubmit: () => void;
   onOCRUpload: (file: File) => void;
@@ -229,7 +189,6 @@ function MedicalEventsFormBody({
   ocrInputRef,
   submitError,
   saving,
-  hideInlineSmartInput = false,
   onClose,
   onSubmit,
   onOCRUpload,
@@ -256,69 +215,54 @@ function MedicalEventsFormBody({
     label: RESULT_LABELS[result] ?? result,
   }));
 
+  // Header "智能录入" action — same canonical pill as the vision form's
+  // "智能识别" so every AI-fill entry point looks identical across domains.
+  const smartInputAction = !editingEventId ? (
+    <>
+      <input
+        ref={ocrInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) onOCRUpload(file);
+          event.target.value = '';
+        }}
+      />
+      <SmartRecognizeButton
+        onClick={() => ocrInputRef.current?.click()}
+        disabled={ocrLoading}
+        title={i18nText('MedicalEvents.form.ocrHint')}
+      >
+        {ocrLoading ? i18nText('MedicalEvents.form.recognizing') : i18nText('MedicalEvents.form.smartInputTitle')}
+      </SmartRecognizeButton>
+    </>
+  ) : undefined;
+
+  const smartInputStatus = editingEventId ? null : ocrLoading ? (
+    <p className="text-[12.5px]" style={{ color: 'var(--nimi-action-primary-bg)' }}>
+      {i18nText('MedicalEvents.form.ocrRecognizingFile', { fileName: ocrImageName ?? '' })}
+    </p>
+  ) : ocrError ? (
+    <InlineError>{ocrError}</InlineError>
+  ) : ocrImageName ? (
+    <p className="text-[12.5px]" style={{ color: 'var(--nimi-action-primary-bg)' }}>
+      {i18nText('MedicalEvents.form.ocrExtractedFile', { fileName: ocrImageName })}
+    </p>
+  ) : null;
+
   return (
     <>
       <ModalHeader
         title={editingEventId ? i18nText('MedicalEvents.form.editTitle') : i18nText('MedicalEvents.form.addTitle')}
         icon={EVENT_TYPE_ICONS[formEventType] ?? '🏥'}
         onClose={onClose}
+        trailing={smartInputAction}
       />
       <ModalContent>
         <div className="space-y-4">
-          {!editingEventId && !hideInlineSmartInput ? (
-            <>
-              <input
-                ref={ocrInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) onOCRUpload(file);
-                  event.target.value = '';
-                }}
-              />
-              <div
-                className="flex items-center gap-3 rounded-[16px] px-4 py-3"
-                style={{
-                  background: 'linear-gradient(135deg, #f1f5f9, #e8f0e8)',
-                  border: `1px solid ${'var(--nimi-border-subtle)'}`,
-                }}
-              >
-                <span className="text-[24px]">{ocrLoading ? '⏳' : '🤖'}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-semibold" style={{ color: 'var(--nimi-text-primary)' }}>
-                    {i18nText('MedicalEvents.form.smartInputTitle')}
-                  </p>
-                  {ocrLoading ? (
-                    <p className="text-[12px]" style={{ color: 'var(--nimi-action-primary-bg)' }}>
-                      {i18nText('MedicalEvents.form.ocrRecognizingFile', { fileName: ocrImageName ?? '' })}
-                    </p>
-                  ) : ocrError ? (
-                    <p className="text-[12px] text-[var(--nimi-status-danger)]">
-                      {ocrError}
-                    </p>
-                  ) : ocrImageName ? (
-                    <p className="text-[12px]" style={{ color: 'var(--nimi-action-primary-bg)' }}>
-                      {i18nText('MedicalEvents.form.ocrExtractedFile', { fileName: ocrImageName })}
-                    </p>
-                  ) : (
-                    <p className="text-[12px]" style={{ color: 'var(--nimi-text-muted)' }}>
-                      {i18nText('MedicalEvents.form.ocrHint')}
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => ocrInputRef.current?.click()}
-                  disabled={ocrLoading}
-                  className="shrink-0 rounded-[12px] px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:brightness-110 disabled:opacity-50"
-                  style={{ background: 'var(--nimi-action-primary-bg)' }}
-                >
-                  {ocrLoading ? i18nText('MedicalEvents.form.recognizing') : i18nText('MedicalEvents.form.uploadRecognize')}
-                </button>
-              </div>
-            </>
-          ) : null}
+          {smartInputStatus}
 
           <SectionCard title={i18nText('MedicalEvents.form.sectionBasic')}>
             <div className="space-y-4">

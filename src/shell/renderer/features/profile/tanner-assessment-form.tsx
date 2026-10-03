@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Button, DatePicker, TextField } from '@nimiplatform/kit/ui';
 import { computeAgeMonthsAt } from '../../app-shell/app-store.js';
 import { insertMeasurement, insertTannerAssessment } from '../../bridge/sqlite-bridge.js';
@@ -7,9 +7,8 @@ import type { LinkedHealthRecordReminder } from './health-capture-orchestrator.j
 import { TannerStageSelector } from './tanner-stage-selector.js';
 import {
   ASSESSED_BY_OPTIONS,
-  BREAST_STAGES,
-  GENITAL_STAGES,
   formatAssessedBy,
+  primaryStages,
   pubicHairStages,
   type MenarcheStatus,
   type StageDesc,
@@ -19,26 +18,25 @@ import {
   type ChipOption,
   FormField,
   FormGrid,
-  HealthRecordModalShell,
   ModalContent,
   ModalFooter,
   ModalHeader,
 } from './health-record-modal-shell.js';
 import { i18nText } from '../../i18n/index.js';
 
+const NUMBER_INPUT_CLASS =
+  '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
-const NUMBER_INPUT_CLASS = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
-
-type TannerAssessmentFormProps = {
+type TannerFormFieldsProps = {
   isFemale: boolean;
   bgLabel: string;
   bgStages: StageDesc[];
   phStages: StageDesc[];
   formAssessedAt: string;
   setFormAssessedAt: (value: string) => void;
-  formBG: number;
+  formBG: number | null;
   setFormBG: (value: number) => void;
-  formPH: number;
+  formPH: number | null;
   setFormPH: (value: number) => void;
   formAssessedBy: string;
   setFormAssessedBy: (value: string) => void;
@@ -48,12 +46,10 @@ type TannerAssessmentFormProps = {
   setFormBoneAge: (value: string) => void;
   formBodyFat: string;
   setFormBodyFat: (value: string) => void;
-  formMenarcheStatus: MenarcheStatus;
-  setFormMenarcheStatus: (value: MenarcheStatus) => void;
+  formMenarcheStatus: MenarcheStatus | null;
+  setFormMenarcheStatus: (value: MenarcheStatus | null) => void;
   formMenarcheDate: string;
   setFormMenarcheDate: (value: string) => void;
-  onClose: () => void;
-  onSave: () => void;
 };
 
 const ASSESSED_BY_CHIPS: ChipOption<string>[] = ASSESSED_BY_OPTIONS.map((value) => ({
@@ -61,76 +57,11 @@ const ASSESSED_BY_CHIPS: ChipOption<string>[] = ASSESSED_BY_OPTIONS.map((value) 
   label: formatAssessedBy(value),
 }));
 
-const MENARCHE_STATUS_CHIPS: ChipOption<MenarcheStatus>[] = [
+const MENARCHE_STATUS_CHIPS: ChipOption<MenarcheStatus | 'unrecorded'>[] = [
+  { value: 'unrecorded', label: i18nText('Tanner.redesign.unrecorded') },
   { value: 'not_yet', label: i18nText('Tanner.form.menarcheNotYet') },
   { value: 'occurred', label: i18nText('Tanner.form.menarcheOccurred') },
 ];
-
-// @nimi-authority: rule.parentos.prof.r012
-export function TannerAssessmentForm({
-  isFemale,
-  bgLabel,
-  bgStages,
-  phStages,
-  formAssessedAt,
-  setFormAssessedAt,
-  formBG,
-  setFormBG,
-  formPH,
-  setFormPH,
-  formAssessedBy,
-  setFormAssessedBy,
-  formNotes,
-  setFormNotes,
-  formBoneAge,
-  setFormBoneAge,
-  formBodyFat,
-  setFormBodyFat,
-  formMenarcheStatus,
-  setFormMenarcheStatus,
-  formMenarcheDate,
-  setFormMenarcheDate,
-  onClose,
-  onSave,
-}: TannerAssessmentFormProps) {
-  return (
-    <HealthRecordModalShell open size="XL" onClose={onClose}>
-      <ModalHeader title={i18nText('Tanner.form.title')} icon="🌱" onClose={onClose} />
-      <ModalContent>
-        <TannerFormFields
-          isFemale={isFemale}
-          bgLabel={bgLabel}
-          bgStages={bgStages}
-          phStages={phStages}
-          formAssessedAt={formAssessedAt}
-          setFormAssessedAt={setFormAssessedAt}
-          formBG={formBG}
-          setFormBG={setFormBG}
-          formPH={formPH}
-          setFormPH={setFormPH}
-          formAssessedBy={formAssessedBy}
-          setFormAssessedBy={setFormAssessedBy}
-          formNotes={formNotes}
-          setFormNotes={setFormNotes}
-          formBoneAge={formBoneAge}
-          setFormBoneAge={setFormBoneAge}
-          formBodyFat={formBodyFat}
-          setFormBodyFat={setFormBodyFat}
-          formMenarcheStatus={formMenarcheStatus}
-          setFormMenarcheStatus={setFormMenarcheStatus}
-          formMenarcheDate={formMenarcheDate}
-          setFormMenarcheDate={setFormMenarcheDate}
-        />
-      </ModalContent>
-      <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('Tanner.form.cancel')}</Button>
-        <Button type="button" onClick={onSave} tone="primary" size="md">{i18nText('Tanner.form.save')}</Button>
-      </ModalFooter>
-    </HealthRecordModalShell>
-  );
-}
-
-type TannerFormFieldsProps = Omit<TannerAssessmentFormProps, 'onClose' | 'onSave'>;
 
 function TannerFormFields({
   isFemale,
@@ -158,7 +89,7 @@ function TannerFormFields({
 }: TannerFormFieldsProps) {
   return (
     <div className="space-y-5">
-      <FormGrid cols={2}>
+      <FormGrid className="!grid-cols-1 sm:!grid-cols-2" cols={2}>
         <FormField label={i18nText('Tanner.form.assessedAt')}>
           <DatePicker value={formAssessedAt} onChange={setFormAssessedAt} className="h-12" />
         </FormField>
@@ -173,19 +104,29 @@ function TannerFormFields({
         </FormField>
       </FormGrid>
 
-      <FormGrid cols={2} gap={4}>
-        <TannerStageSelector stages={bgStages} value={formBG} onChange={setFormBG} label={bgLabel} />
-        <TannerStageSelector stages={phStages} value={formPH} onChange={setFormPH} label={i18nText('Tanner.form.pubicHairStage')} />
+      <FormGrid className="!grid-cols-1 sm:!grid-cols-2" cols={2} gap={4}>
+        <TannerStageSelector
+          stages={bgStages}
+          value={formBG}
+          onChange={setFormBG}
+          label={bgLabel}
+        />
+        <TannerStageSelector
+          stages={phStages}
+          value={formPH}
+          onChange={setFormPH}
+          label={i18nText('Tanner.form.pubicHairStage')}
+        />
       </FormGrid>
 
       {isFemale ? (
-        <FormGrid cols={2}>
+        <FormGrid className="!grid-cols-1 sm:!grid-cols-2" cols={2}>
           <FormField label={i18nText('Tanner.form.menarcheStatus')}>
             <ChipGroup
               options={MENARCHE_STATUS_CHIPS}
-              value={formMenarcheStatus}
+              value={formMenarcheStatus ?? 'unrecorded'}
               onChange={(value) => {
-                setFormMenarcheStatus(value);
+                setFormMenarcheStatus(value === 'unrecorded' ? null : value);
                 if (value !== 'occurred') setFormMenarcheDate('');
               }}
               layout="fill"
@@ -194,13 +135,17 @@ function TannerFormFields({
           </FormField>
           {formMenarcheStatus === 'occurred' ? (
             <FormField label={i18nText('Tanner.form.menarcheDate')}>
-              <DatePicker value={formMenarcheDate} onChange={setFormMenarcheDate} className="h-12" />
+              <DatePicker
+                value={formMenarcheDate}
+                onChange={setFormMenarcheDate}
+                className="h-12"
+              />
             </FormField>
           ) : null}
         </FormGrid>
       ) : null}
 
-      <FormGrid cols={2}>
+      <FormGrid className="!grid-cols-1 sm:!grid-cols-2" cols={2}>
         <FormField label={i18nText('Tanner.form.boneAge')}>
           <TextField
             type="number"
@@ -244,50 +189,109 @@ type TannerCaptureContentProps = {
   /** Optional trailing slot in the header (e.g., milestone/tanner tab switcher). */
   headerTrailing?: ReactNode;
   linkedReminder?: LinkedHealthRecordReminder | null;
+  onSavingChange?: (saving: boolean) => void;
 };
 
-export function TannerCaptureContent({ child, onSaved, onClose, headerTrailing, linkedReminder }: TannerCaptureContentProps) {
+// @nimi-authority: rule.parentos.prof.r012
+export function TannerCaptureContent({
+  child,
+  onSaved,
+  onClose,
+  headerTrailing,
+  linkedReminder,
+  onSavingChange,
+}: TannerCaptureContentProps) {
   const isFemale = child.gender === 'female';
-  const bgLabel = isFemale ? i18nText('Tanner.page.breastStageLabel') : i18nText('Tanner.page.genitalStageLabel');
-  const bgStages: StageDesc[] = isFemale ? BREAST_STAGES : GENITAL_STAGES;
+  const bgLabel = isFemale
+    ? i18nText('Tanner.page.breastStageLabel')
+    : i18nText('Tanner.page.genitalStageLabel');
+  const bgStages: StageDesc[] = primaryStages(isFemale);
   const phStages: StageDesc[] = pubicHairStages(isFemale);
 
   const [assessedAt, setAssessedAt] = useState(() => new Date().toISOString().slice(0, 10));
-  const [bg, setBg] = useState(1);
-  const [ph, setPh] = useState(1);
+  const [bg, setBg] = useState<number | null>(null);
+  const [ph, setPh] = useState<number | null>(null);
   const [assessedBy, setAssessedBy] = useState<string>('parent');
   const [notes, setNotes] = useState('');
   const [boneAge, setBoneAge] = useState('');
   const [bodyFat, setBodyFat] = useState('');
-  const [menarcheStatus, setMenarcheStatus] = useState<MenarcheStatus>('not_yet');
+  const [menarcheStatus, setMenarcheStatus] = useState<MenarcheStatus | null>(null);
   const [menarcheDate, setMenarcheDate] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const completed = useRef(new Set<string>());
+  const inFlight = useRef(false);
+  const [locked, setLocked] = useState(false);
 
   const handleSubmit = async () => {
-    if (!assessedAt || bg < 1 || bg > 5 || ph < 1 || ph > 5) return;
-    if (isFemale && menarcheStatus === 'occurred' && !menarcheDate) return;
+    if (inFlight.current) return;
+    if (
+      !assessedAt ||
+      assessedAt < child.birthDate.slice(0, 10) ||
+      assessedAt > new Date().toISOString().slice(0, 10)
+    ) {
+      setError(i18nText('Tanner.redesign.invalidDate'));
+      return;
+    }
+    if (
+      bg == null ||
+      ph == null ||
+      !Number.isInteger(bg) ||
+      !Number.isInteger(ph) ||
+      bg < 1 ||
+      bg > 5 ||
+      ph < 1 ||
+      ph > 5
+    ) {
+      setError(i18nText('Tanner.redesign.selectStages'));
+      return;
+    }
+    if (
+      isFemale &&
+      menarcheStatus === 'occurred' &&
+      (!menarcheDate || menarcheDate < child.birthDate.slice(0, 10) || menarcheDate > assessedAt)
+    ) {
+      setError(i18nText('Tanner.redesign.invalidMenarcheDate'));
+      return;
+    }
+    if (
+      [boneAge, bodyFat].some(
+        (value) => value.trim() && (!Number.isFinite(Number(value)) || Number(value) <= 0),
+      ) ||
+      Number(bodyFat) > 100
+    ) {
+      setError(i18nText('Tanner.redesign.invalidMeasurement'));
+      return;
+    }
+    inFlight.current = true;
+    setError(null);
     setSaving(true);
+    onSavingChange?.(true);
     const now = isoNow();
     const ageMonths = computeAgeMonthsAt(child.birthDate, assessedAt);
     const linkedReminderStateId = linkedReminder?.stateId ?? null;
     const linkedReminderRuleId = linkedReminder?.ruleId ?? null;
     try {
-      await insertTannerAssessment({
-        assessmentId: ulid(),
-        childId: child.childId,
-        assessedAt,
-        ageMonths,
-        breastOrGenitalStage: bg,
-        pubicHairStage: ph,
-        assessedBy: assessedBy || null,
-        notes: notes.trim() || null,
-        now,
-        linkedReminderStateId,
-        linkedReminderRuleId,
-        menarcheStatus: isFemale ? menarcheStatus : null,
-        menarcheDate: isFemale && menarcheStatus === 'occurred' ? menarcheDate : null,
-      });
-      if (boneAge.trim()) {
+      if (!completed.current.has('assessment')) {
+        await insertTannerAssessment({
+          assessmentId: ulid(),
+          childId: child.childId,
+          assessedAt,
+          ageMonths,
+          breastOrGenitalStage: bg,
+          pubicHairStage: ph,
+          assessedBy: assessedBy || null,
+          notes: notes.trim() || null,
+          now,
+          linkedReminderStateId,
+          linkedReminderRuleId,
+          menarcheStatus: isFemale ? menarcheStatus : null,
+          menarcheDate: isFemale && menarcheStatus === 'occurred' ? menarcheDate : null,
+        });
+        completed.current.add('assessment');
+        setLocked(true);
+      }
+      if (boneAge.trim() && !completed.current.has('bone')) {
         await insertMeasurement({
           measurementId: ulid(),
           childId: child.childId,
@@ -302,8 +306,9 @@ export function TannerCaptureContent({ child, onSaved, onClose, headerTrailing, 
           linkedReminderStateId,
           linkedReminderRuleId,
         });
+        completed.current.add('bone');
       }
-      if (bodyFat.trim()) {
+      if (bodyFat.trim() && !completed.current.has('fat')) {
         await insertMeasurement({
           measurementId: ulid(),
           childId: child.childId,
@@ -319,47 +324,81 @@ export function TannerCaptureContent({ child, onSaved, onClose, headerTrailing, 
           linkedReminderRuleId,
         });
       }
+      completed.current.add('fat');
       await onSaved();
       onClose();
     } catch {
-      /* bridge unavailable */
+      setError(
+        i18nText(
+          completed.current.size > 0
+            ? 'Tanner.redesign.partialSaveError'
+            : 'Tanner.redesign.saveError',
+        ),
+      );
     } finally {
+      inFlight.current = false;
       setSaving(false);
+      onSavingChange?.(false);
     }
   };
 
   return (
     <>
-      <ModalHeader title={i18nText('Tanner.form.captureTitle')} icon="🌱" onClose={onClose} trailing={headerTrailing} />
+      <ModalHeader
+        title={i18nText('Tanner.form.captureTitle')}
+        icon="🌱"
+        onClose={() => {
+          if (!inFlight.current) onClose();
+        }}
+        trailing={headerTrailing}
+      />
       <ModalContent>
-        <TannerFormFields
-          isFemale={isFemale}
-          bgLabel={bgLabel}
-          bgStages={bgStages}
-          phStages={phStages}
-          formAssessedAt={assessedAt}
-          setFormAssessedAt={setAssessedAt}
-          formBG={bg}
-          setFormBG={setBg}
-          formPH={ph}
-          setFormPH={setPh}
-          formAssessedBy={assessedBy}
-          setFormAssessedBy={setAssessedBy}
-          formNotes={notes}
-          setFormNotes={setNotes}
-          formBoneAge={boneAge}
-          setFormBoneAge={setBoneAge}
-          formBodyFat={bodyFat}
-          setFormBodyFat={setBodyFat}
-          formMenarcheStatus={menarcheStatus}
-          setFormMenarcheStatus={setMenarcheStatus}
-          formMenarcheDate={menarcheDate}
-          setFormMenarcheDate={setMenarcheDate}
-        />
+        <p className="mb-4 text-sm leading-6 text-[var(--nimi-text-secondary)]">
+          {i18nText('Tanner.redesign.formIntro')}
+        </p>
+        {error ? (
+          <p role="alert" className="mb-4 text-sm text-[var(--nimi-status-danger)]">
+            {error}
+          </p>
+        ) : null}
+        <fieldset disabled={saving || locked}>
+          <TannerFormFields
+            isFemale={isFemale}
+            bgLabel={bgLabel}
+            bgStages={bgStages}
+            phStages={phStages}
+            formAssessedAt={assessedAt}
+            setFormAssessedAt={setAssessedAt}
+            formBG={bg}
+            setFormBG={setBg}
+            formPH={ph}
+            setFormPH={setPh}
+            formAssessedBy={assessedBy}
+            setFormAssessedBy={setAssessedBy}
+            formNotes={notes}
+            setFormNotes={setNotes}
+            formBoneAge={boneAge}
+            setFormBoneAge={setBoneAge}
+            formBodyFat={bodyFat}
+            setFormBodyFat={setBodyFat}
+            formMenarcheStatus={menarcheStatus}
+            setFormMenarcheStatus={setMenarcheStatus}
+            formMenarcheDate={menarcheDate}
+            setFormMenarcheDate={setMenarcheDate}
+          />
+        </fieldset>
       </ModalContent>
       <ModalFooter>
-        <Button type="button" onClick={onClose} tone="ghost" size="md">{i18nText('Tanner.form.cancel')}</Button>
-        <Button type="button" onClick={() => void handleSubmit()} disabled={saving} tone="primary" size="md">
+        <Button type="button" onClick={onClose} disabled={saving} tone="ghost" size="md">
+          {i18nText('Tanner.form.cancel')}
+        </Button>
+        <Button
+          type="button"
+          onClick={() => void handleSubmit()}
+          disabled={saving}
+          tone="primary"
+          size="md"
+        >
           {saving ? i18nText('Tanner.form.saving') : i18nText('Tanner.form.save')}
         </Button>
       </ModalFooter>

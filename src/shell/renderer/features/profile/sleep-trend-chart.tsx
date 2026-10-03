@@ -7,7 +7,7 @@ import { fmtDuration, referenceSleepRange } from './sleep-page-shared.js';
 import {
   computeWeekStats,
   formatMinutesOfDay,
-  last7DayRecords,
+  recentRecordDays,
   timeToMinutesOfDay,
   totalMinutes,
 } from './sleep-week-stats.js';
@@ -35,47 +35,46 @@ export function SleepTrendChart({
   const [tab, setTab] = useState<TrendTab>('duration');
   const [refLo, refHi] = referenceSleepRange(ageMonths);
 
-  const stats = useMemo(() => computeWeekStats(records, ageMonths, new Date()), [records, ageMonths]);
+  const stats = useMemo(() => computeWeekStats(records, ageMonths), [records, ageMonths]);
+  const recentDays = useMemo(() => recentRecordDays(records), [records]);
 
   const data = useMemo(() => {
-    return last7DayRecords(records, new Date()).map(({ date, record }) => {
-      let value: number | null = null;
-      if (record) {
-        if (tab === 'duration') {
-          const total = totalMinutes(record);
-          value = total != null ? Math.round((total / 60) * 10) / 10 : null;
-        } else {
-          const raw = tab === 'bedtime' ? record.bedtime : record.wakeTime;
-          value = raw ? timeToMinutesOfDay(raw) : null;
-        }
+    return recentDays.map(({ date, record }) => {
+      let value: number | null;
+      if (tab === 'duration') {
+        const total = totalMinutes(record);
+        value = total != null ? Math.round((total / 60) * 10) / 10 : null;
+      } else {
+        const raw = tab === 'bedtime' ? record.bedtime : record.wakeTime;
+        value = raw ? timeToMinutesOfDay(raw) : null;
       }
       return { date: date.slice(5), value };
     });
-  }, [records, tab]);
+  }, [recentDays, tab]);
 
   const pointCount = data.filter((point) => point.value != null).length;
 
   const avgWakeMin = useMemo(() => {
-    const wakeTimes = last7DayRecords(records, new Date())
-      .map(({ record }) => (record?.wakeTime ? timeToMinutesOfDay(record.wakeTime) : null))
+    const wakeTimes = recentDays
+      .map(({ record }) => (record.wakeTime ? timeToMinutesOfDay(record.wakeTime) : null))
       .filter((v): v is number => v != null);
     if (wakeTimes.length === 0) return null;
     return Math.round(wakeTimes.reduce((sum, v) => sum + v, 0) / wakeTimes.length);
-  }, [records]);
+  }, [recentDays]);
 
   const subtitle = (() => {
     if (tab === 'duration') {
       const reference = i18nText('Sleep.trend.referenceRange', { low: refLo, high: refHi });
       if (stats.avgTotalMin == null) return reference;
-      return `${reference} · ${i18nText('Sleep.trend.avg7d', { value: fmtDuration(stats.avgTotalMin) })}`;
+      return `${reference} · ${i18nText('Sleep.trend.avgRecent', { value: fmtDuration(stats.avgTotalMin) })}`;
     }
     if (tab === 'bedtime') {
       return stats.avgBedtimeMin != null
-        ? i18nText('Sleep.trend.avgBedtime7d', { value: formatMinutesOfDay(stats.avgBedtimeMin) })
+        ? i18nText('Sleep.trend.avgBedtimeRecent', { value: formatMinutesOfDay(stats.avgBedtimeMin) })
         : '';
     }
     return avgWakeMin != null
-      ? i18nText('Sleep.trend.avgWake7d', { value: formatMinutesOfDay(avgWakeMin) })
+      ? i18nText('Sleep.trend.avgWakeRecent', { value: formatMinutesOfDay(avgWakeMin) })
       : '';
   })();
 

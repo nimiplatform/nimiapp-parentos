@@ -47,8 +47,11 @@ const DATE_RANGE_OPTIONS: ReadonlyArray<{ value: DateRangeKey; label: string }> 
   { value: '3m', label: i18nText('GrowthCurve.history.rangeThreeMonths') },
 ];
 
+// A native <select> keeps focus while its option list is open, so the kit
+// select's focus look (blue border + ring) also covers the open state and
+// replaces the system focus outline.
 const FILTER_SELECT_CLASS =
-  'h-8 cursor-pointer rounded-full border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-3 text-[12px] font-medium text-[var(--nimi-text-secondary)]';
+  'h-8 cursor-pointer rounded-full border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-3 text-[12px] font-medium text-[var(--nimi-text-secondary)] outline-none transition-[border-color,box-shadow] focus:border-[var(--nimi-field-focus)] focus:ring-[length:var(--nimi-focus-ring-width)] focus:ring-[var(--nimi-focus-ring-color)]';
 
 function withinDateRange(measuredAtIso: string, range: DateRangeKey): boolean {
   if (range === 'all') return true;

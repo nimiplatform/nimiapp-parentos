@@ -363,10 +363,12 @@ export interface FitnessEventEntry {
   duration: string;
   distance: string;
   intensity: string;
+  /** Saved as this event's own record notes — never shared across events. */
+  notes: string;
 }
 
 export function makeEntry(category: string): FitnessEventEntry {
-  return { category, standardValues: {}, footArch: '', duration: '', distance: '', intensity: '' };
+  return { category, standardValues: {}, footArch: '', duration: '', distance: '', intensity: '', notes: '' };
 }
 
 /** A standard entry is complete only when at least one metric (or foot arch) is filled. */
@@ -387,7 +389,6 @@ export interface FitnessEditTarget {
   eventId: string;
   date: string;
   source: string;
-  notes: string;
   entry: FitnessEventEntry;
 }
 
@@ -414,7 +415,6 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
 
   const [date, setDate] = useState(editTarget?.date ?? new Date().toISOString().slice(0, 10));
   const [source, setSource] = useState(editTarget?.source || 'self');
-  const [notes, setNotes] = useState(editTarget?.notes ?? '');
   const [entries, setEntries] = useState<FitnessEventEntry[]>(
     editTarget ? [editTarget.entry] : [makeEntry('running')],
   );
@@ -498,7 +498,7 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
           recorderId: null,
           linkedReminderStateId: linkedStateId,
           linkedReminderRuleId: linkedRuleId,
-          notes: notes || null,
+          notes: entry.notes.trim() || null,
           metadataJson: source ? JSON.stringify({ assessmentSource: source }) : null,
           now,
           values,
@@ -547,7 +547,7 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
             doubleFootJump: num('doubleFootJump'),
             balanceBeam: num('balanceBeam'),
             footArchStatus: entry.footArch || null,
-            notes: notes || null,
+            notes: entry.notes.trim() || null,
             now,
             linkedReminderStateId: linkedStateId,
             linkedReminderRuleId: linkedRuleId,
@@ -710,6 +710,17 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
                         onChange={(patch) => updateEntry(idx, patch)}
                       />
                     )}
+
+                    <FormField label={i18nText('Fitness.form.notes')}>
+                      <TextareaField
+                        value={entry.notes}
+                        onChange={(event) => updateEntry(idx, { notes: event.target.value })}
+                        placeholder={i18nText('Fitness.form.notesPlaceholder')}
+                        rows={2}
+                        className="w-full"
+                        textareaClassName="min-h-[64px]"
+                      />
+                    </FormField>
                   </div>
                 ) : null}
               </div>
@@ -719,16 +730,6 @@ export function FitnessAssessmentFormContent({ child, ageMonths, onSaved, onClos
           {!editing ? (
             <DashedAddButton shape="row" onClick={addEntry} label={i18nText('Fitness.form.addAnotherEvent')} />
           ) : null}
-
-          <FormField label={i18nText('Fitness.form.notes')}>
-            <TextareaField
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder={i18nText('Fitness.form.notesPlaceholder')}
-              rows={2}
-              className="w-full"
-            />
-          </FormField>
 
           {saveError ? (
             <p className="rounded-2xl border border-[color-mix(in_srgb,var(--nimi-status-danger)_28%,var(--nimi-border-subtle))] bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))] px-4 py-3 text-[13px] text-[var(--nimi-status-danger)]">

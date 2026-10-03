@@ -1,11 +1,14 @@
-import { Button, Surface, TextField } from '@nimiplatform/kit/ui';
+import { Button, DatePicker, Surface, TextField } from '@nimiplatform/kit/ui';
+import { Minus, Plus } from 'lucide-react';
 import {
+  ChipGroup,
   HealthRecordModalShell,
+  InlineError,
   ModalContent,
   ModalFooter,
   ModalHeader,
 } from '../profile/health-record-modal-shell.js';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { ulid, isoNow } from '../../bridge/ulid.js';
@@ -18,25 +21,43 @@ import {
   deleteOutdoorRecord,
   type OutdoorRecordRow,
 } from '../../bridge/sqlite-bridge.js';
+import { catchLog } from '../../infra/telemetry/catch-log.js';
+import { OutdoorGoalHero, OutdoorGoalIntro } from './outdoor-goal-onboarding.js';
+import { OutdoorGoalSetup } from './outdoor-goal-setup.js';
+import { OutdoorRecentWeeks } from './outdoor-recent-weeks.js';
+import { OutdoorWeekHero } from './outdoor-week-hero.js';
+import { OutdoorWeekJournal } from './outdoor-week-journal.js';
+import { OutdoorWeekScene } from './outdoor-week-scene.js';
 import { VisionSummaryCard } from './vision-summary-card.js';
 import {
   getWeekStart,
   shiftWeek,
-  formatWeekRange,
   computeWeekSummary,
-  computeHeatmap,
+  computeRecentWeeks,
   buildOutdoorMessage,
   fmtDate,
   parseDate,
-  formatShortDate,
-  weekdayLabel,
+  formatOutdoorDuration,
+  stepRecordMinutes,
   DEFAULT_OUTDOOR_GOAL_MINUTES,
+  DEFAULT_RECORD_MINUTES,
   DURATION_PRESETS,
-  type HeatmapCell,
-  type HeatmapLevel,
+  MAX_RECORD_MINUTES,
+  OUTDOOR_TREND_WEEKS,
+  type WeekSummary,
 } from './outdoor-helpers.js';
 import { i18nText } from '../../i18n/index.js';
 
+
+/**
+ * The day a "backfill" starts from: the latest day of the week, before today,
+ * with nothing logged; failing that the latest day before today, or today
+ * itself on a Monday.
+ */
+function suggestBackfillDate(summary: WeekSummary, todayStr: string): string {
+  const past = summary.dailyBreakdown.filter((day) => day.date < todayStr).reverse();
+  return past.find((day) => day.minutes === 0)?.date ?? past[0]?.date ?? todayStr;
+}
 
 // ── Outdoor Page ──────────────────────────────────────────
 
@@ -55,13 +76,13 @@ export function OutdoorPage() {
   const currentWeekStart = getWeekStart(new Date());
   const [selectedWeekStart, setSelectedWeekStart] = useState(currentWeekStart);
 
-  // Modal state
+  // Record modal: the record being edited, or the date a new record starts on.
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<OutdoorRecordRow | null>(null);
+  const [newRecordDate, setNewRecordDate] = useState(todayStr);
 
   // Goal setup state
   const [showGoalSetup, setShowGoalSetup] = useState(false);
-  const [goalDraft, setGoalDraft] = useState(String(DEFAULT_OUTDOOR_GOAL_MINUTES));
 
   const load = useCallback(async () => {
     if (!childId) {
@@ -89,16 +110,16 @@ export function OutdoorPage() {
 
   // Derived state
   const effectiveGoal = goalMinutes ?? DEFAULT_OUTDOOR_GOAL_MINUTES;
+  const isCurrentWeek = selectedWeekStart === currentWeekStart;
   const isPastWeek = selectedWeekStart < currentWeekStart;
-  const isFutureWeek = selectedWeekStart > currentWeekStart;
 
   const weekSummary = useMemo(
     () => computeWeekSummary(records, effectiveGoal, selectedWeekStart, todayStr),
     [records, effectiveGoal, selectedWeekStart, todayStr],
   );
 
-  const heatmap = useMemo(
-    () => computeHeatmap(records, effectiveGoal, 20, todayStr),
+  const recentWeeks = useMemo(
+    () => computeRecentWeeks(records, effectiveGoal, OUTDOOR_TREND_WEEKS, todayStr).reverse(),
     [records, effectiveGoal, todayStr],
   );
 
@@ -116,14 +137,12 @@ export function OutdoorPage() {
 
   // ── Handlers ──
 
-  const handleSaveGoal = useCallback(async () => {
+  const handleSaveGoal = useCallback(async (minutes: number) => {
     if (!childId) return;
-    const minutes = parseInt(goalDraft, 10);
-    if (Number.isNaN(minutes) || minutes <= 0) return;
     await setOutdoorGoal(childId, minutes, isoNow());
     setGoalMinutes(minutes);
     setShowGoalSetup(false);
-  }, [childId, goalDraft]);
+  }, [childId]);
 
   const handleSaveRecord = useCallback(async (activityDate: string, durationMinutes: number, note: string) => {
     if (!childId) return;
@@ -147,6 +166,8 @@ export function OutdoorPage() {
     }
     setModalOpen(false);
     setEditingRecord(null);
+    // Show the week the record landed in.
+    setSelectedWeekStart(getWeekStart(parseDate(activityDate)));
     await load();
   }, [childId, editingRecord, load]);
 
@@ -157,8 +178,9 @@ export function OutdoorPage() {
     await load();
   }, [load]);
 
-  const openNewRecord = useCallback(() => {
+  const openNewRecord = useCallback((date: string) => {
     setEditingRecord(null);
+    setNewRecordDate(date);
     setModalOpen(true);
   }, []);
 
@@ -196,229 +218,79 @@ export function OutdoorPage() {
     );
   }
 
-  // ── Goal not set: onboarding ──
+  // ── Goal not set, or being changed: illustrated guide → goal picker ──
+  // Both steps share one hero, so moving between them keeps the art in place.
 
-  if (goalMinutes === null && !showGoalSetup) {
+  if (goalMinutes === null || showGoalSetup) {
     return (
-      <div className="max-w-3xl mx-auto px-6 pb-6 pt-[72px]">
-        {backLink}
-        <Surface tone="card" material="glass-thick" elevation="raised" padding="lg" className="mx-auto max-w-lg">
-          <h2 className="mb-4 text-[18px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Outdoor.page.goalOnboarding.title')}</h2>
-          <p className="mb-3 text-[14px] leading-relaxed text-[var(--nimi-text-muted)]">
-            {i18nText('Outdoor.page.goalOnboarding.visionProtection')}
-          </p>
-          <p className="mb-6 text-[14px] leading-relaxed text-[var(--nimi-text-muted)]">
-            {i18nText('Outdoor.page.goalOnboarding.recordingHelp')}
-          </p>
-          <Button
-            onClick={() => { setGoalDraft(String(DEFAULT_OUTDOOR_GOAL_MINUTES)); setShowGoalSetup(true); }}
-            tone="primary"
-            size="md"
-          >
-            {i18nText('Outdoor.page.goalOnboarding.setGoal')}
-          </Button>
-        </Surface>
-      </div>
-    );
-  }
-
-  // ── Goal setup form ──
-
-  if (showGoalSetup) {
-    return (
-      <div className="max-w-3xl mx-auto px-6 pb-6 pt-[72px]">
-        {backLink}
-        <Surface tone="card" material="glass-thick" elevation="raised" padding="lg" className="mx-auto max-w-lg">
-          <h2 className="mb-4 text-[18px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Outdoor.page.goalSetup.title')}</h2>
-          <p className="mb-4 text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.goalSetup.hint')}</p>
-          <div className="mb-4 flex items-center gap-3">
-            <input
-              type="number"
-              value={goalDraft}
-              onChange={(e) => setGoalDraft(e.target.value)}
-              className="w-28 rounded-xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-field-bg)] px-3 py-2 text-center text-[16px] text-[var(--nimi-text-primary)]"
-              min={1}
-            />
-            <span className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.goalSetup.minutesPerWeek')}</span>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={handleSaveGoal}
-              tone="primary"
-              size="md"
-            >
-              {i18nText('Outdoor.page.goalSetup.confirm')}
-            </Button>
-            {goalMinutes !== null && (
-              <Button
-                onClick={() => setShowGoalSetup(false)}
-                tone="ghost"
-                size="md"
-              >
-                {i18nText('Outdoor.page.goalSetup.cancel')}
-              </Button>
-            )}
-          </div>
-        </Surface>
-      </div>
-    );
-  }
-
-  // ── Main page ──
-
-  const progressPercent = Math.min(100, Math.round((weekSummary.totalMinutes / effectiveGoal) * 100));
-  return (
-    <div className="max-w-3xl mx-auto px-6 pb-6 pt-[72px]">
-      {backLink}
-      {/* Week navigator */}
-      <div className="mb-6 flex items-center justify-between">
-        <button
-          onClick={() => setSelectedWeekStart(shiftWeek(selectedWeekStart, -1))}
-          className="rounded-lg px-3 py-1 text-[14px] text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
-        >
-          {i18nText('Outdoor.page.week.previous')}
-        </button>
-        <div className="text-center">
-          <h2 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">
-            {formatWeekRange(selectedWeekStart)}
-          </h2>
-          {selectedWeekStart === currentWeekStart && (
-            <span className="text-[13px] text-[var(--nimi-action-primary-bg)]">{i18nText('Outdoor.page.week.current')}</span>
-          )}
-        </div>
-        <button
-          onClick={() => setSelectedWeekStart(shiftWeek(selectedWeekStart, 1))}
-          className="rounded-lg px-3 py-1 text-[14px] text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)] disabled:opacity-50"
-          disabled={isFutureWeek}
-        >
-          {i18nText('Outdoor.page.week.next')}
-        </button>
-      </div>
-
-      {/* Progress card */}
-      <Surface tone="card" material="glass-thick" elevation="raised" padding="lg" className="mb-6">
-        <div className="mb-3 flex items-end justify-between">
-          <div>
-            <p className="text-[24px] font-bold tabular-nums text-[var(--nimi-text-primary)]">
-              {weekSummary.totalMinutes} <span className="text-[16px] font-normal text-[var(--nimi-text-muted)]">/ {effectiveGoal} {i18nText('Outdoor.page.minuteUnit')}</span>
-            </p>
-          </div>
-          <span className={`text-[14px] font-medium tabular-nums ${weekSummary.isComplete ? 'text-[var(--nimi-action-primary-bg)]' : 'text-[var(--nimi-status-info)]'}`}>
-            {progressPercent}%
-          </span>
-        </div>
-
-        {/* Progress bar */}
-        <progress value={progressPercent} max={100} aria-label={i18nText('Outdoor.page.progressAriaLabel')} className="mb-4 h-3 w-full overflow-hidden rounded-full accent-[var(--nimi-action-primary-bg)]" />
-
-        {/* Message */}
-        <p className="text-[14px] font-medium text-[var(--nimi-text-primary)]">{message.primary}</p>
-        <p className="mt-1 text-[14px] text-[var(--nimi-text-muted)]">{message.secondary}</p>
-
-        {/* Add record button */}
-        {!isPastWeek && !isFutureWeek && (
-          <Button
-            onClick={openNewRecord}
-            tone="primary"
-            size="md"
-            className="mt-4"
-          >
-            {i18nText('Outdoor.page.addRecord')}
-          </Button>
-        )}
-      </Surface>
-
-      {/* Vision-archive cross-link — close the myopia-prevention loop */}
-      <VisionSummaryCard childId={child.childId} />
-
-      {/* Heatmap (daily intensity over recent weeks) */}
-      <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="mb-6">
-        <div className="mb-4 flex items-baseline justify-between">
-          <h3 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">{i18nText('Outdoor.page.heatmap.title')}</h3>
-          <span className="text-[13px] text-[var(--nimi-text-muted)]">
-            {i18nText('Outdoor.page.heatmap.subtitle', { weeks: heatmap.weeksBack, minutes: heatmap.dailyTargetMinutes })}
-          </span>
-        </div>
-        <HeatmapGrid heatmap={heatmap} />
-        <div className="mt-4 flex items-center justify-end gap-1 text-[12px] text-[var(--nimi-text-muted)]">
-          <span>{i18nText('Outdoor.page.heatmap.less')}</span>
-          <LegendSwatch level={0} />
-          <LegendSwatch level={1} />
-          <LegendSwatch level={2} />
-          <LegendSwatch level={3} />
-          <LegendSwatch level={4} />
-          <span>{i18nText('Outdoor.page.heatmap.more')}</span>
-        </div>
-      </Surface>
-
-      {/* Week records list */}
-      <Surface tone="card" material="glass-regular" elevation="raised" padding="lg" className="mb-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-[16px] font-semibold text-[var(--nimi-text-primary)]">
-            {selectedWeekStart === currentWeekStart ? i18nText('Outdoor.page.records.thisWeek') : i18nText('Outdoor.page.records.selectedWeek')}
-          </h3>
-          {isPastWeek && (
-            <button
-              onClick={() => { setEditingRecord(null); setModalOpen(true); }}
-              className="text-[13px] font-medium text-[var(--nimi-status-info)] transition-colors hover:opacity-80"
-            >
-              {i18nText('Outdoor.page.records.backfill')}
-            </button>
-          )}
-        </div>
-        {weekRecords.length === 0 ? (
-          <p className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.records.empty')}</p>
+      <OutdoorGoalHero gender={child.gender}>
+        {showGoalSetup ? (
+          <OutdoorGoalSetup
+            initialMinutes={effectiveGoal}
+            onSave={handleSaveGoal}
+            onCancel={goalMinutes !== null ? () => setShowGoalSetup(false) : undefined}
+          />
         ) : (
-          <div className="space-y-2">
-            {weekRecords.map((r) => (
-              <div
-                key={r.recordId}
-                className="flex items-center justify-between rounded-xl px-3 py-2 transition-colors hover:bg-white/40"
-              >
-                <div>
-                  <span className="text-[14px] font-medium text-[var(--nimi-text-primary)]">
-                    {formatShortDate(r.activityDate)} {weekdayLabel(parseDate(r.activityDate))}
-                  </span>
-                  <span className="ml-3 text-[14px] tabular-nums text-[var(--nimi-status-info)]">
-                    {r.durationMinutes} {i18nText('Outdoor.page.minuteUnit')}
-                  </span>
-                  {r.note && (
-                    <span className="ml-2 text-[13px] text-[var(--nimi-text-muted)]">
-                      {r.note}
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => openEditRecord(r)}
-                  className="text-[13px] text-[var(--nimi-text-muted)] transition-colors hover:opacity-80"
-                >
-                  {i18nText('Outdoor.page.records.edit')}
-                </button>
-              </div>
-            ))}
-          </div>
+          <OutdoorGoalIntro onSetGoal={() => setShowGoalSetup(true)} />
         )}
-      </Surface>
+      </OutdoorGoalHero>
+    );
+  }
 
-      {/* Goal setting footer */}
-      <div className="mb-8 flex items-center justify-between rounded-2xl bg-[color-mix(in_srgb,var(--nimi-surface-card)_72%,transparent)] px-4 py-3">
-        <span className="text-[14px] text-[var(--nimi-text-muted)]">
-          {i18nText('Outdoor.page.goalFooter.currentGoal', { minutes: effectiveGoal })}
-        </span>
-        <button
-          onClick={() => { setGoalDraft(String(effectiveGoal)); setShowGoalSetup(true); }}
-          className="text-[14px] font-medium text-[var(--nimi-status-info)] transition-colors hover:opacity-80"
-        >
-          {i18nText('Outdoor.page.goalFooter.change')}
-        </button>
+  // ── Weekly tracker: the week and its diary beside the scene, trend and vision ──
+  // From 60rem the page is two columns (geometry shared with
+  // `.parentos-outdoor-tracker` in styles.css). Narrower, both columns
+  // dissolve into one stack, ordered: week, scene banner, diary, trend, vision.
+
+  const backfill = () => openNewRecord(suggestBackfillDate(weekSummary, todayStr));
+  const hasEarlierDay = weekSummary.dailyBreakdown.some((day) => day.date < todayStr);
+
+  return (
+    <div className="parentos-outdoor-tracker min-h-full">
+      <div className="mx-auto grid w-full max-w-[1240px] px-5 pb-16 pt-[72px] sm:px-10 min-[60rem]:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] min-[60rem]:gap-x-10 min-[60rem]:pl-14 min-[60rem]:pr-10 min-[72rem]:grid-cols-[minmax(0,29rem)_minmax(0,1fr)] min-[72rem]:gap-x-12">
+        <div className="contents min-[60rem]:flex min-[60rem]:min-w-0 min-[60rem]:flex-col">
+          <OutdoorWeekHero
+            summary={weekSummary}
+            message={message}
+            todayStr={todayStr}
+            isCurrentWeek={isCurrentWeek}
+            onPreviousWeek={() => setSelectedWeekStart(shiftWeek(selectedWeekStart, -1))}
+            onNextWeek={isCurrentWeek ? undefined : () => setSelectedWeekStart(shiftWeek(selectedWeekStart, 1))}
+            onThisWeek={() => setSelectedWeekStart(currentWeekStart)}
+            onLogDay={openNewRecord}
+            onLogToday={() => openNewRecord(todayStr)}
+            onBackfill={backfill}
+            onChangeGoal={() => setShowGoalSetup(true)}
+          />
+          <OutdoorWeekJournal
+            records={weekRecords}
+            isCurrentWeek={isCurrentWeek}
+            onEdit={openEditRecord}
+            className="order-2 mt-8 min-[60rem]:mt-16"
+          />
+        </div>
+
+        <div className="contents min-[60rem]:relative min-[60rem]:isolate min-[60rem]:flex min-[60rem]:min-w-0 min-[60rem]:flex-col">
+          <OutdoorWeekScene gender={child.gender} className="order-1" />
+          <OutdoorRecentWeeks
+            weeks={recentWeeks}
+            goalMinutes={effectiveGoal}
+            currentWeekStart={currentWeekStart}
+            selectedWeekStart={selectedWeekStart}
+            onSelectWeek={setSelectedWeekStart}
+            onAdd={hasEarlierDay ? backfill : undefined}
+            className="order-3 mt-12 min-[60rem]:mt-0"
+          />
+          <VisionSummaryCard childId={child.childId} className="order-4 mt-6" />
+        </div>
       </div>
 
-      {/* Record modal */}
       {modalOpen && (
         <RecordModal
-          defaultDate={editingRecord?.activityDate ?? (isPastWeek ? selectedWeekStart : todayStr)}
+          defaultDate={editingRecord?.activityDate ?? newRecordDate}
           defaultMinutes={editingRecord?.durationMinutes ?? null}
           defaultNote={editingRecord?.note ?? ''}
+          todayStr={todayStr}
           isEditing={editingRecord !== null}
           onSave={handleSaveRecord}
           onDelete={editingRecord ? () => handleDeleteRecord(editingRecord.recordId) : undefined}
@@ -429,117 +301,27 @@ export function OutdoorPage() {
   );
 }
 
-// ── Heatmap ───────────────────────────────────────────────
-
-const HEATMAP_LEVEL_CLASSES = [
-  'bg-[color-mix(in_srgb,var(--nimi-surface-muted)_62%,transparent)]',
-  'bg-[color-mix(in_srgb,var(--nimi-status-info)_22%,transparent)]',
-  'bg-[color-mix(in_srgb,var(--nimi-status-info)_48%,transparent)]',
-  'bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_58%,transparent)]',
-  'bg-[var(--nimi-action-primary-bg)]',
-] as const;
-
-const HEATMAP_CELL_PX = 16;
-const HEATMAP_GAP_PX = 3;
-const WEEKDAY_LABELS_SPARSE = [
-  weekdayLabel(new Date(2026, 0, 5)),
-  '',
-  weekdayLabel(new Date(2026, 0, 7)),
-  '',
-  weekdayLabel(new Date(2026, 0, 9)),
-  '',
-  weekdayLabel(new Date(2026, 0, 11)),
-] as const;
-
-function LegendSwatch({ level }: { level: HeatmapLevel }) {
-  return (
-    <span
-      className={`inline-block h-3 w-3 rounded-sm ${HEATMAP_LEVEL_CLASSES[level]}`}
-    />
-  );
-}
-
-function HeatmapCellView({ cell }: { cell: HeatmapCell }) {
-  const title = cell.isFuture
-    ? i18nText('Outdoor.heatmap.future', { date: cell.date })
-    : cell.minutes > 0
-      ? i18nText('Outdoor.heatmap.minutes', { date: cell.date, minutes: cell.minutes })
-      : i18nText('Outdoor.heatmap.noRecord', { date: cell.date });
-
-  return (
-    <div
-      title={title}
-      className={`rounded-sm transition-colors ${HEATMAP_LEVEL_CLASSES[cell.level]} ${cell.isFuture ? 'opacity-30' : ''} ${cell.isToday ? 'ring-2 ring-[var(--nimi-status-info)] ring-offset-[-1px]' : ''}`}
-      style={{
-        width: HEATMAP_CELL_PX,
-        height: HEATMAP_CELL_PX,
-      }}
-    />
-  );
-}
-
-function HeatmapGrid({ heatmap }: { heatmap: import('./outdoor-helpers.js').Heatmap }) {
-  const gridWidth =
-    heatmap.weeksBack * HEATMAP_CELL_PX + Math.max(0, heatmap.weeksBack - 1) * HEATMAP_GAP_PX;
-  const colStride = HEATMAP_CELL_PX + HEATMAP_GAP_PX;
-
-  return (
-    <div className="overflow-x-auto">
-      <div className="flex gap-2">
-        {/* Weekday labels */}
-        <div
-          className="flex flex-col"
-          style={{ gap: HEATMAP_GAP_PX, paddingTop: 16 }}
-        >
-          {WEEKDAY_LABELS_SPARSE.map((label, i) => (
-            <div
-              key={i}
-              className="flex items-center text-[12px] text-[var(--nimi-text-muted)]"
-              style={{ height: HEATMAP_CELL_PX }}
-            >
-              {label}
-            </div>
-          ))}
-        </div>
-
-        {/* Grid + month labels */}
-        <div style={{ width: gridWidth }}>
-          <div className="relative" style={{ height: 14 }}>
-            {heatmap.monthLabels.map((ml) => (
-              <span
-                key={`${ml.weekIndex}-${ml.label}`}
-                className="absolute top-0 text-[12px] text-[var(--nimi-text-muted)]"
-                style={{ left: ml.weekIndex * colStride }}
-              >
-                {ml.label}
-              </span>
-            ))}
-          </div>
-          <div
-            className="grid"
-            style={{
-              gridTemplateColumns: `repeat(${heatmap.weeksBack}, ${HEATMAP_CELL_PX}px)`,
-              gridTemplateRows: `repeat(7, ${HEATMAP_CELL_PX}px)`,
-              gridAutoFlow: 'column',
-              gap: HEATMAP_GAP_PX,
-            }}
-          >
-            {heatmap.weeks.map((week) =>
-              week.map((cell) => <HeatmapCellView key={cell.date} cell={cell} />),
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Record Modal ──────────────────────────────────────────
+
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-[length:var(--nimi-focus-ring-width)] focus-visible:ring-[color:var(--nimi-focus-ring-color)]';
+
+/** Digits only, no leading zeros, capped at the minutes in a day. */
+function normalizeMinutesDraft(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 4);
+  return digits === '' ? '' : String(Math.min(MAX_RECORD_MINUTES, Number(digits)));
+}
+
+function shiftDate(dateStr: string, days: number): string {
+  const d = parseDate(dateStr);
+  d.setDate(d.getDate() + days);
+  return fmtDate(d);
+}
 
 function RecordModal({
   defaultDate,
   defaultMinutes,
   defaultNote,
+  todayStr,
   isEditing,
   onSave,
   onDelete,
@@ -548,76 +330,137 @@ function RecordModal({
   defaultDate: string;
   defaultMinutes: number | null;
   defaultNote: string;
+  todayStr: string;
   isEditing: boolean;
-  onSave: (date: string, minutes: number, note: string) => void;
-  onDelete?: () => void;
+  onSave: (date: string, minutes: number, note: string) => Promise<void>;
+  onDelete?: () => Promise<void>;
   onClose: () => void;
 }) {
+  const noteId = useId();
   const [date, setDate] = useState(defaultDate);
-  const [minutes, setMinutes] = useState(defaultMinutes ? String(defaultMinutes) : '');
+  const initialMinutes = defaultMinutes ?? DEFAULT_RECORD_MINUTES;
+  const [draft, setDraft] = useState(String(initialMinutes));
+  // Last valid duration, restored when the field is left empty.
+  const [lastValid, setLastValid] = useState(initialMinutes);
   const [note, setNote] = useState(defaultNote);
   const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const canSave = date && minutes && parseInt(minutes, 10) > 0;
+  const minutes = draft === '' ? 0 : Number(draft);
+  const valid = minutes > 0;
+  const current = valid ? minutes : lastValid;
+  const canSave = Boolean(date) && date <= todayStr && valid;
 
-  const handleSave = async () => {
-    if (!canSave) return;
-    setSaving(true);
-    await onSave(date, parseInt(minutes, 10), note);
-    setSaving(false);
+  const changeDraft = (next: string) => {
+    setDraft(next);
+    if (Number(next) > 0) setLastValid(Number(next));
+    setSaveFailed(false);
+  };
+  const step = (direction: 1 | -1) => changeDraft(String(stepRecordMinutes(current, direction)));
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    event.preventDefault();
+    step(event.key === 'ArrowUp' ? 1 : -1);
   };
 
+  const run = async (action: () => Promise<void>) => {
+    setSaving(true);
+    setSaveFailed(false);
+    try {
+      await action();
+    } catch (error) {
+      catchLog('outdoor', 'action:save-record-failed')(error);
+      setSaveFailed(true);
+      setSaving(false);
+    }
+  };
+
+  const handleSave = () => {
+    if (!canSave || saving) return;
+    void run(() => onSave(date, minutes, note.trim()));
+  };
+
+  const quickDays = [
+    { value: todayStr, label: i18nText('Outdoor.page.recordModal.today') },
+    { value: shiftDate(todayStr, -1), label: i18nText('Outdoor.page.recordModal.yesterday') },
+    { value: shiftDate(todayStr, -2), label: i18nText('Outdoor.page.recordModal.dayBeforeYesterday') },
+  ];
+  const presets = DURATION_PRESETS.map((preset) => ({ value: String(preset), label: formatOutdoorDuration(preset) }));
+
   return (
-    <HealthRecordModalShell open size="S" onClose={onClose}>
+    <HealthRecordModalShell open size="S" onClose={onClose} ariaLabel={isEditing ? i18nText('Outdoor.page.recordModal.editTitle') : i18nText('Outdoor.page.recordModal.createTitle')}>
       <ModalHeader
         title={isEditing ? i18nText('Outdoor.page.recordModal.editTitle') : i18nText('Outdoor.page.recordModal.createTitle')}
         icon="☀️"
         onClose={onClose}
       />
       <ModalContent>
-        {/* Date */}
-        <label className="mb-1 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.recordModal.date')}</label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="mb-4 w-full rounded-xl border border-[var(--nimi-field-border)] bg-[var(--nimi-field-bg)] px-3 py-2 text-[14px] text-[var(--nimi-field-text)]"
-          max={fmtDate(new Date())}
-        />
+        <div className="flex flex-col gap-6">
+          <div role="group" aria-label={i18nText('Outdoor.page.recordModal.date')}>
+            <FieldLabel>{i18nText('Outdoor.page.recordModal.date')}</FieldLabel>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <ChipGroup options={quickDays} value={date} onChange={(value) => { setDate(value); setSaveFailed(false); }} size="sm" />
+              <DatePicker
+                value={date}
+                onValueChange={(value) => { if (value) { setDate(value); setSaveFailed(false); } }}
+                maxDate={todayStr}
+                allowClear={false}
+                size="sm"
+                className="w-[152px]"
+              />
+            </div>
+          </div>
 
-        {/* Duration */}
-        <label className="mb-1 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.recordModal.durationMinutes')}</label>
-        <div className="mb-2 flex gap-2">
-          {DURATION_PRESETS.map((preset) => (
-            <Button
-              key={preset}
-              onClick={() => setMinutes(String(preset))}
-              tone={minutes === String(preset) ? 'primary' : 'secondary'}
-              size="sm"
-            >
-              {preset}
-            </Button>
-          ))}
+          <div role="group" aria-label={i18nText('Outdoor.page.recordModal.duration')}>
+            <FieldLabel>{i18nText('Outdoor.page.recordModal.duration')}</FieldLabel>
+            <div className="mt-3 flex items-center gap-3">
+              <div className="flex items-center gap-1 rounded-full bg-[var(--nimi-surface-panel)] p-1.5 shadow-[inset_0_0_0_1px_var(--nimi-border-subtle)] transition-shadow has-[input:focus]:shadow-[inset_0_0_0_1px_var(--nimi-field-focus),0_0_0_3px_var(--nimi-focus-ring-color)]">
+                <StepButton label={i18nText('Outdoor.page.recordModal.decrease')} disabled={stepRecordMinutes(current, -1) === current} onClick={() => step(-1)}>
+                  <Minus size={18} strokeWidth={2.25} aria-hidden="true" />
+                </StepButton>
+                <input
+                  value={draft}
+                  onChange={(event) => changeDraft(normalizeMinutesDraft(event.target.value))}
+                  onFocus={(event) => event.currentTarget.select()}
+                  onBlur={() => { if (!valid) setDraft(String(lastValid)); }}
+                  onKeyDown={handleKeyDown}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  role="spinbutton"
+                  aria-label={i18nText('Outdoor.page.recordModal.durationMinutes')}
+                  aria-valuemin={1}
+                  aria-valuemax={MAX_RECORD_MINUTES}
+                  aria-valuenow={valid ? minutes : undefined}
+                  style={{ width: `${Math.max(3, draft.length) + 0.8}ch` }}
+                  className="bg-transparent text-center text-[30px] font-bold leading-none tracking-[-0.01em] tabular-nums text-[var(--nimi-text-primary)] caret-[var(--nimi-action-primary-bg)] outline-none"
+                />
+                <StepButton label={i18nText('Outdoor.page.recordModal.increase')} disabled={stepRecordMinutes(current, 1) === current} onClick={() => step(1)}>
+                  <Plus size={18} strokeWidth={2.25} aria-hidden="true" />
+                </StepButton>
+              </div>
+              <span className="text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.minuteUnit')}</span>
+            </div>
+            <div className="mt-3">
+              <ChipGroup options={presets} value={draft} onChange={changeDraft} size="sm" />
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel htmlFor={noteId}>{i18nText('Outdoor.page.recordModal.noteOptional')}</FieldLabel>
+            <TextField
+              id={noteId}
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={i18nText('Outdoor.page.recordModal.notePlaceholder')}
+              className="mt-2 w-full"
+            />
+          </div>
+
+          {saveFailed ? <InlineError>{i18nText('Outdoor.page.recordModal.saveFailed')}</InlineError> : null}
         </div>
-        <TextField
-          type="number"
-          value={minutes}
-          onChange={(e) => setMinutes(e.target.value)}
-          placeholder={i18nText('Outdoor.page.recordModal.customMinutes')}
-          className="mb-4 w-full"
-          min={1}
-        />
-
-        {/* Note */}
-        <label className="mb-1 block text-[13px] text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.recordModal.noteOptional')}</label>
-        <TextField
-          type="text"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder={i18nText('Outdoor.page.recordModal.notePlaceholder')}
-          className="mb-1 w-full"
-        />
       </ModalContent>
       <ModalFooter
         leading={
@@ -625,11 +468,12 @@ function RecordModal({
             <Button
               onClick={() => {
                 if (confirmingDelete) {
-                  onDelete();
+                  void run(onDelete);
                 } else {
                   setConfirmingDelete(true);
                 }
               }}
+              disabled={saving}
               tone="danger"
               size="md"
             >
@@ -645,10 +489,36 @@ function RecordModal({
         >
           {confirmingDelete ? i18nText('Outdoor.page.recordModal.keep') : i18nText('Outdoor.page.recordModal.cancel')}
         </Button>
-        <Button onClick={handleSave} disabled={!canSave || saving} tone="primary" size="md">
+        <Button onClick={handleSave} disabled={!canSave || saving || confirmingDelete} tone="primary" size="md">
           {saving ? i18nText('Outdoor.page.recordModal.saving') : i18nText('Outdoor.page.recordModal.save')}
         </Button>
       </ModalFooter>
     </HealthRecordModalShell>
+  );
+}
+
+function FieldLabel({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
+  const className = 'block text-[13px] font-medium text-[var(--nimi-text-muted)]';
+  return htmlFor
+    ? <label htmlFor={htmlFor} className={className}>{children}</label>
+    : <span className={className}>{children}</span>;
+}
+
+function StepButton({ label, disabled, onClick, children }: {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className={`inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--nimi-surface-card)] text-[color-mix(in_srgb,var(--nimi-action-primary-bg)_84%,var(--nimi-text-primary))] shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-[background-color,transform,opacity] duration-150 hover:bg-[var(--nimi-accent-soft)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-[var(--nimi-surface-card)] ${FOCUS_RING}`}
+    >
+      {children}
+    </button>
   );
 }

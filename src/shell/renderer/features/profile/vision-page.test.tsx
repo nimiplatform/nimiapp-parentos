@@ -157,13 +157,63 @@ describe('VisionPage OCR intake', () => {
     );
 
     const guideButton = await screen.findByRole('button', { name: /录入指引/ });
-    const screeningButton = await screen.findByRole('button', { name: /添加筛查/ });
-    const recordButton = await screen.findByRole('button', { name: /录入数据/ });
+    const recordButton = await screen.findByRole('button', { name: /录入检查/ });
 
-    for (const button of [guideButton, screeningButton, recordButton]) {
+    // The two former entry points (添加筛查 / 录入数据) are folded into one.
+    expect(screen.queryByRole('button', { name: /添加筛查/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /录入数据/ })).toBeNull();
+
+    for (const button of [guideButton, recordButton]) {
       expect(button.classList.contains('whitespace-nowrap')).toBe(true);
       expect(button.classList.contains('shrink-0')).toBe(true);
     }
+  });
+
+  it('asks which kind of record to add in the 3–6y overlap, then opens the picked form', async () => {
+    act(() => {
+      useAppStore.setState((state) => ({
+        children: state.children.map((child) => (
+          child.childId === 'child-1'
+            ? { ...child, birthDate: '2021-06-01' }
+            : child
+        )),
+      }));
+    });
+
+    render(
+      <MemoryRouter>
+        <VisionPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /录入检查/ }));
+    expect(await screen.findByRole('heading', { name: '这次要记录什么？' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /筛查结果/ }));
+    expect(await screen.findByRole('heading', { name: '记录筛查结果' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: '这次要记录什么？' })).toBeNull();
+  });
+
+  it('opens the refraction form directly once the child is past the screening window', async () => {
+    act(() => {
+      useAppStore.setState((state) => ({
+        children: state.children.map((child) => (
+          child.childId === 'child-1'
+            ? { ...child, birthDate: '2016-01-01' }
+            : child
+        )),
+      }));
+    });
+
+    render(
+      <MemoryRouter>
+        <VisionPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /录入检查/ }));
+    expect(screen.queryByRole('heading', { name: '这次要记录什么？' })).toBeNull();
+    expect(await screen.findByRole('heading', { name: '录入检查数据' })).toBeTruthy();
   });
 
   it('persists vision follow-up cadence + custom next-visit date through the bridge', async () => {
@@ -188,9 +238,6 @@ describe('VisionPage OCR intake', () => {
         <VisionPage />
       </MemoryRouter>,
     );
-
-    // The reminder editor lives inside the collapsed 检查记录 timeline accordion.
-    fireEvent.click(await screen.findByRole('button', { name: /检查记录/ }));
 
     // Open the editor via 提醒设置.
     const settingsBtn = await screen.findByRole('button', { name: /提醒设置/ });
@@ -241,9 +288,6 @@ describe('VisionPage OCR intake', () => {
         <VisionPage />
       </MemoryRouter>,
     );
-
-    // The reminder editor lives inside the collapsed 检查记录 timeline accordion.
-    fireEvent.click(await screen.findByRole('button', { name: /检查记录/ }));
 
     const settingsBtn = await screen.findByRole('button', { name: /提醒设置/ });
     fireEvent.click(settingsBtn);
@@ -321,9 +365,8 @@ describe('VisionPage OCR intake', () => {
       </MemoryRouter>,
     );
 
-    // The exam timeline is a collapsed-by-default accordion — expand it, then
-    // expand the exam card itself (cards no longer auto-open).
-    fireEvent.click(await screen.findByRole('button', { name: /检查记录/ }));
+    // The exam timeline accordion is open by default — expand the exam card
+    // itself (cards no longer auto-open).
     fireEvent.click(await screen.findByRole('button', { name: /眼轴跟踪/ }));
 
     fireEvent.click(await screen.findByLabelText('delete-vision-record-2026-04-12'));

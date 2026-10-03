@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Button, DatePicker, Surface, TextareaField } from '@nimiplatform/kit/ui';
 import { saveAttachment, upsertMilestoneRecord } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
@@ -69,13 +69,11 @@ export function MilestoneCaptureContent({ child, ageMonths, onSaved, onClose, he
     return MILESTONE_CATALOG.filter((milestone) => milestone.domain === domain && isAgeRelevant(milestone));
   }, [domain, ageMonths]);
 
-  useEffect(() => {
-    if (candidates.length === 1) {
-      setSelectedId(candidates[0]!.milestoneId);
-    }
-  }, [candidates]);
-
-  const milestone = candidates.find((item) => item.milestoneId === selectedId) ?? null;
+  // Derive the single-candidate auto-selection synchronously (instead of via an
+  // effect) so switching domains never renders an intermediate "nothing selected"
+  // frame that collapses the form and makes the centered modal jump.
+  const effectiveSelectedId = candidates.length === 1 ? candidates[0]!.milestoneId : selectedId;
+  const milestone = candidates.find((item) => item.milestoneId === effectiveSelectedId) ?? null;
   const showMilestoneList = candidates.length > 1;
 
   const handleSave = async () => {
@@ -148,7 +146,10 @@ export function MilestoneCaptureContent({ child, ageMonths, onSaved, onClose, he
     <>
       <ModalHeader title={i18nText('Milestone.capture.title')} icon="🎯" onClose={onClose} trailing={headerTrailing} />
       <ModalContent>
-        <div className="space-y-5">
+        {/* Stable min-height: the milestone card/list and the detail fields change
+            with the selected domain; without a floor the content-sized modal
+            re-centers on every tab switch. */}
+        <div className="min-h-[520px] space-y-5">
           <FormField label={i18nText('Milestone.capture.domain')}>
             <ChipGroup
               options={domainChips}
@@ -174,7 +175,7 @@ export function MilestoneCaptureContent({ child, ageMonths, onSaved, onClose, he
                     padding="none"
                     material="solid"
                     interactive
-                    active={selectedId === item.milestoneId}
+                    active={effectiveSelectedId === item.milestoneId}
                     className="w-full px-4 py-3 text-left"
                   >
                     <div className="flex items-center justify-between">

@@ -112,6 +112,23 @@ describe('ShellLayout', () => {
     expect(main?.className).toContain('z-0');
   });
 
+  it('clips the ambient halo overflow without making the shell root scrollable', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <ShellLayout>
+          <div>APP_CONTENT</div>
+        </ShellLayout>
+      </MemoryRouter>,
+    );
+
+    const shellRoot = container.firstElementChild;
+
+    // overflow-hidden would still let scrollIntoView() scroll the root by the
+    // halo's 100px bleed, lifting the shell and leaving a blank bottom strip.
+    expect(shellRoot?.className).toContain('overflow-clip');
+    expect(shellRoot?.className).not.toContain('overflow-hidden');
+  });
+
   it('places the ParentOS logo at the top of the sidebar and the child/app menu at its bottom', () => {
     render(
       <MemoryRouter>

@@ -4,7 +4,7 @@ import { Button, Timeline, TimelineDivider, TimelineGroup } from '@nimiplatform/
  *
  * Layout (top→bottom):
  *   profile header → AI summary → glance chips → trend chart → exam timeline
- *   (collapsed-by-default accordion; expands to a date-grouped vertical-rail
+ *   (open-by-default accordion showing a date-grouped vertical-rail
  *   timeline carrying both past exams and the projected next-visit, with the
  *   reminder-cadence editor folded in) → footer.
  *
@@ -47,10 +47,12 @@ import {
   EARLY_SCREENING_MAX_AGE_MONTHS,
   NextStepsEditor,
   NextVisitCard,
+  RecordKindChooser,
   resolveNextVisit,
   ScreeningModal,
   SourcesTooltip,
   TrendChartCard,
+  type VisionRecordKind,
 } from './vision-page-components.js';
 import {
   AgeFilter,
@@ -93,6 +95,7 @@ export default function VisionPage() {
   const [editingRecord, setEditingRecord] = useState<VisionRecord | null>(null);
   const [showGuide, setShowGuide] = useState(false);
   const [showScreeningModal, setShowScreeningModal] = useState(false);
+  const [showRecordChooser, setShowRecordChooser] = useState(false);
   const [openExamId, setOpenExamId] = useState<string | null>(null);
   const [showAgeFilter, setShowAgeFilter] = useState(false);
   const [selectedAge, setSelectedAge] = useState<number | null>(null);
@@ -135,7 +138,10 @@ export default function VisionPage() {
   }, [filteredExams]);
 
   const latestFullRecord = useMemo(() => findLatestFullRecord(records), [records]);
-  const glanceMetrics = useMemo(() => computeGlanceMetrics(latestFullRecord), [latestFullRecord]);
+  const glanceMetrics = useMemo(
+    () => computeGlanceMetrics(latestFullRecord, child?.gender),
+    [latestFullRecord, child?.gender],
+  );
 
   const trendPoints = useMemo(() => measurements, [measurements]);
 
@@ -193,6 +199,21 @@ export default function VisionPage() {
     setShowForm(true);
   };
 
+  const openRecordKind = (kind: VisionRecordKind) => {
+    setShowRecordChooser(false);
+    if (kind === 'screening') setShowScreeningModal(true);
+    else openManualForm();
+  };
+
+  // One "record an exam" entry point. Only the 3–6y overlap (where both
+  // qualitative screenings and refraction data apply) needs the chooser;
+  // outside it the single applicable form opens directly.
+  const openRecordEntry = () => {
+    if (supportsScreening && supportsQuantitative) setShowRecordChooser(true);
+    else if (supportsScreening) setShowScreeningModal(true);
+    else openManualForm();
+  };
+
   return (
     <ProfileDetailShell
       title={
@@ -214,29 +235,16 @@ export default function VisionPage() {
               {t('Profile.rich.vision.recordGuide')}
             </button>
           )}
-          {supportsScreening && (
-            <button
-              onClick={() => setShowScreeningModal(true)}
-              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[var(--nimi-action-ghost-hover)] px-3 py-1.5 text-[12px] font-medium text-[var(--nimi-text-secondary)] transition-all"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" />
-              </svg>
-              {t('Profile.rich.vision.addScreening')}
-            </button>
-          )}
-          {supportsQuantitative && (
-            <Button
-              onClick={openManualForm}
-              tone="primary"
-              size="sm"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              {t('Profile.rich.vision.recordData')}
-            </Button>
-          )}
+          <Button
+            onClick={openRecordEntry}
+            tone="primary"
+            size="sm"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            {t('Profile.rich.vision.recordExam')}
+          </Button>
         </>
       }
       aiSummary={
@@ -301,6 +309,14 @@ export default function VisionPage() {
           />
         )}
 
+        {/* Record-kind chooser (3–6y overlap only) */}
+        {showRecordChooser && (
+          <RecordKindChooser
+            onPick={openRecordKind}
+            onClose={() => setShowRecordChooser(false)}
+          />
+        )}
+
         {/* Screening form modal */}
         {showScreeningModal && (
           <ScreeningModal
@@ -312,9 +328,10 @@ export default function VisionPage() {
           />
         )}
 
-        {/* Exam timeline — collapsed by default; expands to the full
+        {/* Exam timeline — open by default (still collapsible); the full
             date-grouped list, matching the orthodontic record timeline. */}
         <OrthodonticDetailsSection
+          defaultOpen
           title={t('Profile.rich.vision.timelineTitle')}
           count={t('Profile.rich.vision.examCount', { count: exams.length })}
         >

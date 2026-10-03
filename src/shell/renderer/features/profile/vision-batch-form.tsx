@@ -24,6 +24,7 @@ import {
   ModalFooter,
   ModalHeader,
   SectionCard,
+  SmartRecognizeButton,
 } from './health-record-modal-shell.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -468,17 +469,9 @@ export function VisionBatchFormContent({ childId, birthDate, onSave, onClose, in
   const outdoorChips: ChipOption<string>[] = OUTDOOR_TIME_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }));
 
   const ocrButton = (
-    <button
-      onClick={() => void handleOCR()}
-      disabled={ocrBusy}
-      className="inline-flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-[13px] font-medium text-white transition-all hover:opacity-90 disabled:opacity-50"
-      style={{ background: 'var(--nimi-action-primary-bg)' }}
-    >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M7 12h10" />
-      </svg>
+    <SmartRecognizeButton onClick={() => void handleOCR()} disabled={ocrBusy}>
       {ocrBusy ? t('Profile.rich.vision.recognizing') : t('Profile.rich.vision.smartRecognize')}
-    </button>
+    </SmartRecognizeButton>
   );
 
   return (

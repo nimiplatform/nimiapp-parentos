@@ -1,264 +1,218 @@
-import { Surface } from '@nimiplatform/kit/ui';
+import { ArrowLeft, ArrowRight, BookOpen, X } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import type { TannerAssessmentRow } from '../../bridge/sqlite-bridge.js';
-import {
-  DETAIL_MAP,
-  FEMALE_GUIDANCE,
-  MALE_GUIDANCE,
-  buildGuidanceSections,
-  type GuidanceItem as TannerGuidanceItem,
-  type GuidanceSectionId,
-} from './tanner-page-shared.js';
-import { ParentosAiMascotStatic } from './parentos-ai-mascot-button.js';
+import { Button, Surface, cn } from '@nimiplatform/kit/ui';
+import { primaryStages, pubicHairStages } from './tanner-page-shared.js';
+import { TANNER_AXIS_TONE, tannerAxisLabel, type TannerAxisKey } from './tanner-record-parts.js';
 import { i18nText } from '../../i18n/index.js';
 
+const STEP_KEYS = [
+  'Tanner.redesign.stages',
+  'Tanner.redesign.howToRecord',
+  'Tanner.entryGuide.support',
+] as const;
 
-type TannerGuidePanelProps = {
-  isFemale: boolean;
-  latestBG: number | null;
-  latestPH: number | null;
-  childName: string;
-  ageLabel: string;
-  gender: string;
-  /** Assessments sorted newest-first (sortAssessmentsDesc). */
-  assessments: TannerAssessmentRow[];
+// Same segmented-pill look as the archive history filters.
+const TRACK_CLASS =
+  'rounded-full border border-[var(--nimi-border-subtle)] bg-[color-mix(in_srgb,var(--nimi-border-subtle)_45%,transparent)]';
+
+const CODE_CHIP_CLASS: Record<TannerAxisKey, string> = {
+  primary: 'bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_12%,transparent)]',
+  pubic: 'bg-[color-mix(in_srgb,var(--nimi-color-indigo)_10%,transparent)]',
 };
 
-// Pre-menarche preparation tips become obsolete once menarche has occurred.
-const PRE_MENARCHE_OBSOLETE_IDS = new Set([
-  'prepareMenstrualSupplies',
-  'menstrualEmergencyKit',
-  'talkMenstruationFear',
-  'menarcheSoon',
-]);
-
-const TWELVE_MONTHS_MS = 365.25 * 24 * 60 * 60 * 1000;
-
-// Admitted watch threshold (development.tanner-stage-reference →
-// tanner-stage-two-stage-twelve-month-watch): stage delta ≥ 2 within 12 months.
-function computeTwelveMonthStageDelta(assessments: TannerAssessmentRow[]): number | null {
-  const staged = assessments.filter((row) => row.breastOrGenitalStage != null);
-  if (staged.length < 2) return null;
-  const latest = staged[0];
-  if (!latest) return null;
-  const latestTime = Date.parse(latest.assessedAt);
-  if (Number.isNaN(latestTime)) return null;
-  const windowStart = latestTime - TWELVE_MONTHS_MS;
-  let earliest = latest;
-  for (const row of staged) {
-    const time = Date.parse(row.assessedAt);
-    if (!Number.isNaN(time) && time >= windowStart) {
-      earliest = row;
-    }
-  }
-  if (earliest === latest) return null;
-  return (latest.breastOrGenitalStage ?? 0) - (earliest.breastOrGenitalStage ?? 0);
-}
-
-function GuidanceItem({
-  item,
-  toneClassName,
-  childName,
-  ageLabel,
-  gender,
-}: {
-  item: TannerGuidanceItem;
-  toneClassName: string;
-  childName: string;
-  ageLabel: string;
-  gender: string;
-}) {
-  const [showDetail, setShowDetail] = useState(false);
-  const detail = DETAIL_MAP[item.id];
-  const topic = item.text.replace(/\s*\[.*?\]\s*/g, '');
-  const childGender = gender === 'female' ? i18nText('Tanner.page.gender.female') : i18nText('Tanner.page.gender.male');
-  const aiDescription = i18nText('Tanner.guidePanel.aiDescription', { childName, ageLabel, gender: childGender });
-  const aiUrl = `/advisor?topic=${encodeURIComponent(topic)}&desc=${encodeURIComponent(aiDescription)}&domain=tanner&record=/profile`;
-
-  return (
-    <div className={`overflow-hidden rounded-2xl ${toneClassName}`}>
-      <div className="flex items-start gap-2 p-2.5">
-        <span className="text-[12px] mt-1.5 shrink-0 text-[var(--nimi-text-muted)]">●</span>
-        <p className="text-[13px] leading-relaxed flex-1 text-[var(--nimi-text-primary)]">{item.text}</p>
-        <div className="flex items-center gap-1 shrink-0">
-          {detail ? (
-            <button
-              onClick={() => setShowDetail(!showDetail)}
-              className={`rounded px-1.5 py-0.5 text-[12px] transition-colors ${showDetail ? 'bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)]' : 'bg-[color-mix(in_srgb,var(--nimi-text-primary)_6%,transparent)] text-[var(--nimi-text-muted)]'}`}
-            >
-              {showDetail ? i18nText('Tanner.action.collapse') : i18nText('Tanner.action.steps')}
-            </button>
-          ) : null}
-          <Link
-            to={aiUrl}
-            title={i18nText('Tanner.guidePanel.askAdvisor')}
-            className="flex h-5 w-5 items-center justify-center rounded text-[var(--nimi-status-info)] transition-colors hover:bg-[color-mix(in_srgb,var(--nimi-text-primary)_8%,transparent)]"
-          >
-            <ParentosAiMascotStatic size={20} />
-          </Link>
-        </div>
-      </div>
-      {showDetail && detail ? (
-        <div className="px-7 pb-3 space-y-2">
-          <div>
-            <p className="text-[12px] font-semibold mb-1 text-[var(--nimi-text-primary)]">{i18nText('Tanner.guidePanel.actionSteps')}</p>
-            {detail.steps.map((step, index) => (
-              <p key={index} className="text-[12px] leading-relaxed pl-3 relative text-[var(--nimi-text-muted)]">
-                <span className="absolute left-0">{index + 1}.</span> {step}
-              </p>
-            ))}
-          </div>
-          {detail.resources ? (
-            <div>
-              <p className="text-[12px] font-semibold mb-0.5 text-[var(--nimi-text-primary)]">{i18nText('Tanner.guidePanel.resources')}</p>
-              {detail.resources.map((resource, index) => (
-                <p key={index} className="text-[12px] leading-relaxed text-[var(--nimi-status-info)]">{i18nText('Tanner.guidePanel.resourcePrefix')} {resource}</p>
-              ))}
-            </div>
-          ) : null}
-          {detail.when ? (
-            <p className="text-[12px] text-[var(--nimi-text-muted)]">
-              <span className="font-semibold text-[var(--nimi-text-primary)]">{i18nText('Tanner.guidePanel.whenPrefix')}</span>{detail.when}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
+/** General education, kept apart from the child's recorded facts. */
+// @nimi-authority: rule.parentos.prof.r012
 export function TannerGuidePanel({
   isFemale,
-  latestBG,
-  latestPH,
-  childName,
-  ageLabel,
-  gender,
-  assessments,
-}: TannerGuidePanelProps) {
-  const [expanded, setExpanded] = useState(true);
-  // B/G is the primary axis: female milestones (menarche, growth deceleration) anchor to it,
-  // and PH often runs ahead — taking max() would show guidance one stage too early.
-  const currentStage = latestBG ?? latestPH ?? 1;
-  const guidanceList = isFemale ? FEMALE_GUIDANCE : MALE_GUIDANCE;
-  const guidance = guidanceList.find((item) => item.stage === currentStage) ?? guidanceList[0];
-
-  if (!guidance) {
-    return null;
-  }
-
-  const nextGuidance = currentStage < 5
-    ? guidanceList.find((item) => item.stage === currentStage + 1)
-    : undefined;
-  // Assessments arrive newest-first, so the first occurred row is the latest menarche record.
-  const latestMenarche = isFemale
-    ? assessments.find((row) => row.menarcheStatus === 'occurred')
-    : undefined;
-  const stageDelta = computeTwelveMonthStageDelta(assessments);
-  const sections = buildGuidanceSections(guidance).map((section) => (
-    latestMenarche
-      ? { ...section, items: section.items.filter((item) => !PRE_MENARCHE_OBSOLETE_IDS.has(item.id)) }
-      : section
-  )).filter((section) => section.items.length > 0);
-
+  onClose,
+}: {
+  isFemale: boolean;
+  onClose: () => void;
+}) {
+  const [step, setStep] = useState(0);
+  const [axis, setAxis] = useState<TannerAxisKey>('primary');
+  const stages = axis === 'pubic' ? pubicHairStages(isFemale) : primaryStages(isFemale);
   return (
-    <Surface as="section" tone="card" material="glass-regular" elevation="raised" padding="none" className="mt-6 overflow-hidden rounded-3xl">
-      <button onClick={() => setExpanded(!expanded)} className="flex w-full items-center justify-between bg-[linear-gradient(135deg,var(--nimi-action-primary-bg),var(--nimi-status-success))] px-5 py-4 text-left">
-        <div>
-          <h3 className="text-[16px] font-bold text-[var(--nimi-action-primary-text)]">
-            {latestBG ? i18nText('Tanner.guidePanel.titleWithAssessment') : i18nText('Tanner.guidePanel.titleWithoutAssessment')}
-          </h3>
-          <p className="mt-0.5 text-[13px] text-[color-mix(in_srgb,var(--nimi-action-primary-text)_70%,transparent)]">
-            {i18nText('Tanner.guidePanel.subtitle', {
-              stageTitle: guidance.title,
-              mode: latestBG ? i18nText('Tanner.guidePanel.modeStage') : i18nText('Tanner.guidePanel.modeAge'),
-            })}
-          </p>
-          <p className="mt-0.5 text-[12px] text-[color-mix(in_srgb,var(--nimi-action-primary-text)_70%,transparent)]">
-            {i18nText('Tanner.guidePanel.commonWindow', {
-              primary: isFemale ? i18nText('Tanner.page.guide.primaryTimingFemale') : i18nText('Tanner.page.guide.primaryTimingMale'),
-              pubicHair: isFemale ? i18nText('Tanner.page.guide.pubicHairTimingFemale') : i18nText('Tanner.page.guide.pubicHairTimingMale'),
-            })}
-          </p>
-          {latestMenarche ? (
-            <p className="mt-0.5 text-[12px] font-medium text-[var(--nimi-action-primary-text)]">
-              {latestMenarche.menarcheDate
-                ? i18nText('Tanner.guidePanel.menarcheOccurredWithDate', { date: latestMenarche.menarcheDate.split('T')[0] ?? latestMenarche.menarcheDate })
-                : i18nText('Tanner.timeline.menarcheOccurred')}
-            </p>
-          ) : null}
-          {stageDelta != null ? (
-            <p className={`mt-0.5 text-[12px] ${stageDelta >= 2 ? 'font-medium text-[var(--nimi-action-primary-text)]' : 'text-[color-mix(in_srgb,var(--nimi-action-primary-text)_70%,transparent)]'}`}>
-              {stageDelta >= 2
-                ? i18nText('Tanner.guidePanel.progressionFast')
-                : i18nText('Tanner.guidePanel.progressionStable')}
-            </p>
-          ) : null}
-        </div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={`text-[color-mix(in_srgb,var(--nimi-action-primary-text)_70%,transparent)] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+    <Surface
+      as="section"
+      id="tanner-entry-guide"
+      aria-label={i18nText('Tanner.page.guideToggle')}
+      tone="card"
+      material="glass-thick"
+      elevation="raised"
+      padding="lg"
+      className="relative mb-6 rounded-3xl"
+    >
+      <button
+        type="button"
+        aria-label={i18nText('Tanner.entryGuide.close')}
+        onClick={onClose}
+        className="absolute right-4 top-4 grid h-8 w-8 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-[var(--nimi-text-muted)] transition-colors hover:bg-[var(--nimi-action-ghost-hover)] hover:text-[var(--nimi-text-primary)]"
+      >
+        <X size={16} />
       </button>
-
-      {expanded ? (
-        <div className="space-y-4 bg-[var(--nimi-surface-card)] p-5">
-          {sections.map((section) => (
-            <div key={section.id}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[16px]">{section.icon}</span>
-                <h4 className="text-[14px] font-semibold text-[var(--nimi-text-primary)]">{section.title}</h4>
-              </div>
-              <div className="space-y-1.5 ml-6">
-                {section.items.map((item, index) => (
-                  <GuidanceItem
-                    key={item.id || index}
-                    item={item}
-                    toneClassName={guidanceSectionToneClassName(section.id)}
-                    childName={childName}
-                    ageLabel={ageLabel}
-                    gender={gender}
-                  />
-                ))}
-              </div>
-            </div>
+      <header className="pr-10">
+        <p className="flex items-center gap-2 text-[12px] font-semibold text-[var(--nimi-text-primary)]">
+          <BookOpen size={15} strokeWidth={1.8} className="text-[var(--nimi-action-primary-bg)]" />
+          {i18nText('Tanner.entryGuide.title')}
+        </p>
+        <h2
+          aria-live="polite"
+          className="mt-2.5 text-[18px] font-semibold tracking-[-0.01em] text-[var(--nimi-text-primary)]"
+        >
+          {i18nText(STEP_KEYS[step]!)}
+        </h2>
+        <nav className="mt-2 flex items-center gap-1" aria-label={i18nText('Tanner.page.guideToggle')}>
+          {STEP_KEYS.map((key, index) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setStep(index)}
+              aria-label={i18nText(key)}
+              aria-current={index === step ? 'step' : undefined}
+              className="flex h-7 min-w-7 cursor-pointer items-center justify-center rounded border-0 bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--nimi-action-primary-bg)]"
+            >
+              <span
+                className={
+                  index === step
+                    ? 'h-1.5 w-6 rounded-full bg-[var(--nimi-action-primary-bg)]'
+                    : 'h-1.5 w-1.5 rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_30%,transparent)]'
+                }
+              />
+            </button>
           ))}
-          {nextGuidance ? (
-            <div className="rounded-2xl border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] p-3">
-              <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Tanner.guidePanel.nextStageTitle')}</p>
-              <p className="mt-1 text-[13px] font-semibold text-[var(--nimi-text-primary)]">{nextGuidance.title}</p>
-              {nextGuidance.physical[0] ? (
-                <p className="mt-1 text-[12px] text-[var(--nimi-text-muted)]">
-                  <span className="font-medium text-[var(--nimi-text-primary)]">{i18nText('Tanner.guidance.section.physical')}：</span>
-                  {nextGuidance.physical[0].text}
-                </p>
-              ) : null}
-              {nextGuidance.parentTips[0] ? (
-                <p className="mt-0.5 text-[12px] text-[var(--nimi-text-muted)]">
-                  <span className="font-medium text-[var(--nimi-text-primary)]">{i18nText('Tanner.guidance.section.parentTips')}：</span>
-                  {nextGuidance.parentTips[0].text}
-                </p>
-              ) : null}
+          <span className="ml-2 font-mono text-[11px] text-[var(--nimi-text-muted)]">
+            {step + 1}/{STEP_KEYS.length}
+          </span>
+        </nav>
+      </header>
+
+      <div className="mt-4 text-[13px] leading-[1.8] text-[var(--nimi-text-secondary)]">
+        {step === 0 ? (
+          <>
+            <p>{i18nText('Tanner.redesign.guideIntro')}</p>
+            <p className="mt-1 text-[var(--nimi-text-muted)]">
+              {i18nText('Tanner.redesign.stageReferenceOnly')}
+            </p>
+            <div
+              role="group"
+              aria-label={i18nText('Tanner.redesign.stages')}
+              className={cn('mt-4 inline-flex gap-0.5 p-[3px]', TRACK_CLASS)}
+            >
+              {(['primary', 'pubic'] as const).map((key) => {
+                const active = axis === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setAxis(key)}
+                    className={`cursor-pointer rounded-full border-0 px-3.5 py-1.5 text-[12px] transition-all ${active ? 'bg-[var(--nimi-surface-card)] font-semibold text-[var(--nimi-text-primary)] shadow-[var(--nimi-elevation-base)]' : 'bg-transparent font-normal text-[var(--nimi-text-muted)]'}`}
+                  >
+                    {tannerAxisLabel(key, isFemale)}
+                  </button>
+                );
+              })}
             </div>
-          ) : null}
-          <div className="space-y-1 border-t border-[var(--nimi-border-subtle)] pt-3">
-            <p className="text-[12px] font-medium text-[var(--nimi-text-muted)]">{i18nText('Tanner.referenceNotes.title')}</p>
-            <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.referenceNotes.a')}</p>
-            <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.referenceNotes.b')}</p>
-            <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.referenceNotes.c')}</p>
-            <p className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.referenceNotes.d')}</p>
-            <p className="mt-1 text-[12px] text-[var(--nimi-text-muted)]">{i18nText('Tanner.referenceNotes.disclaimer')}</p>
-          </div>
-        </div>
-      ) : null}
+            <ul className="m-0 mt-4 list-none space-y-3.5 p-0">
+              {stages.map((stage) => (
+                <li key={stage.stage} className="flex items-start gap-3">
+                  <span
+                    className={cn(
+                      'mt-0.5 grid h-8 min-w-10 shrink-0 place-items-center rounded-xl px-2 text-[13px] font-bold tabular-nums',
+                      CODE_CHIP_CLASS[axis],
+                      TANNER_AXIS_TONE[axis].text,
+                    )}
+                  >
+                    {stage.code}
+                  </span>
+                  <div className="min-w-0">
+                    <h4 className="text-[13.5px] font-semibold leading-6 text-[var(--nimi-text-primary)]">
+                      {stage.name}
+                    </h4>
+                    <p className="text-[12.5px] leading-[1.7]">{stage.desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <details className="mt-5 rounded-2xl bg-[color-mix(in_srgb,var(--nimi-text-primary)_4%,transparent)] px-4 py-2.5 text-[12px]">
+              <summary className="cursor-pointer text-[12.5px] font-medium text-[var(--nimi-text-secondary)]">
+                {i18nText('Tanner.page.reference.title')}
+              </summary>
+              <p className="mt-2">{i18nText('Tanner.page.reference.tannerCitation')}</p>
+              <p className="text-[var(--nimi-text-muted)]">
+                {i18nText('Tanner.page.reference.tannerJournal')}
+              </p>
+            </details>
+          </>
+        ) : step === 1 ? (
+          <>
+            <p>{i18nText('Tanner.redesign.recordGuideIntro')}</p>
+            <ol className="m-0 mt-4 list-none space-y-3 p-0">
+              {(
+                [
+                  'Tanner.redesign.recordStep1',
+                  'Tanner.redesign.recordStep2',
+                  'Tanner.redesign.recordStep3',
+                ] as const
+              ).map((key, index) => (
+                <li key={key} className="flex items-start gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--nimi-accent-soft)] text-[12px] font-semibold text-[color-mix(in_srgb,var(--nimi-action-primary-bg)_65%,var(--nimi-text-primary))]"
+                  >
+                    {index + 1}
+                  </span>
+                  <span className="text-[13px] text-[var(--nimi-text-primary)]">
+                    {i18nText(key)}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </>
+        ) : (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <section className="rounded-2xl bg-[color-mix(in_srgb,var(--nimi-text-primary)_4%,transparent)] px-4 py-3.5">
+                <h3 className="text-[13.5px] font-semibold text-[var(--nimi-text-primary)]">
+                  {i18nText('Tanner.redesign.communication')}
+                </h3>
+                <p className="mt-1.5 text-[12.5px] leading-[1.75]">
+                  {i18nText('Tanner.redesign.communicationBody')}
+                </p>
+              </section>
+              <section className="rounded-2xl bg-[color-mix(in_srgb,var(--nimi-text-primary)_4%,transparent)] px-4 py-3.5">
+                <h3 className="text-[13.5px] font-semibold text-[var(--nimi-text-primary)]">
+                  {i18nText('Tanner.redesign.professional')}
+                </h3>
+                <p className="mt-1.5 text-[12.5px] leading-[1.75]">
+                  {i18nText('Tanner.redesign.professionalBody')}
+                </p>
+              </section>
+            </div>
+            <p className="mt-3 text-[11.5px] text-[var(--nimi-text-muted)]">
+              {i18nText('Tanner.referenceNotes.disclaimer')}
+            </p>
+          </>
+        )}
+      </div>
+
+      <footer className="mt-6 flex items-center justify-between">
+        <Button tone="ghost" size="sm" disabled={step === 0} onClick={() => setStep(step - 1)}>
+          <ArrowLeft size={14} />
+          {i18nText('Tanner.entryGuide.previous')}
+        </Button>
+        {step < STEP_KEYS.length - 1 ? (
+          <Button tone="primary" size="sm" onClick={() => setStep(step + 1)}>
+            {i18nText('Tanner.entryGuide.next')}
+            <ArrowRight size={14} />
+          </Button>
+        ) : (
+          <Button tone="primary" size="sm" onClick={onClose}>
+            {i18nText('Tanner.page.guide.confirm')}
+          </Button>
+        )}
+      </footer>
     </Surface>
   );
-}
-
-function guidanceSectionToneClassName(id: GuidanceSectionId): string {
-  if (id === 'physical') return 'bg-[color-mix(in_srgb,var(--nimi-status-success)_10%,var(--nimi-surface-card))]';
-  if (id === 'psychological') return 'bg-[color-mix(in_srgb,var(--nimi-status-info)_10%,var(--nimi-surface-card))]';
-  if (id === 'nutrition') return 'bg-[color-mix(in_srgb,var(--nimi-status-warning)_10%,var(--nimi-surface-card))]';
-  if (id === 'checkups') return 'bg-[color-mix(in_srgb,var(--nimi-status-danger)_8%,var(--nimi-surface-card))]';
-  return 'bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_8%,var(--nimi-surface-card))]';
 }

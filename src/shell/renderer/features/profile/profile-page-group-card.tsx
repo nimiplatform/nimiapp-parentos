@@ -100,7 +100,7 @@ export function ProfileGroupCard({ group, onCapture }: ProfileGroupCardProps) {
       padding="none"
       tone="card"
       id={`profile-group-${group.group.groupId}`}
-      className="overflow-hidden rounded-2xl shadow-[var(--nimi-elevation-base)] scroll-mt-4"
+      className="parentos-stacked-glass-card overflow-hidden rounded-2xl shadow-[var(--nimi-elevation-base)] scroll-mt-4"
     >
       <button
         type="button"

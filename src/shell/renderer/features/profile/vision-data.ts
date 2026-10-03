@@ -356,12 +356,17 @@ export interface GlanceMetric {
   format: (v: number) => string;
   status: GlanceStatus;
   tag: string;
+  /** Axial chip only: same-age P75 critical − current AL per eye (眼轴余量). */
+  surplus?: { od: number | null; os: number | null };
 }
 
 /** Build the three at-a-glance chips from the latest measurement record.
  *  Status thresholds use conservative rules: details on which threshold drove
  *  a 'warn' should always come from the underlying exam card, not this chip. */
-export function computeGlanceMetrics(latestFull: VisionRecord | null): GlanceMetric[] {
+export function computeGlanceMetrics(
+  latestFull: VisionRecord | null,
+  gender?: string,
+): GlanceMetric[] {
   if (!latestFull) {
     return [
       { label: i18nText('Vision.metric.hyperopiaReserveSe'), unit: 'D', od: null, os: null, format: fmtSigned2, status: 'ok', tag: '—' },
@@ -377,8 +382,17 @@ export function computeGlanceMetrics(latestFull: VisionRecord | null): GlanceMet
 
   const alOD = latestFull.data.get('axial-length-right') ?? null;
   const alOS = latestFull.data.get('axial-length-left') ?? null;
-  const alStatus: GlanceStatus = 'ok';
-  const alTag = (alOD != null || alOS != null) ? i18nText('Vision.glance.recorded') : '—';
+  // Axial reserve against the same-age P75 critical at the exam date —
+  // the same surplus the exam timeline's biometry section shows.
+  const axialRef = gender ? getAxialRef(latestFull.ageMonths, gender) : null;
+  const surplusOD = axialRef && alOD != null ? +(axialRef.critical - alOD).toFixed(2) : null;
+  const surplusOS = axialRef && alOS != null ? +(axialRef.critical - alOS).toFixed(2) : null;
+  const surplusValues = [surplusOD, surplusOS].filter((v): v is number => v != null);
+  const minSurplus = surplusValues.length > 0 ? Math.min(...surplusValues) : null;
+  const alStatus: GlanceStatus = minSurplus == null ? 'ok' : minSurplus >= 0.5 ? 'ok' : minSurplus >= 0 ? 'warn' : 'danger';
+  const alTag = minSurplus != null
+    ? (minSurplus >= 0.5 ? i18nText('Vision.glance.sufficient') : minSurplus >= 0 ? i18nText('Vision.glance.low') : i18nText('Vision.glance.overCritical'))
+    : (alOD != null || alOS != null) ? i18nText('Vision.glance.recorded') : '—';
 
   const vnOD = latestFull.data.get('vision-right') ?? null;
   const vnOS = latestFull.data.get('vision-left') ?? null;
@@ -388,7 +402,10 @@ export function computeGlanceMetrics(latestFull: VisionRecord | null): GlanceMet
 
   return [
     { label: i18nText('Vision.metric.hyperopiaReserveSe'), unit: 'D', od: seOD, os: seOS, format: fmtSigned2, status: seStatus, tag: seTag },
-    { label: i18nText('Vision.group.biometric'), unit: 'mm', od: alOD, os: alOS, format: fmt2, status: alStatus, tag: alTag },
+    {
+      label: i18nText('Vision.group.biometric'), unit: 'mm', od: alOD, os: alOS, format: fmt2, status: alStatus, tag: alTag,
+      ...(minSurplus != null ? { surplus: { od: surplusOD, os: surplusOS } } : {}),
+    },
     { label: i18nText('Vision.metric.nakedVision'), unit: '', od: vnOD, os: vnOS, format: fmt1, status: visionStatus, tag: visionTag },
   ];
 }

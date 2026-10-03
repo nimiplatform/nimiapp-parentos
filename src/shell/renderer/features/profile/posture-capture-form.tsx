@@ -6,6 +6,9 @@ import { insertPostureAssessment } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { getLocalToday } from '../../engine/reminder-engine.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
+import postureFrontBackUrl from './assets/posture-views/front-back.webp';
+import postureSideUrl from './assets/posture-views/side.webp';
+import postureForwardBendUrl from './assets/posture-views/forward-bend.webp';
 import { readImageFileAsDataUrl } from './checkup-ocr.js';
 import type { LinkedHealthRecordReminder } from './health-capture-orchestrator.js';
 import {
@@ -81,9 +84,9 @@ const ADAM_OPTIONS = [
 ] as const;
 
 const POSTURE_TABS = [
-  { key: 'back', label: i18nText('PostureCapture.tab.back'), emoji: '🧍', photoKey: 'back' },
-  { key: 'side', label: i18nText('PostureCapture.tab.side'), emoji: '🧍‍♂️', photoKey: 'side' },
-  { key: 'forward-bend', label: i18nText('PostureCapture.tab.forwardBend'), emoji: '🙇', photoKey: 'adam' },
+  { key: 'back', label: i18nText('PostureCapture.tab.back'), image: postureFrontBackUrl, photoKey: 'back' },
+  { key: 'side', label: i18nText('PostureCapture.tab.side'), image: postureSideUrl, photoKey: 'side' },
+  { key: 'forward-bend', label: i18nText('PostureCapture.tab.forwardBend'), image: postureForwardBendUrl, photoKey: 'adam' },
 ] as const;
 
 type PostureTab = (typeof POSTURE_TABS)[number]['key'];
@@ -280,7 +283,7 @@ export function PostureCaptureContent({ child, onSaved, onClose, linkedReminder 
                         : 'border-transparent bg-[var(--nimi-surface-panel)] hover:bg-[var(--nimi-action-ghost-hover)]'
                     }`}
                   >
-                    <span className="text-[18px]">{tab.emoji}</span>
+                    <img src={tab.image} alt="" aria-hidden="true" draggable={false} className="h-16 w-auto select-none" />
                     <span
                       className={`text-[12.5px] font-medium ${
                         active ? 'text-[var(--nimi-action-primary-bg)]' : 'text-[var(--nimi-text-muted)]'

@@ -1,5 +1,6 @@
-import { Button, DialogTitle, OverlayShell, SelectField, Surface, TextareaField, TextField } from '@nimiplatform/kit/ui';
+import { Button, DialogTitle, OverlayShell, Surface, TextareaField, TextField } from '@nimiplatform/kit/ui';
 import type { ReactNode } from 'react';
+import { AppSelect } from '../../app-shell/app-select.js';
 import { i18nText } from '../../i18n/index.js';
 
 
@@ -99,9 +100,9 @@ export function FieldSelect({ label, value, onChange, options }: {
   return (
     <div className="flex flex-col gap-1 text-[14px] text-[var(--nimi-text-muted)]">
       <span>{label}</span>
-      <SelectField
+      <AppSelect
         value={value}
-        onValueChange={onChange}
+        onChange={onChange}
         options={options}
         contentLayer="dialog"
         className="min-h-9 text-[14px]"

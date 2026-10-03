@@ -184,7 +184,7 @@ export function AvatarCropModal({ imageUrl, onConfirm, onCancel }: AvatarCropMod
         <div className="flex gap-3">
           <button onClick={handleConfirm}
             className="flex-1 py-2.5 rounded-full text-[14px] font-medium text-white transition-all hover:opacity-90"
-            style={{ background: '#BDE0F5' }}>
+            style={{ background: 'var(--nimi-action-primary-bg)' }}>
             {i18nText('AvatarCrop.confirm')}
           </button>
           <button onClick={onCancel}

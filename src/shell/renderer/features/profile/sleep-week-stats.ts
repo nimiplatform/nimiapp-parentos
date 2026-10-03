@@ -3,7 +3,8 @@ import { referenceSleepRange } from './sleep-page-shared.js';
 
 // @nimi-authority: rule.parentos.prof.r010
 export const MIN_SAMPLE_DAYS = 4;
-const DAY_MS = 24 * 60 * 60 * 1000;
+/** How many most-recent recorded days feed the trend chart and overview. */
+export const RECENT_RECORD_DAYS = 7;
 const MINUTES_PER_DAY = 24 * 60;
 // Bedtimes before noon are treated as past-midnight of the previous evening.
 const NOON_MINUTES = 12 * 60;
@@ -24,34 +25,24 @@ export interface SleepWeekStats {
   sufficiency: SleepSufficiency;
 }
 
-function toLocalDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/** ISO dates (local) for the last 7 calendar days ending at `today`, oldest first. */
-export function last7DayDates(today: Date): string[] {
-  const base = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0, 0);
-  const dates: string[] = [];
-  for (let offset = 6; offset >= 0; offset -= 1) {
-    dates.push(toLocalDateString(new Date(base.getTime() - offset * DAY_MS)));
-  }
-  return dates;
-}
-
-/** Records aligned to the last 7 calendar days; `null` marks days without a record. */
-export function last7DayRecords(
+/**
+ * The most recent `RECENT_RECORD_DAYS` days that have a sleep record, oldest first.
+ * Calendar gaps are ignored so an old but complete log still yields a trend;
+ * one record per date, the last one seen wins.
+ */
+export function recentRecordDays(
   records: SleepRecordRow[],
-  today: Date,
-): { date: string; record: SleepRecordRow | null }[] {
+): { date: string; record: SleepRecordRow }[] {
   const byDate = new Map<string, SleepRecordRow>();
   for (const record of records) {
     const date = record.sleepDate.split('T')[0] ?? '';
     if (date) byDate.set(date, record);
   }
-  return last7DayDates(today).map((date) => ({ date, record: byDate.get(date) ?? null }));
+  return [...byDate.entries()]
+    .sort(([a], [b]) => (a < b ? 1 : a > b ? -1 : 0))
+    .slice(0, RECENT_RECORD_DAYS)
+    .reverse()
+    .map(([date, record]) => ({ date, record }));
 }
 
 export function totalMinutes(record: SleepRecordRow): number | null {
@@ -120,13 +111,8 @@ export function sufficiencyLabel(
   return 'within';
 }
 
-export function computeWeekStats(
-  records: SleepRecordRow[],
-  ageMonths: number,
-  today: Date,
-): SleepWeekStats {
-  const days = last7DayRecords(records, today);
-  const present = days.filter((day) => day.record != null).map((day) => day.record as SleepRecordRow);
+export function computeWeekStats(records: SleepRecordRow[], ageMonths: number): SleepWeekStats {
+  const present = recentRecordDays(records).map((day) => day.record);
 
   const totals = present.map(totalMinutes).filter((v): v is number => v != null);
   const nights = present.map((r) => r.durationMinutes).filter((v): v is number => v != null && v > 0);

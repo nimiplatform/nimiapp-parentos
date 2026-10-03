@@ -387,6 +387,8 @@
         "tannerBreastStage": "Tanner 乳房分期",
         "tannerGenitalStage": "Tanner 外生殖器分期",
         "tannerPubicHairStage": "Tanner 阴毛分期",
+        "menarcheStatus": "初潮状态",
+        "menarcheDate": "初潮日期",
         "boneAgeYears": "骨龄",
         "bodyFatPercentage": "体脂率",
         "milestone": "发育里程碑"
@@ -493,9 +495,13 @@
         "reminderSettings": "提醒设置",
         "smartRecognize": "智能识别",
         "recognizing": "识别中...",
-        "addScreening": "添加筛查",
-        "recordData": "录入数据",
-        "screeningModalTitle": "添加筛查记录",
+        "recordExam": "录入检查",
+        "chooserTitle": "这次要记录什么？",
+        "chooserScreeningTitle": "筛查结果",
+        "chooserScreeningDesc": "医生做的红光反射、遮盖试验等检查，只记录通过或转诊，不涉及度数",
+        "chooserQuantitativeTitle": "验光 / 眼轴数据",
+        "chooserQuantitativeDesc": "验光单上的球镜、柱镜、矫正视力，以及眼轴长度",
+        "screeningModalTitle": "记录筛查结果",
         "screeningItem": "筛查项目",
         "screeningResult": "检查结果",
         "hospitalOrClinic": "医院/诊所",
@@ -793,13 +799,6 @@
   "HealthCapture": {
     "title": "添加健康数据",
     "close": "关闭",
-    "ai": {
-      "recognizing": "识别中…",
-      "recognizingFile": "正在识别 {{imageName}}…",
-      "extractedFromFile": "✓ 已从 {{imageName}} 提取",
-      "uploadHint": "上传图片，AI 自动填表",
-      "smartCapture": "智能录入"
-    },
     "sidebar": {
       "posture": "体态",
       "vaccine": "疫苗"
@@ -978,7 +977,9 @@
       "historyHint": " · 已在历史中"
     },
     "upload": {
-      "title": "选择一张口腔全景片或口腔照片",
+      "title": "口腔照片",
+      "dropzoneLabel": "点击或拖拽上传口腔照片（1 张）",
+      "dropzoneDescription": "支持口腔全景片、口内照、咬合照",
       "hint": "建议：咬合面照或正面微笑照最适合识别已萌出的牙齿；全景 X 光片还可以帮助识别颌骨内未萌出的恒牙胚。"
     },
     "previewAlt": "牙齿预览",
@@ -1238,11 +1239,6 @@
       "remainingDaysPlan": "这周还有 {{days}} 天，可以多安排一些户外活动",
       "pacePlan": "这周还有 {{days}} 天，平均每天再补 {{pace}} 分钟即可接近目标"
     },
-    "heatmap": {
-      "future": "{{date}} · 未来",
-      "minutes": "{{date}} · {{minutes}} 分钟",
-      "noRecord": "{{date}} · 无记录"
-    },
     "capture": {
       "invalidDuration": "请输入有效的活动时长（分钟）",
       "saveFailed": "保存失败，请重试",
@@ -1258,13 +1254,13 @@
     },
     "visionSummary": {
       "profileTitle": "视力档案",
-      "noExamRecords": "尚无检查记录",
-      "addRecord": "录入 →",
+      "noExamRecords": "还没有视力检查记录",
+      "addRecord": "去录入第一次视力检查",
       "latestExam": "最近一次视力检查",
-      "viewProfile": "查看档案 →",
       "uncorrectedVision": "裸眼",
       "leftEyeSeparator": "· L",
-      "axialLength": "眼轴"
+      "axialLength": "眼轴",
+      "why": "户外时间有助于降低近视风险，也记得定期检查视力。"
     },
     "date": {
       "shortMonthDay": "{{month}}月{{day}}日",
@@ -1279,92 +1275,113 @@
         "sat": "周六"
       }
     },
-    "professional": {
-      "notRecorded": "本期未记录。",
-      "edited": "· 已编辑",
-      "included": "包含",
-      "hidden": "隐藏",
-      "includeAria": "是否包含 {{title}} 到分享版本",
-      "save": "保存",
-      "cancel": "取消",
-      "edit": "编辑",
-      "restoreAi": "恢复 AI 原文",
-      "copySuccess": "已复制",
-      "copyFailed": "复制失败",
-      "eyebrow": "SHARE · 给老师 / 医生",
-      "titlePrefix": "精简版 ·",
-      "close": "关闭",
-      "introTitle": "精简版说明：",
-      "introBody": "AI 按客观医学/教育记录语气生成，家长可逐条编辑或隐去敏感内容；未勾选的 section 不会出现在导出或复制内容里。",
-      "emptyTitle": "此报告还没有精简版内容。",
-      "emptyBody": "请回到报告页「高级选项 · 生成综合报告」重新生成一次，AI 会同时产出精简版。",
-      "copy": "复制精简版",
-      "savePdf": "另存为 PDF"
-    },
-    "notes": {
-      "save": "保存",
-      "cancel": "取消",
-      "kicker": "家长备注",
-      "edit": "编辑",
-      "delete": "删除",
-      "add": "追加我的备注",
-      "placeholder": "写一段备注，比如你对这一段观察的补充、疑问、或想让医生看到的细节……",
-      "saveNote": "保存备注"
-    },
     "page": {
       "backToProfile": "← 返回档案",
       "selectChildFirst": "请先选择一个孩子",
       "loading": "加载中…",
+      "loadError": {
+        "title": "暂时无法读取户外记录",
+        "retry": "重试"
+      },
       "goalOnboarding": {
+        "eyebrow": "HEALTHY GROWTH",
         "title": "每周户外目标",
-        "visionProtection": "充足的户外活动时间是保护视力的重要方式。研究表明，每天累计 2 小时以上的户外活动有助于降低近视风险。",
-        "recordingHelp": "记录每天的户外时长，帮助你了解孩子每周是否有足够的户外活动。",
-        "setGoal": "设定每周目标"
+        "tagline": "多一点户外时光，\n看见更广阔的世界",
+        "description": "每天户外 2 小时，有助于降低近视风险。\n记录户外时长，每周进度一目了然。",
+        "setGoal": "设定每周目标",
+        "note": "走出家门，\n遇见更健康的自己！"
       },
       "goalSetup": {
-        "title": "设定每周户外目标",
-        "hint": "建议每周 630 分钟（约每天 90 分钟）",
+        "eyebrow": "WEEKLY GOAL",
+        "title": "每周户外，多久刚好？",
+        "tagline": "选一个适合孩子的节奏，之后随时都能调整。",
+        "inputAria": "每周户外目标（分钟）",
+        "decrease": "每天少 10 分钟",
+        "increase": "每天多 10 分钟",
         "minutesPerWeek": "分钟 / 周",
-        "confirm": "确定",
-        "cancel": "取消"
-      },
-      "week": {
-        "previous": "← 上周",
-        "current": "本周",
-        "next": "下周 →"
+        "dailyAverage": "平均每天 {{minutes}} 分钟",
+        "valueText": "每周 {{weekly}} 分钟，平均每天 {{daily}} 分钟",
+        "presetsAria": "常用目标",
+        "dailyPreset": "{{hours}} 小时/天",
+        "suggested": "建议",
+        "confirm": "确定目标",
+        "cancel": "取消",
+        "saveFailed": "保存失败，请重试",
+        "note": "周末多玩一会儿，\n也算数哦！"
       },
       "minuteUnit": "分钟",
       "progressAriaLabel": "本周户外目标完成度",
-      "addRecord": "＋ 记录户外活动",
-      "heatmap": {
-        "title": "户外活动热力图",
-        "subtitle": "近 {{weeks}} 周 · 日均目标 {{minutes}} 分钟",
-        "less": "少",
-        "more": "多"
-      },
-      "records": {
-        "thisWeek": "本周记录",
-        "selectedWeek": "当周记录",
-        "backfill": "补录",
-        "empty": "暂无记录",
-        "edit": "编辑"
-      },
-      "goalFooter": {
-        "currentGoal": "本周目标: {{minutes}} 分钟",
-        "change": "修改"
-      },
       "recordModal": {
-        "editTitle": "编辑记录",
-        "createTitle": "记录户外活动",
-        "date": "日期",
-        "durationMinutes": "时长（分钟）",
-        "customMinutes": "自定义分钟数",
-        "noteOptional": "备注（可选）",
-        "notePlaceholder": "例：小区公园散步",
+        "editTitle": "编辑户外记录",
+        "createTitle": "记录户外时间",
+        "date": "哪一天",
+        "today": "今天",
+        "yesterday": "昨天",
+        "dayBeforeYesterday": "前天",
+        "duration": "在户外待了多久",
+        "durationMinutes": "户外时长（分钟）",
+        "decrease": "少 10 分钟",
+        "increase": "多 10 分钟",
+        "noteOptional": "做了什么（选填）",
+        "notePlaceholder": "例：小区公园散步、骑车、踢球",
         "delete": "删除",
+        "confirmDelete": "确认删除",
+        "keep": "保留",
         "cancel": "取消",
         "saving": "保存中…",
-        "save": "保存"
+        "save": "保存",
+        "saveFailed": "保存失败，请重试"
+      },
+      "tracker": {
+        "thisWeek": "本周户外",
+        "pastWeek": "往周回顾",
+        "previousWeek": "上一周",
+        "nextWeek": "下一周",
+        "backToThisWeek": "回到本周",
+        "ofGoal": "/ {{minutes}} 分钟",
+        "status": {
+          "empty": "还没开始",
+          "onTrack": "进度不错",
+          "behind": "加把劲",
+          "complete": "已达标",
+          "pastIncomplete": "未达标"
+        },
+        "days": {
+          "aria": "这一周每天的户外时间",
+          "today": "今天",
+          "logged": "{{date}}，已户外 {{minutes}} 分钟，再记一笔",
+          "empty": "{{date}}，还没有记录，点击补记",
+          "future": "{{date}}，还没到",
+          "legend": "太阳圆满 · 当天户外满 {{minutes}} 分钟"
+        },
+        "logToday": "记录今天的户外时间",
+        "backfill": "补记这一周",
+        "weeklyGoal": "每周目标 {{minutes}} 分钟",
+        "changeGoal": "调整",
+        "sceneNote": "去户外\n收集更大的世界",
+        "journal": {
+          "titleCurrent": "本周的户外时光",
+          "titlePast": "这一周的户外时光",
+          "summary": "{{count}} 次 · 共 {{minutes}} 分钟",
+          "emptyCurrent": "这周还没有记录。每次出门玩回来记一笔，也可以点上面的某一天补记。",
+          "emptyPast": "这一周没有记录。点上面的某一天，就能补记那天的户外时间。",
+          "editAria": "编辑 {{date}} 的户外记录",
+          "noNote": "没有备注"
+        },
+        "trend": {
+          "title": "最近 {{weeks}} 周",
+          "summary": "达标 {{count}} 周",
+          "add": "补记",
+          "unit": "分钟",
+          "goal": "目标 {{minutes}}",
+          "thisWeek": "本周",
+          "bar": "{{range}}，共 {{minutes}} 分钟",
+          "barMet": "{{range}}，共 {{minutes}} 分钟，已达标"
+        }
+      },
+      "duration": {
+        "minutes": "{{minutes}} 分钟",
+        "hours": "{{hours}} 小时"
       }
     }
   },
@@ -2637,7 +2654,7 @@
       "tabActivity": "🏃 日常运动",
       "addAnotherEvent": "添加另一个事件",
       "notes": "备注",
-      "notesPlaceholder": "选填",
+      "notesPlaceholder": "选填，如孩子的状态、表现或感受",
       "cancel": "取消",
       "saving": "保存中...",
       "save": "保存",
@@ -2972,7 +2989,8 @@
     "result": {
       "pass": "通过",
       "refer": "转诊",
-      "fail": "未通过"
+      "fail": "未通过",
+      "inconclusive": "待定"
     },
     "symptom": {
       "fever": "发烧",
@@ -3054,33 +3072,48 @@
       "emptyDescription": "记录门诊、体检、用药等信息",
       "noMatchTitle": "未找到匹配的记录",
       "noMatchDescription": "尝试调整筛选条件",
+      "clearFilters": "清除筛选",
       "searchResultCount": "找到 {{count}} 条匹配记录",
-      "recordCount": "{{count}} 条记录",
-      "dayOfMonth": "{{day}}日",
+      "duration": "持续 {{days}} 天",
+      "yearDivider": "{{year}} 年",
       "edit": "编辑",
       "aiAnalysis": "AI 分析",
       "collapse": "收起"
     },
     "analysis": {
-      "title": "智能识别分析",
       "aiLoading": "AI 分析中",
       "deepAnalyze": "AI 深度分析",
-      "diagnosisSummary": "诊断汇总",
-      "medicationSummary": "用药汇总",
-      "countSuffix": "x{{count}}",
-      "eventTypeCount": "{{count}}次",
-      "frequentHospitals": "常去：{{hospitals}}",
+      "countSuffix": "×{{count}}",
       "aiInsightTitle": "AI 综合分析"
+    },
+    "overview": {
+      "title": "就医概览",
+      "context": "基于 {{total}} 条记录",
+      "reasons": "就诊原因",
+      "medications": "用药",
+      "hospitals": "常去机构",
+      "showRelated": "查看相关记录"
+    },
+    "kpi": {
+      "recentYear": "近一年就医",
+      "sinceLast": "距上次就医",
+      "medications": "用药",
+      "labReports": "检验报告"
+    },
+    "unit": {
+      "visits": "次",
+      "days": "天",
+      "kinds": "种",
+      "reports": "份"
     },
     "page": {
       "title": "就医记录",
-      "hideAnalysis": "收起分析",
-      "smartAnalysis": "智能识别",
-      "addEvent": "添加事件",
+      "addEvent": "添加记录",
       "dataContext": "共 {{count}} 条就医记录",
       "searchPlaceholder": "搜索诊断、医院、用药...",
+      "searchAria": "搜索记录",
       "clearSearch": "清除",
-      "allTypes": "全部类型",
+      "allTypes": "全部",
       "filterTypeAria": "筛选就医事件类型"
     }
   },
@@ -4014,88 +4047,26 @@
   },
   "Tanner": {
     "page": {
-      "title": "青春期发育评估",
+      "title": "青春期发育记录",
       "breastStageLabel": "乳房发育 (B期)",
       "genitalStageLabel": "外生殖器发育 (G期)",
-      "guideToggle": "评估指引",
-      "addAssessment": "添加评估",
-      "assessmentDataContext": "共 {{count}} 次评估",
-      "summary": "{{gender}} · 共 {{count}} 次评估",
-      "historyTitle": "评估记录（{{count}} 次）",
-      "historyEmpty": "暂无评估记录",
+      "guideToggle": "录入指引",
+      "addAssessment": "添加记录",
+      "assessmentDataContext": "共 {{count}} 次记录",
       "gender": {
         "female": "女孩",
         "male": "男孩"
       },
       "reference": {
         "title": "参考标准",
-        "tannerStandard": "Tanner 分期标准",
         "tannerCitation": "Marshall WA, Tanner JM. Variations in pattern of pubertal changes in girls/boys.",
-        "tannerJournal": "Arch Dis Child 1969;44:291-303 / 1970;45:13-23",
-        "chinaReference": "中国儿童青春期参考",
-        "chinaCitation": "中华医学会儿科学分会内分泌遗传代谢学组. 中枢性性早熟诊断与治疗专家共识（2022）",
-        "normalTiming": "女孩 B2 通常 8-13 岁出现 · 男孩 G2 通常 9-14 岁出现"
+        "tannerJournal": "Arch Dis Child 1969;44:291-303 / 1970;45:13-23"
       },
       "guide": {
-        "title": "什么是 Tanner 分期？",
-        "description": "Tanner 分期是国际通用的青春期发育评估标准，将{{bodySystem}}和阴毛发育各分为 5 期。",
-        "bodySystem": {
-          "breast": "乳房",
-          "genital": "外生殖器"
-        },
-        "howToJudgeTitle": "如何判断？",
-        "howToJudgeFemale": "观察乳房的大小、形态和乳晕变化。B1 期是青春前期没有任何发育，B2 期（花蕾期）是乳头下方出现小硬块，这是青春期的第一个信号。如果 8 岁前出现 B2，建议咨询专业人士排查性早熟。",
-        "howToJudgeMale": "观察睾丸大小和阴茎长度变化。G1 期是青春前期，G2 期是睾丸开始增大（通常用睾丸容积仪测量>4ml）。如果 9 岁前出现 G2，建议咨询专业人士排查性早熟。",
-        "timingTitle": "正常发育时间参考",
-        "primarySignalFemale": "乳房发育 B2 出现",
-        "primarySignalMale": "睾丸增大 G2 出现",
-        "primaryTimingFemale": "常见范围: 8-13 岁 · 平均 10.5 岁",
-        "primaryTimingMale": "常见范围: 9-14 岁 · 平均 11.5 岁",
-        "primaryAttentionFemale": "<8 岁出现建议咨询专业人士",
-        "primaryAttentionMale": "<9 岁出现建议咨询专业人士",
-        "pubicHairSignal": "阴毛 PH2 出现",
-        "pubicHairTimingFemale": "通常在 B2 后 6-12 个月出现",
-        "pubicHairTimingMale": "通常与 G2 同时或稍后出现",
-        "pubicHairNote": "单纯阴毛早现可能为肾上腺功能早现",
-        "medicalHelpTitle": "何时需要就医？",
-        "medicalEarlyFemale": "8 岁前出现乳房发育（B2）——可能是性早熟",
-        "medicalEarlyMale": "9 岁前出现睾丸增大（G2）——可能是性早熟",
-        "medicalDelayFemale": "13 岁仍无任何发育迹象——可能是青春期延迟",
-        "medicalDelayMale": "14 岁仍无任何发育迹象——可能是青春期延迟",
-        "medicalRapidProgress": "发育进展过快（1年内跨越2个分期）或伴随身高增长加速",
-        "medicalBoneAge": "建议配合骨龄检查评估发育进程",
         "confirm": "我知道了"
       }
     },
-    "action": {
-      "collapse": "收起",
-      "expand": "展开",
-      "steps": "步骤"
-    },
-    "guidePanel": {
-      "aiDescription": "{{childName}}（{{ageLabel}}，{{gender}}）的发育指导",
-      "askAdvisor": "向 Advisor 提问",
-      "actionSteps": "具体做法",
-      "resources": "参考资源",
-      "resourcePrefix": "📖",
-      "whenPrefix": "什么时候做：",
-      "titleWithAssessment": "当前阶段指导",
-      "titleWithoutAssessment": "按年龄推荐",
-      "subtitle": "{{stageTitle}} · 基于{{mode}}给出可执行建议",
-      "modeStage": "评估分期",
-      "modeAge": "年龄",
-      "commonWindow": "该阶段常见窗口：{{primary}}；阴毛：{{pubicHair}}",
-      "menarcheOccurredWithDate": "已初潮 · {{date}}",
-      "progressionFast": "观察到近 12 个月分期进展较快（≥2 期），建议咨询专业人士",
-      "progressionStable": "近 12 个月分期进展平稳",
-      "nextStageTitle": "下一阶段预告"
-    },
     "referenceNotes": {
-      "title": "参考文献标注",
-      "a": "[A] 中华医学会儿科学分会内分泌遗传代谢学组. 中枢性性早熟诊断与治疗专家共识（2022）",
-      "b": "[B] 中国居民膳食营养素参考摄入量（2023版）",
-      "c": "[C] Marshall WA, Tanner JM. Variations in pattern of pubertal changes.",
-      "d": "[D] Rosenfield RL, Cooke DW, Radovick S. Puberty and its disorders.",
       "disclaimer": "以上内容仅作家庭观察和沟通参考，不能替代医生诊断。"
     },
     "form": {
@@ -4108,7 +4079,7 @@
       "boneAgePlaceholder": "如：11.5",
       "bodyFat": "体脂率（可选）",
       "bodyFatPlaceholder": "如：18.5",
-      "menarcheStatus": "是否已初潮",
+      "menarcheStatus": "是否已初潮（选填）",
       "menarcheNotYet": "未初潮",
       "menarcheOccurred": "已初潮",
       "menarcheDate": "初潮日期",
@@ -4124,463 +4095,155 @@
       "physician": "医生评估"
     },
     "timeline": {
-      "emptyTitle": "还没有评估记录",
-      "emptySubtitle": "添加第一次评估后，系统会根据阶段给出更精确的提醒",
-      "secondaryWithAssessor": "{{age}} · {{assessor}}",
       "breastStage": "乳房分期",
       "genitalStage": "外生殖器分期",
       "pubicHairStage": "阴毛分期",
-      "changed": "有变化",
       "menarcheOccurred": "已初潮",
       "menarcheOccurredWithDate": "已初潮 · {{date}}",
-      "notesPrefix": "备注："
+      "yearDivider": "{{year}} 年"
     },
     "overview": {
-      "boneAgeMatched": "骨龄匹配",
-      "boneAgeAhead": "骨龄提前 {{years}} 岁",
-      "boneAgeBehind": "骨龄较实际年龄小 {{years}} 岁",
-      "boneAgeDeviationLarge": "骨龄偏差超过 ±2 年，建议咨询内分泌科",
-      "boneAgeCaption": "骨龄与实际年龄差 ±1 年内为常见范围，仅供参考",
       "boneAge": "骨龄",
       "bodyFat": "体脂率",
-      "bodyFatDelta": "较上次 {{delta}}",
       "height": "身高",
-      "heightVelocity": "记录显示近 {{months}} 个月身高增长 {{delta}} cm（年化约 {{annualized}} cm）",
-      "heightVelocityInsufficient": "身高记录不足，暂无法计算增速",
       "heightGrowthCurveLink": "查看生长曲线"
     },
     "stage": {
       "breast": {
         "1": {
           "title": "B1 · 青春前期",
-          "desc": "仅乳头稍隆起，无乳房组织发育，与幼儿期相同。",
-          "howToJudge": "👀 观察：胸部完全平坦，和小时候一样。用手轻触乳头下方无硬块。"
+          "desc": "仅乳头稍隆起，无乳房组织发育，与幼儿期相同。"
         },
         "2": {
           "title": "B2 · 花蕾期",
-          "desc": "乳头下方出现小硬块（如硬币大小），乳晕略增大。这是青春期第一个信号。",
-          "howToJudge": "👆 触诊：用指腹轻按乳头下方，能摸到一个硬硬的小结节（约1-2cm）。乳晕比之前颜色略深、直径稍大。⚠️ 8岁前出现需就医排查性早熟。"
+          "desc": "乳头下方出现小硬块（如硬币大小），乳晕略增大。这是青春期第一个信号。"
         },
         "3": {
           "title": "B3 · 发育中期",
-          "desc": "乳房明显隆起，从侧面看超出胸壁，但乳晕和乳房是一个整体圆弧。",
-          "howToJudge": "👀 侧面观察：从侧面看，乳房已经明显突出胸壁。但乳晕还没有从乳房上\"鼓出来\"，整体是一个光滑的圆弧。"
+          "desc": "乳房明显隆起，从侧面看超出胸壁，但乳晕和乳房是一个整体圆弧。"
         },
         "4": {
           "title": "B4 · 乳晕突出",
-          "desc": "乳晕和乳头形成第二个小丘，像\"小山上的小山\"一样突出于乳房。",
-          "howToJudge": "👀 正面观察：从正面看，乳晕区域像一个小圆盘一样从乳房上凸起，形成了\"两层\"的外观。不是所有女孩都会经历此期。"
+          "desc": "乳晕和乳头形成第二个小丘，像\"小山上的小山\"一样突出于乳房。"
         },
         "5": {
           "title": "B5 · 成熟期",
-          "desc": "乳房呈成人形态，乳晕回缩与乳房融为一体，仅乳头突出。",
-          "howToJudge": "👀 观察：乳房呈完全成熟的圆润外形。B4时凸出的乳晕已回缩，与乳房表面融为一体，仅乳头突出。"
+          "desc": "乳房呈成人形态，乳晕回缩与乳房融为一体，仅乳头突出。"
         }
       },
       "genital": {
         "1": {
           "title": "G1 · 青春前期",
-          "desc": "睾丸、阴囊和阴茎与幼儿期相同。睾丸容积<4ml。",
-          "howToJudge": "📏 参照物：睾丸大小接近一颗花生米（长径<2.5cm，约1-3ml）。阴囊皮肤颜色浅，质感与身体其他部位一致。"
+          "desc": "睾丸、阴囊和阴茎与幼儿期相同。睾丸容积<4ml。"
         },
         "2": {
           "title": "G2 · 早期",
-          "desc": "睾丸开始增大（容积≥4ml），这是男孩青春期的第一个信号。阴茎尚无明显变化。",
-          "howToJudge": "📏 参照物：睾丸从\"花生米\"长到约\"葡萄\"大小（长径约2.5-3cm，约4-6ml）。阴囊皮肤开始变薄、发红。阴茎本身还没变长。⚠️ 9岁前出现需就医排查性早熟。"
+          "desc": "睾丸开始增大（容积≥4ml），这是男孩青春期的第一个信号。阴茎尚无明显变化。"
         },
         "3": {
           "title": "G3 · 发育中期",
-          "desc": "阴茎开始变长（但还不太粗），睾丸继续增大（约8-10ml）。",
-          "howToJudge": "📏 参照物：睾丸约\"龙眼/樱桃\"大小（长径约3-3.5cm，约8-10ml）。阴茎明显比之前长了，但粗细变化不大。"
+          "desc": "阴茎开始变长（但还不太粗），睾丸继续增大（约8-10ml）。"
         },
         "4": {
           "title": "G4 · 接近成熟",
-          "desc": "阴茎进一步增长并变粗，龟头发育明显。睾丸约12-15ml。",
-          "howToJudge": "📏 参照物：睾丸约\"板栗\"大小（长径约4-4.5cm，约12-15ml）。阴茎不仅变长还明显变粗。龟头轮廓清晰可见。阴囊颜色明显加深。"
+          "desc": "阴茎进一步增长并变粗，龟头发育明显。睾丸约12-15ml。"
         },
         "5": {
           "title": "G5 · 成熟期",
-          "desc": "外生殖器达到成人大小。睾丸容积约15-25ml。",
-          "howToJudge": "📏 参照物：睾丸约\"大枣/鸽子蛋\"大小（长径约4.5-5cm，约15-25ml）。外生殖器整体外观与成人一致。"
+          "desc": "外生殖器达到成人大小。睾丸容积约15-25ml。"
         }
       },
       "pubicHairFemale": {
         "1": {
           "title": "PH1 · 无阴毛",
-          "desc": "阴部区域无阴毛，仅有类似腹部的细绒毛。",
-          "howToJudge": "👀 观察：和小时候一样，只有细小的绒毛（\"胎毛\"），颜色很浅，肉眼几乎看不到。"
+          "desc": "阴部区域无阴毛，仅有类似腹部的细绒毛。"
         },
         "2": {
           "title": "PH2 · 稀疏出现",
-          "desc": "出现少量略长的毛发，通常在大阴唇边缘，颜色略深。",
-          "howToJudge": "👀 观察：能看到几根到十几根比较长的、颜色稍深的毛发。通常是直的或微微弯曲，主要在大阴唇边缘。"
+          "desc": "出现少量略长的毛发，通常在大阴唇边缘，颜色略深。"
         },
         "3": {
           "title": "PH3 · 增多变粗",
-          "desc": "毛发明显变多变粗变卷，颜色加深，开始向耻骨联合（小腹下方正中）扩展。",
-          "howToJudge": "👀 观察：毛发已经够多，可以用\"一小撮\"来形容。开始卷曲，颜色明显是深色的。分布范围向小腹下方扩展。"
+          "desc": "毛发明显变多变粗变卷，颜色加深，开始向耻骨联合（小腹下方正中）扩展。"
         },
         "4": {
           "title": "PH4 · 接近成人",
-          "desc": "毛发质地接近成人，粗而卷曲，覆盖范围较大，但尚未达到大腿内侧。",
-          "howToJudge": "👀 观察：毛发已经很浓密，质感像成人的阴毛一样粗硬卷曲。但分布范围还没有到大腿根部内侧。"
+          "desc": "毛发质地接近成人，粗而卷曲，覆盖范围较大，但尚未达到大腿内侧。"
         },
         "5": {
           "title": "PH5 · 成人型",
-          "desc": "毛发呈成人分布型，延伸至大腿内侧，呈倒三角分布。",
-          "howToJudge": "👀 观察：毛发分布范围和密度与成人一致。已经延伸到大腿内侧根部。"
+          "desc": "毛发呈成人分布型，延伸至大腿内侧，呈倒三角分布。"
         }
       },
       "pubicHairMale": {
         "1": {
           "title": "PH1 · 无阴毛",
-          "desc": "阴部区域无阴毛，仅有类似腹部的细绒毛。",
-          "howToJudge": "👀 观察：和小时候一样，只有细小的绒毛（\"胎毛\"），颜色很浅，肉眼几乎看不到。"
+          "desc": "阴部区域无阴毛，仅有类似腹部的细绒毛。"
         },
         "2": {
           "title": "PH2 · 稀疏出现",
-          "desc": "出现少量略长的毛发，通常在阴茎根部，颜色略深。",
-          "howToJudge": "👀 观察：能看到几根到十几根比较长的、颜色稍深的毛发。通常是直的或微微弯曲，主要在阴茎根部。"
+          "desc": "出现少量略长的毛发，通常在阴茎根部，颜色略深。"
         },
         "3": {
           "title": "PH3 · 增多变粗",
-          "desc": "毛发明显变多变粗变卷，颜色加深，开始向耻骨联合（小腹下方正中）扩展。",
-          "howToJudge": "👀 观察：毛发已经够多，可以用\"一小撮\"来形容。开始卷曲，颜色明显是深色的。分布范围向小腹下方扩展。"
+          "desc": "毛发明显变多变粗变卷，颜色加深，开始向耻骨联合（小腹下方正中）扩展。"
         },
         "4": {
           "title": "PH4 · 接近成人",
-          "desc": "毛发质地接近成人，粗而卷曲，覆盖范围较大，但尚未达到大腿内侧。",
-          "howToJudge": "👀 观察：毛发已经很浓密，质感像成人的阴毛一样粗硬卷曲。但分布范围还没有到大腿根部内侧。"
+          "desc": "毛发质地接近成人，粗而卷曲，覆盖范围较大，但尚未达到大腿内侧。"
         },
         "5": {
           "title": "PH5 · 成人型",
-          "desc": "毛发呈成人分布型，延伸至大腿内侧，呈菱形分布。",
-          "howToJudge": "👀 观察：毛发分布范围和密度与成人一致。已经延伸到大腿内侧根部。"
+          "desc": "毛发呈成人分布型，延伸至大腿内侧，呈菱形分布。"
         }
       }
     },
-    "guidance": {
-      "section": {
-        "physical": "身体发育",
-        "psychological": "心理引导",
-        "nutrition": "营养建议",
-        "checkups": "检查建议",
-        "parentTips": "家长提示"
-      },
-      "female": {
-        "1": {
-          "title": "青春前期（B1/PH1）"
-        },
-        "2": {
-          "title": "青春期启动（B2）— 关键时期"
-        },
-        "3": {
-          "title": "快速发育期（B3）"
-        },
-        "4": {
-          "title": "接近成熟（B4）"
-        },
-        "5": {
-          "title": "发育成熟（B5/PH5）"
-        }
-      },
-      "male": {
-        "1": {
-          "title": "青春前期（G1/PH1）"
-        },
-        "2": {
-          "title": "青春期启动（G2）— 关键时期"
-        },
-        "3": {
-          "title": "快速发育期（G3）"
-        },
-        "4": {
-          "title": "接近成熟（G4）"
-        },
-        "5": {
-          "title": "发育成熟（G5/PH5）"
-        }
-      },
-      "item": {
-        "femalePrepubertalSleepExercise": "保持充足睡眠（6-12岁推荐9-12小时/天）和适量运动 [B]",
-        "growthVelocityWindow": "关注身高增长速度，青春期前是追赶生长的最后窗口 [C]",
-        "bodyBasicsBooks": "可以开始用绘本或适龄读物做基础的身体认知教育",
-        "openCommunicationFull": "建立开放的亲子沟通习惯，让孩子知道身体变化是正常的",
-        "calcium4To10": "钙推荐：4-10岁 600mg/d，11岁起 800mg/d [B]",
-        "vitaminDWithTest": "维生素D：10μg(400IU)/d，建议检测25-OH-VD [B]",
-        "avoidSugarFatPrecocious": "避免高糖高油高热量食物，肥胖可能导致性早熟 [A]",
-        "femaleEarlyBreastCheck": "女孩7.5岁前出现乳房发育需排查性早熟 [A]",
-        "routineGrowthCurveCheck": "常规体检关注身高体重曲线",
-        "dietHabitFoundation": "不要因为\"还小\"就忽视饮食习惯的建立",
-        "reduceBpa": "注意减少环境中内分泌干扰物暴露（如BPA）",
-        "femaleGrowthSpurtStarting": "青春期生长突增即将开始 [C]",
-        "trainingBra": "可以开始穿发育期内衣保护乳房",
-        "pubertyDuration": "性发育全程约3-4年，每个分期约持续1年 [A]",
-        "femalePubertyEducation": "开展青春期教育：月经、身体变化、隐私保护",
-        "hormoneMoodNormal": "情绪波动是荷尔蒙变化的正常反应 [C]",
-        "bodyPrivacyProtection": "教会孩子保护身体隐私",
-        "femaleIronPreparation": "铁的需求开始增加（为月经做准备）[B]",
-        "calcium11": "钙推荐：11岁起 800mg/d [B]",
-        "femaleProtein10To12": "蛋白质：10-11岁 50g/d，12岁起 60g/d [B]",
-        "boneAgeAdultHeight": "建议做骨龄检查，评估发育进程和成年身高预测 [A]",
-        "femaleB2TimingReferral": "若B2出现<7.5岁或>13岁，需内分泌科就诊 [A]",
-        "heightEveryHalfYear": "每半年测量身高，记录生长速度",
-        "femalePubertyStartWindow": "这是青春期起点，未来3-4年身体会发生很大变化 [A]",
-        "menarcheAfterB2": "月经通常在B2后约2-3年到来 [C]",
-        "prepareMenstrualSupplies": "提前准备卫生巾等月经用品",
-        "femalePhvBeforeMenarche": "身高生长速度达峰值(PHV)，通常在初潮前约1年 [C]",
-        "femaleFatRedistribution": "体脂开始重新分布，臀部和大腿变丰满 [C]",
-        "healthyBodyImage": "关注外貌是正常的，引导健康的身体形象认知",
-        "peerComparisonMood": "可能出现更明显的情绪波动、与同伴比较",
-        "ironCalciumZincVitaminD": "铁、钙、锌、维生素D是重点营养素 [B]",
-        "avoidDieting": "避免节食减肥，保证营养质量",
-        "menarcheSoon": "月经初潮可能在未来6-12个月内到来 [C]",
-        "earlyMenstrualIrregular": "初潮后前1-2年月经不规律属正常",
-        "menstrualEmergencyKit": "准备\"月经急救包\"放书包（卫生巾+内裤+湿巾）",
-        "talkMenstruationFear": "和孩子谈月经知识，消除恐惧感",
-        "menarcheAroundB4": "大部分女孩在此阶段前后出现月经初潮 [C]",
-        "postMenarcheGrowthSlow": "初潮后身高增长减慢 [C]",
-        "bodyShapeMaturing": "体型趋于成熟",
-        "selfAwarenessBodyAnxiety": "自我意识增强，可能出现身体焦虑",
-        "bodyFunctionFocus": "引导关注身体功能而非外观",
-        "menstrualIron": "月经期注意补铁（红肉、动物肝脏）[B]",
-        "balancedNoTonic": "保持均衡饮食，不建议额外\"进补\"",
-        "irregular2YearsSeekCare": "初潮后2年月经仍很不规律建议就医",
-        "hpvTiming": "关注HPV疫苗接种时机",
-        "crampsWarmRest": "月经疼痛常见，适度热敷和休息即可",
-        "openDialogue": "保持开放对话",
-        "developmentMostlyCompleteFemale": "身体发育基本完成，身高增长接近停止 [C]",
-        "cycleRegularizing": "月经逐渐规律化",
-        "moodStabilizing": "青春期情绪波动逐渐稳定",
-        "positiveBodyImageConfidence": "帮助建立积极的身体形象和自信",
-        "maintenanceNutritionCalciumIron": "转为维持性营养，继续保证钙和铁摄入 [B]",
-        "annualCheckup": "常规年度体检",
-        "abnormalMenstrualCare": "月经异常（过多、过少、剧痛）及时就医",
-        "pubertyHardPartPassing": "青春期的\"难\"即将过去，给彼此一些肯定",
-        "maleSleepExercise": "保持充足睡眠（6-12岁推荐9-12小时/天）和运动 [B]",
-        "maleGrowthSpurtLater": "男孩青春期生长突增比女孩晚约1-2年 [D]",
-        "basicBodyEducation": "可以开始基础的身体认知教育",
-        "openCommunicationHabit": "建立开放的亲子沟通习惯",
-        "vitaminD": "维生素D：10μg(400IU)/d [B]",
-        "avoidHighCaloriePubertyTiming": "避免高热量食物，肥胖可能影响青春期启动时间 [A]",
-        "maleEarlyTestisCheck": "男孩9岁前出现睾丸增大需排查性早熟 [A]",
-        "malePubertyLaterNoAnxiety": "男孩青春期通常比女孩晚1-2年开始，不必焦虑 [D]",
-        "reduceEndocrineDisruptors": "注意减少环境中内分泌干扰物暴露",
-        "testicularEnlargementFirstSignal": "睾丸增大（≥4ml）是男孩青春期第一个信号 [D]",
-        "maleGrowthSpurtAfterG2": "身高突增通常在G2后1-2年开始 [D]",
-        "pubertyDurationMale": "性发育全程约3-4年，每个分期约1年 [A]",
-        "malePubertyEducation": "开展青春期教育：身体变化、遗精、隐私 [A]",
-        "maleBodyCuriosityAnxiety": "可能出现对身体变化的好奇和不安",
-        "maleProteinIncrease": "蛋白质需求增加：10-11岁 50g/d，12岁起 65g/d [B]",
-        "zincImportant": "锌很重要：8-10mg/d（海鲜、瘦肉、坚果）[B]",
-        "boneAgeProgress": "建议做骨龄检查，评估发育进程 [A]",
-        "maleG2TimingReferral": "若G2出现<9岁或>14岁，需内分泌科就诊 [A]",
-        "heightEveryHalfYearShort": "每半年测量身高",
-        "maleMayNotInitiateTalk": "男孩可能不愿主动谈身体变化，家长需找合适时机",
-        "sameGenderCaregiver": "可选择同性家长沟通",
-        "onlineSearchGuidance": "关注孩子是否在网上搜索相关信息，引导正确认知",
-        "maleHeightRapidGrowth": "身高开始快速增长 [D]",
-        "voiceChanging": "声音开始变化（变声期）[D]",
-        "acneFirstEmission": "可能出现痤疮和首次遗精 [D]",
-        "moodIrritableWithdrawn": "情绪波动加剧，可能变得易怒或沉默",
-        "curiosityTowardOppositeSex": "对异性的好奇是正常的",
-        "strongerSelfEsteemCommunication": "自尊心变强，注意交流方式",
-        "higherEnergyProtein": "热量和蛋白质需求显著增加 [B]",
-        "doNotRestrictCarbs": "不要刻意限制主食（碳水供能）",
-        "milkSoyCalcium": "牛奶/豆浆补钙 [B]",
-        "scoliosisRapidGrowth": "关注脊柱侧弯（快速生长期高发）",
-        "severeAcneDermatology": "痤疮严重时就诊皮肤科",
-        "nocturnalEmissionNormal": "遗精是正常现象，提前告知避免恐慌 [D]",
-        "faceCleaningAcne": "教会面部清洁预防痤疮",
-        "exerciseGrowthHormone": "适量运动有助于生长激素分泌",
-        "malePhv": "身高生长速度达峰值(PHV) [D]",
-        "muscleMassIncrease": "肌肉量明显增加 [D]",
-        "bodyHairVoiceDeep": "体毛（腋毛、胡须）出现，声音完全变粗 [D]",
-        "independence": "独立意识增强",
-        "autonomyWithBoundaries": "需要更多自主空间但也需要边界",
-        "protein15To17": "蛋白质：15-17岁 75g/d [B]",
-        "sportsCarbsWater": "运动量大需更多碳水和水分",
-        "spinePostureMonitor": "持续关注脊柱姿态",
-        "sportsInjuryPrevention": "运动损伤预防（骨骺尚未闭合）",
-        "privacyOpenDoor": "尊重隐私，保持\"门开着\"的沟通姿态",
-        "sexEducationValues": "引导正确的性知识和价值观",
-        "developmentMostlyCompleteMale": "身体发育基本完成，身高增长接近停止（骨骺闭合）[D]",
-        "muscleFilling": "肌肉继续充实",
-        "identityBuilding": "自我认同感逐步建立",
-        "maintenanceBalanced": "转为维持性营养，保持均衡饮食 [B]",
-        "maintainParentChildRelationship": "继续保持良好的亲子关系"
-      },
-      "detail": {
-        "bodyBasicsBooks": {
-          "steps": {
-            "1": "洗澡时自然地教孩子认识身体部位的正确名称",
-            "2": "用\"泳衣规则\"教隐私：泳衣覆盖的部位别人不能碰",
-            "3": "阅读适龄绘本，不需一次讲完，日常中自然带入"
-          },
-          "resources": {
-            "1": "绘本推荐：《我们的身体》《小威向前冲》《不要随便摸我》",
-            "2": "动画：《丁丁豆豆成长记》"
-          },
-          "when": "日常洗澡、换衣服、亲子阅读时"
-        },
-        "openCommunication": {
-          "steps": {
-            "1": "用\"你有没有注意到...\"开启话题，不要等孩子问",
-            "2": "回答问题时用正确的名称，不回避不尴尬",
-            "3": "告诉孩子\"任何关于身体的问题都可以问爸爸妈妈\""
-          },
-          "when": "不要专门\"开会\"讲，利用自然场景（看电视、同学聊天后）"
-        },
-        "femalePubertyEducation": {
-          "steps": {
-            "1": "女孩：解释月经是什么、为什么会来、怎么用卫生巾",
-            "2": "教会使用卫生巾/护垫，可以在家先练习",
-            "3": "谈谈内衣选择和胸部发育是正常的",
-            "4": "强调这些都是长大的标记，不需要害羞或害怕"
-          },
-          "resources": {
-            "1": "绘本推荐：《女孩的秘密书》《你的身体在说话》",
-            "2": "APP：美柚（适合大孩子自己记录月经）"
-          },
-          "when": "B2出现后尽快开始，不要等到月经来了才讲"
-        },
-        "malePubertyEducation": {
-          "steps": {
-            "1": "告诉孩子身体变化（变声、长胡子、长高）都是正常的",
-            "2": "解释遗精：夜里内裤湿了是身体开始成熟的信号，不是生病",
-            "3": "教会正确清洗和更换内裤的习惯",
-            "4": "谈论隐私保护和尊重他人的身体"
-          },
-          "resources": {
-            "1": "书籍推荐：《男孩的冒险书》《青春期男孩说明书》"
-          },
-          "when": "G2出现后，找一个轻松的时间（如散步、开车时），不要正式\"开会\""
-        },
-        "calcium4To10": {
-          "steps": {
-            "1": "每天1-2杯牛奶/酸奶（250ml牛奶≈300mg钙）",
-            "2": "豆腐、虾皮、芝麻酱也是好的钙来源",
-            "3": "不需要额外吃钙片，食补为主"
-          },
-          "when": "早餐+睡前各一杯奶最方便"
-        },
-        "vitaminDWithTest": {
-          "steps": {
-            "1": "每天户外活动至少1小时（即使阴天也有效）",
-            "2": "如日晒不足可补充维生素D滴剂（400IU/天）",
-            "3": "建议每年体检时查一次血清25-OH-VD水平",
-            "4": "达标值：>20ng/mL（充足>30ng/mL）"
-          },
-          "when": "冬季、雾霾天、户外活动少时更需要关注"
-        },
-        "femaleIronPreparation": {
-          "steps": {
-            "1": "每周吃2-3次红肉（牛肉、猪瘦肉）",
-            "2": "动物肝脏每周1次（鸡肝/猪肝25-50g）",
-            "3": "深色蔬菜（菠菜、木耳）搭配维C水果促进吸收",
-            "4": "不要和牛奶/茶/咖啡同时吃，会影响铁吸收"
-          }
-        },
-        "boneAge": {
-          "steps": {
-            "1": "到医院内分泌科或儿保科挂号",
-            "2": "拍左手手腕X光片（一张片子，辐射量极小）",
-            "3": "医生会对比标准图谱，读出骨龄",
-            "4": "骨龄-年龄差>1年需要关注"
-          },
-          "when": "青春期启动时做第一次，之后每年复查一次"
-        },
-        "femaleEarlyBreastCheck": {
-          "steps": {
-            "1": "先确认是否真的乳房发育（触诊有硬块）而非单纯肥胖",
-            "2": "挂号：儿童内分泌科",
-            "3": "医生可能安排：骨龄片、性激素六项、B超",
-            "4": "如确诊中枢性性早熟，GnRHa治疗越早效果越好 [A]"
-          },
-          "when": "发现乳房变化后尽快就医，不要\"再观察看看\""
-        },
-        "maleEarlyTestisCheck": {
-          "steps": {
-            "1": "判断标准：睾丸容积≥4ml或长径≥2.5cm [A]",
-            "2": "挂号：儿童内分泌科",
-            "3": "医生会做激发试验和影像检查",
-            "4": "男孩性早熟比女孩少见，但更需要排查病因 [A]"
-          },
-          "when": "发现变化后尽快就医"
-        },
-        "menarcheAfterB2": {
-          "steps": {
-            "1": "B2（乳房开始发育）后约2-3年出现月经初潮",
-            "2": "初潮年龄通常在9-15岁之间",
-            "3": "初潮前1年身高增长最快，初潮后增长减慢",
-            "4": "提前准备好卫生巾，教会使用方法"
-          },
-          "resources": {
-            "1": "准备\"月经急救包\"放书包：2片日用卫生巾+1条内裤+湿巾+密封袋"
-          },
-          "when": "B2出现后就可以开始准备"
-        },
-        "nocturnalEmissionNormal": {
-          "steps": {
-            "1": "告诉孩子：睡觉时内裤湿了是身体成熟的正常信号",
-            "2": "不是\"做了坏事\"，不需要害羞",
-            "3": "教会自己换洗内裤和清洁",
-            "4": "如果孩子不好意思说，可以放一条干净内裤在床边"
-          },
-          "when": "G3之前就应该谈到，不要等孩子自己发现后恐慌"
-        },
-        "menstrualIron": {
-          "steps": {
-            "1": "月经期每周安排 2-3 次红肉（牛肉、猪瘦肉），每次约 50-75g",
-            "2": "动物肝脏每周 1 次（鸡肝/猪肝 25-50g），搭配深色蔬菜",
-            "3": "餐后搭配富含维 C 的水果（橙子、猕猴桃）促进铁吸收",
-            "4": "避免与浓茶、咖啡同餐，会影响铁吸收"
-          },
-          "when": "月经期间及月经后一周是补铁的重点时段"
-        },
-        "irregular2YearsSeekCare": {
-          "steps": {
-            "1": "初潮后 1-2 年周期不规律很常见，可先用日历记录每次月经日期",
-            "2": "观察到周期持续短于 21 天或长于 45 天、或经期超过 8 天时，做好记录",
-            "3": "若初潮满 2 年后观察到周期仍很不规律，建议咨询专业人士",
-            "4": "就诊时带上月经记录，便于医生了解情况"
-          },
-          "when": "初潮后持续观察，满 2 年仍不规律时"
-        },
-        "hpvTiming": {
-          "steps": {
-            "1": "HPV 疫苗通常建议 9-14 岁女孩尽早接种，越早保护效果越好",
-            "2": "可咨询社区卫生服务中心或儿保门诊，了解可接种的价型与程序",
-            "3": "接种前告知医生孩子的健康状况与既往接种史"
-          },
-          "when": "9 岁起即可规划，建议尽早咨询接种门诊"
-        },
-        "crampsWarmRest": {
-          "steps": {
-            "1": "经期下腹轻度不适很常见，可用热水袋隔衣热敷小腹（注意防烫）",
-            "2": "保证休息和睡眠，避免剧烈运动，温和散步可能有助于缓解",
-            "3": "喝温水、注意保暖，避免生冷饮食",
-            "4": "若疼痛影响到上学和日常活动，建议咨询专业人士"
-          }
-        },
-        "growthVelocityWindow": {
-          "steps": {
-            "1": "每 3-6 个月在同一时段测量身高，并记录到生长曲线",
-            "2": "青春期前观察到每年增长约 5-6 cm 是常见节奏，个体差异较大",
-            "3": "青春期启动后身高进入快速增长期，之后逐渐减慢",
-            "4": "若观察到连续一年增长明显偏少，建议咨询专业人士评估"
-          }
-        },
-        "scoliosisRapidGrowth": {
-          "steps": {
-            "1": "快速生长期可每月观察一次：让孩子自然站立，从背后看两肩是否等高",
-            "2": "前屈观察：双腿伸直向前弯腰 90°，看背部两侧是否对称",
-            "3": "观察到双肩不等高或背部一侧隆起时，建议咨询专业人士进一步检查",
-            "4": "日常注意坐姿，书包双肩交替背负，避免长期单侧负重"
-          },
-          "when": "身高快速增长期（女孩 B3 前后、男孩 G3 前后）每月观察"
-        }
-      }
+    "redesign": {
+      "emptyTitle": "还没有青春期发育记录",
+      "emptyDescription": "保存已有评估结果和观察备注，方便以后回看变化。当前没有分期记录，暂不能展示孩子的发育阶段。",
+      "firstRecord": "添加首次记录",
+      "howToRecord": "如何记录",
+      "latest": "最近一次记录",
+      "history": "历史记录",
+      "datedRecord": "以上为该日期的记录，不代表对孩子当前发育阶段的判断。两项分期分别记录，不合并为总分。",
+      "saved": "记录已保存。",
+      "loading": "正在读取发育记录…",
+      "loadError": "暂时无法读取发育记录，请重试。",
+      "retry": "重试",
+      "unrecorded": "未记录",
+      "assessorMissing": "评估者未记录",
+      "measurements": "相关生长数据",
+      "noMeasurements": "还没有相关生长数据。已有的身高、骨龄和体脂率记录会显示在这里。",
+      "heightDelta": "较 {{from}} {{delta}} cm",
+      "guideIntro": "了解青春期的身体变化，以及如何陪伴孩子。以下为通用知识，不代表对孩子发育阶段的判断。",
+      "recordStep1": "先选择评估日期和评估者，区分医生评估、家长观察和自评。",
+      "recordStep2": "按已有评估结果分别选择两项分期。没有把握时先向专业人士确认，不把“未记录”填写成第 1 期。",
+      "recordStep3": "可补充初潮信息、已有测量结果及观察备注。保存后，记录会按评估日期排列。",
+      "stages": "了解 Tanner 分期",
+      "stageReferenceOnly": "以下为分期定义，供阅读理解；浏览某一期不会改变孩子的记录。",
+      "communication": "如何与孩子谈身体变化",
+      "communicationBody": "先听孩子的问题，用平实的语言回应。尊重孩子的隐私与意愿，记录前说明用途，避免与其他孩子比较；允许孩子表达困惑或暂时不想谈。",
+      "professional": "何时向专业人士确认",
+      "professionalBody": "对分期没有把握、对身体变化有疑问，或孩子表达身体不适时，可带上相关日期、观察备注和已有记录，咨询专业人士。是否需要检查，应由专业人士结合实际情况判断。",
+      "formIntro": "请根据已有评估结果明确选择两项分期，不确定时先咨询专业人士。初潮信息和相关测量可以留空。",
+      "selectStages": "请分别选择两项分期；不确定时请先确认，不要用第 1 期代替。",
+      "invalidDate": "评估日期应在出生日期至今天之间。",
+      "invalidMenarcheDate": "请填写初潮日期，日期应在出生日期至本次评估日期之间。",
+      "invalidMeasurement": "请填写有效的正数测量值，体脂率不能超过 100%。",
+      "saveError": "保存失败，填写内容已保留，请重试。",
+      "partialSaveError": "部分记录已保存，后续步骤未完成。已保存内容已锁定；点击保存继续，不会重复提交已成功的记录。",
+      "trendTitle": "记录中观察到的变化",
+      "trendWatch": "{{axis}}：{{from}} 至 {{to}}，记录从第 {{previous}} 期变为第 {{latest}} 期。该变化达到 12 个月内增加至少 2 期的关注条件，建议携带记录咨询专业人士。",
+      "explainRecords": "请 AI 整理记录",
+      "hideAI": "收起 AI 整理",
+      "recordGuideIntro": "将已有评估结果保存为记录，方便日后按日期回看。填写时请注意以下三点。"
+    },
+    "entryGuide": {
+      "title": "青春期发育录入指引",
+      "support": "沟通与专业支持",
+      "close": "关闭录入指引",
+      "previous": "上一步",
+      "next": "下一步"
     }
   },
   "Dental": {
@@ -4984,8 +4647,7 @@
       "rightIop": "右眼眼压",
       "leftIop": "左眼眼压",
       "hyperopiaReserve": "远视储备",
-      "ageMonthsAxis": "月龄",
-      "ageMonthsTooltip": "{{months}} 个月",
+      "ageAxis": "年龄",
       "sameAgeReferenceRange": "同龄参考范围",
       "sameAgeMedianP50": "同龄中位 P50",
       "sameAgeCriticalP75": "同龄临界 P75",
@@ -5025,7 +4687,8 @@
       "myopia": "近视",
       "recorded": "已记录",
       "standard": "达标",
-      "observe": "观察"
+      "observe": "观察",
+      "overCritical": "超临界"
     },
     "pupil": {
       "undilated": "小瞳",
@@ -5669,12 +5332,12 @@
       "tabDuration": "睡眠时长",
       "tabBedtime": "入睡时间",
       "tabWake": "起床时间",
-      "avg7d": "近7天平均 {{value}}",
-      "avgBedtime7d": "近7天平均入睡 {{value}}",
-      "avgWake7d": "近7天平均起床 {{value}}"
+      "avgRecent": "最近7次记录平均 {{value}}",
+      "avgBedtimeRecent": "最近7次记录平均入睡 {{value}}",
+      "avgWakeRecent": "最近7次记录平均起床 {{value}}"
     },
     "overview": {
-      "title": "近7天",
+      "title": "最近7次记录",
       "avgTotal": "平均每日睡眠",
       "night": "夜间睡眠",
       "nap": "白天小睡",
