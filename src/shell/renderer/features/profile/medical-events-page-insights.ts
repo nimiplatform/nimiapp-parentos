@@ -19,7 +19,6 @@ export function useMedicalEventsInsights(
   child: MedicalEventsChildContext | undefined,
   events: MedicalEventRow[],
 ) {
-  const [showAnalysis, setShowAnalysis] = useState(false);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [eventAiLoading, setEventAiLoading] = useState<string | null>(null);
@@ -184,8 +183,6 @@ export function useMedicalEventsInsights(
 
   return {
     analysis,
-    showAnalysis,
-    setShowAnalysis,
     aiInsight,
     aiLoading,
     eventAiLoading,

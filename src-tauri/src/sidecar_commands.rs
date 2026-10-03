@@ -136,8 +136,8 @@ pub const PARENTOS_DIRECT_SIDECAR_COMMANDS: &[&str] = &[
     "get_vision_followup_settings",
     "set_vision_followup_settings",
     "clear_vision_followup_settings",
-    "export_structured_backup",
-    "import_structured_backup",
+    "export_complete_backup",
+    "restore_complete_backup",
     "db_init",
 ];
 
@@ -1429,14 +1429,8 @@ struct ClearVisionFollowupSettingsArgs {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct ExportStructuredBackupArgs {
-    exported_at: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct ImportStructuredBackupArgs {
-    envelope: queries::StructuredBackupEnvelope,
+struct BackupFileArgs {
+    path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2811,13 +2805,13 @@ pub fn dispatch_parentos_sidecar_command(
                 queries::clear_vision_followup_settings(args.child_id),
             )
         }
-        "export_structured_backup" => {
-            let args: ExportStructuredBackupArgs = parse_args(command, payload)?;
-            serialize_result(command, queries::export_structured_backup(args.exported_at))
+        "export_complete_backup" => {
+            let args: BackupFileArgs = parse_args(command, payload)?;
+            serialize_result(command, queries::export_complete_backup(args.path))
         }
-        "import_structured_backup" => {
-            let args: ImportStructuredBackupArgs = parse_args(command, payload)?;
-            serialize_result(command, queries::import_structured_backup(args.envelope))
+        "restore_complete_backup" => {
+            let args: BackupFileArgs = parse_args(command, payload)?;
+            serialize_result(command, queries::restore_complete_backup(args.path))
         }
         "db_init" => {
             let args: DbInitArgs = parse_args(command, payload)?;

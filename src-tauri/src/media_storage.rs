@@ -101,7 +101,7 @@ pub fn write_media_file(
     Ok(())
 }
 
-fn partition_size(root: &Path) -> Result<u64, String> {
+pub(crate) fn partition_size(root: &Path) -> Result<u64, String> {
     let mut pending = vec![root.to_path_buf()];
     let mut total = 0_u64;
     while let Some(directory) = pending.pop() {

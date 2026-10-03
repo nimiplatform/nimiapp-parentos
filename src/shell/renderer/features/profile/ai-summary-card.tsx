@@ -115,11 +115,10 @@ function buildPrompt(props: AISummaryCardProps): string {
 // Why a summary could not run. Configuration problems are only fixable in AI
 // settings (retrying fails again with the same reasonCode), so only host and
 // runtime failures offer retry.
-type AISummaryUnavailableReason = 'not-configured' | 'cloud-route' | 'host-absent' | 'runtime-failed';
+type AISummaryUnavailableReason = 'not-configured' | 'host-absent' | 'runtime-failed';
 
 const UNAVAILABLE_MESSAGE_KEYS: Record<AISummaryUnavailableReason, string> = {
   'not-configured': 'AISummary.unavailable.notConfigured',
-  'cloud-route': 'AISummary.unavailable.cloudRoute',
   'host-absent': 'AISummary.unavailable.hostAbsent',
   'runtime-failed': 'AISummary.unavailable.runtimeFailed',
 };
@@ -131,8 +130,6 @@ function unavailableReasonOf(error: unknown): AISummaryUnavailableReason {
   switch (reasonCode) {
     case 'parentos-ai-capability-not-configured':
       return 'not-configured';
-    case 'parentos-ai-cloud-route-not-admitted':
-      return 'cloud-route';
     case 'nimi-shell-runtime-bridge-unavailable':
       return 'host-absent';
     default:
@@ -147,7 +144,7 @@ function AISummaryUnavailableActions({
   reason: AISummaryUnavailableReason;
   onRetry: () => void;
 }) {
-  if (reason === 'not-configured' || reason === 'cloud-route') {
+  if (reason === 'not-configured') {
     return (
       <Button
         asChild
@@ -316,7 +313,7 @@ export function AISummaryCard(props: AISummaryCardProps) {
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
         <div className="flex min-w-[240px] flex-1 items-start gap-3.5">
           <span className="parentos-ai-summary-avatar">
-            {unavailableReason === 'not-configured' || unavailableReason === 'cloud-route' ? (
+            {unavailableReason === 'not-configured' ? (
               <ParentosAiMascotStatic size={44} />
             ) : (
               <ParentosAiMascotButton

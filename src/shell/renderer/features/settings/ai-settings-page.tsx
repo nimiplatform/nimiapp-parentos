@@ -14,11 +14,10 @@ import { Button, Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
 import { openDesktopIntent } from '@nimiplatform/kit/shell/renderer/bridge';
 import {
   readParentosAIConfig,
-  hasReadyParentosLocalCapability,
-  PARENTOS_AI_CAPABILITY_CONTRACTS,
+  hasReadyParentosCapability,
   type ParentosAIConfigSnapshot,
 } from './parentos-ai-config.js';
-import { ParentosLocalAIConfigEditor } from './parentos-local-ai-config-editor.js';
+import { ParentosAIConfigEditor } from './parentos-ai-config-editor.js';
 import {
   probeParentosNimiAccess,
   type ParentosNimiAccessPosture,
@@ -41,13 +40,6 @@ type ParentosAIFeatureStatus =
   | 'not-supported';
 
 const PARENTOS_APP_ID = 'nimi.parentos';
-
-const CAPABILITY_LABEL_KEYS: Readonly<Record<string, string>> = {
-  'text.generate': 'AISettings.declared.capabilities.textGenerate',
-  'audio.transcribe': 'AISettings.declared.capabilities.audioTranscribe',
-  'audio.synthesize': 'AISettings.declared.capabilities.audioSynthesize',
-  'image.generate': 'AISettings.declared.capabilities.imageGenerate',
-};
 
 const PARENTOS_AI_FEATURE_ROWS: readonly ParentosAIFeatureRow[] = [
   { labelKey: 'AISettings.features.advisor', supported: isParentosAISurfaceExecutable('parentos.advisor'), capabilityContract: 'text.generate' },
@@ -174,22 +166,24 @@ export default function AiSettingsPage() {
   const declaredCapabilities = aiConfig?.config?.capabilities ?? [];
   const editorCapabilities = aiConfig?.config?.capabilities
     ?? (aiConfigLoaded && (!aiConfigReasonCode || aiConfigReasonCode === 'ai-config-not-found') ? null : undefined);
-  const configuredLocalCapabilities = new Set(aiConfig ? declaredCapabilities
-    .filter((capability) => (
-      (capability.capabilityContract === 'text.generate' || capability.capabilityContract === 'audio.transcribe')
-      && hasReadyParentosLocalCapability(aiConfig, capability.capabilityContract)
-    ))
-    .map((capability) => capability.capabilityContract) : []);
-  const configuredCapabilities = new Set(declaredCapabilities.map(
-    (capability) => capability.capabilityContract,
+  const committedRoutes = new Map(declaredCapabilities.map(
+    (capability) => [capability.capabilityContract, capability.route.oneofKind] as const,
   ));
 
   const featureStatus = (row: ParentosAIFeatureRow): ParentosAIFeatureStatus => {
     if (!row.supported || row.capabilityContract === null) return 'not-supported';
     if (!posture || !aiConfigLoaded) return 'checking';
     if (!postureReady) return 'needs-access';
-    if (!configuredCapabilities.has(row.capabilityContract)) return 'needs-configuration';
-    return configuredLocalCapabilities.has(row.capabilityContract) ? 'available' : 'unavailable';
+    if (!committedRoutes.has(row.capabilityContract)) return 'needs-configuration';
+    return aiConfig && hasReadyParentosCapability(aiConfig, row.capabilityContract) ? 'available' : 'unavailable';
+  };
+
+  // Parents see where each feature's model runs, as chosen in AI models.
+  const featureRouteKey = (row: ParentosAIFeatureRow): string | null => {
+    const route = row.capabilityContract ? committedRoutes.get(row.capabilityContract) : undefined;
+    if (route === 'local') return 'AISettings.features.routeLocal';
+    if (route === 'cloud') return 'AISettings.features.routeCloud';
+    return null;
   };
 
   return (
@@ -300,60 +294,24 @@ export default function AiSettingsPage() {
           <p className="mt-0.5 text-[13px] leading-[1.6] text-[var(--nimi-text-muted)]">
             {i18nText('AISettings.declared.description')}
           </p>
-          <ParentosLocalAIConfigEditor
-            capabilityContracts={PARENTOS_AI_CAPABILITY_CONTRACTS}
-            snapshot={aiConfig}
-            configurationObserved={editorCapabilities !== undefined}
-            onOverwriteResult={(result) => {
-              setAiConfig({
-                config: result.config,
-                revision: result.revision,
-                effectiveSelections: [],
-              });
-              setAiConfigLoaded(true);
-              setAiConfigReasonCode(null);
-              void refresh();
-            }}
-            disabled={!postureReady}
-          />
-          <div className="mt-4 space-y-2">
-            {declaredCapabilities.map((capability) => {
-              const labelKey = CAPABILITY_LABEL_KEYS[capability.capabilityContract];
-              return (
-                <div
-                  key={capability.capabilityContract}
-                  className="flex items-center justify-between gap-3 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-medium text-[var(--nimi-text-primary)]">
-                      {labelKey ? t(labelKey) : capability.capabilityContract}
-                    </p>
-                    {labelKey ? (
-                      <p className="mt-0.5 font-mono text-[11px] text-[var(--nimi-text-muted)]">
-                        {capability.capabilityContract}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2.5">
-                    <span className="text-[12px] text-[var(--nimi-text-muted)]">
-                      {capability.route.oneofKind === 'local'
-                        ? t('AISettings.declared.routeLocal')
-                        : t('AISettings.declared.routeCloud')}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-[color-mix(in_srgb,var(--nimi-status-success)_26%,transparent)] bg-[color-mix(in_srgb,var(--nimi-status-success)_9%,var(--nimi-surface-card))] px-2.5 py-0.5 text-[12px] font-semibold text-[var(--nimi-status-success)]">
-                      <CheckCircle2 size={12} aria-hidden="true" />
-                      {t('AISettings.declared.statusConfigured')}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-            {aiConfigLoaded
-              && declaredCapabilities.length === 0
-              && (!aiConfigReasonCode || aiConfigReasonCode === 'ai-config-not-found') ? (
-                <p className="text-[13px] text-[var(--nimi-text-muted)]">{t('AISettings.declared.empty')}</p>
-              ) : null}
-          </div>
+          {!aiConfigLoaded || editorCapabilities !== undefined ? (
+            <ParentosAIConfigEditor
+              snapshot={aiConfig}
+              capabilities={editorCapabilities}
+              loading={!aiConfigLoaded}
+              disabled={!postureReady}
+              onOverwriteResult={(result) => {
+                setAiConfig({
+                  config: result.config,
+                  revision: result.revision,
+                  effectiveSelections: [],
+                });
+                setAiConfigLoaded(true);
+                setAiConfigReasonCode(null);
+                void refresh();
+              }}
+            />
+          ) : null}
           {aiConfigLoaded ? (
             <div className="mt-4 flex flex-col gap-3 border-t border-[var(--nimi-border-subtle)] pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[12px] leading-5 text-[var(--nimi-text-muted)]">
@@ -418,6 +376,7 @@ export default function AiSettingsPage() {
             {PARENTOS_AI_FEATURE_ROWS.map((row) => {
               const status = featureStatus(row);
               const available = status === 'available';
+              const routeKey = status === 'available' || status === 'unavailable' ? featureRouteKey(row) : null;
               return (
               <div
                 key={row.labelKey}
@@ -433,6 +392,11 @@ export default function AiSettingsPage() {
                   >
                     {t(featureStatusLabelKey(status))}
                   </span>
+                  {routeKey ? (
+                    <p className="mt-0.5 text-[11px] leading-4 text-[var(--nimi-text-muted)]">
+                      {t(routeKey)}
+                    </p>
+                  ) : null}
                   {status === 'not-supported' ? (
                     <p className="mt-0.5 text-[11px] leading-4 text-[var(--nimi-text-muted)]">
                       {t('AISettings.features.notSupportedHint')}

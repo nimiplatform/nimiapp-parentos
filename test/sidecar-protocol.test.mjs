@@ -196,6 +196,67 @@ async function assertPathMissing(filePath) {
   assert.fail(`path should not exist: ${filePath}`);
 }
 
+test('complete backup restores real saved media on a second host and keeps child deletion working', async () => {
+  await withSidecarSession(async (source) => {
+    const run = (command, payload = {}) => source.expectResult(source.commandBody(command, payload));
+    const now = '2026-09-29T00:00:00.000Z';
+    const childId = '01K00000000000000000000001';
+    const familyId = '01K00000000000000000000002';
+    const entryId = '01K00000000000000000000003';
+    const caseId = '01K00000000000000000000004';
+    const imageBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aN6kAAAAASUVORK5CYII=';
+    // A real, decodable 100 ms mono WAV rather than a successful fake media return.
+    const wav = Buffer.alloc(44 + 1600);
+    wav.write('RIFF', 0); wav.writeUInt32LE(wav.length - 8, 4); wav.write('WAVEfmt ', 8);
+    wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+    wav.writeUInt32LE(8000, 24); wav.writeUInt32LE(16000, 28); wav.writeUInt16LE(2, 32);
+    wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(1600, 40);
+    await run('db_init', { appAccountId: 'backup-source', admittedReminderRuleIds: ['PO-REM-VAC-001'] });
+    await run('create_family', { familyId, displayName: 'Backup test', now });
+    const avatar = await run('save_child_avatar', { childId, mimeType: 'image/png', imageBase64 });
+    await run('create_child', { childId, familyId, displayName: 'Backup child', gender: 'female', birthDate: '2020-01-01', avatarPath: avatar.path, nurtureMode: 'balanced', now });
+    const photo = await run('save_journal_photo', { childId, entryId, index: 0, mimeType: 'image/png', imageBase64 });
+    const audio = await run('save_journal_voice_audio', { childId, entryId, mimeType: 'audio/wav', audioBase64: wav.toString('base64') });
+    await run('insert_journal_entry', { childId, entryId, contentType: 'mixed', textContent: 'Backup round trip', voicePath: audio.path, photoPaths: JSON.stringify([photo.path]), recordedAt: now, ageMonths: 80, keepsake: 0, now });
+    await run('insert_orthodontic_case', { childId, caseId, caseType: 'fixed-braces', stage: 'active', startedAt: '2026-09-29', now });
+    await run('save_attachment', { childId, attachmentId: '01K00000000000000000000005', ownerTable: 'orthodontic_cases', ownerId: caseId, fileName: 'photo.png', mimeType: 'image/png', imageBase64, now });
+    const backup = path.join(source.storageRoot, 'complete.parentos');
+    const exported = await run('export_complete_backup', { path: backup });
+    assert.equal(exported.mediaCount, 4);
+    assert.equal(exported.tableCount, 29);
+    await withSidecarSession(async (target) => {
+      const restore = (command, payload = {}) => target.expectResult(target.commandBody(command, payload));
+      await restore('db_init', { appAccountId: 'backup-target', admittedReminderRuleIds: ['PO-REM-VAC-001'] });
+      const restored = await restore('restore_complete_backup', { path: backup });
+      assert.equal(restored.mediaCount, 4);
+      const [child] = await restore('get_children', { familyId });
+      const [entry] = await restore('get_journal_entries', { childId, limit: 100 });
+      const [attachment] = await restore('get_attachments', { childId });
+      assert.deepEqual(await readFile(child.avatarPath), Buffer.from(imageBase64, 'base64'));
+      assert.deepEqual(await readFile(entry.voicePath), wav);
+      assert.deepEqual(await readFile(JSON.parse(entry.photoPaths)[0]), Buffer.from(imageBase64, 'base64'));
+      assert.deepEqual(await readFile(attachment.filePath), Buffer.from(imageBase64, 'base64'));
+      for (const file of [child.avatarPath, entry.voicePath, JSON.parse(entry.photoPaths)[0], attachment.filePath]) {
+        assert.ok(!file.includes(source.storageRoot), 'restored paths must belong to the destination host');
+      }
+      await restore('delete_child', { childId });
+      for (const file of [child.avatarPath, entry.voicePath, JSON.parse(entry.photoPaths)[0], attachment.filePath]) await assertPathMissing(file);
+      assert.deepEqual(await restore('get_children', { familyId }), []);
+    });
+    const sameAccount = await run('restore_complete_backup', { path: backup });
+    assert.equal(sameAccount.cleanupPending, false);
+    await assertPathMissing(avatar.path);
+    await assertPathMissing(photo.path);
+    await assertPathMissing(audio.path);
+    const [sameChild] = await run('get_children', { familyId });
+    assert.deepEqual(await readFile(sameChild.avatarPath), Buffer.from(imageBase64, 'base64'));
+    await run('db_init', { appAccountId: 'different-local-account', admittedReminderRuleIds: ['PO-REM-VAC-001'] });
+    const collision = await source.expectErr(source.commandBody('restore_complete_backup', { path: backup }));
+    assert.match(collision.details.cause, /Another account/);
+    assert.deepEqual(await readFile(sameChild.avatarPath), Buffer.from(imageBase64, 'base64'));
+  });
+});
+
 test('parentos_host sidecar self-test emits strict ready envelope', async () => {
   const hostBin = hostBinaryPath();
   await access(hostBin);

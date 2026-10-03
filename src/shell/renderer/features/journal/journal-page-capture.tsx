@@ -215,7 +215,7 @@ export function JournalPageCapture(props: {
               />
 
               {props.photoDrafts.length > 0 ? (
-                <div className="px-5 pb-2">
+                <div className="px-5 pb-4">
                   <PhotoBar drafts={props.photoDrafts} onAdd={props.onAddPhotos} onRemove={props.onRemovePhotoDraft} inputRef={props.photoInputRef} />
                 </div>
               ) : null}

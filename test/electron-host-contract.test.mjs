@@ -76,8 +76,8 @@ test('ParentOS manifest declares the standalone App Access contract', async () =
   assert.match(manifest, /profile:\s+standalone/u);
   assert.match(manifest, /manifest_role:\s+submitted-input/u);
   assert.match(manifest, /app_access:\s*\n\s+-\s+runtime\.consume/u);
-  assert.match(manifest, /ai_config_ui:\s*\n\s+allowed_routes:\s*\n\s+-\s+local/u);
-  assert.doesNotMatch(manifest, /allowed_routes:[\s\S]*?-\s+cloud/u);
+  // No ai_config_ui narrowing: the in-App and Desktop editors both offer Local and Cloud.
+  assert.doesNotMatch(manifest, /ai_config_ui|allowed_routes/u);
   assert.match(manifest, /local_development:\s+electron:/u);
   assert.match(manifest, /renderer_origin:\s+http:\/\/127\.0\.0\.1:1426/u);
   assert.doesNotMatch(manifest, /permissions|execution_profile_ref|schema_version|declared_nimi_api_scopes|app-local-drafts/u);

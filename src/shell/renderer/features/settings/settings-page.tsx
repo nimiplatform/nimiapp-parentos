@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Baby,
   BellRing,
@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Surface, SegmentedControl, buttonVariants, cn, nimiToast } from '@nimiplatform/kit/ui';
+import { version } from '../../../../../package.json';
 import type { NimiCurrentUserDisplay } from '@nimiplatform/sdk/app';
 import { seedMockData, type SeedProgress } from '../../infra/mock-seed.js';
 import { exportAppData, importAppData } from '../../infra/data-transfer.js';
@@ -71,26 +72,34 @@ const sections: readonly SettingsSection[] = [
 
 const infoCards = [
   {
+    to: '/settings/privacy',
     icon: ShieldCheck,
     labelKey: 'Settings.info.privacy.label',
     descKey: 'Settings.info.privacy.desc',
   },
   {
+    to: '/settings/about',
     icon: Info,
     labelKey: 'Settings.info.about.label',
     descKey: 'Settings.info.about.desc',
   },
 ] as const;
 
+// @nimi-authority: rule.parentos.shell.r006
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash === '#data-backup') document.getElementById('data-backup')?.scrollIntoView({ block: 'center' });
+  }, [hash]);
   const [currentUser, setCurrentUser] = useState<NimiCurrentUserDisplay | null>(null);
   const [languageSaving, setLanguageSaving] = useState(false);
   const [seedStatus, setSeedStatus] = useState<'idle' | 'seeding' | 'done' | 'error'>('idle');
   const [seedLabel, setSeedLabel] = useState('');
   const [seedResult, setSeedResult] = useState('');
   const [transferStatus, setTransferStatus] = useState<'idle' | 'exporting' | 'importing' | 'done' | 'error'>('idle');
-  const [transferLabel, setTransferLabel] = useState('');
+  const [restoreComplete, setRestoreComplete] = useState(false);
+  const backupDialogRef = useRef<HTMLDialogElement>(null);
   const [transferResult, setTransferResult] = useState('');
   const currentLanguage = resolveAppLanguage(i18n.resolvedLanguage ?? i18n.language);
   const languageItems = APP_LANGUAGES.map((language) => ({
@@ -146,20 +155,25 @@ export default function SettingsPage() {
   };
 
   const transferBusy = transferStatus === 'exporting' || transferStatus === 'importing';
+  useEffect(() => {
+    const dialog = backupDialogRef.current;
+    if (transferBusy || restoreComplete) {
+      if (dialog && !dialog.open) dialog.showModal();
+    } else { dialog?.close(); }
+  }, [transferBusy, restoreComplete]);
 
   const handleExportData = async () => {
     setTransferStatus('exporting');
-    setTransferLabel('');
     setTransferResult('');
     try {
-      const result = await exportAppData((p) => setTransferLabel(`${p.done}/${p.total}`));
+      const result = await exportAppData();
       if (result.cancelled) {
         setTransferStatus('idle');
         return;
       }
       setTransferStatus(result.ok ? 'done' : 'error');
       setTransferResult(result.ok
-        ? `${t('Settings.dataTransfer.exportDone', { fileName: result.fileName })}\n${t('Settings.dataTransfer.exportSummary', { tables: result.tableCount, rows: result.rowCount })}`
+        ? `${t('Settings.dataTransfer.exportDone', { fileName: result.fileName })}\n${t('Settings.dataTransfer.exportSummary', { tables: result.tableCount, rows: result.rowCount, media: result.mediaCount })}`
         : result.summary);
     } catch (error) {
       setTransferStatus('error');
@@ -172,19 +186,19 @@ export default function SettingsPage() {
       return;
     }
     setTransferStatus('importing');
-    setTransferLabel('');
     setTransferResult('');
     try {
-      const result = await importAppData((p) => setTransferLabel(`${p.done}/${p.total}`));
+      const result = await importAppData();
       if (result.cancelled) {
         setTransferStatus('idle');
         return;
       }
       setTransferStatus(result.ok ? 'done' : 'error');
       setTransferResult(result.ok
-        ? t('Settings.dataTransfer.importSummary', { tables: result.tableCount, rows: result.rowCount })
+        ? `${t('Settings.dataTransfer.importSummary', { tables: result.tableCount, rows: result.rowCount, media: result.mediaCount })}${result.cleanupPending ? `\n${t('Settings.dataTransfer.cleanupPending')}` : ''}`
         : result.summary);
       if (result.ok) {
+        setRestoreComplete(true);
         nimiToast.success(t('Settings.dataTransfer.importDone'));
       } else {
         nimiToast.danger(result.summary);
@@ -201,6 +215,13 @@ export default function SettingsPage() {
 
   return (
     <div className="h-full overflow-y-auto bg-transparent">
+      <dialog ref={backupDialogRef} onCancel={(event) => event.preventDefault()} className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none items-center justify-center bg-transparent p-0 backdrop:bg-black/30 backdrop:backdrop-blur-sm" style={{ display: transferBusy || restoreComplete ? 'flex' : 'none' }} aria-label={t('Settings.dataTransfer.title')}>
+          <div className="mx-6 max-w-md rounded-2xl bg-[var(--nimi-surface-card)] p-6 text-center shadow-xl">
+            <p role="status" className="text-base font-medium">{restoreComplete ? t('Settings.dataTransfer.importDone') : t(transferStatus === 'importing' ? 'Settings.dataTransfer.importing' : 'Settings.dataTransfer.exporting')}</p>
+            <p className="mt-3 text-sm text-[var(--nimi-text-muted)]">{restoreComplete ? transferResult : t('Settings.dataTransfer.keepOpen')}</p>
+            {restoreComplete && <button type="button" autoFocus className={cn(buttonVariants({ tone: 'primary', size: 'sm' }), 'mt-5')} onClick={() => window.location.reload()}>{t('Settings.dataTransfer.reload')}</button>}
+          </div>
+      </dialog>
       <div className="mx-auto max-w-3xl px-6 pb-8 pt-[72px]">
         <h1 className="mb-6 text-2xl font-bold tracking-tight text-[var(--nimi-text-primary)]">{t('Settings.title')}</h1>
 
@@ -271,7 +292,7 @@ export default function SettingsPage() {
         </Surface>
 
         <Surface tone="card" material="solid" elevation="base" padding="none" className="mb-6 parentos-radius-xl">
-          <div className="flex flex-col gap-3 px-5 py-4">
+          <div id="data-backup" className="scroll-mt-6 flex flex-col gap-3 px-5 py-4">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center parentos-radius-14 bg-[color-mix(in_srgb,var(--nimi-status-success)_12%,var(--nimi-surface-card))] text-[var(--nimi-status-success)]">
                 <Database size={18} aria-hidden="true" />
@@ -279,7 +300,7 @@ export default function SettingsPage() {
               <div className="min-w-[220px] flex-1">
                 <h3 className="text-[15px] font-semibold text-[var(--nimi-text-primary)]">
                   {transferBusy
-                    ? t('Settings.dataTransfer.workingWithProgress', { progress: transferLabel })
+                    ? t(transferStatus === 'importing' ? 'Settings.dataTransfer.importing' : 'Settings.dataTransfer.exporting')
                     : t('Settings.dataTransfer.title')}
                 </h3>
                 <p className="mt-0.5 whitespace-pre-line text-[13px] leading-snug text-[var(--nimi-text-muted)]">
@@ -317,15 +338,16 @@ export default function SettingsPage() {
           {infoCards.map((card) => {
             const InfoIcon = card.icon;
             return (
-              <div key={card.labelKey} className="flex items-center gap-4 px-5 py-4">
+              <Link key={card.labelKey} to={card.to} className="flex items-center gap-4 rounded-xl px-5 py-4 transition-colors hover:bg-[var(--nimi-action-ghost-hover)] focus-visible:outline-2 focus-visible:outline-offset-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center parentos-radius-14 bg-[var(--nimi-action-secondary-bg)] text-[var(--nimi-text-muted)]">
                   <InfoIcon size={18} aria-hidden="true" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-[15px] font-semibold text-[var(--nimi-text-primary)]">{t(card.labelKey)}</h3>
-                  <p className="mt-0.5 text-[13px] leading-snug text-[var(--nimi-text-muted)]">{t(card.descKey)}</p>
+                  <p className="mt-0.5 text-[13px] leading-snug text-[var(--nimi-text-muted)]">{t(card.descKey, { version })}</p>
                 </div>
-              </div>
+                <ChevronRight size={16} className="shrink-0 text-[var(--nimi-text-muted)]" aria-hidden="true" />
+              </Link>
             );
           })}
         </Surface>

@@ -108,18 +108,21 @@
       "saveFailed": "语言设置保存失败"
     },
     "dataTransfer": {
-      "title": "本地结构化数据备份",
-      "desc": "导出或恢复本机 SQLite 结构化数据。备份不包含照片、语音、附件及其本地路径，也不会上传网络。恢复会整体替换现有结构化数据；若当前存在媒体记录，将拒绝恢复以避免文件与记录不一致。",
-      "export": "导出结构化数据",
-      "import": "恢复结构化数据",
+      "title": "数据备份",
+      "desc": "备份当前账号的记录、照片、语音和附件，恢复会替换当前记录。",
+      "export": "导出备份",
+      "import": "恢复备份",
       "exporting": "导出中...",
-      "importing": "导入中...",
+      "importing": "恢复中...",
       "workingWithProgress": "处理中... {{progress}}",
       "exportDone": "已导出到 {{fileName}}",
-      "exportSummary": "已导出 {{tables}} 张表、{{rows}} 行记录",
-      "restoreConfirm": "恢复将整体替换当前结构化数据。照片、语音和附件不会恢复；如果当前存在媒体记录，系统会拒绝操作。是否继续选择备份文件？",
-      "importDone": "结构化数据恢复完成",
-      "importSummary": "已恢复 {{tables}} 张表、{{rows}} 行记录"
+      "exportSummary": "已备份 {{rows}} 条记录和 {{media}} 个媒体文件",
+      "restoreConfirm": "恢复将用备份中的档案、记录、照片、语音和附件替换当前账号的数据。请先导出当前备份，保留需要的资料。是否继续选择完整备份文件？",
+      "importDone": "记录和媒体恢复完成",
+      "keepOpen": "正在处理本地备份，请保持应用打开。照片和录音较多时可能需要几分钟。",
+      "cleanupPending": "恢复已完成，但部分旧媒体文件未能清理，仍占用本机空间。",
+      "reload": "完成并重新载入",
+      "importSummary": "已恢复 {{rows}} 条记录和 {{media}} 个媒体文件"
     },
     "sections": {
       "children": {
@@ -136,7 +139,7 @@
       },
       "ai": {
         "label": "AI 设置",
-        "desc": "Nimi 访问姿态与 AI 能力声明。"
+        "desc": "Nimi 访问状态，并为每项 AI 能力选择本地或云端模型。"
       }
     },
     "nurtureMode": {
@@ -226,11 +229,11 @@
     "info": {
       "privacy": {
         "label": "数据与隐私",
-        "desc": "所有数据存储在本地，不上传至云端"
+        "desc": "了解本地存储、AI 数据使用、备份与删除"
       },
       "about": {
         "label": "关于",
-        "desc": "成长底稿 v0.1.0 · AI 驱动的儿童成长操作系统"
+        "desc": "成长底稿 v{{version}} · 了解产品与能力边界"
       }
     },
     "dev": {
@@ -646,7 +649,7 @@
     "page": {
       "backToSettings": "返回设置",
       "title": "AI 设置",
-      "subtitle": "Nimi 访问姿态与 AI 能力声明。模型路由由平台统一管理。",
+      "subtitle": "Nimi 访问状态与 AI 模型设置。可为每项能力选择本地或云端模型。",
       "refreshRuntime": "刷新状态"
     },
     "posture": {
@@ -668,20 +671,16 @@
       }
     },
     "declared": {
-      "title": "AI 能力声明",
-      "description": "Runtime 为 ParentOS 保存的 AI 能力意图和有效状态。",
-      "empty": "尚未配置任何能力。",
-      "platformManaged": "Runtime 拥有 canonical 配置；ParentOS 可在此编辑已覆盖的 App 配置，Nimi Desktop 仍可用于集中编辑。",
+      "title": "AI 模型",
+      "description": "为每项 AI 能力选择本地或云端模型。无论选择哪种，记录都保存在本机；选择云端模型时，请求所需的内容会经 Nimi 发送到你选择的云端服务来完成这次推理。",
+      "platformManaged": "此处与 Nimi 桌面端「应用 > ParentOS > AI 能力」编辑的是同一份配置，由 Nimi Runtime 保存。使用云端模型前，需先在 Nimi 桌面端配置云端连接器。",
       "openOwnerConfiguration": "在 Nimi 中配置",
       "openingOwnerConfiguration": "正在打开…",
       "loadFailed": "AI 配置读取失败",
       "loadFailedGuidance": "恢复 Nimi 连接或在 Nimi 的「应用 > ParentOS > AI 能力」确认配置后，返回本页刷新。",
       "ownerHandoffFailed": "未能自动打开 Nimi 配置页",
       "ownerHandoffFallback": "请手动打开 Nimi 桌面端，进入「应用 > ParentOS > AI 能力」。",
-      "routeLocal": "本地路由",
-      "routeCloud": "云端路由",
-      "statusConfigured": "已配置",
-      "configuredCount": "已配置 {{count}} 项能力意图",
+      "configuredCount": "已配置 {{count}} 项能力",
       "capabilities": {
         "textGenerate": "文本生成",
         "audioTranscribe": "语音转写",
@@ -689,21 +688,82 @@
         "imageGenerate": "图像生成"
       }
     },
-    "localEditor": {
-      "title": "本地 AI 配置",
-      "localOnly": "仅限本地",
+    "modelConfig": {
       "back": "返回",
-      "localConfigured": "已配置本地路由意图",
-      "notConfigured": "尚未配置本地路由意图",
-      "effectiveReady": "当前设备已有可用的本地 effective selection。",
-      "effectivePending": "Runtime 尚未在当前设备投影出可用的本地 effective selection。",
-      "save": "使用本地路由",
-      "saving": "正在保存…",
+      "detailTitle": "{{capability}}设置",
+      "activeModel": "当前模型",
+      "activeModelHint": "选择其他模型",
+      "activeModelConfigured": "已设置",
+      "activeModelSetupPending": "需要设置",
+      "pickerTitle": "选择模型",
+      "pickerSearch": "搜索模型",
+      "pickerLoading": "正在加载模型…",
+      "pickerEmpty": "当前能力没有可用模型。",
+      "configuredSummary": "模型配置已完成",
+      "emptySummary": "尚未选择模型",
+      "route": "运行方式",
+      "local": "本地",
+      "cloud": "云端",
+      "save": "保存设置",
+      "saving": "保存中…",
       "clear": "清除配置",
       "clearing": "正在清除…",
-      "saveFailed": "AI 配置保存失败。请刷新 canonical 状态后重试。",
-      "existingCloud": "此能力当前使用云端路由。你可以清除它或改为本地路由；ParentOS 不提供新的云端选项。",
-      "conflict": "配置已在其他位置变化。已重新载入当前 canonical 状态，请确认后再保存。"
+      "conflict": "配置已在其他位置更改",
+      "conflictDescription": "你的草稿已保留。请查看当前配置，然后再次保存以替换它。",
+      "conflictCurrent": "当前版本 {{revision}}：{{summary}}",
+      "advanced": "高级设置",
+      "advancedHint": "所需模型能力和默认参数会随成长底稿的模型设置一起保存。",
+      "requiredFeatures": "所需模型能力",
+      "requiredFeaturesPlaceholder": "输入模型能力，以逗号分隔",
+      "defaults": "默认参数",
+      "defaultsPlaceholder": "留空表示不设置该参数。",
+      "defaultsUnset": "未设置",
+      "defaultsTrue": "是",
+      "defaultsFalse": "否",
+      "defaultsListPlaceholder": "每行一个值",
+      "defaultsLocalEffective": "未设置 · 引擎默认 {{value}}",
+      "defaultsCloudEffective": "未设置 · 由服务商决定",
+      "defaultsRandom": "随机",
+      "localChoiceDescription": "使用“本机模型设置”中当前选择的模型。",
+      "localSelected": "本机当前使用",
+      "localMissing": "当前设置使用本机模型，但尚未为此能力选择模型。",
+      "localBroken": "所选本机配置受阻：",
+      "localUnavailable": "暂时无法读取本机配置状态。",
+      "localMismatch": "所选本机配置不支持这些必需功能：{{features}}",
+      "openMachine": "打开本机模型设置",
+      "cloudConnectorPicker": "云端连接器",
+      "cloudConnectorPickerPlaceholder": "选择已配置的连接器",
+      "cloudConnectorSelectionRequired": "请先选择已配置的连接器，再选择模型。",
+      "cloudNoConnectors": "暂无已配置的云端连接器，请先在 Nimi 桌面端添加。",
+      "openCloudConnectors": "配置云端连接器",
+      "cloudImplementation": "云端服务",
+      "cloudImplementationPlaceholder": "选择云端服务",
+      "cloudTarget": "云端模型",
+      "cloudTargetPlaceholder": "选择云端模型",
+      "cloudTargetDialogTitle": "选择云端模型",
+      "cloudTargetDialogDescription": "确认服务商和模型信息后继续。",
+      "cloudNotice": "云端执行",
+      "cloudNoticeDescription": "请求使用所选连接器的现有凭据，会把每次请求所需的内容发送给该服务商，可能产生服务商费用。记录本身仍保存在本机。",
+      "cloudConnector": "已配置的连接器",
+      "cloudConnectorPlaceholder": "选择此提供商的连接器",
+      "cloudLoadFailed": "无法加载云端服务、模型或连接器选项。",
+      "cloudBlocked": "此云端配置当前无法运行。请重新选择模型或改选其他模型。",
+      "cloudCatalogStale": "选定此模型后云端模型列表已更新。请从当前列表重新选择模型。",
+      "retry": "重试",
+      "saveFailed": "Runtime 无法保存成长底稿的 AI 配置。",
+      "unsupportedCapability": "此能力暂不可用。",
+      "notConfigured": "未配置",
+      "configured": "已配置",
+      "selectionRequired": "需要选择",
+      "blocked": "受阻",
+      "unavailable": "暂不可用",
+      "mismatch": "功能不匹配",
+      "cancel": "取消",
+      "confirmSelection": "使用此选择",
+      "capabilityDescription": {
+        "textGenerate": "用于成长顾问、成长报告、日记标记和智能摘要。",
+        "audioTranscribe": "把日记语音转成文字。"
+      }
     },
     "features": {
       "title": "功能可用性",
@@ -716,6 +776,8 @@
       "needsConfiguration": "需在 Nimi 中配置",
       "notSupported": "当前版本暂不支持",
       "notSupportedHint": "目前没有可配置的图片理解能力，暂时无法手动开启。",
+      "routeLocal": "本地模型",
+      "routeCloud": "云端模型",
       "advisor": "成长顾问",
       "report": "成长报告叙述",
       "journalTagging": "日记智能标记",
@@ -4951,7 +5013,6 @@
     "refresh": "刷新",
     "unavailable": {
       "notConfigured": "尚未配置 AI 模型，配置后即可查看智能分析",
-      "cloudRoute": "智能分析仅支持本地 AI 模型，请在 AI 设置中改为本地模型",
       "hostAbsent": "请从 Nimi 桌面端的「应用」中打开 ParentOS 后查看智能分析",
       "runtimeFailed": "智能分析暂时无法生成，请重试或检查 AI 设置"
     },
@@ -5683,6 +5744,68 @@
       "yearOverYearCaption": "{{from}} 至 {{to}}：较起始记录 {{value}}{{unit}}，{{direction}}",
       "percentileChange6mPrefix": "近 6 月 ",
       "percentileChange6m": "近 6 月 {{change}}"
+    }
+  },
+  "SettingsDetails": {
+    "back": "返回设置"
+  },
+  "PrivacySettings": {
+    "headline": "孩子的成长记录，保存在你的设备上",
+    "intro": "成长底稿将档案、日记和成长记录保存在本机。你可以将当前账号的记录和媒体导出为完整的本地备份包。",
+    "storage": {
+      "title": "数据保存在哪里",
+      "body": "孩子档案、健康记录、提醒状态、日记和顾问对话保存在本地数据库；照片、语音与附件保存在本机的应用数据目录。",
+      "access": "本地档案无需登录 Nimi 账号即可使用。切换 Nimi 账号不会切换或清除这台设备上的孩子档案；请通过设备账号和锁屏保护访问。"
+    },
+    "ai": {
+      "title": "使用 AI 时会用到什么",
+      "body": "成长顾问、报告和摘要会使用对应功能所需的本地记录与输入内容；语音转写会处理你录制的音频。每项 AI 能力都通过 Nimi 使用你在 AI 设置中选择的模型：选择本地模型时，这些内容在本机处理；选择云端模型时，完成该次请求所需的内容会经 Nimi 发送到你选择的云端服务，由服务商按其条款处理，并可能产生费用。ParentOS 不会把成长记录同步或备份到云端。",
+      "account": "Nimi Desktop 管理 AI 所需的账号与访问授权。AI 不可用时，仍可查看和管理本地记录。你可以在 AI 设置中查看模型配置与各项能力的可用状态。",
+      "action": "查看 AI 设置"
+    },
+    "backup": {
+      "title": "备份包含什么",
+      "body": "完整备份包含当前账号的档案、成长记录、日记、对话及已保存的照片、头像、语音、附件和正畸照片。账号登录凭据、AI 配置、其他账号的数据和缓存不包含在内。",
+      "restore": "恢复会整体替换当前账号的记录，并恢复媒体文件。备份损坏、媒体缺失或版本不匹配时会拒绝恢复，保留当前数据。旧版纯 JSON 备份不受支持。",
+      "care": "备份包未加密，包含孩子的个人信息和媒体文件。请保存在你信任的位置，由你自行保管。",
+      "action": "前往备份与恢复"
+    },
+    "delete": {
+      "title": "如何删除孩子的数据",
+      "body": "在「孩子管理」中删除孩子，会同时删除该孩子关联的健康记录、日记、顾问对话、报告和提醒状态，并清理应用管理的相关媒体文件。删除前请确认要保留的资料已保存。",
+      "exports": "已导出到应用之外的备份、报告和文件副本不会随之删除，需要你自行处理。",
+      "action": "前往孩子管理"
+    }
+  },
+  "AboutSettings": {
+    "name": "成长底稿 ParentOS",
+    "tagline": "AI 驱动的儿童成长操作系统",
+    "version": "版本 {{version}}",
+    "stage": "Pre-Alpha · 开发中",
+    "intro": "把日常观察、成长记录和阶段提醒放在一起，帮助家长了解孩子这个阶段值得关注什么，留下可回看的成长底稿。",
+    "features": {
+      "title": "陪你记录，也帮你看见",
+      "reminders": {
+        "title": "知道这个阶段该关注什么",
+        "body": "根据年龄与规则整理阶段提醒，用养育模式调整信息的呈现方式。"
+      },
+      "records": {
+        "title": "把零散记录留在一处",
+        "body": "管理多个孩子的成长档案，记录健康数据、观察日记、照片与语音，回看变化。"
+      },
+      "insights": {
+        "title": "借助 AI 整理与理解",
+        "body": "通过成长顾问、摘要和报告梳理已有记录。AI 功能需要可用的 Nimi 访问授权，并在 AI 设置中选择本地或云端模型。"
+      }
+    },
+    "boundary": {
+      "title": "帮助观察与记录，尊重专业判断",
+      "body": "成长底稿提供标准化提醒、记录趋势和知识解释。AI 内容供家长参考，不作个体诊断、治疗建议、心理健康评估或孩子之间的比较排名。",
+      "professional": "如对记录或孩子的情况有疑问，请咨询专业人士。当前版本仍在开发，图像识别和报告 OCR 尚未开放。"
+    },
+    "nimi": {
+      "title": "与 Nimi 一起工作",
+      "body": "ParentOS 负责本机的成长记录与使用体验；Nimi 提供 AI 能力、模型配置和访问授权。可在设置中查看当前能力状态与数据使用说明。"
     }
   }
 }

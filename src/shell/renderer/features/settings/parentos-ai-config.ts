@@ -54,20 +54,27 @@ export async function readParentosAIConfig(): Promise<
   }
 }
 
-export function hasReadyParentosLocalCapability(
+// Ready means Runtime projected a ready resource for the route the user
+// committed, Local or Cloud; a resource of the other kind never counts.
+export function hasReadyParentosCapability(
   snapshot: NimiAIConfigSnapshot,
   capabilityContract: ParentosAIConfigCapabilityContract,
 ): boolean {
-  const intent = snapshot.config?.capabilities.find(
+  const route = snapshot.config?.capabilities.find(
     (capability) => capability.capabilityContract === capabilityContract,
-  );
-  if (intent?.route.oneofKind !== 'local') return false;
+  )?.route.oneofKind;
   const selection = snapshot.effectiveSelections.find(
     (entry) => entry.capabilityContract === capabilityContract,
   );
-  return selection?.state === 'ready'
-    && selection.resource?.oneofKind === 'local'
-    && selection.resource.local.capabilityContract === capabilityContract;
+  if (selection?.state !== 'ready') return false;
+  switch (selection.resource?.oneofKind) {
+    case 'local':
+      return route === 'local' && selection.resource.local.capabilityContract === capabilityContract;
+    case 'cloud':
+      return route === 'cloud' && selection.resource.cloud.target.capabilityContract === capabilityContract;
+    default:
+      return false;
+  }
 }
 
 export async function hasParentosAIConfigCapability(
@@ -75,15 +82,18 @@ export async function hasParentosAIConfigCapability(
 ): Promise<boolean> {
   const result = await readParentosAIConfig();
   if (result.state !== 'ready') return false;
-  const intent = result.snapshot.config?.capabilities.find(
+  const route = result.snapshot.config?.capabilities.find(
     (capability) => capability.capabilityContract === capabilityContract,
-  );
-  // ParentOS's current protected execution surfaces are device-local by
-  // product privacy authority. Effective readiness belongs to Runtime
-  // admission and must not be collapsed into an App-level "unconfigured".
-  return intent?.route.oneofKind === 'local';
+  )?.route.oneofKind;
+  // The user chooses the Local or Cloud route. Effective readiness belongs to
+  // Runtime admission and must not be collapsed into an App-level
+  // "unconfigured".
+  return route === 'local' || route === 'cloud';
 }
 
+// Runtime composes the committed route; ParentOS never forces Local or
+// rejects Cloud before the protected call.
+// @nimi-authority: rule.parentos.shell.r010
 export async function requireParentosAIConfigCapability(
   capabilityContract: ParentosAIConfigCapabilityContract,
 ): Promise<void> {
@@ -105,13 +115,7 @@ export async function requireParentosAIConfigCapability(
       { reasonCode: 'parentos-ai-capability-not-configured' },
     ) as ParentosAIConfigCapabilityError;
   }
-  if (intent.route.oneofKind === 'cloud') {
-    throw Object.assign(
-      new Error(`ParentOS does not send protected ${capabilityContract} inputs to Cloud providers.`),
-      { reasonCode: 'parentos-ai-cloud-route-not-admitted' },
-    ) as ParentosAIConfigCapabilityError;
-  }
-  if (intent.route.oneofKind !== 'local') {
+  if (intent.route.oneofKind !== 'local' && intent.route.oneofKind !== 'cloud') {
     throw Object.assign(
       new Error(`ParentOS requires a canonical ${capabilityContract} AIConfig route.`),
       { reasonCode: 'parentos-ai-capability-not-configured' },

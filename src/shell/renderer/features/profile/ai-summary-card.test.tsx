@@ -50,16 +50,6 @@ describe('AISummaryCard unavailable guidance (PO-PROF-016)', () => {
     expect(screen.queryByRole('button', { name: '重新生成' })).toBeNull();
   });
 
-  it('directs to AI settings instead of retry when a Cloud route is committed', async () => {
-    failWith('parentos-ai-cloud-route-not-admitted');
-    renderCard();
-
-    expect(await screen.findByText('智能分析仅支持本地 AI 模型，请在 AI 设置中改为本地模型')).toBeTruthy();
-    expect(screen.getByRole('link', { name: '去配置 AI' }).getAttribute('href')).toBe('/settings/ai');
-    expect(screen.queryByRole('button', { name: '重试' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '重新生成' })).toBeNull();
-  });
-
   it('asks to open ParentOS from Nimi Desktop and keeps retry when the host bridge is absent', async () => {
     failWith('nimi-shell-runtime-bridge-unavailable');
     renderCard();

@@ -218,6 +218,18 @@ routes: &parentos_route_entries
     description: "配置对话、语音转写和 OCR 等 AI 能力的模型偏好。"
     parent: /settings
 
+  - path: /settings/privacy
+    displayName: "数据与隐私"
+    feature: settings
+    description: "本地存储、AI 数据使用、完整备份范围和孩子数据删除说明。"
+    parent: /settings
+
+  - path: /settings/about
+    displayName: "关于成长底稿"
+    feature: settings
+    description: "产品用途、当前版本、开发阶段与能力边界。"
+    parent: /settings
+
 constraints:
   - "Exactly one route may have isDefault: true."
   - "Every route registered in routes.tsx must exist here."

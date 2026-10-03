@@ -26,6 +26,8 @@ const ChildrenSettingsPage = lazy(() => import('../features/settings/children-se
 const NurtureModeSettingsPage = lazy(() => import('../features/settings/nurture-mode-settings-page.js'));
 const ReminderSettingsPage = lazy(() => import('../features/settings/reminder-settings-page.js'));
 const AiSettingsPage = lazy(() => import('../features/settings/ai-settings-page.js'));
+const PrivacySettingsPage = lazy(() => import('../features/settings/privacy-settings-page.js'));
+const AboutSettingsPage = lazy(() => import('../features/settings/about-settings-page.js'));
 
 function PageFallback() {
   return (
@@ -66,6 +68,8 @@ export function AppRoutes() {
         <Route path="/settings/nurture-mode" element={<NurtureModeSettingsPage />} />
         <Route path="/settings/reminders" element={<ReminderSettingsPage />} />
         <Route path="/settings/ai" element={<AiSettingsPage />} />
+        <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
+        <Route path="/settings/about" element={<AboutSettingsPage />} />
         <Route path="*" element={<Navigate to="/timeline" replace />} />
       </Routes>
     </Suspense>

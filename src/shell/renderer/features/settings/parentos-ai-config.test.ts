@@ -10,6 +10,7 @@ vi.mock('../../infra/parentos-nimi-client.js', () => ({
 
 import {
   hasParentosAIConfigCapability,
+  hasReadyParentosCapability,
   PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT,
   PARENTOS_TEXT_CAPABILITY_CONTRACT,
   readParentosAIConfig,
@@ -109,7 +110,7 @@ describe('ParentOS portable AIConfig projection', () => {
     await expect(hasParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).resolves.toBe(true);
   });
 
-  it('reports a Cloud intent as non-executable across the ParentOS local-only privacy boundary', async () => {
+  it('treats a committed Cloud intent as the user-selected route instead of rejecting it', async () => {
     const get = vi.fn().mockResolvedValue(snapshot([{
         capabilityContract: 'audio.transcribe',
         requiredFeatures: [],
@@ -122,10 +123,38 @@ describe('ParentOS portable AIConfig projection', () => {
       }]));
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
 
-    await expect(hasParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).resolves.toBe(false);
-    await expect(requireParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).rejects.toMatchObject({
-      reasonCode: 'parentos-ai-cloud-route-not-admitted',
-    });
+    await expect(hasParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).resolves.toBe(true);
+    await expect(requireParentosAIConfigCapability(PARENTOS_AUDIO_TRANSCRIBE_CAPABILITY_CONTRACT)).resolves.toBeUndefined();
+  });
+
+  it('projects readiness only for a ready resource of the committed route', () => {
+    const cloudIntent = {
+      capabilityContract: 'text.generate', requiredFeatures: [],
+      route: { oneofKind: 'cloud', cloud: { connectorRef: 'connector-1' } },
+    };
+    const localIntent = { capabilityContract: 'text.generate', requiredFeatures: [], route: { oneofKind: 'local', local: {} } };
+    const readyCloud = {
+      capabilityContract: 'text.generate',
+      state: 'ready',
+      resource: {
+        oneofKind: 'cloud',
+        cloud: {
+          connector: { connectorRef: 'connector-1', label: 'Provider', provider: 'provider', state: 'ready', reasons: [] },
+          target: { connectorRef: 'connector-1', label: 'Cloud text', capabilityContract: 'text.generate' },
+        },
+      },
+      reasons: [],
+    };
+    const ready = (capabilities: readonly Record<string, unknown>[], selections: readonly Record<string, unknown>[]) => (
+      hasReadyParentosCapability(snapshot(capabilities, selections) as never, PARENTOS_TEXT_CAPABILITY_CONTRACT)
+    );
+
+    expect(ready([cloudIntent], [readyCloud])).toBe(true);
+    expect(ready([localIntent], [readyLocal('text.generate', 'text-local')])).toBe(true);
+    expect(ready([cloudIntent], [readyLocal('text.generate', 'text-local')])).toBe(false);
+    expect(ready([localIntent], [readyCloud])).toBe(false);
+    expect(ready([cloudIntent], [{ ...readyCloud, state: 'blocked', reasons: ['AI_REMOTE_MODEL_CATALOG_STALE'] }])).toBe(false);
+    expect(ready([], [readyCloud])).toBe(false);
   });
 
   it('maps typed failures to a bounded unavailable projection', async () => {
@@ -147,7 +176,7 @@ describe('ParentOS portable AIConfig projection', () => {
     });
   });
 
-  it('uses the product-level not-configured error only when the local intent is absent', async () => {
+  it('uses the product-level not-configured error only when the intent is absent', async () => {
     const get = vi.fn().mockResolvedValue(snapshot([]));
     getParentOSNimiClientMock.mockReturnValue(clientWithAIConfig({ get }));
 

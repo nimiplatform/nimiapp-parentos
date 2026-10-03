@@ -10,12 +10,14 @@ const ELECTRON_NATIVE_APP_COMMANDS = new Set([
 ]);
 // Data transfer dialogs are owned by Electron, not the Rust sidecar.
 const ELECTRON_ONLY_NATIVE_APP_COMMANDS = new Set([
-  'data_transfer_write_export_file',
-  'data_transfer_read_import_file',
+  'data_transfer_export_backup',
+  'data_transfer_restore_backup',
 ]);
 const INTERNAL_SIDECAR_COMMANDS = new Set([
   'dropped_file_read_image_files_as_base64',
   'report_export_register_save_target',
+  'export_complete_backup',
+  'restore_complete_backup',
 ]);
 
 function readRepoFile(path) {

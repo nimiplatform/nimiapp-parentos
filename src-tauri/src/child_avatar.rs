@@ -43,6 +43,17 @@ fn sanitize_child_id(child_id: &str) -> Result<String, String> {
 
 fn delete_child_avatar_files_at(root: &Path, child_id: &str) -> Result<(), String> {
     let child_id = sanitize_child_id(child_id)?;
+    // Complete restores keep avatars in this child-owned directory so old
+    // media remains intact until the database replacement commits.
+    let restored_dir = root.join(&child_id);
+    if restored_dir.is_dir() {
+        let canonical_root = root.canonicalize().map_err(|e| e.to_string())?;
+        let canonical_dir = restored_dir.canonicalize().map_err(|e| e.to_string())?;
+        if !canonical_dir.starts_with(&canonical_root) || canonical_dir == canonical_root {
+            return Err("restored avatar directory is outside owned storage".into());
+        }
+        fs::remove_dir_all(&restored_dir).map_err(|e| e.to_string())?;
+    }
     for extension in ["jpg", "png", "webp"] {
         let path = root.join(format!("{child_id}.{extension}"));
         match fs::remove_file(&path) {

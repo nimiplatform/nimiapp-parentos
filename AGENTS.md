@@ -18,7 +18,7 @@
 | Native data sidecar | Rust, launched by Electron | `src-tauri/src/bin/parentos_host.rs` |
 | Frontend | React 19 + Vite 7 + Tailwind 4 | `src/shell/renderer/` |
 | Local storage | SQLite (rusqlite, bundled) | `src-tauri/src/sqlite/` |
-| AI | Nimi App Access protected Local App consumption: bounded foreground text candidate generation plus Scenario Job `audio.transcribe` (declared via `app_access: [runtime.consume]` in `nimi.app.yaml`) | via `@nimiplatform/sdk/app` + `@nimiplatform/kit/features/generation/runtime` |
+| AI | Nimi App Access protected Local App consumption on the Local or Cloud route the user selects in AIConfig: bounded foreground text candidate generation plus Scenario Job `audio.transcribe` (declared via `app_access: [runtime.consume]` in `nimi.app.yaml`) | via `@nimiplatform/sdk/app` + `@nimiplatform/kit/features/generation/runtime` |
 | UI components | `@nimiplatform/kit` | npm dependency |
 | State | Zustand | `app-shell/app-store.ts` |
 | Charts | recharts | growth curves |
@@ -111,7 +111,7 @@ Two-layer model (boundary: whether individual data inference is involved):
 - Data anomaly → describe objective data + "建议咨询专业人士", no causal interpretation.
 - Domains marked `needs-review` in `data/structured/parentos/knowledge-source-readiness.yaml` must not enter Phase 1 free-form prompt.
 - AI boundary authority lives in `.nimi/spec/parentos/canonical/advisor.authority.yaml` for advisor/reports, `.nimi/spec/parentos/canonical/profile.authority.yaml` for profile-local AI summaries and OCR-assisted extraction, `.nimi/spec/parentos/canonical/journal.authority.yaml` for journal AI tagging/STT, and `data/structured/parentos/knowledge-source-readiness.yaml` for reviewed-domain gates. `definition.parentos.project.authority-boundary` defines the v2 authority boundary; no legacy guide is active authority.
-- Platform-contract reality (2026-08): App Access admits bounded foreground text candidate/turn consumption and protected Scenario Jobs, including `audio.transcribe`. ParentOS consumes `text.generate` and `audio.transcribe` through the public Local App client. Its covered self-owner AIConfig manager supports canonical get/options/whole-object CAS overwrite; ParentOS offers only route-only Local intent in-App, current machine-selected Loadout facts remain effective projection, and Desktop handoff is optional rather than a configuration precondition. Vision/OCR (`parentos.profile.checkup-ocr`, `parentos.profile.dental-eruption-scan`, `parentos.medical.ocr-intake`) still has no admitted understanding/extraction operation and remains gated off as a typed product gap; never substitute a self-built channel.
+- Platform-contract reality (2026-08): App Access admits bounded foreground text candidate/turn consumption and protected Scenario Jobs, including `audio.transcribe`. ParentOS consumes `text.generate` and `audio.transcribe` through the public Local App client. Its covered self-owner AIConfig manager supports canonical get/options/whole-object CAS overwrite; `/settings/ai` edits it through Kit's shared `ModelConfigAIConfigSurface` with the same Local and Cloud route choices as the Desktop centralized editor (`nimi.app.yaml` declares no `ai_config_ui` narrowing), Runtime composes the committed route and projects effective readiness, and Desktop handoff is optional rather than a configuration precondition. Vision/OCR (`parentos.profile.checkup-ocr`, `parentos.profile.dental-eruption-scan`, `parentos.medical.ocr-intake`) still has no admitted understanding/extraction operation and remains gated off as a typed product gap; never substitute a self-built channel.
 
 ### Nurture Mode Boundary
 - P0 reminders are ALWAYS `push` in ALL modes. No exceptions.
@@ -119,9 +119,10 @@ Two-layer model (boundary: whether individual data inference is involved):
 - Modes never change medical/developmental safety thresholds.
 
 ### Privacy Boundary (PIPL Compliance)
-- All data stored locally in SQLite. No cloud upload. No third-party SDK data collection.
-- AI conversation `contextSnapshot` freezes at send time — contains only current-session child profile summary.
-- No user data leaves the device. No device ID, location, contacts, or biometrics collected.
+- Business data (profiles, records, journal, media, AI conversations, reports, settings) is persisted only in the device-local SQLite store and media roots, plus user-initiated local backups. No cloud sync, remote backup, or ParentOS-operated upload. No third-party SDK data collection.
+- AI inference is a separate data flow that follows the AIConfig route the user commits per capability (`rule.parentos.shell.r010`): a Local route keeps inference input on the device; a Cloud route sends only the bounded input of each request (prompt text built from the records that feature needs, or the audio being transcribed) through the Nimi Runtime carrier to the connector and provider the user selected. ParentOS never forces Local, rejects or rewrites a committed Cloud route, calls a provider directly, or sends data outside that carrier. Privacy, about and AI settings copy must keep this distinction.
+- AI conversation `contextSnapshot` freezes the current child's request-time summary and the facts, period, history references and knowledge entries governed by `rule.parentos.advs.r001`.
+- No device ID, location, contacts, or biometrics collected.
 - Child profile deletion cascades to all associated records (growth, vaccine, journal, AI conversations, reminder states).
 - Privacy/storage authority lives in the relevant canonical units, with the detailed SQLite structure bound through `data/structured/parentos/local-storage.yaml`.
 

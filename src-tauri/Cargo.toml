@@ -22,3 +22,7 @@ nimi-shell-tauri = "=0.2.1"
 # (PO-ORTHO-012). Default codec set is heavy; we admit only the formats the
 # contract allows on input plus JPEG output.
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+
+# Complete local backups stream media through ZIP, retaining CRC integrity checks.
+zip = { version = "=4.6.1", default-features = false }
+ulid = "1"

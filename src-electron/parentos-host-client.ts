@@ -31,7 +31,7 @@ type ParentOSHostStorageRoots = {
 type PendingRequest = {
   readonly resolve: (value: unknown) => void;
   readonly reject: (error: unknown) => void;
-  readonly timer: NodeJS.Timeout;
+  readonly timer: NodeJS.Timeout | undefined;
 };
 
 type SidecarReadyResponse = {
@@ -169,7 +169,11 @@ export function createParentOSHostClient(input: {
     }
     const requestId = normalizeText(request.id);
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
+      // A backup may take minutes on removable media. Do not report failure
+      // while a non-cancellable native restore can still commit. Process exit
+      // and pipe errors continue to reject all pending operations.
+      const isBackup = request.command === 'export_complete_backup' || request.command === 'restore_complete_backup';
+      const timer = isBackup ? undefined : setTimeout(() => {
         pending.delete(requestId);
         reject(sidecarUnavailableError(
           'parentos-electron-sidecar-request-timeout',

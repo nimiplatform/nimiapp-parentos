@@ -108,18 +108,21 @@
       "saveFailed": "Language setting could not be saved"
     },
     "dataTransfer": {
-      "title": "Local structured-data backup",
-      "desc": "Export or restore local SQLite structured data. Backups exclude photos, audio, attachments, and local media paths and are never uploaded. Restore replaces the existing structured data; it is blocked when current media records exist to avoid mismatched files and records.",
-      "export": "Export structured data",
-      "import": "Restore structured data",
+      "title": "Data backup",
+      "desc": "Back up this account’s records, photos, voice recordings and attachments. Restoring replaces current records.",
+      "export": "Export backup",
+      "import": "Restore backup",
       "exporting": "Exporting...",
-      "importing": "Importing...",
+      "importing": "Restoring...",
       "workingWithProgress": "Working... {{progress}}",
       "exportDone": "Exported to {{fileName}}",
-      "exportSummary": "Exported {{tables}} tables and {{rows}} rows",
-      "restoreConfirm": "Restore replaces all current structured data. Photos, audio, and attachments are not restored; the operation is blocked if current media records exist. Continue to choose a backup file?",
-      "importDone": "Structured data restored",
-      "importSummary": "Restored {{tables}} tables and {{rows}} rows"
+      "exportSummary": "Backed up {{rows}} records and {{media}} media files",
+      "restoreConfirm": "Restore will replace this account’s profiles, records, photos, voice recordings and attachments with the backup. Export a current backup first to keep anything you need. Continue to select a complete backup?",
+      "importDone": "Records and media restored",
+      "keepOpen": "Keep the app open while the local backup is processed. Large photo and audio collections may take a few minutes.",
+      "cleanupPending": "Restore is complete, but some previous media files could not be cleaned up and still use disk space.",
+      "reload": "Finish and reload",
+      "importSummary": "Restored {{rows}} records and {{media}} media files"
     },
     "sections": {
       "children": {
@@ -136,7 +139,7 @@
       },
       "ai": {
         "label": "AI Settings",
-        "desc": "Nimi access posture and AI capability declarations."
+        "desc": "Nimi access status and a Local or Cloud model for each AI capability."
       }
     },
     "nurtureMode": {
@@ -226,11 +229,11 @@
     "info": {
       "privacy": {
         "label": "Data and privacy",
-        "desc": "All data stays local and is not uploaded to the cloud"
+        "desc": "Local storage, AI data use, backups and deletion"
       },
       "about": {
         "label": "About",
-        "desc": "ParentOS v0.1.0 · AI-powered child growth operating system"
+        "desc": "ParentOS v{{version}} · About the app and its capabilities"
       }
     },
     "dev": {
@@ -646,7 +649,7 @@
     "page": {
       "backToSettings": "Back to Settings",
       "title": "AI Settings",
-      "subtitle": "Nimi access posture and AI capability declarations. Model routing is managed by the platform.",
+      "subtitle": "Nimi access status and AI model settings. Choose a Local or Cloud model for each capability.",
       "refreshRuntime": "Refresh status"
     },
     "posture": {
@@ -668,20 +671,16 @@
       }
     },
     "declared": {
-      "title": "AI Capability Declarations",
-      "description": "Runtime-owned AI capability intents and effective state for ParentOS.",
-      "empty": "No capabilities are configured yet.",
-      "platformManaged": "Runtime owns the canonical configuration. ParentOS can edit its covered App configuration here; Nimi Desktop remains available for centralized editing.",
+      "title": "AI models",
+      "description": "Choose a Local or Cloud model for each AI capability. Your records stay on this device either way; with a Cloud model, the input a request needs is sent through Nimi to the cloud service you chose to run that request.",
+      "platformManaged": "This page and Nimi desktop > Apps > ParentOS > AI Capabilities edit the same configuration, kept by Nimi Runtime. Cloud models need a Cloud Connector set up in Nimi desktop first.",
       "openOwnerConfiguration": "Configure in Nimi",
       "openingOwnerConfiguration": "Opening…",
       "loadFailed": "AI configuration could not be read",
       "loadFailedGuidance": "Restore the Nimi connection or confirm the setup under Nimi > Apps > ParentOS > AI Capabilities, then return and refresh.",
       "ownerHandoffFailed": "Nimi configuration could not be opened",
       "ownerHandoffFallback": "Open Nimi desktop manually, then go to Apps > ParentOS > AI Capabilities.",
-      "routeLocal": "Local route",
-      "routeCloud": "Cloud route",
-      "statusConfigured": "Configured",
-      "configuredCount": "Configured capability intents: {{count}}",
+      "configuredCount": "Configured capabilities: {{count}}",
       "capabilities": {
         "textGenerate": "Text generation",
         "audioTranscribe": "Speech-to-text",
@@ -689,21 +688,82 @@
         "imageGenerate": "Image generation"
       }
     },
-    "localEditor": {
-      "title": "Local AI configuration",
-      "localOnly": "Local only",
+    "modelConfig": {
       "back": "Back",
-      "localConfigured": "Local route intent configured",
-      "notConfigured": "No Local route intent configured",
-      "effectiveReady": "The current machine has a ready Local effective selection.",
-      "effectivePending": "Runtime has not projected a ready Local effective selection on this machine.",
-      "save": "Use Local route",
+      "detailTitle": "{{capability}} settings",
+      "activeModel": "Active Model",
+      "activeModelHint": "Choose another model",
+      "activeModelConfigured": "set up",
+      "activeModelSetupPending": "setup needed",
+      "pickerTitle": "Select Model",
+      "pickerSearch": "Search models",
+      "pickerLoading": "Loading models…",
+      "pickerEmpty": "No models are available for this capability.",
+      "configuredSummary": "Model settings complete",
+      "emptySummary": "No model selected",
+      "route": "Run mode",
+      "local": "Local",
+      "cloud": "Cloud",
+      "save": "Save settings",
       "saving": "Saving…",
       "clear": "Clear configuration",
       "clearing": "Clearing…",
-      "saveFailed": "The AI configuration could not be saved. Refresh the canonical state and try again.",
-      "existingCloud": "This capability currently has a Cloud route. You may clear it or replace it with a Local route; ParentOS does not offer new Cloud choices.",
-      "conflict": "The configuration changed elsewhere. Current canonical state has been reloaded; review it before saving again."
+      "conflict": "Configuration changed elsewhere",
+      "conflictDescription": "Your draft was kept. Review the current configuration, then save again to replace it.",
+      "conflictCurrent": "Current revision {{revision}}: {{summary}}",
+      "advanced": "Advanced settings",
+      "advancedHint": "Required model capabilities and default parameters are saved with ParentOS's model settings.",
+      "requiredFeatures": "Required model capabilities",
+      "requiredFeaturesPlaceholder": "Enter model capabilities, separated by commas",
+      "defaults": "Default parameters",
+      "defaultsPlaceholder": "Leave a field empty to keep that parameter unset.",
+      "defaultsUnset": "Not set",
+      "defaultsTrue": "True",
+      "defaultsFalse": "False",
+      "defaultsListPlaceholder": "One value per line",
+      "defaultsLocalEffective": "Not set · Engine default {{value}}",
+      "defaultsCloudEffective": "Not set · Provider decides",
+      "defaultsRandom": "random",
+      "localChoiceDescription": "Use the model selected under On-device models.",
+      "localSelected": "Currently used on this device",
+      "localMissing": "These settings use an on-device model, but no model is selected for this capability.",
+      "localBroken": "The selected machine configuration is blocked:",
+      "localUnavailable": "Machine-local configuration status is currently unavailable.",
+      "localMismatch": "The selected machine configuration does not provide required features: {{features}}",
+      "openMachine": "Open on-device models",
+      "cloudConnectorPicker": "Cloud Connector",
+      "cloudConnectorPickerPlaceholder": "Select a configured Connector",
+      "cloudConnectorSelectionRequired": "Select a configured Connector before choosing a model.",
+      "cloudNoConnectors": "No configured Cloud Connector is available. Add one in Nimi desktop first.",
+      "openCloudConnectors": "Configure Cloud Connectors",
+      "cloudImplementation": "Cloud service",
+      "cloudImplementationPlaceholder": "Choose a cloud service",
+      "cloudTarget": "Cloud model",
+      "cloudTargetPlaceholder": "Choose a cloud model",
+      "cloudTargetDialogTitle": "Choose a cloud model",
+      "cloudTargetDialogDescription": "Review the provider and model, then confirm your choice.",
+      "cloudNotice": "Cloud execution",
+      "cloudNoticeDescription": "Requests use the selected Connector's existing credential and send the input each request needs to that provider, which may charge for it. Your records themselves stay on this device.",
+      "cloudConnector": "Configured Connector",
+      "cloudConnectorPlaceholder": "Choose a connector for this provider",
+      "cloudLoadFailed": "Cloud service, model, and Connector choices could not be loaded.",
+      "cloudBlocked": "This Cloud selection cannot run right now. Choose the model again or choose another model.",
+      "cloudCatalogStale": "The Cloud model list changed after this model was selected. Choose the model again from the current list.",
+      "retry": "Retry",
+      "saveFailed": "Runtime could not save ParentOS's AI configuration.",
+      "unsupportedCapability": "This capability is unavailable.",
+      "notConfigured": "Not configured",
+      "configured": "Configured",
+      "selectionRequired": "Selection required",
+      "blocked": "Blocked",
+      "unavailable": "Unavailable",
+      "mismatch": "Feature mismatch",
+      "cancel": "Cancel",
+      "confirmSelection": "Use selection",
+      "capabilityDescription": {
+        "textGenerate": "Used by the growth advisor, reports, journal tags and smart summaries.",
+        "audioTranscribe": "Turns journal voice notes into text."
+      }
     },
     "features": {
       "title": "Feature Availability",
@@ -716,6 +776,8 @@
       "needsConfiguration": "Configure in Nimi",
       "notSupported": "Not supported in this version",
       "notSupportedHint": "No configurable image-understanding capability is available yet, so this cannot be enabled manually.",
+      "routeLocal": "Local model",
+      "routeCloud": "Cloud model",
       "advisor": "Growth advisor",
       "report": "Report narrative",
       "journalTagging": "Journal smart tagging",
@@ -4951,7 +5013,6 @@
     "refresh": "Refresh",
     "unavailable": {
       "notConfigured": "No AI model is configured yet. Configure one to view intelligent analysis.",
-      "cloudRoute": "Intelligent analysis only runs on a local AI model. Switch to a local model in AI Settings.",
       "hostAbsent": "Open ParentOS from Apps in the Nimi desktop app to view intelligent analysis.",
       "runtimeFailed": "Intelligent analysis couldn't be generated right now. Retry or check AI Settings."
     },
@@ -5683,6 +5744,68 @@
       "yearOverYearCaption": "{{from}} to {{to}}: compared with the first recorded {{value}}{{unit}}, {{direction}}",
       "percentileChange6mPrefix": "Past 6 months ",
       "percentileChange6m": "Past 6 months {{change}}"
+    }
+  },
+  "SettingsDetails": {
+    "back": "Back to settings"
+  },
+  "PrivacySettings": {
+    "headline": "Your child’s records stay on your device",
+    "intro": "ParentOS stores profiles, journals and growth records on this device. Export this account’s records and media as a complete local backup.",
+    "storage": {
+      "title": "Where records are stored",
+      "body": "Child profiles, health records, reminder states, journals and advisor conversations are stored in a local database. Photos, audio and attachments are saved in the app’s data directory on this device.",
+      "access": "Local profiles work without a Nimi account. Switching Nimi accounts does not switch or erase the child profiles on this device. Use your device account and screen lock to protect access."
+    },
+    "ai": {
+      "title": "What AI uses",
+      "body": "The advisor, reports and summaries use the local records and input each feature needs; voice transcription processes the audio you record. Each AI capability runs through Nimi on the model you choose in AI settings: with a Local model, this input is processed on this device; with a Cloud model, the input a request needs is sent through Nimi to the cloud service you chose, which handles it under its own terms and may charge for it. ParentOS never syncs or backs up your records to the cloud.",
+      "account": "Nimi Desktop manages the account and access authorization needed for AI. You can still view and manage local records when AI is unavailable. AI settings show model configuration and feature availability.",
+      "action": "View AI settings"
+    },
+    "backup": {
+      "title": "What a backup includes",
+      "body": "A complete backup includes this account’s profiles, growth records, journals, conversations, saved photos, avatars, voice recordings, attachments and orthodontic photos. Login credentials, AI configuration, other accounts and caches are excluded.",
+      "restore": "Restoring replaces this account’s records and restores its media. Damaged backups, missing media and incompatible versions are rejected, preserving current data. Older JSON-only backups are not supported.",
+      "care": "Backup archives are unencrypted and contain children’s personal information and media. Keep them in a location you trust.",
+      "action": "Go to backup and restore"
+    },
+    "delete": {
+      "title": "Deleting a child’s data",
+      "body": "Deleting a child in Child management also deletes their related health records, journals, advisor conversations, reports and reminder states, and removes associated media managed by the app. Save any information you need before deleting.",
+      "exports": "Backups, reports and file copies exported outside the app are not deleted. You need to manage those copies yourself.",
+      "action": "Go to child management"
+    }
+  },
+  "AboutSettings": {
+    "name": "ParentOS",
+    "tagline": "An AI-powered child growth companion",
+    "version": "Version {{version}}",
+    "stage": "Pre-Alpha · In development",
+    "intro": "Bring everyday observations, growth records and age-based reminders together to understand what deserves attention at each stage and keep a record you can revisit.",
+    "features": {
+      "title": "Record the everyday. Notice the changes.",
+      "reminders": {
+        "title": "Know what to focus on",
+        "body": "Age-based rules organize stage reminders, while nurture modes adjust how information is presented."
+      },
+      "records": {
+        "title": "Keep records together",
+        "body": "Manage profiles for multiple children, record health data, observations, photos and audio, and revisit changes over time."
+      },
+      "insights": {
+        "title": "Use AI to organize and understand",
+        "body": "Explore existing records with the advisor, summaries and reports. AI features require Nimi access authorization and a Local or Cloud model chosen in AI settings."
+      }
+    },
+    "boundary": {
+      "title": "Support for observation and professional care",
+      "body": "ParentOS provides standardized reminders, recorded trends and knowledge explanations. AI content is for reference and does not provide individual diagnosis, treatment advice, mental health assessments or comparative rankings of children.",
+      "professional": "Consult a qualified professional if you have questions about a record or your child’s situation. This version is still in development; image recognition and report OCR are not yet available."
+    },
+    "nimi": {
+      "title": "Working with Nimi",
+      "body": "ParentOS manages local growth records and the app experience. Nimi provides AI capabilities, model configuration and access authorization. Settings show current capability status and explain how data is used."
     }
   }
 }
