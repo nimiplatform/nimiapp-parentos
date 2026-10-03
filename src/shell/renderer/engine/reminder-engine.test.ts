@@ -660,3 +660,49 @@ describe('reminder engine unknown-rule fail-close (PO-TIME-007)', () => {
     }
   });
 });
+
+describe('non-repeat expiry with persisted state', () => {
+  // Mirrors PO-REM-BON-001: a preschool stage window (36–48 months).
+  const stageRule: ReminderRule = {
+    ...baseRule,
+    ruleId: 'PO-REM-TEST-BON',
+    category: 'stage',
+    priority: 'P2',
+    triggerAge: { startMonths: 36, endMonths: 48 },
+  };
+  const teenContext = makeContext({
+    birthDate: '2012-12-01',
+    ageMonths: 165,
+    localToday: '2026-09-30',
+    profileCreatedAt: '2020-01-01T00:00:00.000Z',
+  });
+
+  it('expires a non-terminal state whose window closed far beyond the hard ceiling', () => {
+    const states = [makeState({ ruleId: 'PO-REM-TEST-BON', scheduledDate: '2017-06-01' })];
+    const reminders = computeEligibleReminders([stageRule], teenContext, states);
+    expect(reminders).toHaveLength(0);
+  });
+
+  it('keeps a long-closed window the parent rescheduled recently', () => {
+    const states = [makeState({ ruleId: 'PO-REM-TEST-BON', scheduledDate: '2026-08-01' })];
+    const reminders = computeEligibleReminders([stageRule], teenContext, states);
+    expect(reminders.map((r) => r.lifecycle)).toEqual(['overdue']);
+  });
+
+  it('keeps terminal states as history even long after the window', () => {
+    const states = [makeState({ ruleId: 'PO-REM-TEST-BON', completedAt: '2016-10-01T00:00:00.000Z' })];
+    const reminders = computeEligibleReminders([stageRule], teenContext, states);
+    expect(reminders.map((r) => r.lifecycle)).toEqual(['completed']);
+  });
+
+  it('keeps a non-terminal state within the hard ceiling', () => {
+    // Window ended at 48 months; ceiling is max(24 × 1.5, 12) = 36 months.
+    const states = [makeState({ ruleId: 'PO-REM-TEST-BON', scheduledDate: '2016-06-01' })];
+    const reminders = computeEligibleReminders(
+      [stageRule],
+      makeContext({ birthDate: '2012-12-01', ageMonths: 80, localToday: '2019-08-01', profileCreatedAt: '2014-01-01T00:00:00.000Z' }),
+      states,
+    );
+    expect(reminders.map((r) => r.lifecycle)).toEqual(['overdue']);
+  });
+});

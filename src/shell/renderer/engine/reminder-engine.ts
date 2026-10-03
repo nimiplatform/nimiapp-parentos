@@ -341,13 +341,40 @@ function isEligibleRepeatInstance(
   return true;
 }
 
+function hasTerminalSignal(state: ReminderState) {
+  return Boolean(
+    state.completedAt
+    || state.notApplicable === 1
+    || state.acknowledgedAt
+    || state.practiceHabituatedAt
+    || (state.consultedAt && state.consultationConversationId),
+  );
+}
+
 /** Max months past the trigger window to keep showing an un-actioned reminder.
  *  Beyond this, the item silently expires — a 12-year-old should not see newborn vaccines. */
-function isEligibleNonRepeat(rule: GenReminderRule, ageMonths: number, hasPersistedState: boolean, expiryMonths: number | null) {
-  // If there's a persisted state (completed, dismissed, snoozed, etc.) always show it
-  if (hasPersistedState) return true;
-
+function isEligibleNonRepeat(
+  rule: GenReminderRule,
+  ageMonths: number,
+  state: ReminderState | null,
+  expiryMonths: number | null,
+  effectiveEndDate: string,
+  localToday: string,
+) {
   const endAge = rule.triggerAge.endMonths === -1 ? 216 : rule.triggerAge.endMonths;
+
+  if (state) {
+    // Terminal records stay visible as history. A non-terminal persisted state
+    // gets the same hard ceiling as repeat instances, so a long-closed stage
+    // window cannot surface as "逾期 3000+ 天". The ceiling runs from the latest
+    // date the parent set, so a recent reschedule or snooze keeps the item.
+    if (hasTerminalSignal(state) || expiryMonths == null) return true;
+    const anchor = [effectiveEndDate, state.scheduledDate?.slice(0, 10), state.snoozedUntil?.slice(0, 10)]
+      .filter((date): date is string => Boolean(date))
+      .reduce((latest, date) => (date > latest ? date : latest));
+    const hardCeiling = Math.max(expiryMonths * PERSISTED_STATE_EXPIRY_FACTOR, PERSISTED_STATE_EXPIRY_FLOOR);
+    return localToday <= addMonths(anchor, hardCeiling);
+  }
 
   // Not yet in the trigger window (1 month lookahead)
   if (ageMonths < rule.triggerAge.startMonths - 1) return false;
@@ -474,10 +501,9 @@ export function computeEligibleReminders(
 
     const state = stateMap.get(reminderKey(rule.ruleId, 0)) ?? null;
     const expiryMonths = deriveExpiryMonths(rule);
-    if (!isEligibleNonRepeat(rule, context.ageMonths, Boolean(state), expiryMonths)) continue;
-
     const effectiveStartDate = addMonths(birthDate, rule.triggerAge.startMonths);
     const effectiveEndDate = addMonths(birthDate, rule.triggerAge.endMonths === -1 ? 216 : rule.triggerAge.endMonths);
+    if (!isEligibleNonRepeat(rule, context.ageMonths, state, expiryMonths, effectiveEndDate, context.localToday)) continue;
     const deliveryDisposition = isColdStartReminder(
       rule,
       kind,
