@@ -18,6 +18,7 @@ export type AdvisorComposerProps = {
   recordRoute: string | null;
 };
 
+// @nimi-authority: rule.parentos.advs.r006
 export function AdvisorComposer({
   value,
   onChange,
@@ -47,12 +48,12 @@ export function AdvisorComposer({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
       e.preventDefault();
-      onSend();
+      if (!disabled && !isStreaming && value.trim()) onSend();
     }
   };
 
   return (
-    <div className="advisor-composer-shell shrink-0 px-6 pb-5 pt-3">
+    <div className="advisor-composer-shell shrink-0 px-6 pb-5 pt-1">
       <div className="mx-auto max-w-3xl">
         {recordRoute && (
           <div className="mb-2">
@@ -79,20 +80,22 @@ export function AdvisorComposer({
               rows={1}
               className="advisor-composer-textarea min-h-[48px] max-h-32 min-w-0 flex-1 resize-none overflow-y-hidden border-0 bg-transparent px-3 py-3 text-[14px] leading-[1.6] text-[var(--nimi-text-primary)] outline-none placeholder:text-[var(--nimi-text-muted)] disabled:cursor-not-allowed disabled:opacity-60"
             />
-            <button
-              type="button"
-              onClick={isStreaming ? onStop : onSend}
-              disabled={!isStreaming && !value.trim()}
-              className={cn(
-                'mb-1 flex h-9 w-9 shrink-0 items-center justify-center parentos-radius-10 transition-all',
-                isStreaming
-                  ? 'bg-[color-mix(in_srgb,var(--nimi-status-danger)_12%,var(--nimi-surface-card))] text-[var(--nimi-status-danger)] hover:bg-[color-mix(in_srgb,var(--nimi-status-danger)_18%,var(--nimi-surface-card))]'
-                  : 'bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)] hover:shadow-[var(--nimi-elevation-raised)] disabled:cursor-not-allowed disabled:bg-[color-mix(in_srgb,var(--nimi-text-muted)_18%,var(--nimi-surface-card))] disabled:text-[var(--nimi-text-muted)] disabled:shadow-none',
-              )}
-              aria-label={isStreaming ? i18nText('Advisor.composer.stop') : i18nText('Advisor.composer.send')}
-            >
-              {isStreaming ? <Square size={14} aria-hidden="true" /> : <Send size={15} aria-hidden="true" />}
-            </button>
+            <div className="mb-1 shrink-0">
+              <button
+                type="button"
+                onClick={isStreaming ? onStop : onSend}
+                disabled={!isStreaming && (disabled || !value.trim())}
+                className={cn(
+                  'flex h-9 w-9 shrink-0 items-center justify-center parentos-radius-10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nimi-text-secondary)]',
+                  isStreaming
+                    ? 'bg-[var(--nimi-action-primary-bg)] text-white shadow-[var(--nimi-elevation-base)] hover:bg-[var(--nimi-action-primary-bg-hover)] hover:shadow-[var(--nimi-elevation-raised)]'
+                    : 'bg-[var(--nimi-action-primary-bg)] text-[var(--nimi-action-primary-text)] shadow-[var(--nimi-elevation-base)] hover:shadow-[var(--nimi-elevation-raised)] disabled:cursor-not-allowed disabled:bg-[color-mix(in_srgb,var(--nimi-text-muted)_18%,var(--nimi-surface-card))] disabled:text-[var(--nimi-text-muted)] disabled:shadow-none',
+                )}
+                aria-label={isStreaming ? i18nText('Advisor.composer.stop') : i18nText('Advisor.composer.send')}
+              >
+                {isStreaming ? <Square size={12} fill="currentColor" strokeWidth={0} aria-hidden="true" /> : <Send size={15} aria-hidden="true" />}
+              </button>
+            </div>
           </div>
         </div>
       </div>

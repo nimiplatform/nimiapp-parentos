@@ -6,6 +6,7 @@ import {
   findReportsBoundaryErrors,
   findRuntimeHelperBoundaryErrors,
   findSettingsPrivacyErrors,
+  findTextTurnHelperBoundaryErrors,
   findVoiceBoundaryErrors,
 } from './check-parentos-ai-boundary.js';
 
@@ -90,39 +91,63 @@ describe('check-parentos-ai-boundary', () => {
     );
   });
 
-  it('requires advisor snapshot and fail-close markers', () => {
-    const errors = findAdvisorBoundaryErrors({
-      advisorPageSource: [
-        'REVIEWED_DOMAINS',
-        'NEEDS_REVIEW_DOMAINS',
-        'filterAIResponse',
-        'inferRequestedDomains',
-        'resolveAdvisorPromptStrategy',
-        'buildAdvisorSnapshot',
-        'serializeAdvisorSnapshot',
-        'buildAdvisorRuntimeUserMessage',
-        'buildAdvisorNeedsReviewRuntimeUserMessage',
-        'buildAdvisorUnknownClarifierRuntimeUserMessage',
-        'buildAdvisorGenericRuntimeUserMessage',
-        'buildStructuredAdvisorFallback',
-        'appendAdvisorSources',
-        "surfaceId: 'parentos.advisor'",
-        'contextSnapshot: snapshotJson',
-        'runParentosTextGenerate',
-        'buildAdvisorRuntimeInput(',
-        'shouldAppendAdvisorSources(',
-        '运行时响应触发了安全过滤',
-      ].join('\n'),
-      advisorBoundarySource: [
-        'export type AdvisorPromptStrategy',
-        "return 'generic-chat';",
-        "return 'unknown-clarifier';",
-        "return 'reviewed-advice';",
-        "return 'needs-review-descriptive';",
-      ].join('\n'),
-    });
+  const advisorSources = () => ({
+    advisorPageSource: ['runAdvisorTurn(', 'const isCurrent = () => true;', 'request.abort.abort();'].join('\n'),
+    advisorTurnSource: [
+      "surfaceId: 'parentos.advisor'",
+      'runParentosTextTurn(',
+      'parseAdvisorIntent(',
+      'readAdvisorSources(',
+      'advisorFactsReadFailures(',
+      'resolveAdvisorPromptStrategy(',
+      'buildAdvisorContextSnapshot(',
+      'checkAdvisorAnswer(',
+      'if (!live()) return canceled();',
+      'control.persistAssistant(',
+    ].join('\n'),
+    advisorBoundarySource: [
+      'export type AdvisorPromptStrategy',
+      'REVIEWED_DOMAINS',
+      'NEEDS_REVIEW_DOMAINS',
+      'filterAIResponse(',
+      'CITATION_PATTERN',
+      "return 'generic-chat';",
+      "return 'unknown-clarifier';",
+      "return 'reviewed-advice';",
+      "return 'needs-review-descriptive';",
+    ].join('\n'),
+    advisorPromptSource: "if (strategy === 'reviewed-advice' && knowledge.entries.length > 0) {",
+  });
 
-    expect(errors).toEqual([]);
+  it('requires the typed-intent, checked-answer, and ownership markers of an advisor turn', () => {
+    expect(findAdvisorBoundaryErrors(advisorSources())).toEqual([]);
+  });
+
+  it('fails when the keyword router or knowledge outside reviewed-advice returns', () => {
+    const sources = advisorSources();
+    const errors = findAdvisorBoundaryErrors({
+      ...sources,
+      advisorTurnSource: `${sources.advisorTurnSource}\ninferRequestedDomains(question)`,
+      advisorPromptSource: 'sections.push(knowledgeEntries)',
+    });
+    expect(errors).toEqual(expect.arrayContaining([
+      'advisor must not retain the keyword/template path: inferRequestedDomains',
+      'advisor-prompt.ts must hand knowledge entries only to the reviewed-advice strategy',
+    ]));
+  });
+
+  it('keeps the text-turn helper conversation-only, cancelable, and tool-free', () => {
+    const helper = [
+      'export async function runParentosTextTurn',
+      'getParentOSNimiClient().ai.text.streamTurn({',
+      'isParentosAISurfaceExecutable(input.surfaceId)',
+      '!policy.conversation',
+      'requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)',
+      'subscription.cancel()',
+      "event.finishReason !== 'stop'",
+    ].join('\n');
+    expect(findTextTurnHelperBoundaryErrors(helper)).toEqual([]);
+    expect(findTextTurnHelperBoundaryErrors(`${helper}\ntools: []`)).toEqual(['parentos-ai-text-turn.ts must not declare tools:']);
   });
 
   it('requires the protected Scenario Job STT path and fail-close transcript validation', () => {
@@ -179,20 +204,58 @@ describe('check-parentos-ai-boundary', () => {
     ]));
   });
 
-  it('flags settings/privacy drift when cloud controls remain exposed', () => {
+  const settingsPrivacyInput = () => ({
+    manifestSource: 'app_id: nimi.parentos\napp_access:\n  - runtime.consume\n',
+    aiSettingsSurfaceSources: [
+      { path: 'src/shell/renderer/features/settings/ai-settings-page.tsx', content: '<ParentosAIConfigEditor />' },
+    ],
+    aiConfigEditorSource: [
+      '<ModelConfigAIConfigSurface',
+      "context={{ owner: 'app-ai-config', appId: PARENTOS_APP_ID }}",
+      'listOptions={(query) => getParentosAIConfigManager().listOptions(query)}',
+      'const result = await getParentosAIConfigManager().overwrite(input);',
+    ].join('\n'),
+    aiConfigSource: "export const PARENTOS_TEXT_CAPABILITY_CONTRACT = 'text.generate';",
+    privacyAiCopy: [
+      { locale: 'en', text: 'With a Cloud model, the input a request needs is sent through Nimi to the cloud service you chose.' },
+      { locale: 'zh', text: '选择云端模型时，完成该次请求所需的内容会经 Nimi 发送到你选择的云端服务。' },
+    ],
+  });
+
+  it('accepts AI settings that keep both routes and disclose Cloud inference', () => {
+    expect(findSettingsPrivacyErrors(settingsPrivacyInput())).toEqual([]);
+  });
+
+  it('flags route narrowing, Cloud rejection, local-only privacy copy, and custody material', () => {
+    const input = settingsPrivacyInput();
     const errors = findSettingsPrivacyErrors({
-      settingsPageSource: '所有数据存储在本地，不上传至云端',
+      ...input,
+      manifestSource: `${input.manifestSource}ai_config_ui:\n  allowed_routes:\n    - local\n`,
       aiSettingsSurfaceSources: [
         {
-          path: 'src/shell/renderer/features/settings/ai-settings-page.tsx',
-          content: "value: 'cloud'\nConnector ID\nroute、model 和 connector",
+          path: 'src/shell/renderer/features/settings/parentos-ai-config.ts',
+          content: "{ reasonCode: 'parentos-ai-cloud-route-not-admitted' }",
+        },
+        {
+          path: 'src/shell/renderer/features/settings/parentos-ai-config-editor.tsx',
+          content: "allowedRoutes={['local']}",
         },
       ],
+      aiConfigEditorSource: 'createNimiLocalAIConfigCapabilityIntent({})',
       aiConfigSource: "scopeRef: { ownerId: 'nimi.parentos' }, connectorId: 'openai-main'; client.aiConfig.overwrite([])",
+      privacyAiCopy: [
+        { locale: 'en', text: 'Current AI features use local models through Nimi; cloud model configurations are rejected.' },
+        { locale: 'zh', text: '当前 AI 功能通过 Nimi 使用本地模型。' },
+      ],
     });
 
     expect(errors).toEqual(expect.arrayContaining([
-      "AI settings must stay local-only while privacy copy says no cloud upload (value: 'cloud' in src/shell/renderer/features/settings/ai-settings-page.tsx)",
+      'nimi.app.yaml must not narrow AIConfig route choices with ai_config_ui',
+      'AI settings must not reject or narrow the Cloud route (parentos-ai-cloud-route-not-admitted in src/shell/renderer/features/settings/parentos-ai-config.ts)',
+      'AI settings must not reject or narrow the Cloud route (allowedRoutes= in src/shell/renderer/features/settings/parentos-ai-config-editor.tsx)',
+      'parentos-ai-config-editor.tsx must edit AIConfig through the shared Kit surface (missing ModelConfigAIConfigSurface)',
+      'PrivacySettings.ai.body (en) must explain what a Cloud route sends instead of claiming local-only AI',
+      'PrivacySettings.ai.body (zh) must explain what a Cloud route sends instead of claiming local-only AI',
       'ParentOS AI config must recognize the portable text.generate capability intent',
       'ParentOS AI config must remain a read-only platform projection',
       'ParentOS AI config must not carry custody material: connectorId',

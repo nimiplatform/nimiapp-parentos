@@ -1,166 +1,115 @@
 import { describe, expect, it } from 'vitest';
 import {
-  appendAdvisorSources,
-  buildAdvisorGenericRuntimeUserMessage,
-  buildAdvisorNeedsReviewRuntimeUserMessage,
-  buildAdvisorUnknownClarifierRuntimeUserMessage,
-  buildAdvisorRuntimeUserMessage,
-  buildStructuredAdvisorFallback,
-  canUseAdvisorGenericRuntime,
-  canUseAdvisorRuntime,
-  inferRequestedDomains,
-  parseAdvisorSnapshot,
+  checkAdvisorAnswer,
+  isAdvisorSourceBlock,
+  renderAdvisorAnswerContent,
   resolveAdvisorPromptStrategy,
-  serializeAdvisorSnapshot,
+  stripAdvisorSourceBlocks,
 } from './advisor-boundary.js';
+import type { AdvisorIntent } from './advisor-intent.js';
+import { selectAdvisorKnowledge, type AdvisorKnowledgeSelection } from './advisor-knowledge.js';
 
-const snapshot = {
-  child: {
-    childId: 'child-1',
-    displayName: 'Mimi',
-    gender: 'female',
-    birthDate: '2024-01-15',
-    nurtureMode: 'balanced',
-  },
-  ageMonths: 14,
-  measurements: [
-    {
-      measurementId: 'm-1',
-      childId: 'child-1',
-      typeId: 'weight',
-      value: 9.2,
-      measuredAt: '2025-03-10T08:00:00.000Z',
-      ageMonths: 13,
-      percentile: null,
-      source: 'manual',
-      notes: null,
-      createdAt: '2025-03-10T08:00:00.000Z',
-    },
-  ],
-  vaccines: [
-    {
-      recordId: 'v-1',
-      childId: 'child-1',
-      ruleId: 'PO-REM-VAC-001',
-      vaccineName: 'MMR',
-      vaccinatedAt: '2025-02-01T08:00:00.000Z',
-      ageMonths: 12,
-      batchNumber: null,
-      hospital: null,
-      adverseReaction: null,
-      photoPath: null,
-      createdAt: '2025-02-01T08:00:00.000Z',
-    },
-  ],
-  milestones: [
-    {
-      recordId: 'ms-1',
-      childId: 'child-1',
-      milestoneId: 'PO-MS-LANG-003',
-      achievedAt: '2025-01-20T08:00:00.000Z',
-      ageMonthsWhenAchieved: 12,
-      notes: null,
-      photoPath: null,
-      createdAt: '2025-01-20T08:00:00.000Z',
-      updatedAt: '2025-01-20T08:00:00.000Z',
-    },
-  ],
-  journalEntries: [
-    {
-      entryId: 'j-1',
-      childId: 'child-1',
-      contentType: 'text',
-      textContent: 'Observed stacking blocks.',
-      voicePath: null,
-      photoPaths: null,
-      recordedAt: '2025-03-11T08:00:00.000Z',
-      ageMonths: 13,
-      observationMode: 'five-minute',
-      dimensionId: 'PO-OBS-CONC-001',
-      selectedTags: null,
-      guidedAnswers: null,
-      observationDuration: 5,
-      keepsake: 0,
-      moodTag: null,
-      recorderId: 'rec-1',
-      createdAt: '2025-03-11T08:00:00.000Z',
-      updatedAt: '2025-03-11T08:00:00.000Z',
-    },
-  ],
-  outdoorRecords: [],
-  outdoorGoalMinutes: null,
-};
+const intent = (overrides: Partial<AdvisorIntent>): AdvisorIntent => ({
+  task: 'records',
+  domains: [],
+  groups: [],
+  time: { kind: 'default' },
+  compare: false,
+  detail: false,
+  ...overrides,
+});
 
-describe('advisor boundary', () => {
-  it('allows runtime only for reviewed domains', () => {
-    expect(inferRequestedDomains('Need help with sleep and sensitive period routines')).toEqual(
-      expect.arrayContaining(['sleep', 'sensitivity']),
-    );
-    expect(canUseAdvisorRuntime([])).toBe(false);
-    expect(canUseAdvisorRuntime(['sleep', 'digital'])).toBe(true);
-    expect(canUseAdvisorRuntime(['sleep', 'growth'])).toBe(false);
+const none: AdvisorKnowledgeSelection = { entries: [], coverage: [] };
+
+describe('resolveAdvisorPromptStrategy', () => {
+  it('lets code, not the parse, pick the scope', () => {
+    expect(resolveAdvisorPromptStrategy(intent({ task: 'chat' }), [], none)).toBe('generic-chat');
+    expect(resolveAdvisorPromptStrategy(intent({ task: 'clarify' }), ['vision'], none)).toBe('unknown-clarifier');
+    expect(resolveAdvisorPromptStrategy(intent({ task: 'records' }), [], none)).toBe('unknown-clarifier');
+    expect(resolveAdvisorPromptStrategy(intent({ task: 'overview' }), ['growth', 'journal'], none)).toBe('needs-review-descriptive');
   });
 
-  it('allows generic advisor chat without opening the unknown-domain path', () => {
-    expect(canUseAdvisorRuntime([])).toBe(false);
-    expect(canUseAdvisorGenericRuntime('你好，测试，你的模型是？', [])).toBe(true);
-    expect(canUseAdvisorGenericRuntime('最近怎么样？', [])).toBe(false);
-    expect(resolveAdvisorPromptStrategy('你好，测试，你的模型是？', [])).toBe('generic-chat');
-    expect(resolveAdvisorPromptStrategy('最近怎么样？', [])).toBe('unknown-clarifier');
-    expect(resolveAdvisorPromptStrategy('How is growth going?', ['growth'])).toBe('needs-review-descriptive');
-    expect(resolveAdvisorPromptStrategy('Need help with sleep', ['sleep'])).toBe('reviewed-advice');
-
-    const message = buildAdvisorGenericRuntimeUserMessage('你好，测试，你的模型是？');
-    expect(message).toMatch(/generic chat|泛闲聊或产品能力澄清/);
-    expect(message).toMatch(/User message: 你好，测试，你的模型是？|用户消息：你好，测试，你的模型是？/);
+  it('keeps any needs-review domain on the descriptive path, even mixed with reviewed ones', () => {
+    const knowledge = selectAdvisorKnowledge({ domains: ['sensitivity', 'vision'], ageMonths: 48 });
+    expect(knowledge.entries.length).toBeGreaterThan(0);
+    expect(resolveAdvisorPromptStrategy(intent({ domains: ['sensitivity', 'vision'] }), ['journal', 'vision'], knowledge))
+      .toBe('needs-review-descriptive');
   });
 
-  it('builds descriptive and clarifier runtime prompts for non-reviewed paths', () => {
-    const descriptive = buildAdvisorNeedsReviewRuntimeUserMessage('How is growth going?', ['growth'], snapshot);
-    expect(descriptive).toMatch(/descriptive-answer strategy|描述型回答策略/);
-    expect(descriptive).toMatch(/Involved domains: growth|涉及领域：growth/);
-    expect(descriptive).toContain('"childId":"child-1"');
+  it('never grants reviewed-advice without admitted age-applicable material', () => {
+    const teen = selectAdvisorKnowledge({ domains: ['sleep', 'outdoor', 'sensitivity', 'digital'], ageMonths: 156 });
+    expect(teen.entries).toHaveLength(0);
+    expect(resolveAdvisorPromptStrategy(intent({ domains: ['sleep', 'outdoor', 'sensitivity', 'digital'] }), ['sleep', 'outdoor'], teen))
+      .toBe('needs-review-descriptive');
+    const preschooler = selectAdvisorKnowledge({ domains: ['sensitivity'], ageMonths: 48 });
+    expect(resolveAdvisorPromptStrategy(intent({ task: 'knowledge', domains: ['sensitivity'] }), ['journal'], preschooler))
+      .toBe('reviewed-advice');
+  });
+});
 
-    const clarifier = buildAdvisorUnknownClarifierRuntimeUserMessage('最近怎么样？', snapshot);
-    expect(clarifier).toMatch(/clarifying-answer strategy|澄清型回答策略/);
-    expect(clarifier).toMatch(/Current local record summary|当前本地记录概况/);
+describe('checkAdvisorAnswer', () => {
+  const knowledge = selectAdvisorKnowledge({ domains: ['sensitivity'], ageMonths: 48 });
+
+  it('renumbers provided citations in order of first use', () => {
+    const [first, second] = knowledge.entries;
+    const result = checkAdvisorAnswer(`先说一点 [${second?.citeId}]。再说一点【${first?.citeId}】，还是它 [${second?.citeId}]。`, knowledge.entries);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.body).toBe('先说一点 [1]。再说一点[2]，还是它 [1]。');
+    expect(result.cited.map((entry) => entry.citeId)).toEqual([second?.citeId, first?.citeId]);
   });
 
-  it('forces mixed reviewed and needs-review questions back to structured facts', () => {
-    const domains = inferRequestedDomains('Need help with sleep and growth together');
-    expect(domains).toEqual(expect.arrayContaining(['sleep', 'growth']));
-    expect(canUseAdvisorRuntime(domains)).toBe(false);
-
-    const text = buildStructuredAdvisorFallback('Need help with sleep and growth together', domains, snapshot);
-    expect(text).toContain('growth');
-    expect(text).toContain('Phase 1');
-    expect(text).toMatch(/consult a professional|建议咨询专业人士/);
+  it('discards answers that cite unprovided material, carry URLs, or fail the safety filter', () => {
+    expect(checkAdvisorAnswer('依据资料 [K9]。', knowledge.entries)).toEqual({ ok: false, reason: 'citation' });
+    expect(checkAdvisorAnswer('依据资料 [K1]。', [])).toEqual({ ok: false, reason: 'citation' });
+    expect(checkAdvisorAnswer('详见 https://example.org/guide', knowledge.entries)).toEqual({ ok: false, reason: 'citation' });
+    expect(checkAdvisorAnswer('这可能是发育迟缓。', knowledge.entries)).toEqual({ ok: false, reason: 'safety' });
+    expect(checkAdvisorAnswer('依据如下：```json\n{"category":"口腔"}\n```', [])).toEqual({ ok: false, reason: 'format' });
+    expect(checkAdvisorAnswer('记录里 recordsInPeriod 为 0。', [])).toEqual({ ok: false, reason: 'format' });
+    expect(checkAdvisorAnswer('<think>...</think>   ', knowledge.entries)).toEqual({ ok: false, reason: 'empty' });
   });
 
-  it('builds structured fallback for needs-review domains', () => {
-    const text = buildStructuredAdvisorFallback('How is growth going?', ['growth'], snapshot);
-    expect(text).toMatch(/Question: How is growth going\?|问题：How is growth going\?/);
-    expect(text).toMatch(/Growth records:|生长记录：/);
-    expect(text).toContain('Phase 1');
-    expect(text).toMatch(/consult a professional|建议咨询专业人士/);
+  it('removes source lines the model wrote itself, keeping the answer', () => {
+    expect(checkAdvisorAnswer('本周已记录 90 分钟。\n\n依据本地记录：户外活动（2026-09-28）', []))
+      .toMatchObject({ ok: true, body: '本周已记录 90 分钟。' });
+    expect(checkAdvisorAnswer('本周已记录 90 分钟。依据本地记录：户外活动', []))
+      .toMatchObject({ ok: true, body: '本周已记录 90 分钟。' });
+    expect(checkAdvisorAnswer('依据本地记录：户外活动', [])).toEqual({ ok: false, reason: 'empty' });
+    expect(checkAdvisorAnswer('立定跳远增加了 8 cm。\n\n来源：成长底稿', []))
+      .toMatchObject({ ok: true, body: '立定跳远增加了 8 cm。' });
+    expect(checkAdvisorAnswer('立定跳远增加了 8 cm。\n\n**参考来源：**\n- 成长底稿\n- 体能记录\n\n有变化可以再记一次。', []))
+      .toMatchObject({ ok: true, body: '立定跳远增加了 8 cm。\n\n有变化可以再记一次。' });
+    expect(checkAdvisorAnswer('这些数据的来源：学校体测。', []))
+      .toMatchObject({ ok: true, body: '这些数据的来源：学校体测。' });
   });
 
-  it('appends reviewed-domain source labels', () => {
-    const text = appendAdvisorSources('Safe answer', ['sleep']);
-    expect(text).toContain('Safe answer');
-    expect(text).toMatch(/Sources:|来源：/);
-    expect(text).toContain('sleep:');
+  it('drops reasoning markup some local models emit as text', () => {
+    const result = checkAdvisorAnswer('<think>先想想</think>本周已记录 **90 分钟**。', []);
+    expect(result).toMatchObject({ ok: true, body: '本周已记录 **90 分钟**。' });
+  });
+});
+
+describe('renderAdvisorAnswerContent', () => {
+  it('builds source lines from the entries themselves, not from domain labels', () => {
+    const knowledge = selectAdvisorKnowledge({ domains: ['sensitivity'], ageMonths: 48 });
+    const entry = knowledge.entries[0];
+    expect(entry).toBeDefined();
+    const content = renderAdvisorAnswerContent({ body: '正文 [1]。', cited: entry ? [entry] : [], localFactSources: '随记（2026-09-28）' });
+    const blocks = content.split('\n\n');
+    expect(blocks[0]).toBe('正文 [1]。');
+    expect(isAdvisorSourceBlock(blocks[1] ?? '')).toBe(true);
+    expect(blocks[1]).toContain(`[1] ${entry?.title}（${entry?.citation}）`);
+    expect(content).not.toContain('Montessori Sensitive Periods Framework');
   });
 
-  it('serializes and parses a frozen advisor snapshot', () => {
-    const serialized = serializeAdvisorSnapshot(snapshot);
-    expect(parseAdvisorSnapshot(serialized)).toEqual(snapshot);
+  it('strips the app-rendered source block before an answer is replayed as history', () => {
+    const content = renderAdvisorAnswerContent({ body: '本周已记录 90 分钟。', cited: [], localFactSources: '户外活动（2026-09-28）' });
+    expect(stripAdvisorSourceBlocks(content)).toBe('本周已记录 90 分钟。');
   });
 
-  it('builds runtime user content from the frozen local snapshot', () => {
-    const message = buildAdvisorRuntimeUserMessage('最近睡眠怎么样？', ['sleep'], snapshot);
-    expect(message).toMatch(/Question: 最近睡眠怎么样？|问题：最近睡眠怎么样？/);
-    expect(message).toMatch(/Detected domains: sleep|已判定领域：sleep/);
-    expect(message).toContain('"childId":"child-1"');
+  it('shows only the record categories and dates for fact-only answers', () => {
+    const content = renderAdvisorAnswerContent({ body: '本周已记录 90 分钟。', cited: [], localFactSources: '户外活动（2026-09-28、2026-09-29）' });
+    expect(content).toBe('本周已记录 90 分钟。\n\n依据本地记录：户外活动（2026-09-28、2026-09-29）');
+    expect(renderAdvisorAnswerContent({ body: '你好！', cited: [], localFactSources: null })).toBe('你好！');
   });
 });

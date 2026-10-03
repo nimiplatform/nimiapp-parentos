@@ -17,8 +17,12 @@ export type {
 export { MILESTONE_CATALOG, MILESTONE_DOMAINS } from './gen/milestone-catalog.gen.js';
 export type { Milestone, MilestoneDomain } from './gen/milestone-catalog.gen.js';
 
-export { SENSITIVE_PERIODS } from './gen/sensitive-periods.gen.js';
-export type { SensitivePeriod } from './gen/sensitive-periods.gen.js';
+export {
+  SENSITIVE_PERIODS,
+  SENSITIVE_PERIODS_CONTENT_VERSION,
+  SENSITIVE_PERIOD_SOURCES,
+} from './gen/sensitive-periods.gen.js';
+export type { SensitivePeriod, SensitivePeriodSource } from './gen/sensitive-periods.gen.js';
 
 export { OBSERVATION_MODES, OBSERVATION_DIMENSIONS, FRAMEWORK_LAYERS, DIMENSION_IDS } from './gen/observation-framework.gen.js';
 export type { ObservationMode, ObservationModeId, ObservationDimension, FrameworkLayer } from './gen/observation-framework.gen.js';
@@ -109,13 +113,20 @@ export {
 export type { AiBoundaryBannedTermRule } from './gen/ai-boundary.gen.js';
 
 export {
-  ADVISOR_DOMAIN_KEYWORDS,
-  ADVISOR_GENERIC_RUNTIME,
+  ADVISOR_DOMAIN_DEFINITIONS,
+  ADVISOR_TASK_DEFINITIONS,
+  ADVISOR_RECORD_GROUP_DEFINITIONS,
 } from './gen/advisor-classifier.gen.js';
 export type {
   AdvisorClassifierDomain,
-  AdvisorDomainKeyword,
-  AdvisorGenericRuntimeClassifier,
+  AdvisorIntentTask,
+  AdvisorRecordGroupId,
+  AdvisorLocalizedText,
+  AdvisorLocalizedList,
+  AdvisorDomainDefinition,
+  AdvisorTaskExample,
+  AdvisorTaskDefinition,
+  AdvisorRecordGroupDefinition,
 } from './gen/advisor-classifier.gen.js';
 
 export { PEDIATRIC_DRUGS } from './gen/pediatric-drug-catalog.gen.js';

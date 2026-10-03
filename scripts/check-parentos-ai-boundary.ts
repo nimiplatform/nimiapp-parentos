@@ -3,10 +3,11 @@
  * Validates AI safety boundaries:
  * - banned wording stays out of executable source contexts
  * - reports runtime use is allowed only on the admitted report narration surface
- * - journal AI tagging stays on local closed-set extraction
- * - voice STT stays on the typed local transcription surface
- * - profile AI surfaces stay inside the admitted local summary / OCR boundaries
- * - advisor chat retains prompt-strategy selection, local runtime use, and structured fallback markers
+ * - journal AI tagging stays on closed-set extraction
+ * - voice STT stays on the typed protected transcription surface
+ * - profile AI surfaces stay inside the admitted profile-local summary / OCR boundaries
+ * - AI settings keep the user-selected Local or Cloud route; records stay local
+ * - advisor chat keeps a typed intent parse, code-selected strategy, completed-answer checks, request ownership, and the governed text-turn helper
  */
 
 import { readFileSync, readdirSync } from 'node:fs';
@@ -53,7 +54,9 @@ function hasTextRuntimePath(content: string) {
   return content.includes('runtime.ai.text.generate')
     || content.includes('runtime.ai.text.stream')
     || content.includes('ai.text.generateCandidate')
-    || content.includes('runParentosTextGenerate');
+    || content.includes('ai.text.streamTurn')
+    || content.includes('runParentosTextGenerate')
+    || content.includes('runParentosTextTurn');
 }
 
 function hasSpeechRuntimePath(content: string) {
@@ -354,60 +357,88 @@ export function findProfileBoundaryErrors(input: {
 
 export function findAdvisorBoundaryErrors(input: {
   advisorPageSource: string;
+  advisorTurnSource: string;
   advisorBoundarySource: string;
+  advisorPromptSource: string;
 }) {
   const errors: string[] = [];
 
-  for (const marker of [
-    'REVIEWED_DOMAINS',
-    'NEEDS_REVIEW_DOMAINS',
-    'filterAIResponse',
-    'inferRequestedDomains',
-    'resolveAdvisorPromptStrategy',
-    'buildAdvisorSnapshot',
-    'serializeAdvisorSnapshot',
-    'buildAdvisorRuntimeUserMessage',
-    'buildAdvisorNeedsReviewRuntimeUserMessage',
-    'buildAdvisorUnknownClarifierRuntimeUserMessage',
-    'buildAdvisorGenericRuntimeUserMessage',
-    'buildStructuredAdvisorFallback',
-    'appendAdvisorSources',
-  ]) {
-    if (!input.advisorPageSource.includes(marker)) {
-      errors.push(`advisor-page.tsx is missing AI boundary marker: ${marker}`);
-    }
+  // One turn: typed intent parse, task-scoped facts, code-selected strategy,
+  // frozen snapshot, completed-answer checks, and ownership checkpoints.
+  if (!hasTextRuntimePath(input.advisorTurnSource)) {
+    errors.push('advisor-turn.ts is missing the advisor text runtime path');
   }
-
-  const hasReviewedDomainRuntimePath = hasTextRuntimePath(input.advisorPageSource);
-
-  if (!hasReviewedDomainRuntimePath) {
-    errors.push('advisor-page.tsx is missing reviewed-domain runtime generation path');
-  }
-
   for (const marker of [
     "surfaceId: 'parentos.advisor'",
-    'contextSnapshot: snapshotJson',
-    'buildAdvisorRuntimeInput(',
-    'shouldAppendAdvisorSources(',
-    '运行时响应触发了安全过滤',
+    'runParentosTextTurn(',
+    'parseAdvisorIntent(',
+    'readAdvisorSources(',
+    'advisorFactsReadFailures(',
+    'resolveAdvisorPromptStrategy(',
+    'buildAdvisorContextSnapshot(',
+    'checkAdvisorAnswer(',
+    'if (!live()) return canceled();',
+    'control.persistAssistant(',
   ]) {
+    if (!input.advisorTurnSource.includes(marker)) {
+      errors.push(`advisor-turn.ts is missing fail-close advisor marker: ${marker}`);
+    }
+  }
+  for (const forbidden of ['inferRequestedDomains', 'buildStructuredAdvisorFallback', 'appendAdvisorSources']) {
+    if (input.advisorTurnSource.includes(forbidden) || input.advisorPageSource.includes(forbidden)) {
+      errors.push(`advisor must not retain the keyword/template path: ${forbidden}`);
+    }
+  }
+
+  for (const marker of ['runAdvisorTurn(', 'isCurrent', 'abort.abort()']) {
     if (!input.advisorPageSource.includes(marker)) {
-      errors.push(`advisor-page.tsx is missing fail-close advisor marker: ${marker}`);
+      errors.push(`advisor-page.tsx is missing request ownership marker: ${marker}`);
     }
   }
 
   for (const marker of [
-    "export type AdvisorPromptStrategy",
+    'export type AdvisorPromptStrategy',
+    'REVIEWED_DOMAINS',
+    'NEEDS_REVIEW_DOMAINS',
+    'filterAIResponse(',
+    'CITATION_PATTERN',
     "return 'generic-chat';",
     "return 'unknown-clarifier';",
     "return 'reviewed-advice';",
     "return 'needs-review-descriptive';",
   ]) {
     if (!input.advisorBoundarySource.includes(marker)) {
-      errors.push(`advisor-boundary.ts is missing advisor prompt-strategy marker: ${marker}`);
+      errors.push(`advisor-boundary.ts is missing advisor boundary marker: ${marker}`);
     }
   }
 
+  if (!input.advisorPromptSource.includes("strategy === 'reviewed-advice' && knowledge.entries.length > 0")) {
+    errors.push('advisor-prompt.ts must hand knowledge entries only to the reviewed-advice strategy');
+  }
+
+  return errors;
+}
+
+export function findTextTurnHelperBoundaryErrors(textTurnSource: string) {
+  const errors: string[] = [];
+  for (const marker of [
+    'export async function runParentosTextTurn',
+    'getParentOSNimiClient().ai.text.streamTurn({',
+    'isParentosAISurfaceExecutable(input.surfaceId)',
+    '!policy.conversation',
+    'requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)',
+    'subscription.cancel()',
+    "event.finishReason !== 'stop'",
+  ]) {
+    if (!textTurnSource.includes(marker)) {
+      errors.push(`parentos-ai-text-turn.ts is missing governed turn marker: ${marker}`);
+    }
+  }
+  for (const forbidden of ['tools:', 'toolChoice', 'turnItems', 'generateCandidate']) {
+    if (textTurnSource.includes(forbidden)) {
+      errors.push(`parentos-ai-text-turn.ts must not declare ${forbidden}`);
+    }
+  }
   return errors;
 }
 
@@ -457,27 +488,51 @@ export function findRuntimeHelperBoundaryErrors(parentosAiRuntimeSource: string)
   return errors;
 }
 
+// rule.parentos.shell.r006 / r010: business data stays local, while AI runs on
+// the Local or Cloud route the user commits. Neither the manifest nor the App
+// may narrow, reject, or rewrite that choice, and the privacy copy must say
+// what a Cloud route sends.
 export function findSettingsPrivacyErrors(input: {
-  settingsPageSource: string;
+  manifestSource: string;
   aiSettingsSurfaceSources: SourceFile[];
+  aiConfigEditorSource: string;
   aiConfigSource: string;
+  privacyAiCopy: ReadonlyArray<{ locale: string; text: string }>;
 }) {
   const errors: string[] = [];
 
-  if (input.settingsPageSource.includes('不上传至云端')) {
-    const disallowedMarkers = [
-      "value: 'cloud'",
-      'Connector ID',
-      'route、model 和 connector',
-    ];
-    for (const file of input.aiSettingsSurfaceSources) {
-      for (const disallowedMarker of disallowedMarkers) {
-        if (file.content.includes(disallowedMarker)) {
-          errors.push(
-            `AI settings must stay local-only while privacy copy says no cloud upload (${disallowedMarker} in ${file.path})`,
-          );
-        }
+  const manifest = parseYaml(input.manifestSource) as Record<string, unknown> | null;
+  if (manifest && 'ai_config_ui' in manifest) {
+    errors.push('nimi.app.yaml must not narrow AIConfig route choices with ai_config_ui');
+  }
+
+  for (const file of input.aiSettingsSurfaceSources) {
+    for (const marker of [
+      'parentos-ai-cloud-route-not-admitted',
+      'createNimiLocalAIConfigCapabilityIntent',
+      'allowedRoutes=',
+    ]) {
+      if (file.content.includes(marker)) {
+        errors.push(`AI settings must not reject or narrow the Cloud route (${marker} in ${file.path})`);
       }
+    }
+  }
+
+  for (const marker of [
+    'ModelConfigAIConfigSurface',
+    "owner: 'app-ai-config'",
+    'getParentosAIConfigManager().listOptions(query)',
+    'getParentosAIConfigManager().overwrite(input)',
+  ]) {
+    if (!input.aiConfigEditorSource.includes(marker)) {
+      errors.push(`parentos-ai-config-editor.tsx must edit AIConfig through the shared Kit surface (missing ${marker})`);
+    }
+  }
+
+  for (const { locale, text } of input.privacyAiCopy) {
+    const mentionsCloud = locale === 'zh' ? text.includes('云端') : /cloud/iu.test(text);
+    if (!mentionsCloud || /rejected|会被拒绝/u.test(text)) {
+      errors.push(`PrivacySettings.ai.body (${locale}) must explain what a Cloud route sends instead of claiming local-only AI`);
     }
   }
 
@@ -572,15 +627,20 @@ export function runAiBoundaryCheck() {
       files: advisorFiles,
       rootPath: ROOT,
       admittedRuntimeFiles: [
-        'src/shell/renderer/features/advisor/advisor-page.tsx',
+        'src/shell/renderer/features/advisor/advisor-turn.ts',
         'src/shell/renderer/features/advisor/advisor-suggestion-engine.ts',
       ],
       label: 'advisor',
     }),
     ...findAdvisorBoundaryErrors({
       advisorPageSource: readFileSync(resolve(SRC, 'features/advisor/advisor-page.tsx'), 'utf-8'),
+      advisorTurnSource: readFileSync(resolve(SRC, 'features/advisor/advisor-turn.ts'), 'utf-8'),
       advisorBoundarySource: readFileSync(resolve(SRC, 'features/advisor/advisor-boundary.ts'), 'utf-8'),
+      advisorPromptSource: readFileSync(resolve(SRC, 'features/advisor/advisor-prompt.ts'), 'utf-8'),
     }),
+    ...findTextTurnHelperBoundaryErrors(
+      readFileSync(resolve(SRC, 'features/settings/parentos-ai-text-turn.ts'), 'utf-8'),
+    ),
   ];
 
   const profileErrors = findProfileBoundaryErrors({
@@ -595,16 +655,28 @@ export function runAiBoundaryCheck() {
   const aiSettingsSurfacePaths = [
     resolve(SRC, 'features/settings/ai-settings-page.tsx'),
     resolve(SRC, 'features/settings/parentos-ai-config.ts'),
+    resolve(SRC, 'features/settings/parentos-ai-config-editor.tsx'),
+    resolve(SRC, 'features/settings/parentos-ai-runtime.ts'),
+    resolve(SRC, 'features/settings/parentos-ai-text-turn.ts'),
   ];
   const aiSettingsSurfaceSources: SourceFile[] = aiSettingsSurfacePaths.map((path) => ({
     path: relativeToRoot(path, ROOT),
     content: readFileSync(path, 'utf-8'),
   }));
 
+  const privacyAiCopy = (['en', 'zh'] as const).map((locale) => {
+    const bundle = JSON.parse(readFileSync(resolve(SRC, `locales/${locale}.json`), 'utf-8')) as {
+      PrivacySettings?: { ai?: { body?: string } };
+    };
+    return { locale, text: bundle.PrivacySettings?.ai?.body ?? '' };
+  });
+
   const settingsErrors = findSettingsPrivacyErrors({
-    settingsPageSource: readFileSync(resolve(SRC, 'features/settings/settings-page.tsx'), 'utf-8'),
+    manifestSource: readFileSync(resolve(ROOT, 'nimi.app.yaml'), 'utf-8'),
     aiSettingsSurfaceSources,
+    aiConfigEditorSource: readFileSync(resolve(SRC, 'features/settings/parentos-ai-config-editor.tsx'), 'utf-8'),
     aiConfigSource: readFileSync(resolve(SRC, 'features/settings/parentos-ai-config.ts'), 'utf-8'),
+    privacyAiCopy,
   });
 
   const ksData = parseYaml(
@@ -665,42 +737,42 @@ if (isMainModule()) {
 
   console.log('\n=== Journal AI Tagging Boundary ===\n');
   if (result.journalErrors.length === 0) {
-    pass('journal AI tagging remains local, closed-set, and fail-close');
+    pass('journal AI tagging remains closed-set and fail-close');
   } else {
     for (const message of result.journalErrors) fail(message);
   }
 
   console.log('\n=== Voice STT Boundary ===\n');
   if (result.voiceErrors.length === 0) {
-    pass('voice transcription stays on the typed local STT surface');
+    pass('voice transcription stays on the typed protected STT surface');
   } else {
     for (const message of result.voiceErrors) fail(message);
   }
 
   console.log('\n=== Advisor Boundary Implementation ===\n');
   if (result.advisorErrors.length === 0) {
-    pass('advisor chat retains prompt-strategy routing, local runtime use, and structured fallback markers');
+    pass('advisor chat keeps typed intent, code-selected strategy, completed-answer checks, request ownership, and the governed text-turn helper');
   } else {
     for (const message of result.advisorErrors) fail(message);
   }
 
   console.log('\n=== Profile AI Boundary ===\n');
   if (result.profileErrors.length === 0) {
-    pass('profile AI surfaces stay inside admitted local summary and OCR boundaries');
+    pass('profile AI surfaces stay inside admitted profile-local summary and OCR boundaries');
   } else {
     for (const message of result.profileErrors) fail(message);
   }
 
   console.log('\n=== Runtime Helper Boundary ===\n');
   if (result.runtimeHelperErrors.length === 0) {
-    pass('ParentOS runtime helper owns binding resolution, local warmup, metadata, and fail-closed fallback policy');
+    pass('ParentOS runtime helper owns surface admission, input budgets, and fail-closed failures');
   } else {
     for (const message of result.runtimeHelperErrors) fail(message);
   }
 
   console.log('\n=== Settings / Privacy Consistency ===\n');
   if (result.settingsErrors.length === 0) {
-    pass('AI settings stay aligned with ParentOS local-only privacy posture');
+    pass('AI settings keep the user-selected Local or Cloud route, and privacy copy explains Cloud inference while records stay local');
   } else {
     for (const message of result.settingsErrors) fail(message);
   }

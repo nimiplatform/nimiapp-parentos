@@ -1,4 +1,6 @@
-import { ADVISOR_EMPTY_GRADIENT } from './advisor-theme.js';
+import { ArrowRight } from 'lucide-react';
+import { Button } from '@nimiplatform/kit/ui';
+import { AdvisorHero } from './advisor-mascot.js';
 import { AdvisorRuntimeGateHero } from './advisor-runtime-gate.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -6,28 +8,29 @@ import { i18nText } from '../../i18n/index.js';
 export type AdvisorEmptyStateProps = {
   childName: string;
   runtimeAvailable: boolean | null;
+  onNewConversation: () => void;
 };
 
-export function AdvisorEmptyState({ childName, runtimeAvailable }: AdvisorEmptyStateProps) {
+export function AdvisorEmptyState({ childName, runtimeAvailable, onNewConversation }: AdvisorEmptyStateProps) {
+  if (runtimeAvailable === false) {
+    return <AdvisorRuntimeGateHero childName={childName} />;
+  }
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6">
-      <div className={`${ADVISOR_EMPTY_GRADIENT} w-full max-w-md rounded-[30px] border border-white/80 px-8 py-10 text-center shadow-[0_20px_52px_rgba(15,23,42,0.08)]`}>
-        {runtimeAvailable === false ? (
-          <AdvisorRuntimeGateHero childName={childName} />
-        ) : (
-          <>
-            <p className="mb-2 text-[13px] font-semibold uppercase tracking-[0.2em] text-emerald-700/70">
-              {i18nText('Advisor.empty.eyebrow')}
-            </p>
-            <h2 className="mb-3 text-[24px] font-black leading-tight tracking-tight text-slate-950">
-              {i18nText('Advisor.empty.title')}
-            </h2>
-            <p className="text-[14px] leading-6 text-slate-500">
-              {i18nText('Advisor.empty.description', { childName })}
-            </p>
-          </>
-        )}
-      </div>
-    </div>
+    <AdvisorHero
+      title={i18nText('Advisor.empty.title')}
+      description={i18nText('Advisor.empty.description', { childName })}
+      // Offer the start action only once the runtime check has passed.
+      action={runtimeAvailable ? (
+        <Button
+          tone="primary"
+          size="lg"
+          className="rounded-full"
+          onClick={onNewConversation}
+          trailingIcon={<ArrowRight size={16} aria-hidden="true" />}
+        >
+          {i18nText('Advisor.empty.action')}
+        </Button>
+      ) : undefined}
+    />
   );
 }

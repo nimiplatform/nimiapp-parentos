@@ -13,6 +13,24 @@ export interface SensitivePeriod {
   source: string;
 }
 
+export interface SensitivePeriodSource {
+  sourceId: string;
+  citation: string;
+  url: string | null;
+  reviewStatus: string;
+}
+
+export const SENSITIVE_PERIODS_CONTENT_VERSION = "2026-05-03.1";
+
+export const SENSITIVE_PERIOD_SOURCES: readonly SensitivePeriodSource[] = [
+  {
+    "sourceId": "Montessori-sensitive-periods",
+    "citation": "Montessori sensitive period educational references",
+    "url": null,
+    "reviewStatus": "reviewed"
+  }
+] ;
+
 export const SENSITIVE_PERIODS: readonly SensitivePeriod[] = [
   {
     "periodId": "PO-SP-ORAL-001",

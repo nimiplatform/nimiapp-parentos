@@ -1,0 +1,158 @@
+[
+  {
+    "domain": "sensitivity",
+    "definition": {
+      "zh": "蒙台梭利敏感期：某个阶段孩子对秩序、语言、细节、社交等特别投入的一般知识。",
+      "en": "Montessori sensitive periods: general knowledge about stages when a child is especially drawn to order, language, detail, social play and similar."
+    },
+    "examples": {
+      "zh": ["现在处在什么敏感期", "敏感期要注意什么", "孩子特别执着于物品摆放是敏感期吗"],
+      "en": ["Which sensitive period is my child in?", "What should I know about sensitive periods?"]
+    },
+    "recordGroups": ["journal"]
+  },
+  {
+    "domain": "sleep",
+    "definition": {
+      "zh": "睡眠：夜间睡眠时长、入睡与起床时间、午睡、作息规律、夜醒。",
+      "en": "Sleep: night sleep duration, bedtime and wake time, naps, routine regularity, night waking."
+    },
+    "examples": {
+      "zh": ["最近睡得够吗", "作息规律吗", "几点睡比较合适", "午睡情况怎么样", "写作业太晚会影响睡眠吗"],
+      "en": ["Is my child sleeping enough lately?", "Is the bedtime routine regular?", "How are the naps going?"]
+    },
+    "recordGroups": ["sleep"]
+  },
+  {
+    "domain": "sexuality",
+    "definition": {
+      "zh": "性教育与身体边界：身体隐私、界限、与孩子谈论身体和青春期话题的方式。",
+      "en": "Sexuality education and body boundaries: body privacy, boundaries, and how to talk with a child about bodies and puberty topics."
+    },
+    "examples": {
+      "zh": ["怎么跟孩子讲身体隐私", "性教育从什么时候开始", "孩子问宝宝从哪来怎么回答"],
+      "en": ["How do I explain body privacy?", "When should sex education start?"]
+    },
+    "recordGroups": []
+  },
+  {
+    "domain": "digital",
+    "definition": {
+      "zh": "数字使用：看屏幕、手机、平板、电脑、游戏、短视频等电子设备使用的时长和习惯。",
+      "en": "Digital use: time and habits around screens, phones, tablets, computers, games and short videos."
+    },
+    "examples": {
+      "zh": ["孩子玩手机的时间多吗", "数字使用要怎么管", "每天看平板多久合适", "打游戏停不下来怎么办"],
+      "en": ["How much screen time is okay?", "How should we handle phone use?", "My child can't stop gaming"]
+    },
+    "recordGroups": []
+  },
+  {
+    "domain": "vaccine",
+    "definition": {
+      "zh": "疫苗接种：已接种的疫苗、接种日期和接种记录。",
+      "en": "Vaccination: vaccines received, vaccination dates and vaccination records."
+    },
+    "examples": {
+      "zh": ["疫苗打了哪些", "上一针是什么时候打的", "接种记录全吗"],
+      "en": ["Which vaccines has my child had?", "When was the last shot?"]
+    },
+    "recordGroups": ["vaccine"]
+  },
+  {
+    "domain": "checkup",
+    "definition": {
+      "zh": "体检与儿保：常规体检、儿保检查及其中记录的测量和检查项目。",
+      "en": "Checkups: routine health checkups and well-child visits and the measurements recorded there."
+    },
+    "examples": {
+      "zh": ["上次体检记录了什么", "儿保检查做过哪些"],
+      "en": ["What did the last checkup record?", "Which well-child checks were done?"]
+    },
+    "recordGroups": ["growth", "vision", "dental", "medical"]
+  },
+  {
+    "domain": "growth",
+    "definition": {
+      "zh": "生长：身高、体重、头围、BMI 的测量记录和变化。",
+      "en": "Growth: height, weight, head circumference and BMI records and their changes."
+    },
+    "examples": {
+      "zh": ["身高长得怎么样", "和上次比长高了吗", "体重最近有变化吗"],
+      "en": ["How is height developing?", "Has my child grown since last time?"]
+    },
+    "recordGroups": ["growth"]
+  },
+  {
+    "domain": "vision",
+    "definition": {
+      "zh": "视力：左右眼视力、眼轴、眼压等眼部检查记录，以及近视相关的问题。",
+      "en": "Vision: left and right visual acuity, axial length, eye pressure and other eye exam records, and myopia-related questions."
+    },
+    "examples": {
+      "zh": ["视力最近怎么样", "度数有变化吗", "眼轴长了多少", "近视加深了吗"],
+      "en": ["How is my child's eyesight lately?", "Has the axial length changed?"]
+    },
+    "recordGroups": ["vision"]
+  },
+  {
+    "domain": "outdoor",
+    "definition": {
+      "zh": "户外活动：户外时长记录、家长设定的每周户外目标、晒太阳和户外运动的习惯。",
+      "en": "Outdoor time: recorded outdoor minutes, the parent's weekly outdoor goal, and habits of daylight and outdoor play."
+    },
+    "examples": {
+      "zh": ["户外活动够了吗", "这周出去玩了多久", "户外目标完成了吗", "每天晒太阳的时间"],
+      "en": ["Is my child getting enough outdoor time?", "How much outdoor time this week?"]
+    },
+    "recordGroups": ["outdoor"]
+  },
+  {
+    "domain": "milestone",
+    "definition": {
+      "zh": "发育里程碑：大运动、精细动作、语言、社交等里程碑的达成记录。",
+      "en": "Developmental milestones: recorded achievements in gross motor, fine motor, language, social and similar areas."
+    },
+    "examples": {
+      "zh": ["最近达成了哪些里程碑", "语言方面有什么新进展"],
+      "en": ["Which milestones were reached recently?", "Any new language progress?"]
+    },
+    "recordGroups": ["development"]
+  },
+  {
+    "domain": "nutrition",
+    "definition": {
+      "zh": "营养与饮食：辅食、吃饭、挑食、饮食习惯。",
+      "en": "Nutrition and eating: solid foods, meals, picky eating and eating habits."
+    },
+    "examples": {
+      "zh": ["挑食怎么办", "辅食怎么加", "吃饭很慢"],
+      "en": ["What about picky eating?", "How should solids be introduced?"]
+    },
+    "recordGroups": []
+  },
+  {
+    "domain": "dental",
+    "definition": {
+      "zh": "口腔：换牙、出牙、龋齿、洗牙、牙科就诊和矫正相关记录。",
+      "en": "Dental: tooth eruption and loss, cavities, cleanings, dental visits and orthodontic records."
+    },
+    "examples": {
+      "zh": ["想看牙齿记录", "换牙情况怎么样", "上次看牙是什么时候"],
+      "en": ["Show me the dental records", "How is tooth replacement going?"]
+    },
+    "recordGroups": ["dental"]
+  },
+  {
+    "domain": "observation",
+    "definition": {
+      "zh": "日常观察：随记里记录的情绪、专注、社交互动、兴趣和行为。",
+      "en": "Everyday observation: moods, focus, social interaction, interests and behaviour written in journal entries."
+    },
+    "examples": {
+      "zh": ["最近随记里记了什么", "孩子最近情绪怎么样", "专注力的观察", "孩子一直喜欢画画，要不要开始系统学"],
+      "en": ["What did the recent journal entries say?", "How has my child's mood been?", "My child has loved drawing for years; should we start formal lessons?"]
+    },
+    "recordGroups": ["journal"]
+  }
+]

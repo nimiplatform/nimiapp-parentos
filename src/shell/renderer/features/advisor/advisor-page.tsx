@@ -1,42 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
-import type { NimiMessage } from '@nimiplatform/sdk/contracts';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { useAppStore, computeAgeMonths, formatAge } from '../../app-shell/app-store.js';
-import { NEEDS_REVIEW_DOMAINS, REVIEWED_DOMAINS } from '../../knowledge-base/index.js';
-import { filterAIResponse } from '../../engine/ai-safety-filter.js';
+import { useAppStore, computeAgeMonths, computeAgeMonthsAt, formatAge, type ChildProfile } from '../../app-shell/app-store.js';
 import {
   createConversation,
   getAiMessages,
   getConversations,
   insertAiMessage,
   insertConsultationAiMessage,
+  getReminderStates,
 } from '../../bridge/sqlite-bridge.js';
 import type { AiMessageRow, ConversationRow } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
-import {
-  appendAdvisorSources,
-  buildAdvisorGenericRuntimeUserMessage,
-  buildAdvisorNeedsReviewRuntimeUserMessage,
-  buildAdvisorUnknownClarifierRuntimeUserMessage,
-  buildAdvisorRuntimeUserMessage,
-  buildMinimalAdvisorSnapshot,
-  buildAdvisorSnapshot,
-  buildStructuredAdvisorFallback,
-  inferRequestedDomains,
-  resolveAdvisorPromptStrategy,
-  serializeAdvisorSnapshot,
-  type AdvisorPromptStrategy,
-} from './advisor-boundary.js';
-import {
-  runParentosTextGenerate,
-} from '../settings/parentos-ai-runtime.js';
 import {
   hasParentosAIConfigCapability,
   PARENTOS_TEXT_CAPABILITY_CONTRACT,
 } from '../settings/parentos-ai-config.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
+import { logRendererEvent } from '../../infra/telemetry/renderer-log.js';
+import { i18n, i18nText } from '../../i18n/index.js';
+import { resolveAppLanguage } from '../../i18n/language.js';
 import { AdvisorSidebar } from './advisor-sidebar.js';
-import { AdvisorTranscript } from './advisor-transcript.js';
+import { AdvisorTranscript, type AdvisorTranscriptFailure } from './advisor-transcript.js';
 import { AdvisorComposer } from './advisor-composer.js';
 import { AdvisorEmptyState } from './advisor-empty-state.js';
 import { AdvisorJournalContext, type JournalEntryAdvisorContext } from './advisor-journal-context.js';
@@ -44,11 +28,23 @@ import { AdvisorSuggestions, AdvisorSuggestionsSkeleton } from './advisor-sugges
 import { generateAdvisorSuggestions, type AdvisorSuggestion } from './advisor-suggestion-engine.js';
 import { AdvisorOpeningCard } from './advisor-opening-card.js';
 import { AdvisorRuntimeGateNotice } from './advisor-runtime-gate.js';
-import type { AdvisorSnapshot } from './advisor-boundary.js';
-import { i18nText } from '../../i18n/index.js';
-
-
-type StreamingState = 'idle' | 'streaming';
+import {
+  ADVISOR_RECORD_GROUPS,
+  advisorFactsReadFailures,
+  formatLocalDate,
+  projectAdvisorFacts,
+  readAdvisorSources,
+  resolveAdvisorPeriod,
+  summarizeAdvisorFacts,
+  type AdvisorChildContext,
+  type AdvisorFacts,
+} from './advisor-context.js';
+import {
+  findUnansweredUserMessage,
+  runAdvisorTurn,
+  type AdvisorTurnFailure,
+  type AdvisorTurnPhase,
+} from './advisor-turn.js';
 
 type AdvisorLocationState = {
   journalEntryContext?: JournalEntryAdvisorContext;
@@ -60,36 +56,28 @@ type ReminderConsultationAnchor = {
   repeatIndex: number;
 };
 
-class AdvisorAssistantPersistenceError extends Error {
-  constructor(message: string, options?: { cause?: unknown }) {
-    super(message);
-    this.name = 'AdvisorAssistantPersistenceError';
-    if (options && 'cause' in options) {
-      this.cause = options.cause;
-    }
-  }
-}
+/** The one in-flight send of this page, bound to its child and conversation. */
+type TurnRequest = {
+  readonly requestId: string;
+  readonly childId: string;
+  readonly conversationId: string;
+  readonly abort: AbortController;
+};
 
-/* ── contextual opening message for reminder topics ──────── */
+type TurnView = {
+  readonly requestId: string;
+  readonly conversationId: string;
+  readonly phase: AdvisorTurnPhase;
+  /** Shown as the parent's bubble until the user message is persisted. */
+  readonly pendingQuestion: string | null;
+};
 
-function buildTopicOpening(
-  topic: string, desc: string,
-  childName: string, ageMonths: number, gender: string,
-): string {
-  const ageY = Math.floor(ageMonths / 12);
-  const ageR = ageMonths % 12;
-  const ageStr = (ageY > 0 ? `${ageY}岁` : '') + (ageR > 0 ? `${ageR}个月` : '');
-  const genderStr = gender === 'female' ? '女孩' : '男孩';
-
-  return `我的孩子${childName}，${genderStr}，目前${ageStr}。
-
-我想了解关于「${topic}」的内容：${desc}
-
-请帮我：
-1. 结合${childName}目前的年龄和发育阶段，说明这件事的重要性
-2. 具体讲解应该如何进行
-3. 需要注意哪些事项`;
-}
+type TurnFailureView = {
+  readonly conversationId: string;
+  readonly question: string;
+  readonly userPersisted: boolean;
+  readonly failure: AdvisorTurnFailure;
+};
 
 function padDateSegment(value: number) {
   return String(value).padStart(2, '0');
@@ -123,173 +111,44 @@ function formatAdvisorContextDateTime(value: string) {
   ].join(' ');
 }
 
-function buildJournalEntryOpening(
-  childName: string,
-  context: JournalEntryAdvisorContext,
-) {
-  const lines = [
-    `我想围绕 ${childName} 的一条成长随记继续聊聊。`,
-    `记录时间：${formatAdvisorContextDateTime(context.recordedAt)}`,
-  ];
+/** Opening question for a conversation started from a reminder or record page. */
+function buildTopicQuestion(topic: string, desc: string) {
+  const detail = desc.replace(/\\n/g, '\n').trim();
+  return detail
+    ? i18nText('Advisor.entry.topicQuestionWithDetail', { topic, detail })
+    : i18nText('Advisor.entry.topicQuestion', { topic });
+}
 
+function buildJournalEntryOpening(context: JournalEntryAdvisorContext, starterQuestion: string) {
+  const lines = [
+    i18nText('Advisor.journalOpening.intro'),
+    i18nText('Advisor.journalOpening.recordedAt', { value: formatAdvisorContextDateTime(context.recordedAt) }),
+  ];
   if (context.dimensionName) {
-    lines.push(`成长方向：${context.dimensionName}`);
+    lines.push(i18nText('Advisor.journalOpening.dimension', { value: context.dimensionName }));
   }
   if (context.recorderName) {
-    lines.push(`记录人：${context.recorderName}`);
+    lines.push(i18nText('Advisor.journalOpening.recorder', { value: context.recorderName }));
   }
   if (context.tags.length > 0) {
-    lines.push(`标签：${context.tags.join('、')}`);
+    lines.push(i18nText('Advisor.journalOpening.tags', { value: context.tags.join(i18nText('Advisor.journalOpening.tagSeparator')) }));
   }
-
-  lines.push(`内容：${context.textContent?.trim() || '这条随记以语音或图片为主，当前没有附带文字内容。'}`);
-  lines.push('');
-  lines.push('请先基于这条随记本身，温和地帮我整理其中值得留意的内容。');
-  lines.push('不要做诊断或下结论；如果信息还不够，也请告诉我接下来可以补充哪些细节。');
-
+  lines.push(i18nText('Advisor.journalOpening.content', {
+    value: context.textContent?.trim() || i18nText('Advisor.journalOpening.noText'),
+  }));
+  lines.push('', starterQuestion);
   return lines.join('\n');
 }
 
-function buildSystemPrompt(
-  childName: string,
-  ageMonths: number,
-  gender: string,
-  nurtureMode: string,
-  _domains: string[],
-): string {
-  return `你是"成长底稿"的 AI 成长顾问，只能在已审核知识领域内提供解释。
-
-当前孩子信息：
-- 姓名：${childName}
-- 年龄：${formatAge(ageMonths)}
-- 性别：${gender === 'male' ? '男' : '女'}
-- 养育模式：${nurtureMode}
-
-已审核领域：${REVIEWED_DOMAINS.join('、')}
-禁止自由生成解释的领域：${NEEDS_REVIEW_DOMAINS.join('、')}
-
-回答要求：
-- 只使用温和、中性的表达，如"观察到""可能""倾向于"。
-- 不得出现"发育迟缓""异常""障碍"。
-- 不得出现"应该吃""建议用药""建议服用""推荐治疗"。
-- 不得出现"落后""危险""警告"。
-- 如涉及数据异常，只能描述结构化事实，并提醒"建议咨询专业人士"。
-- 回答结尾不要自行编造来源标签，来源会由系统追加。
-
-内容取舍（家长时间宝贵，先让人快速看懂）：
-- 不要复述用户的问题、随记内容或孩子的档案信息（姓名、年龄、出生日期、养育模式），这些在对话里已经能看到。
-- 第一句直接给出最核心的回答或要点，不要用"我先为你整理……"这类铺垫开场。
-- 只保留与问题直接相关的信息，不要把本地快照里的数据全量罗列出来。
-- 除非用户明确要求展开，回答控制在 3 个要点或 150 字以内；信息不足时，用一两句话说明还缺什么、可以补充什么。
-- 不要使用"你想了解 / 基本信息 / 当前记录 / 下一步 / 参考依据"这类模板化分节标题。
-- 不要出现内部字段名或英文枚举值（如 contentType、mixed、advanced、female），一律用自然中文描述。
-
-排版与呈现：
-- 使用 Markdown，核心关键词用 **双星号加粗**（例如 **身高**、**敏感期**、**户外时间**），每段最多加粗 2-3 个词，避免整句加粗。
-- 段与段之间用空行分隔，句子不要挤在一起。
-- 不要在回答末尾用 Markdown 列表列出"睡眠 / 敏感期 / 性教育 / 数字使用"等领域名称作为选项；用户界面另有"推荐问题"入口，正文里只做一句自然收尾即可。`;
-}
-
-/* ── page ─────────────────────────────────────────────────── */
-
-function buildAdvisorSystemPrompt(
-  childName: string,
-  ageMonths: number,
-  gender: string,
-  nurtureMode: string,
-  strategy: AdvisorPromptStrategy,
-  domains: string[],
-): string {
-  const basePrompt = buildSystemPrompt(childName, ageMonths, gender, nurtureMode, domains);
-  if (strategy === 'reviewed-advice') {
-    return `${basePrompt}
-
-当前策略：reviewed-advice
-- 可以基于本地快照和已审核领域给出解释、归纳、温和建议。
-- 先给结论，要点不超过 3 个；不要复述用户问题和档案信息。
-- 不要输出诊断、药物、治疗或惊吓式表述。`;
-  }
-  if (strategy === 'needs-review-descriptive') {
-    return `${basePrompt}
-
-当前策略：needs-review-descriptive
-- 只允许基于本地快照做描述、整理、重述和范围说明。
-- 只整理与问题直接相关的 1-3 条本地事实，用简短自然语言，不要全量罗列档案。
-- 不要给出诊断、治疗、用药、风险评级、因果解释或专家式判断。
-- 如用户索要结论或建议，只能说明当前先基于本地记录描述事实，并建议咨询专业人士。`;
-  }
-  if (strategy === 'unknown-clarifier') {
-    return `${basePrompt}
-
-当前策略：unknown-clarifier
-- 用户意图还不明确。
-- 只做简短澄清和方向引导，不直接给个性化育儿结论。
-- 澄清回复控制在 2-3 句以内。
-- 优先把问题收敛到睡眠、敏感期、性教育、数字使用，或本地记录查看方向。`;
-  }
-  return `${basePrompt}
-
-当前策略：generic-chat
-- 用户如果只是问候、闲聊、测试、询问你是谁或你能做什么，可以正常聊天。
-- 闲聊回复保持简短，1-3 句即可。
-- 可以主动追问想了解的方向，例如睡眠、疫苗、生长、里程碑或观察记录。
-- 在领域未明确前，不直接给个性化育儿判断或高风险建议。`;
-}
-
-function buildAdvisorRuntimeInput(
-  strategy: AdvisorPromptStrategy,
-  question: string,
-  domains: string[],
-  snapshot: Awaited<ReturnType<typeof buildAdvisorSnapshot>>,
-) {
-  switch (strategy) {
-    case 'generic-chat':
-      return buildAdvisorGenericRuntimeUserMessage(question);
-    case 'needs-review-descriptive':
-      return buildAdvisorNeedsReviewRuntimeUserMessage(question, domains, snapshot);
-    case 'unknown-clarifier':
-      return buildAdvisorUnknownClarifierRuntimeUserMessage(question, snapshot);
-    case 'reviewed-advice':
-    default:
-      return buildAdvisorRuntimeUserMessage(question, domains, snapshot);
-  }
-}
-
-function shouldAppendAdvisorSources(strategy: AdvisorPromptStrategy, domains: string[]) {
-  return strategy === 'reviewed-advice' && domains.length > 0;
-}
-
-function buildAdvisorRuntimeFailureNote() {
-  // Machine codes and provider details stay out of user-visible copy; the
-  // typed error is already logged by the caller.
-  return '补充说明：AI 运行时响应失败，已退回本地结构化事实。';
-}
-
-function buildAdvisorSnapshotFailureNote() {
-  return '补充说明：本地快照读取失败，已退回仅含儿童基础资料的结构化事实。';
-}
-
-function buildAdvisorUserPersistenceFailureNote() {
-  return '补充说明：用户消息持久化失败，本轮没有调用运行时，已退回本地结构化事实。';
-}
-
-function buildAdvisorAssistantPersistenceFailureNote() {
-  return '补充说明：首条咨询回复持久化失败，未写回提醒咨询状态，已退回本地结构化事实。';
-}
-
-function createLocalAdvisorMessage(input: {
-  conversationId: string;
-  role: 'user' | 'assistant';
-  content: string;
-  contextSnapshot: string | null;
-}): AiMessageRow {
+function toAdvisorChildContext(child: ChildProfile, atIso: string): AdvisorChildContext {
   return {
-    messageId: `local-${ulid()}`,
-    conversationId: input.conversationId,
-    role: input.role,
-    content: input.content,
-    contextSnapshot: input.contextSnapshot,
-    createdAt: isoNow(),
+    childId: child.childId,
+    displayName: child.displayName,
+    gender: child.gender,
+    birthDate: child.birthDate,
+    nurtureMode: child.nurtureMode,
+    ageMonths: computeAgeMonthsAt(child.birthDate, atIso),
+    recorderProfiles: child.recorderProfiles,
   };
 }
 
@@ -303,21 +162,29 @@ export default function AdvisorPage() {
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AiMessageRow[]>([]);
   const [input, setInput] = useState('');
-  const [streamingState, setStreamingState] = useState<StreamingState>('idle');
-  const [streamingContent, setStreamingContent] = useState('');
+  const [stoppedConversationId, setStoppedConversationId] = useState<string | null>(null);
+  const [turn, setTurn] = useState<TurnView | null>(null);
+  const [turnFailure, setTurnFailure] = useState<TurnFailureView | null>(null);
   const [runtimeAvailable, setRuntimeAvailable] = useState<boolean | null>(null);
   const [recordRoute, setRecordRoute] = useState<string | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
   const topicHandledRef = useRef<string | null>(null);
   const journalHandledRef = useRef<string | null>(null);
   const [pendingJournalContext, setPendingJournalContext] = useState<JournalEntryAdvisorContext | null>(null);
   const [suggestions, setSuggestions] = useState<AdvisorSuggestion[]>([]);
   const [suggestionsState, setSuggestionsState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
-  const [openingSnapshot, setOpeningSnapshot] = useState<AdvisorSnapshot | null>(null);
+  const [openingFacts, setOpeningFacts] = useState<AdvisorFacts | null>(null);
   const suggestionsAbortRef = useRef<AbortController | null>(null);
   const snapshotConvRef = useRef<string | null>(null);
   const suggestionConvRef = useRef<string | null>(null);
   const pendingReminderConsultationAnchorRef = useRef<ReminderConsultationAnchor | null>(null);
+
+  // rule.parentos.advs.r006: request ownership. A turn stays current only while
+  // it is the page's turn and its child and conversation are still on screen.
+  const turnRef = useRef<TurnRequest | null>(null);
+  const activeConvIdRef = useRef<string | null>(null);
+  const activeChildIdRef = useRef<string | null>(activeChildId);
+  activeConvIdRef.current = activeConvId;
+  activeChildIdRef.current = activeChildId;
 
   // PO-REMI-007 consultation writeback. Tracks which conversations have already
   // recorded a consulted reminder so subsequent assistant replies on the same
@@ -325,6 +192,24 @@ export default function AdvisorPage() {
   // idempotency; this ref just avoids unnecessary bridge calls.
   const consultationWrittenRef = useRef<Set<string>>(new Set());
   const consultationAnchorByConversationRef = useRef<Map<string, ReminderConsultationAnchor>>(new Map());
+
+  // Switching conversation or child supersedes the turn: it loses ownership at
+  // once and may no longer touch the screen.
+  const cancelActiveTurn = useCallback(() => {
+    setStoppedConversationId(null);
+    const request = turnRef.current;
+    if (!request) return;
+    turnRef.current = null;
+    request.abort.abort();
+    setTurn(null);
+  }, []);
+
+  // Stop keeps ownership until the turn unwinds, so an unsent question can go
+  // back into the composer. Once the assistant write is dispatched there is
+  // nothing left to stop.
+  const stopActiveTurn = useCallback(() => {
+    turnRef.current?.abort.abort();
+  }, []);
 
   const readReminderConsultationAnchorFromSearch = (): ReminderConsultationAnchor | null => {
     if (!child) {
@@ -341,19 +226,19 @@ export default function AdvisorPage() {
     };
   };
 
-  const saveAssistantMsg = async (
-    convId: string,
-    content: string,
-    contextSnapshot: string | null,
-    consultationAnchor?: ReminderConsultationAnchor,
-  ) => {
+  // @nimi-authority: rule.parentos.advs.r006a
+  const saveAssistantMessage = async (conversationId: string, content: string, contextSnapshot: string) => {
     const now = isoNow();
-    const anchor = consultationAnchor ?? consultationAnchorByConversationRef.current.get(convId);
-    if (anchor && !consultationWrittenRef.current.has(convId)) {
-      try {
+    const anchor = consultationAnchorByConversationRef.current.get(conversationId);
+    if (anchor && !consultationWrittenRef.current.has(conversationId)) {
+      // The consult mark needs the reminder's own row and is never fabricated
+      // (PO-REMI-012); without one the checked answer is still saved and only
+      // the mark is withheld (PO-ADVS-006a orders the message first).
+      const rows = await getReminderStates(anchor.childId);
+      if (rows.some((row) => row.ruleId === anchor.ruleId && row.repeatIndex === anchor.repeatIndex)) {
         await insertConsultationAiMessage({
           messageId: ulid(),
-          conversationId: convId,
+          conversationId,
           childId: anchor.childId,
           ruleId: anchor.ruleId,
           repeatIndex: anchor.repeatIndex,
@@ -361,65 +246,125 @@ export default function AdvisorPage() {
           contextSnapshot,
           now,
         });
-      } catch (err) {
-        throw new AdvisorAssistantPersistenceError('reminder consultation assistant persistence failed', { cause: err });
-      }
-      consultationWrittenRef.current.add(convId);
-      setMessages(await getAiMessages(convId));
-      return;
-    }
-
-    await insertAiMessage({ messageId: ulid(), conversationId: convId, role: 'assistant', content, contextSnapshot, now });
-    setMessages(await getAiMessages(convId));
-  };
-
-  const displayLocalAssistantMsg = (
-    convId: string,
-    content: string,
-    contextSnapshot: string | null,
-  ) => {
-    setMessages((prev) => [
-      ...prev,
-      createLocalAdvisorMessage({
-        conversationId: convId,
-        role: 'assistant',
-        content,
-        contextSnapshot,
-      }),
-    ]);
-  };
-
-  const saveOrDisplayStructuredFallback = async (
-    convId: string,
-    content: string,
-    contextSnapshot: string | null,
-    consultationAnchor?: ReminderConsultationAnchor,
-  ) => {
-    try {
-      await saveAssistantMsg(convId, content, contextSnapshot, consultationAnchor);
-    } catch (err) {
-      if (err instanceof AdvisorAssistantPersistenceError) {
-        catchLog('advisor', 'action:persist-consultation-structured-fallback-failed')(err);
-        displayLocalAssistantMsg(convId, content, contextSnapshot);
+        consultationWrittenRef.current.add(conversationId);
         return;
       }
-      catchLog('advisor', 'action:persist-structured-fallback-failed')(err);
-      displayLocalAssistantMsg(convId, content, contextSnapshot);
+      logRendererEvent({ level: 'warn', area: 'advisor', message: 'action:reminder-consultation-row-missing', details: { ruleId: anchor.ruleId, repeatIndex: anchor.repeatIndex } });
+      await insertAiMessage({ messageId: ulid(), conversationId, role: 'assistant', content, contextSnapshot, now });
+      consultationWrittenRef.current.add(conversationId);
+      return;
+    }
+    await insertAiMessage({ messageId: ulid(), conversationId, role: 'assistant', content, contextSnapshot, now });
+  };
+
+  // @nimi-authority: rule.parentos.advs.r006
+  const startTurn = async (params: {
+    conversationId: string;
+    question: string;
+    retryOf: AiMessageRow | null;
+  }) => {
+    if (!child || turnRef.current) return;
+    const now = new Date();
+    const request: TurnRequest = {
+      requestId: ulid(),
+      childId: child.childId,
+      conversationId: params.conversationId,
+      abort: new AbortController(),
+    };
+    turnRef.current = request;
+    const isCurrent = () => turnRef.current === request
+      && activeConvIdRef.current === request.conversationId
+      && activeChildIdRef.current === request.childId;
+    // Writes land in their original conversation; only that conversation, while
+    // still on screen for the same child, may show them.
+    const refreshMessages = async () => {
+      const rows = await getAiMessages(request.conversationId);
+      if (activeConvIdRef.current === request.conversationId && activeChildIdRef.current === request.childId) {
+        setMessages(rows);
+      }
+    };
+
+    setStoppedConversationId(null);
+    setTurnFailure(null);
+    setTurn({
+      requestId: request.requestId,
+      conversationId: request.conversationId,
+      phase: 'understanding',
+      pendingQuestion: params.retryOf ? null : params.question,
+    });
+
+    try {
+      const outcome = await runAdvisorTurn({
+        requestId: request.requestId,
+        child: toAdvisorChildContext(child, now.toISOString()),
+        conversationId: request.conversationId,
+        question: params.question,
+        retryOf: params.retryOf,
+        now,
+        language: resolveAppLanguage(i18n.language),
+      }, {
+        signal: request.abort.signal,
+        isCurrent,
+        setPhase: (phase) => {
+          if (!isCurrent()) return;
+          setTurn((current) => (current?.requestId === request.requestId ? { ...current, phase } : current));
+        },
+        onUserPersisted: () => {
+          if (!isCurrent()) return;
+          setTurn((current) => (current?.requestId === request.requestId ? { ...current, pendingQuestion: null } : current));
+          setConversations((current) => current.map((conversation) => (
+            conversation.conversationId === request.conversationId && conversation.title === null
+              ? { ...conversation, title: params.question, lastMessageAt: now.toISOString() }
+              : conversation
+          )));
+          refreshMessages().catch(catchLog('advisor', 'action:reload-ai-messages-failed'));
+        },
+        persistAssistant: async (content, contextSnapshot) => {
+          await saveAssistantMessage(request.conversationId, content, contextSnapshot);
+          // The write belongs to its original conversation; only a still-visible
+          // conversation refreshes.
+          if (isCurrent()) {
+            await refreshMessages().catch(catchLog('advisor', 'action:reload-ai-messages-failed'));
+          }
+        },
+      });
+      if (!isCurrent()) return;
+      if (outcome.status === 'failed') {
+        catchLog('advisor', `action:advisor-turn-${outcome.failure.kind}`, 'warn')(new Error(outcome.failure.reasonCode));
+        setTurnFailure({
+          conversationId: request.conversationId,
+          question: params.question,
+          userPersisted: outcome.userPersisted,
+          failure: outcome.failure,
+        });
+        if (outcome.userPersisted) {
+          await refreshMessages().catch(catchLog('advisor', 'action:reload-ai-messages-failed'));
+        }
+      } else if (outcome.status === 'canceled') {
+        setStoppedConversationId(request.conversationId);
+        if (!outcome.userPersisted && !params.retryOf) {
+          // Nothing was written: hand the question back to the composer.
+          setInput((current) => current || params.question);
+        }
+      }
+    } finally {
+      if (turnRef.current === request) {
+        turnRef.current = null;
+        setTurn(null);
+      }
     }
   };
 
-  const startConversationWithOpening = async (params: {
+  const startConversationWithQuestion = async (params: {
     title: string | null;
     question: string;
-    ageMonthsAtRequest: number;
     reminderConsultationAnchor?: ReminderConsultationAnchor;
   }) => {
-    if (!child) {
+    if (!child || turnRef.current) {
       return;
     }
     const convId = ulid();
-    const now = isoNow();
-    await createConversation({ conversationId: convId, childId: child.childId, title: params.title, now });
+    await createConversation({ conversationId: convId, childId: child.childId, title: params.title, now: isoNow() });
     const reminderConsultationAnchor = params.reminderConsultationAnchor
       ?? pendingReminderConsultationAnchorRef.current
       ?? readReminderConsultationAnchorFromSearch()
@@ -428,184 +373,55 @@ export default function AdvisorPage() {
       consultationAnchorByConversationRef.current.set(convId, reminderConsultationAnchor);
       pendingReminderConsultationAnchorRef.current = null;
     }
+    activeConvIdRef.current = convId;
     setActiveConvId(convId);
+    setMessages([]);
+    setTurnFailure(null);
     setConversations(await getConversations(child.childId));
-
-    await runAdvisorTurn({
-      conversationId: convId,
-      question: params.question,
-      ageMonthsAtRequest: params.ageMonthsAtRequest,
-      reminderConsultationAnchor,
-    });
+    await startTurn({ conversationId: convId, question: params.question, retryOf: null });
   };
 
-  // @nimi-authority: rule.parentos.advs.r006
-  const runAdvisorTurn = async (params: {
-    conversationId: string;
-    question: string;
-    ageMonthsAtRequest: number;
-    reminderConsultationAnchor?: ReminderConsultationAnchor;
-  }) => {
-    if (!child) {
+  // A different child means a different family record: nothing of the old
+  // child's conversation or in-flight request may stay on screen.
+  useEffect(() => {
+    cancelActiveTurn();
+    activeConvIdRef.current = null;
+    setActiveConvId(null);
+    setMessages([]);
+    setTurnFailure(null);
+    setOpeningFacts(null);
+    setSuggestions([]);
+    setSuggestionsState('idle');
+    snapshotConvRef.current = null;
+    suggestionConvRef.current = null;
+    if (!activeChildId) {
+      setConversations([]);
       return;
     }
-    const activeChild = child;
-    const domains = inferRequestedDomains(params.question);
-    const strategy = resolveAdvisorPromptStrategy(params.question, domains);
-    const snapshotInput = {
-      childId: activeChild.childId,
-      displayName: activeChild.displayName,
-      gender: activeChild.gender,
-      birthDate: activeChild.birthDate,
-      nurtureMode: activeChild.nurtureMode,
-      ageMonths: params.ageMonthsAtRequest,
-    };
-    let snapshot: AdvisorSnapshot;
-    let snapshotFailureNote: string | null = null;
-    try {
-      snapshot = await buildAdvisorSnapshot(snapshotInput);
-    } catch (err) {
-      snapshot = buildMinimalAdvisorSnapshot(snapshotInput);
-      snapshotFailureNote = buildAdvisorSnapshotFailureNote();
-      catchLog('advisor', 'action:build-turn-snapshot-failed')(err);
-    }
-    const snapshotJson = serializeAdvisorSnapshot(snapshot);
+    let active = true;
+    getConversations(activeChildId)
+      .then((rows) => { if (active) setConversations(rows); })
+      .catch(catchLog('advisor', 'action:load-conversations-failed'));
+    return () => { active = false; };
+  }, [activeChildId, cancelActiveTurn]);
 
-    try {
-      const userMessageCreatedAt = isoNow();
-      await insertAiMessage({
-        messageId: ulid(),
-        conversationId: params.conversationId,
-        role: 'user',
-        content: params.question,
-        contextSnapshot: snapshotJson,
-        now: userMessageCreatedAt,
-      });
-      setMessages(await getAiMessages(params.conversationId));
-      setConversations((current) => current.map((conversation) => (
-        conversation.conversationId === params.conversationId && conversation.title === null
-          ? { ...conversation, title: params.question, lastMessageAt: userMessageCreatedAt }
-          : conversation
-      )));
-    } catch (err) {
-      catchLog('advisor', 'action:persist-user-message-failed')(err);
-      const fallbackContent = buildStructuredAdvisorFallback(params.question, domains, snapshot, {
-        note: buildAdvisorUserPersistenceFailureNote(),
-      });
-      setMessages((prev) => [
-        ...prev,
-        createLocalAdvisorMessage({
-          conversationId: params.conversationId,
-          role: 'user',
-          content: params.question,
-          contextSnapshot: snapshotJson,
-        }),
-        createLocalAdvisorMessage({
-          conversationId: params.conversationId,
-          role: 'assistant',
-          content: fallbackContent,
-          contextSnapshot: snapshotJson,
-        }),
-      ]);
-      return;
-    }
-
-    if (snapshotFailureNote) {
-      await saveOrDisplayStructuredFallback(
-        params.conversationId,
-        buildStructuredAdvisorFallback(params.question, domains, snapshot, { note: snapshotFailureNote }),
-        snapshotJson,
-        params.reminderConsultationAnchor,
-      );
-      return;
-    }
-
-    if (strategy === 'generic-chat' || strategy === 'needs-review-descriptive') {
-      await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot), snapshotJson, params.reminderConsultationAnchor);
-      return;
-    }
-
-    setStreamingState('streaming');
-    setStreamingContent('');
-    try {
-      const ac = new AbortController();
-      abortRef.current = ac;
-      const messages: NimiMessage[] = [
-        {
-          role: 'system',
-          content: [{
-            type: 'text',
-            text: buildAdvisorSystemPrompt(
-              activeChild.displayName,
-              params.ageMonthsAtRequest,
-              activeChild.gender,
-              activeChild.nurtureMode,
-              strategy,
-              domains,
-            ),
-          }],
-        },
-        {
-          role: 'user',
-          content: [{
-            type: 'text',
-            text: buildAdvisorRuntimeInput(strategy, params.question, domains, snapshot),
-          }],
-        },
-      ];
-      let full = '';
-      const generated = await runParentosTextGenerate({
-        surfaceId: 'parentos.advisor',
-        messages,
-        defaults: { temperature: 0.5, maxTokens: 4096 },
-        signal: ac.signal,
-      });
-      if (ac.signal.aborted) {
-        throw new DOMException('The operation was aborted.', 'AbortError');
-      }
-      if (!generated.ok) {
-        throw generated.error.cause || new Error(generated.error.message);
-      }
-      full = generated.text;
-      setStreamingContent(full);
-      const filtered = filterAIResponse(full);
-      if (!filtered.safe) {
-        await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
-          note: '补充说明：运行时响应触发了安全过滤，已退回本地结构化事实。',
-        }), snapshotJson, params.reminderConsultationAnchor);
-        return;
-      }
-      const finalContent = shouldAppendAdvisorSources(strategy, domains)
-        ? appendAdvisorSources(filtered.filtered, domains)
-        : filtered.filtered.trim();
-      await saveAssistantMsg(params.conversationId, finalContent, snapshotJson, params.reminderConsultationAnchor);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      if (err instanceof AdvisorAssistantPersistenceError) {
-        catchLog('advisor', 'action:persist-consultation-assistant-failed')(err);
-        displayLocalAssistantMsg(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
-          note: buildAdvisorAssistantPersistenceFailureNote(),
-        }), snapshotJson);
-        return;
-      }
-      await saveOrDisplayStructuredFallback(params.conversationId, buildStructuredAdvisorFallback(params.question, domains, snapshot, {
-        note: buildAdvisorRuntimeFailureNote(),
-      }), snapshotJson, params.reminderConsultationAnchor);
-    } finally {
-      setStreamingState('idle');
-      setStreamingContent('');
-      abortRef.current = null;
-    }
-  };
+  useEffect(() => () => {
+    turnRef.current?.abort.abort();
+    turnRef.current = null;
+  }, []);
 
   useEffect(() => {
-    if (!activeChildId) return;
-    getConversations(activeChildId).then(setConversations).catch(catchLog('advisor', 'action:load-conversations-failed'));
-  }, [activeChildId]);
+    const stopWatching = window.parentOSHost?.onSessionInvalidated(() => cancelActiveTurn());
+    return () => { stopWatching?.(); };
+  }, [cancelActiveTurn]);
 
   useEffect(() => {
     if (!activeConvId) return;
-    getAiMessages(activeConvId).then(setMessages).catch(catchLog('advisor', 'action:load-ai-messages-failed'));
+    let active = true;
+    getAiMessages(activeConvId)
+      .then((rows) => { if (active && activeConvIdRef.current === activeConvId) setMessages(rows); })
+      .catch(catchLog('advisor', 'action:load-ai-messages-failed'));
+    return () => { active = false; };
   }, [activeConvId]);
 
   useEffect(() => {
@@ -617,7 +433,7 @@ export default function AdvisorPage() {
 
   // ── Handle incoming topic from reminder panel ─────────────
   useEffect(() => {
-    // rule.parentos.advs.r003: without a connected local AI the advisor must
+    // rule.parentos.advs.r003: without a configured text model the advisor must
     // not start a Q&A turn, so reminder/topic openings wait until the runtime
     // check succeeds.
     if (runtimeAvailable !== true) return;
@@ -638,21 +454,13 @@ export default function AdvisorPage() {
     if (record) setRecordRoute(record);
     setSearchParams({}, { replace: true });
 
-    const am = computeAgeMonths(child.birthDate);
-    const opening = buildTopicOpening(topic, desc, child.displayName, am, child.gender);
-
-    (async () => {
-      try {
-        await startConversationWithOpening({
-        title: topic,
-        question: opening,
-        ageMonthsAtRequest: am,
-        reminderConsultationAnchor: reminderRuleId
-          ? { childId: child.childId, ruleId: reminderRuleId, repeatIndex }
-          : undefined,
-      });
-      } catch { /* bridge */ }
-    })();
+    startConversationWithQuestion({
+      title: topic,
+      question: buildTopicQuestion(topic, desc),
+      reminderConsultationAnchor: reminderRuleId
+        ? { childId: child.childId, ruleId: reminderRuleId, repeatIndex }
+        : undefined,
+    }).catch(catchLog('advisor', 'action:start-topic-conversation-failed'));
   }, [searchParams, child, runtimeAvailable]);
 
   useEffect(() => {
@@ -664,6 +472,8 @@ export default function AdvisorPage() {
     setPendingJournalContext(journalEntryContext);
   }, [child, journalEntryContext]);
 
+  // Opening context for an empty conversation: the same task-scoped reader,
+  // over every record group for the default window.
   useEffect(() => {
     if (!child || !activeConvId) return;
     if (messages.length > 0) return;
@@ -672,33 +482,39 @@ export default function AdvisorPage() {
 
     suggestionsAbortRef.current?.abort();
     setSuggestions([]);
-    setOpeningSnapshot(null);
+    setOpeningFacts(null);
     setSuggestionsState('idle');
     suggestionConvRef.current = null;
 
+    const convId = activeConvId;
+    const nowIso = new Date().toISOString();
+    const today = formatLocalDate(new Date(nowIso));
+    const childContext = toAdvisorChildContext(child, nowIso);
     (async () => {
-      try {
-        const snapshot = await buildAdvisorSnapshot({
-          childId: child.childId,
-          displayName: child.displayName,
-          gender: child.gender,
-          birthDate: child.birthDate,
-          nurtureMode: child.nurtureMode,
-          ageMonths: computeAgeMonths(child.birthDate),
-        });
-        setOpeningSnapshot(snapshot);
-      } catch (err) {
-        catchLog('advisor', 'action:build-opening-snapshot-failed')(err);
-        setSuggestions([]);
-        setOpeningSnapshot(null);
+      const sources = await readAdvisorSources(child.childId, ADVISOR_RECORD_GROUPS);
+      if (activeConvIdRef.current !== convId || activeChildIdRef.current !== child.childId) return;
+      const facts = projectAdvisorFacts({
+        child: childContext,
+        sources,
+        groups: ADVISOR_RECORD_GROUPS,
+        period: resolveAdvisorPeriod({ kind: 'default' }, today, child.birthDate),
+        today,
+        requestedAt: nowIso,
+      });
+      setOpeningFacts(facts);
+      if (advisorFactsReadFailures(facts).length > 0) {
         setSuggestionsState('error');
       }
-    })();
+    })().catch((err) => {
+      catchLog('advisor', 'action:build-opening-facts-failed')(err);
+      setSuggestionsState('error');
+    });
   }, [child, activeConvId, messages.length]);
 
   useEffect(() => {
-    if (!activeConvId || !openingSnapshot) return;
+    if (!activeConvId || !openingFacts || !child) return;
     if (messages.length > 0) return;
+    if (advisorFactsReadFailures(openingFacts).length > 0) return;
     if (runtimeAvailable !== true) {
       setSuggestionsState('idle');
       return;
@@ -714,7 +530,10 @@ export default function AdvisorPage() {
 
     (async () => {
       try {
-        const items = await generateAdvisorSuggestions(openingSnapshot, { signal: ac.signal });
+        const items = await generateAdvisorSuggestions(openingFacts, {
+          ageMonths: computeAgeMonths(child.birthDate),
+          signal: ac.signal,
+        });
         if (ac.signal.aborted) return;
         setSuggestions(items);
         setSuggestionsState('ready');
@@ -730,13 +549,28 @@ export default function AdvisorPage() {
     return () => {
       ac.abort();
     };
-  }, [activeConvId, openingSnapshot, runtimeAvailable, messages.length]);
+  }, [activeConvId, openingFacts, runtimeAvailable, messages.length, child]);
 
   if (!child) return <div className="p-8 text-slate-400">{i18nText('Advisor.page.noActiveChild')}</div>;
 
   const ageMonths = computeAgeMonths(child.birthDate);
+  const turnForView = turn && turn.conversationId === activeConvId ? turn : null;
+  const failureForView = turnFailure && turnFailure.conversationId === activeConvId ? turnFailure : null;
+  const busy = turn !== null;
+  const unanswered = !busy ? findUnansweredUserMessage(messages) : null;
+
+  const selectConversation = (conversationId: string) => {
+    if (conversationId === activeConvId) return;
+    cancelActiveTurn();
+    activeConvIdRef.current = conversationId;
+    setActiveConvId(conversationId);
+    setMessages([]);
+    setTurnFailure(null);
+    setRecordRoute(null);
+  };
 
   const handleNewConversation = async () => {
+    cancelActiveTurn();
     const convId = ulid();
     try {
       await createConversation({ conversationId: convId, childId: child.childId, title: null, now: isoNow() });
@@ -747,68 +581,75 @@ export default function AdvisorPage() {
         pendingReminderConsultationAnchorRef.current = null;
         setSearchParams({}, { replace: true });
       }
-      setActiveConvId(convId); setMessages([]); setRecordRoute(null);
+      activeConvIdRef.current = convId;
+      setActiveConvId(convId);
+      setMessages([]);
+      setTurnFailure(null);
+      setRecordRoute(null);
       setConversations(await getConversations(child.childId));
-    } catch { /* bridge */ }
+    } catch (err) {
+      catchLog('advisor', 'action:create-conversation-failed')(err);
+    }
   };
 
   const handleStartJournalConversation = async (starterQuestion: string) => {
-    if (!child || !pendingJournalContext) return;
-    const am = computeAgeMonths(child.birthDate);
-    const contextLines = buildJournalEntryOpening(child.displayName, pendingJournalContext);
-    const fullQuestion = `${contextLines}\n\n${starterQuestion}`;
-    const title = `随记 ${formatAdvisorConversationDate(pendingJournalContext.recordedAt)}`;
+    if (!pendingJournalContext || busy) return;
+    const question = buildJournalEntryOpening(pendingJournalContext, starterQuestion);
+    const title = i18nText('Advisor.journalOpening.title', { date: formatAdvisorConversationDate(pendingJournalContext.recordedAt) });
     setPendingJournalContext(null);
     try {
-      await startConversationWithOpening({
-        title,
-        question: fullQuestion,
-        ageMonthsAtRequest: am,
-      });
-    } catch { /* bridge */ }
-  };
-
-  const handleSend = async () => {
-    if (!input.trim() || streamingState === 'streaming') return;
-    if (runtimeAvailable !== true) return;
-    const q = input.trim(); setInput('');
-    if (pendingJournalContext && !activeConvId) {
-      await handleStartJournalConversation(q);
-      return;
+      await startConversationWithQuestion({ title, question });
+    } catch (err) {
+      catchLog('advisor', 'action:start-journal-conversation-failed')(err);
     }
-    if (!activeConvId) return;
-    try {
-      await runAdvisorTurn({
-        conversationId: activeConvId,
-        question: q,
-        ageMonthsAtRequest: ageMonths,
-      });
-    } catch { /* bridge */ }
   };
 
-  const handleSuggestionSelect = async (question: string) => {
-    if (streamingState === 'streaming') return;
-    if (runtimeAvailable !== true) return;
+  const askQuestion = async (question: string) => {
+    if (busy || runtimeAvailable !== true) return;
     if (pendingJournalContext && !activeConvId) {
       await handleStartJournalConversation(question);
       return;
     }
     if (!activeConvId) return;
-    try {
-      await runAdvisorTurn({
-        conversationId: activeConvId,
-        question,
-        ageMonthsAtRequest: ageMonths,
-      });
-    } catch { /* bridge */ }
+    await startTurn({ conversationId: activeConvId, question, retryOf: null });
   };
+
+  const handleSend = async () => {
+    const question = input.trim();
+    if (!question || busy || runtimeAvailable !== true) return;
+    setInput('');
+    await askQuestion(question);
+  };
+
+  const handleRetry = async () => {
+    if (busy || !activeConvId || runtimeAvailable !== true) return;
+    if (unanswered) {
+      await startTurn({ conversationId: activeConvId, question: unanswered.content, retryOf: unanswered });
+      return;
+    }
+    if (failureForView && !failureForView.userPersisted) {
+      await startTurn({ conversationId: activeConvId, question: failureForView.question, retryOf: null });
+    }
+  };
+
+  const transcriptFailure: AdvisorTranscriptFailure | null = failureForView
+    ? {
+      kind: failureForView.failure.kind,
+      failedGroups: failureForView.failure.failedGroupLabels,
+      facts: failureForView.failure.facts ? summarizeAdvisorFacts(failureForView.failure.facts) : [],
+      unsavedAnswer: failureForView.failure.unsavedAnswer ?? null,
+      pendingQuestion: failureForView.userPersisted ? null : failureForView.question,
+    }
+    : null;
+  const canRetry = !busy && runtimeAvailable === true
+    && (Boolean(unanswered) || Boolean(failureForView && !failureForView.userPersisted && failureForView.failure.kind !== 'input-too-long'));
 
   return (
     <div className="advisor-page-shell flex h-full min-h-0 gap-5 px-5 pb-3 pt-4">
       <AdvisorSidebar
         conversations={conversations}
         activeConvId={activeConvId}
-        onSelectConversation={(id) => { setActiveConvId(id); setRecordRoute(null); }}
+        onSelectConversation={selectConversation}
         onNewConversation={handleNewConversation}
       />
 
@@ -823,35 +664,38 @@ export default function AdvisorPage() {
           <AdvisorEmptyState
             childName={child.displayName}
             runtimeAvailable={runtimeAvailable}
+            onNewConversation={handleNewConversation}
           />
         ) : (
           <>
-            <AdvisorTranscript
-              messages={messages}
-              streamingState={streamingState}
-              streamingContent={streamingContent}
-              onStopGenerating={() => abortRef.current?.abort()}
-            />
-            {messages.length === 0 && streamingState === 'idle' && !input.trim() && (
-              <>
-                <AdvisorOpeningCard
-                  childName={child.displayName}
-                  ageLabel={formatAge(ageMonths)}
-                  snapshot={openingSnapshot}
-                  siblingNames={children
-                    .filter((c) => c.childId !== child.childId)
-                    .map((c) => c.displayName)}
-                />
+            {messages.length === 0 && !turnForView && !transcriptFailure && stoppedConversationId !== activeConvId ? (
+              <AdvisorOpeningCard
+                childName={child.displayName}
+                ageLabel={formatAge(ageMonths)}
+                facts={openingFacts}
+              >
                 {suggestionsState === 'loading' ? (
                   <AdvisorSuggestionsSkeleton />
                 ) : suggestionsState === 'ready' && suggestions.length > 0 ? (
                   <AdvisorSuggestions
                     suggestions={suggestions}
-                    disabled={false}
-                    onSelect={handleSuggestionSelect}
+                    disabled={busy}
+                    hidden={Boolean(input.trim())}
+                    onSelect={(question) => { void askQuestion(question); }}
                   />
                 ) : null}
-              </>
+              </AdvisorOpeningCard>
+            ) : (
+              <AdvisorTranscript
+                messages={messages}
+                pendingQuestion={turnForView?.pendingQuestion ?? null}
+                phase={turnForView?.phase ?? null}
+                failure={transcriptFailure}
+                canRetry={canRetry}
+                showUnansweredRetry={Boolean(unanswered) && !transcriptFailure}
+                onRetry={() => { void handleRetry(); }}
+                stopped={stoppedConversationId === activeConvId}
+              />
             )}
             {runtimeAvailable === false ? (
               <div className="shrink-0 px-6 pb-5 pt-3">
@@ -864,9 +708,9 @@ export default function AdvisorPage() {
               value={input}
               onChange={setInput}
               onSend={handleSend}
-              onStop={() => abortRef.current?.abort()}
-              disabled={streamingState === 'streaming'}
-              isStreaming={streamingState === 'streaming'}
+              onStop={stopActiveTurn}
+              disabled={busy}
+              isStreaming={Boolean(turnForView) && turnForView?.phase !== 'saving'}
               recordRoute={recordRoute}
             />
             )}

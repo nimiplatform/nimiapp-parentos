@@ -259,6 +259,17 @@ function generateSensitivePeriods() {
     }>;
   };
 
+  const manifest = loadKnowledgeAssetForProjection('sensitive-periods').manifest as {
+    contentVersion: string;
+    sources?: Array<{ sourceId: string; citation: string; url: string | null; reviewStatus: string }>;
+  };
+  const sources = (manifest.sources ?? []).map((source) => ({
+    sourceId: source.sourceId,
+    citation: source.citation,
+    url: source.url,
+    reviewStatus: source.reviewStatus,
+  }));
+
   const ts = `
 export interface SensitivePeriod {
   periodId: string;
@@ -270,6 +281,17 @@ export interface SensitivePeriod {
   commonMistakes: string[];
   source: string;
 }
+
+export interface SensitivePeriodSource {
+  sourceId: string;
+  citation: string;
+  url: string | null;
+  reviewStatus: string;
+}
+
+export const SENSITIVE_PERIODS_CONTENT_VERSION = ${JSON.stringify(manifest.contentVersion)};
+
+export const SENSITIVE_PERIOD_SOURCES: readonly SensitivePeriodSource[] = ${JSON.stringify(sources, null, 2)} ;
 
 export const SENSITIVE_PERIODS: readonly SensitivePeriod[] = ${JSON.stringify(data.periods, null, 2)} ;
 `;
@@ -775,27 +797,64 @@ export const AI_BOUNDARY_FALLBACK_MESSAGE = ${JSON.stringify(data.fallback.messa
 
 function generateAdvisorClassifier() {
   const data = readKnowledgeAsset('advisor-classifier') as {
-    domainKeywords: Array<Record<string, unknown>>;
-    genericRuntime: Record<string, unknown>;
+    domains: Array<Record<string, unknown>>;
+    tasks: Array<Record<string, unknown>>;
+    recordGroups: Array<Record<string, unknown>>;
   };
 
-  const domains = data.domainKeywords.map((row) => row.domain as string);
+  const union = (values: string[]) => values.map((value) => `'${value}'`).join(' | ');
+  const domains = data.domains.map((row) => row.domain as string);
+  const tasks = data.tasks.map((row) => row.task as string);
+  const groups = data.recordGroups.map((row) => row.groupId as string);
   const ts = `
-export type AdvisorClassifierDomain = ${domains.map((domain) => `'${domain}'`).join(' | ')};
+export type AdvisorClassifierDomain = ${union(domains)};
+export type AdvisorIntentTask = ${union(tasks)};
+export type AdvisorRecordGroupId = ${union(groups)};
 
-export interface AdvisorDomainKeyword {
+export interface AdvisorLocalizedText {
+  zh: string;
+  en: string;
+}
+
+export interface AdvisorLocalizedList {
+  zh: readonly string[];
+  en: readonly string[];
+}
+
+export interface AdvisorDomainDefinition {
   domain: AdvisorClassifierDomain;
-  keywords: readonly string[];
+  definition: AdvisorLocalizedText;
+  examples: AdvisorLocalizedList;
+  recordGroups: readonly AdvisorRecordGroupId[];
 }
 
-export interface AdvisorGenericRuntimeClassifier {
-  phraseIncludes: readonly string[];
-  exactGreetings: readonly string[];
-  compactPunctuationPattern: string;
+export interface AdvisorTaskExample {
+  context?: AdvisorLocalizedText;
+  input: AdvisorLocalizedText;
+  output: {
+    task: AdvisorIntentTask;
+    domains: readonly AdvisorClassifierDomain[];
+    groups: readonly AdvisorRecordGroupId[];
+    time: { kind: string; days?: number };
+    compare: boolean;
+    detail: boolean;
+  };
 }
 
-export const ADVISOR_DOMAIN_KEYWORDS: readonly AdvisorDomainKeyword[] = ${JSON.stringify(data.domainKeywords, null, 2)};
-export const ADVISOR_GENERIC_RUNTIME: AdvisorGenericRuntimeClassifier = ${JSON.stringify(data.genericRuntime, null, 2)};
+export interface AdvisorTaskDefinition {
+  task: AdvisorIntentTask;
+  definition: AdvisorLocalizedText;
+  examples: readonly AdvisorTaskExample[];
+}
+
+export interface AdvisorRecordGroupDefinition {
+  groupId: AdvisorRecordGroupId;
+  definition: AdvisorLocalizedText;
+}
+
+export const ADVISOR_DOMAIN_DEFINITIONS: readonly AdvisorDomainDefinition[] = ${JSON.stringify(data.domains, null, 2)};
+export const ADVISOR_TASK_DEFINITIONS: readonly AdvisorTaskDefinition[] = ${JSON.stringify(data.tasks, null, 2)};
+export const ADVISOR_RECORD_GROUP_DEFINITIONS: readonly AdvisorRecordGroupDefinition[] = ${JSON.stringify(data.recordGroups, null, 2)};
 `;
 
   writeGen('advisor-classifier.gen.ts', ts);

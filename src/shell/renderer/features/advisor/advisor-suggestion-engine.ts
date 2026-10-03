@@ -1,8 +1,9 @@
-import { REVIEWED_DOMAINS } from '../../knowledge-base/index.js';
+import { REVIEWED_DOMAINS, type AdvisorClassifierDomain } from '../../knowledge-base/index.js';
 import {
   runParentosTextGenerate,
 } from '../settings/parentos-ai-runtime.js';
-import type { AdvisorSnapshot } from './advisor-boundary.js';
+import type { AdvisorFacts } from './advisor-context.js';
+import { selectAdvisorKnowledge } from './advisor-knowledge.js';
 import { i18nText, i18nTextForLanguage } from '../../i18n/index.js';
 
 export type AdvisorSuggestion = {
@@ -10,7 +11,7 @@ export type AdvisorSuggestion = {
   question: string;
 };
 
-const MIN_COUNT = 3;
+const MIN_COUNT = 2;
 const MAX_COUNT = 4;
 const MIN_LEN = 4;
 const MAX_LEN = 24;
@@ -29,30 +30,22 @@ function hardBanPattern() {
   return new RegExp(terms.join('|'), 'iu');
 }
 
-function summarizeLatestMeasurement(snapshot: AdvisorSnapshot) {
-  const latest = [...snapshot.measurements]
-    .sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))
-    .slice(0, 3)
-    .map((m) => `${m.typeId}:${m.value}@${m.measuredAt.slice(0, 10)}`);
-  return latest.join(i18nText('Advisor.suggestionPrompt.itemSeparator')) || i18nText('Advisor.suggestionPrompt.none');
-}
-
-function buildCompactSnapshot(snapshot: AdvisorSnapshot) {
-  return {
-    childName: snapshot.child.displayName,
-    gender: snapshot.child.gender,
-    ageMonths: snapshot.ageMonths,
-    nurtureMode: snapshot.child.nurtureMode,
-    counts: {
-      measurements: snapshot.measurements.length,
-      vaccines: snapshot.vaccines.length,
-      milestones: snapshot.milestones.length,
-      journalEntries: snapshot.journalEntries.length,
-      outdoorRecords: snapshot.outdoorRecords.length,
-    },
-    latestMeasurements: summarizeLatestMeasurement(snapshot),
-    outdoorGoalMinutes: snapshot.outdoorGoalMinutes,
-  };
+/**
+ * What a starter question may lean on: record categories with recent rows,
+ * and topics that have admitted material for this age. Nothing else.
+ */
+export function buildAdvisorSuggestionGrounding(facts: AdvisorFacts, ageMonths: number) {
+  const recordedCategories = facts.groups
+    .filter((group) => group.status === 'ok' && group.inPeriodCount > 0)
+    .map((group) => ({ category: group.label, recordsInPeriod: group.inPeriodCount, latestRecordDate: group.latestRecordDate }));
+  const knowledge = selectAdvisorKnowledge({ domains: REVIEWED_DOMAINS as AdvisorClassifierDomain[], ageMonths });
+  const knowledgeTopics = knowledge.coverage
+    .filter((entry) => entry.coverage === 'provided')
+    .map((entry) => ({
+      topic: i18nText(`Advisor.domain.${entry.domain}`),
+      items: knowledge.entries.filter((item) => item.domain === entry.domain).map((item) => item.title),
+    }));
+  return { ageMonths, period: { start: facts.period.start, end: facts.period.end }, recordedCategories, knowledgeTopics };
 }
 
 function buildSystemPrompt() {
@@ -63,19 +56,16 @@ function buildSystemPrompt() {
     i18nText('Advisor.suggestionPrompt.requirementsTitle'),
     i18nText('Advisor.suggestionPrompt.firstPerson', { minLen: MIN_LEN, maxLen: MAX_LEN }),
     i18nText('Advisor.suggestionPrompt.noRepeatSnapshot'),
-    i18nText('Advisor.suggestionPrompt.reviewedDomains', {
-      domains: REVIEWED_DOMAINS.join(i18nText('Advisor.suggestionPrompt.domainSeparator')),
-    }),
+    i18nText('Advisor.suggestionPrompt.grounding'),
     i18nText('Advisor.suggestionPrompt.safetyBoundary'),
     i18nText('Advisor.suggestionPrompt.jsonOnly'),
   ].join('\n');
 }
 
-function buildUserPrompt(snapshot: AdvisorSnapshot) {
-  const compact = buildCompactSnapshot(snapshot);
+function buildUserPrompt(grounding: ReturnType<typeof buildAdvisorSuggestionGrounding>) {
   return [
     i18nText('Advisor.suggestionPrompt.snapshotTitle'),
-    JSON.stringify(compact),
+    JSON.stringify(grounding),
     '',
     i18nText('Advisor.suggestionPrompt.outputCount', { minCount: MIN_COUNT, maxCount: MAX_COUNT }),
   ].join('\n');
@@ -107,26 +97,32 @@ function extractStringsFallback(text: string): string[] {
 }
 
 function normalizeQuestion(raw: string): string | null {
-  const cleaned = raw.trim().replace(/^[-•\d.、\s]+/, '').trim();
+  const cleaned = raw.trim().replace(/^[-•\d.、\s]+/, '').replace(/[？?。.！!\s]+$/u, '').trim();
   if (cleaned.length < MIN_LEN || cleaned.length > MAX_LEN) return null;
-  const q = /[？?。.！!]$/.test(cleaned) ? cleaned.replace(/[。.！!]$/, '？') : `${cleaned}？`;
+  const q = `${cleaned}${/[㐀-鿿]/u.test(cleaned) ? '？' : '?'}`;
   if (hardBanPattern().test(q)) return null;
   return q;
 }
 
 export async function generateAdvisorSuggestions(
-  snapshot: AdvisorSnapshot,
-  options: { signal?: AbortSignal } = {},
+  facts: AdvisorFacts,
+  options: { ageMonths: number; signal?: AbortSignal },
 ): Promise<AdvisorSuggestion[]> {
   if (options.signal?.aborted) {
     throw new DOMException('The operation was aborted.', 'AbortError');
+  }
+  const grounding = buildAdvisorSuggestionGrounding(facts, options.ageMonths);
+  // Without recent records or admitted material there is nothing answerable
+  // to suggest; no invented starters.
+  if (grounding.recordedCategories.length === 0 && grounding.knowledgeTopics.length === 0) {
+    return [];
   }
 
   const generated = await runParentosTextGenerate({
     surfaceId: 'parentos.advisor',
     messages: [
       { role: 'system', content: [{ type: 'text', text: buildSystemPrompt() }] },
-      { role: 'user', content: [{ type: 'text', text: buildUserPrompt(snapshot) }] },
+      { role: 'user', content: [{ type: 'text', text: buildUserPrompt(grounding) }] },
     ],
     defaults: {
       temperature: 0.7,
@@ -160,8 +156,10 @@ export async function generateAdvisorSuggestions(
     .filter((item): item is string => item !== null);
 
   const deduped = Array.from(new Set(questions)).slice(0, MAX_COUNT);
-  if (deduped.length < MIN_COUNT) {
-    throw new Error(`insufficient suggestions after filter: ${deduped.length}`);
+  // Grounding can be narrow (one recorded category); a single grounded starter
+  // beats padding the list with ungrounded ones.
+  if (deduped.length === 0) {
+    throw new Error('no suggestions left after filter');
   }
 
   return deduped.map((question, index) => ({

@@ -691,15 +691,39 @@ if (!aiBoundaryData.fallback?.message) {
   fail('ai-boundary-rules asset fallback.message is required');
 }
 
+// rule.parentos.advs.r002: the classifier asset feeds the bounded intent-parse
+// call. Its domains must be exactly the readiness domains, its record groups
+// exactly the health metric groups plus journal, and every example output must
+// stay inside those closed sets.
 const advisorClassifierData = readKnowledgeAsset('advisor-classifier') as {
-  domainKeywords?: Array<{ domain?: string; keywords?: string[] }>;
-  genericRuntime?: { phraseIncludes?: string[]; exactGreetings?: string[]; compactPunctuationPattern?: string };
+  domains?: Array<{ domain?: string; recordGroups?: string[] }>;
+  tasks?: Array<{ task?: string; examples?: Array<{ output?: { domains?: string[]; groups?: string[] } }> }>;
+  recordGroups?: Array<{ groupId?: string }>;
 };
 const readinessDomains = new Set((readinessData.sources ?? []).map((source) => source.domain));
+const healthMetricGroupIds = new Set(
+  ((parseYaml(readFileSync(resolve(TABLES, 'health-metric-registry.yaml'), 'utf-8')) as { groups?: Array<{ groupId?: string }> }).groups ?? [])
+    .map((group) => group.groupId)
+    .filter((groupId): groupId is string => Boolean(groupId)),
+);
+const expectedAdvisorGroups = new Set([...healthMetricGroupIds, 'journal']);
+const advisorGroups = new Set<string>();
+for (const row of advisorClassifierData.recordGroups ?? []) {
+  if (!row.groupId || !expectedAdvisorGroups.has(row.groupId)) {
+    fail(`advisor-classifier record group ${row.groupId ?? '(missing)'} is not a health metric group or journal`);
+    continue;
+  }
+  advisorGroups.add(row.groupId);
+}
+for (const groupId of expectedAdvisorGroups) {
+  if (!advisorGroups.has(groupId)) {
+    fail(`advisor-classifier asset must define record group ${groupId}`);
+  }
+}
 const advisorDomains = new Set<string>();
-for (const row of advisorClassifierData.domainKeywords ?? []) {
+for (const row of advisorClassifierData.domains ?? []) {
   if (!row.domain) {
-    fail('advisor-classifier asset domainKeywords row is missing domain');
+    fail('advisor-classifier asset domains row is missing domain');
     continue;
   }
   if (advisorDomains.has(row.domain)) {
@@ -709,20 +733,32 @@ for (const row of advisorClassifierData.domainKeywords ?? []) {
   if (!readinessDomains.has(row.domain)) {
     fail(`advisor-classifier asset domain ${row.domain} does not resolve in data/structured/parentos/knowledge-source-readiness.yaml`);
   }
-  if (!Array.isArray(row.keywords) || row.keywords.length === 0) {
-    fail(`advisor-classifier asset domain ${row.domain} must declare at least one keyword`);
+  for (const groupId of row.recordGroups ?? []) {
+    if (!expectedAdvisorGroups.has(groupId)) {
+      fail(`advisor-classifier domain ${row.domain} references unknown record group ${groupId}`);
+    }
   }
 }
-if (!Array.isArray(advisorClassifierData.genericRuntime?.phraseIncludes) || advisorClassifierData.genericRuntime.phraseIncludes.length === 0) {
-  fail('advisor-classifier asset genericRuntime.phraseIncludes must be non-empty');
+for (const domain of readinessDomains) {
+  if (!advisorDomains.has(domain)) {
+    fail(`advisor-classifier asset must define readiness domain ${domain}`);
+  }
 }
-if (!Array.isArray(advisorClassifierData.genericRuntime?.exactGreetings) || advisorClassifierData.genericRuntime.exactGreetings.length === 0) {
-  fail('advisor-classifier asset genericRuntime.exactGreetings must be non-empty');
+const advisorTasks = new Set((advisorClassifierData.tasks ?? []).map((row) => row.task));
+for (const task of ['chat', 'knowledge', 'records', 'overview', 'follow-up', 'clarify']) {
+  if (!advisorTasks.has(task)) {
+    fail(`advisor-classifier asset must define task ${task}`);
+  }
 }
-try {
-  new RegExp(advisorClassifierData.genericRuntime?.compactPunctuationPattern ?? '');
-} catch (error) {
-  fail(`advisor-classifier asset genericRuntime.compactPunctuationPattern is invalid: ${error instanceof Error ? error.message : String(error)}`);
+for (const row of advisorClassifierData.tasks ?? []) {
+  for (const example of row.examples ?? []) {
+    for (const domain of example.output?.domains ?? []) {
+      if (!advisorDomains.has(domain)) fail(`advisor-classifier task ${row.task} example uses unknown domain ${domain}`);
+    }
+    for (const groupId of example.output?.groups ?? []) {
+      if (!expectedAdvisorGroups.has(groupId)) fail(`advisor-classifier task ${row.task} example uses unknown record group ${groupId}`);
+    }
+  }
 }
 
 const pediatricDrugData = readKnowledgeAsset('pediatric-drug-catalog') as {

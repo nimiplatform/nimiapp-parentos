@@ -1,20 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, DatePicker, NimiText, nimiToast, StatusBadge, Surface, TextareaField } from '@nimiplatform/kit/ui';
 import { ArrowRight, ChevronDown, Eye, Pencil, Star } from 'lucide-react';
-import { computeAgeMonthsAt, formatAge, useAppStore } from '../../app-shell/app-store.js';
-import {
-  getAllergyRecords, getDentalRecords, getFitnessAssessments, getGrowthReports,
-  getJournalEntries, getMeasurements, getMedicalEvents, getMilestoneRecords,
-  getReminderStates, getSleepRecords, getTannerAssessments, getVaccineRecords, insertGrowthReport,
-  updateGrowthReportContent,
-} from '../../bridge/sqlite-bridge.js';
+import { computeAgeMonthsAt, formatAge, useAppStore, type ChildProfile } from '../../app-shell/app-store.js';
+import { getGrowthReports, insertGrowthReport, updateGrowthReportContent } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
-import {
-  hasParentosAIConfigCapability,
-  PARENTOS_TEXT_CAPABILITY_CONTRACT,
-} from '../settings/parentos-ai-config.js';
 import { generateNarrativeReportForPeriod } from './narrative-prompt.js';
 import { MonthlyLetterViewer } from './reports-monthly-letter.js';
 import {
@@ -26,6 +17,10 @@ import { i18nText } from '../../i18n/index.js';
 import { autoGenerateMonthlyReport } from './auto-report.js';
 import { ReportAccumulatingState } from './report-accumulating-state.js';
 import { getFirstReportAccumulation, requireValidGrowthReports } from './report-cycle.js';
+import {
+  buildNarrativeTitle, hasReportTextRuntime, isAiRefreshableContent, loadReportDomainData, refreshReportWithAi,
+} from './report-ai-refresh.js';
+import { LocalReportNotice, ReportAiStatusCard, type ReportAiState } from './report-ai-status.js';
 
 
 type PersistedReport = Awaited<ReturnType<typeof getGrowthReports>>[number];
@@ -99,26 +94,12 @@ function resolvePeriodBounds(start: string, end: string) {
   };
 }
 
-function buildNarrativeTitle(childName: string, reportType: GrowthReportType) {
-  switch (reportType) {
-    case 'monthly':
-      return i18nText('Reports.page.narrativeTitle.monthly', { childName });
-    case 'quarterly':
-      return i18nText('Reports.page.narrativeTitle.quarterly', { childName });
-    case 'quarterly-letter':
-      return i18nText('Reports.page.narrativeTitle.quarterlyLetter', { childName });
-    case 'custom':
-    default:
-      return i18nText('Reports.page.narrativeTitle.custom', { childName });
-  }
-}
-
-async function hasAvailableReportsRuntime() {
-  return hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT);
+function reportSourceLabel(c: ParsedReportContent): string {
+  if (c.version === 1) return i18nText('Reports.page.ai.sourceLocal');
+  return c.format === 'narrative-ai' ? i18nText('Reports.page.badge.aiNarrative') : i18nText('Reports.page.badge.narrative');
 }
 
 function reportBadgeLabel(c: ParsedReportContent): string {
-  if (c.version === 2) return c.format === 'narrative-ai' ? i18nText('Reports.page.badge.aiNarrative') : i18nText('Reports.page.badge.narrative');
   const l: Record<string, string> = {
     monthly: i18nText('Reports.page.badge.monthly'),
     quarterly: i18nText('Reports.page.badge.quarterly'),
@@ -301,6 +282,12 @@ function ReportViewer({
 export default function ReportsPage() {
   const { activeChildId, children } = useAppStore();
   const child = children.find((c) => c.childId === activeChildId);
+  if (!child) return <div className="report-page-shell"><div className="report-page-container"><p className="report-muted-text">{i18nText('Reports.page.noChild')}</p></div></div>;
+  return <ReportsChildPage key={child.childId} child={child} />;
+}
+
+// Keep asynchronous report refreshes in the child's own mounted view.
+function ReportsChildPage({ child }: { child: ChildProfile }) {
   const [reports, setReports] = useState<PersistedReport[]>([]);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -311,7 +298,34 @@ export default function ReportsPage() {
   const [autoGenerationState, setAutoGenerationState] = useState<AutoGenerationState>('idle');
   const [reportLoadState, setReportLoadState] = useState<ReportLoadState>('loading');
   const [reloadKey, setReloadKey] = useState(0);
+  const [aiState, setAiState] = useState<ReportAiState>('checking');
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [refreshingIds, setRefreshingIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null);
+  const batchStopRef = useRef(false);
   const viewerRef = useRef<HTMLDivElement>(null);
+
+  // AI can be connected from settings while this route stays mounted, so the
+  // runtime check re-runs whenever the window regains focus.
+  const checkAiRuntime = useCallback(() => {
+    void hasReportTextRuntime()
+      .then((ready) => setAiState(ready ? 'ready' : 'unavailable'))
+      .catch((error) => {
+        catchLog('reports', 'action:check-report-runtime-failed', 'warn')(error);
+        setAiState('unavailable');
+      });
+  }, []);
+  useEffect(() => {
+    checkAiRuntime();
+    const onVisible = () => { if (document.visibilityState === 'visible') checkAiRuntime(); };
+    window.addEventListener('focus', checkAiRuntime);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', checkAiRuntime);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [checkAiRuntime]);
+  useEffect(() => () => { batchStopRef.current = true; }, [child?.childId]);
 
   useEffect(() => { const d = computePresetDates('this-quarter'); setPeriodStart(d.start); setPeriodEnd(d.end); }, []);
   useEffect(() => {
@@ -378,6 +392,54 @@ export default function ReportsPage() {
   const historyReports = latestReport
     ? reports.filter((report) => report.reportId !== latestReport.reportId)
     : reports;
+  const localReports = reports.filter((report) => isAiRefreshableContent(parseReportContent(report.content)));
+  const latestIsLocal = Boolean(latestContent && isAiRefreshableContent(latestContent));
+
+  const markRefreshing = (reportId: string, active: boolean) => setRefreshingIds((prev) => {
+    const next = new Set(prev);
+    if (active) next.add(reportId); else next.delete(reportId);
+    return next;
+  });
+
+  const rewriteOne = async (report: PersistedReport) => {
+    setRefreshError(null);
+    markRefreshing(report.reportId, true);
+    try {
+      await refreshReportWithAi(activeChild, report);
+      setReports(requireValidPersistedReports(activeChild.createdAt, await getGrowthReports(activeChild.childId)));
+      return true;
+    } catch (error) {
+      catchLog('reports', 'action:refresh-report-with-ai-failed', 'warn')(error);
+      setRefreshError(i18nText('Reports.page.ai.refreshFailed', {
+        message: error instanceof Error ? error.message : String(error),
+      }));
+      checkAiRuntime();
+      return false;
+    } finally {
+      markRefreshing(report.reportId, false);
+    }
+  };
+
+  const handleRefreshOne = async (report: PersistedReport) => {
+    if (await rewriteOne(report)) nimiToast.success(i18nText('Reports.page.ai.refreshSuccess'));
+  };
+
+  // Sequential on purpose: each rewrite is one bounded inference request, and
+  // a failure stops the batch so the parent sees which report kept its old text.
+  const handleRefreshAll = async () => {
+    const queue = [...localReports];
+    batchStopRef.current = false;
+    setBatchProgress({ done: 0, total: queue.length });
+    let done = 0;
+    for (const report of queue) {
+      if (batchStopRef.current) break;
+      if (!(await rewriteOne(report))) break;
+      done += 1;
+      setBatchProgress({ done, total: queue.length });
+    }
+    setBatchProgress(null);
+    if (done > 0) nimiToast.success(i18nText('Reports.page.ai.refreshAllDone', { count: done }));
+  };
 
   const handlePresetChange = (p: PeriodPreset) => { setPeriodPreset(p); if (p !== 'custom') { const d = computePresetDates(p); setPeriodStart(d.start); setPeriodEnd(d.end); } };
   const handleDateChange = (field: 'start' | 'end', value: string) => {
@@ -406,35 +468,17 @@ export default function ReportsPage() {
     try {
       const now = isoNow();
       const reportType = deriveReportType(periodPreset);
-      const runtimeAvailable = await hasAvailableReportsRuntime();
-      const [measurements, milestones, vaccines, journalEntries, reminderStates] = await Promise.all([
-        getMeasurements(activeChild.childId), getMilestoneRecords(activeChild.childId),
-        getVaccineRecords(activeChild.childId), getJournalEntries(activeChild.childId, 200), getReminderStates(activeChild.childId),
-      ]);
+      const runtimeAvailable = await hasReportTextRuntime();
+      setAiState(runtimeAvailable ? 'ready' : 'unavailable');
+      const data = await loadReportDomainData(activeChild.childId);
       let report: ReturnType<typeof buildStructuredGrowthReport> | Awaited<ReturnType<typeof generateNarrativeReportForPeriod>> | null = null;
 
       if (runtimeAvailable) {
         try {
-          const [sleepRecords, dentalRecords, allergyRecords, medicalEvents, fitnessAssessments, tannerAssessments] = await Promise.all([
-            getSleepRecords(activeChild.childId), getDentalRecords(activeChild.childId), getAllergyRecords(activeChild.childId),
-            getMedicalEvents(activeChild.childId), getFitnessAssessments(activeChild.childId), getTannerAssessments(activeChild.childId),
-          ]);
           const narrativeReport = await generateNarrativeReportForPeriod({
             child: activeChild,
             period: { start: bounds.start, end: bounds.end },
-            data: {
-              measurements,
-              milestones,
-              vaccines,
-              journalEntries,
-              reminderStates,
-              sleepRecords,
-              dentalRecords,
-              allergyRecords,
-              medicalEvents,
-              fitnessAssessments,
-              tannerAssessments,
-            },
+            data,
             reportType,
           });
           report = {
@@ -464,11 +508,11 @@ export default function ReportsPage() {
           now,
           periodStart: bounds.start,
           periodEnd: bounds.end,
-          measurements,
-          milestones,
-          vaccines,
-          journalEntries,
-          reminderStates,
+          measurements: data.measurements,
+          milestones: data.milestones,
+          vaccines: data.vaccines,
+          journalEntries: data.journalEntries,
+          reminderStates: data.reminderStates,
         });
       }
       const reportId = ulid();
@@ -500,6 +544,22 @@ export default function ReportsPage() {
           </NimiText>
         </header>
 
+        {reportLoadState !== 'error' && (
+          <ReportAiStatusCard
+            aiState={aiState}
+            localCount={localReports.length}
+            latestIsLocal={latestIsLocal}
+            latestRefreshing={Boolean(latestReport && refreshingIds.has(latestReport.reportId))}
+            batchProgress={batchProgress}
+            busy={refreshingIds.size > 0}
+            onRefreshLatest={() => { if (latestReport) void handleRefreshOne(latestReport); }}
+            onRefreshAll={() => void handleRefreshAll()}
+            onStop={() => { batchStopRef.current = true; }}
+          />
+        )}
+
+        {refreshError && <p role="alert" className="mb-4 text-sm text-[var(--nimi-status-danger)]">{refreshError}</p>}
+
         {latestContent && latestReport ? (
           <div className="mb-6">
             <ReportViewer content={latestContent} reportId={latestReport.reportId} persisted={latestReport} childName={activeChild.displayName} selfRoleName={activeChild.recorderProfiles?.[0]?.name} onContentUpdate={latestContent.version === 2 ? (u) => void handleContentUpdate(latestReport.reportId, u) : undefined} />
@@ -529,13 +589,16 @@ export default function ReportsPage() {
           <div className="space-y-2">{historyReports.map((report) => {
             const isExpanded = expandedReportId === report.reportId;
             const parsed = parseReportContent(report.content);
-            const title = parsed.title;
+            const isLocal = isAiRefreshableContent(parsed);
+            // v1 titles were frozen in the UI language active at generation time.
+            const title = isLocal ? buildNarrativeTitle(activeChild.displayName, parsed.reportType) : parsed.title;
             const teaser = parsed.version === 2 ? parsed.teaser : (parsed.overview[1] ?? parsed.overview[0] ?? '');
             return (<div key={report.reportId}>
               <button onClick={() => setExpandedReportId((prev) => prev === report.reportId ? null : report.reportId)}
                 className={`report-history-button ${isExpanded ? 'report-history-button--active' : ''}`}>
                 <div className="flex items-center gap-2">
                   <span className="report-history-title">{title}</span>
+                  <StatusBadge tone={isLocal ? 'neutral' : 'info'} className="shrink-0">{reportSourceLabel(parsed)}</StatusBadge>
                   <StatusBadge tone="neutral" className="shrink-0">{reportBadgeLabel(parsed)}</StatusBadge>
                   <ChevronDown size={12} className={`report-icon-muted shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} strokeWidth={2} />
                 </div>
@@ -543,6 +606,14 @@ export default function ReportsPage() {
                 {teaser ? <p className="report-history-date">{teaser}</p> : null}
               </button>
               {isExpanded && (<div ref={viewerRef} className="mt-2 pb-4">
+                {isLocal && (
+                  <LocalReportNotice
+                    aiState={aiState}
+                    refreshing={refreshingIds.has(report.reportId)}
+                    disabled={batchProgress !== null}
+                    onRefresh={() => void handleRefreshOne(report)}
+                  />
+                )}
                 <ReportViewer content={parsed} reportId={report.reportId} persisted={report} childName={activeChild.displayName} selfRoleName={activeChild.recorderProfiles?.[0]?.name} onContentUpdate={parsed.version === 2 ? (u) => void handleContentUpdate(report.reportId, u) : undefined} />
               </div>)}
             </div>);

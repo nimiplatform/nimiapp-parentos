@@ -1,34 +1,43 @@
 {
   "assetId": "advisor-classifier",
-  "description": "ParentOS advisor classifier keyword and generic-runtime phrase data asset. Spec owns routing contracts and reviewed-domain gates; this asset owns concrete classifier phrases.",
-  "schemaVersion": 1,
-  "contentVersion": "2026-06-17.1",
+  "description": "ParentOS advisor intent-parse content asset. Spec owns task typing, strategy selection and reviewed-domain gates; this asset owns the domain definitions, natural-expression examples, task examples and record-group definitions given to the bounded intent-parse call.",
+  "schemaVersion": 2,
+  "contentVersion": "2026-09-30.2",
   "schema": "schema.json",
   "authorityClass": "curated_knowledge_asset",
   "ownerContract": "rule.parentos.advs.r002",
   "generatedModule": "advisor-classifier.gen.ts",
   "review": {
-    "status": "reviewed",
+    "status": "needs_review",
     "owner": "parentos",
-    "reviewer": "parentos-spec",
-    "lastReviewedAt": "2026-06-17"
+    "reviewer": null,
+    "lastReviewedAt": null
   },
-  "primarySection": "domainKeywords",
+  "primarySection": "domains",
   "sections": [
     {
-      "sectionId": "domainKeywords",
+      "sectionId": "domains",
       "kind": "singleton",
-      "files": "domain-keywords.json",
+      "files": "domains.json",
       "ordering": "manifest",
       "orphanPolicy": "fail_close",
       "idField": "domain"
     },
     {
-      "sectionId": "genericRuntime",
+      "sectionId": "tasks",
       "kind": "singleton",
-      "files": "generic-runtime.json",
+      "files": "tasks.json",
       "ordering": "manifest",
-      "orphanPolicy": "fail_close"
+      "orphanPolicy": "fail_close",
+      "idField": "task"
+    },
+    {
+      "sectionId": "recordGroups",
+      "kind": "singleton",
+      "files": "record-groups.json",
+      "ordering": "manifest",
+      "orphanPolicy": "fail_close",
+      "idField": "groupId"
     }
   ]
 }

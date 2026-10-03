@@ -4,9 +4,6 @@ import { i18nText } from '../../i18n/index.js';
 export const ADVISOR_SIDEBAR_BG =
   'bg-[linear-gradient(180deg,rgba(250,252,252,0.98),rgba(244,247,248,0.96))]';
 
-export const ADVISOR_EMPTY_GRADIENT =
-  'bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(239,247,247,0.88))]';
-
 /** Format an ISO timestamp as relative time. */
 export function formatRelativeTimeCn(dateStr: string): string {
   const date = new Date(dateStr);

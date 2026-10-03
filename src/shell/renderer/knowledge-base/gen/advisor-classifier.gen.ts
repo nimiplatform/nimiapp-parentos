@@ -3,164 +3,717 @@
 
 
 export type AdvisorClassifierDomain = 'sensitivity' | 'sleep' | 'sexuality' | 'digital' | 'vaccine' | 'checkup' | 'growth' | 'vision' | 'outdoor' | 'milestone' | 'nutrition' | 'dental' | 'observation';
+export type AdvisorIntentTask = 'chat' | 'knowledge' | 'records' | 'overview' | 'follow-up' | 'clarify';
+export type AdvisorRecordGroupId = 'growth' | 'vision' | 'fitness' | 'sleep' | 'outdoor' | 'vaccine' | 'dental' | 'medical' | 'development' | 'posture' | 'journal';
 
-export interface AdvisorDomainKeyword {
+export interface AdvisorLocalizedText {
+  zh: string;
+  en: string;
+}
+
+export interface AdvisorLocalizedList {
+  zh: readonly string[];
+  en: readonly string[];
+}
+
+export interface AdvisorDomainDefinition {
   domain: AdvisorClassifierDomain;
-  keywords: readonly string[];
+  definition: AdvisorLocalizedText;
+  examples: AdvisorLocalizedList;
+  recordGroups: readonly AdvisorRecordGroupId[];
 }
 
-export interface AdvisorGenericRuntimeClassifier {
-  phraseIncludes: readonly string[];
-  exactGreetings: readonly string[];
-  compactPunctuationPattern: string;
+export interface AdvisorTaskExample {
+  context?: AdvisorLocalizedText;
+  input: AdvisorLocalizedText;
+  output: {
+    task: AdvisorIntentTask;
+    domains: readonly AdvisorClassifierDomain[];
+    groups: readonly AdvisorRecordGroupId[];
+    time: { kind: string; days?: number };
+    compare: boolean;
+    detail: boolean;
+  };
 }
 
-export const ADVISOR_DOMAIN_KEYWORDS: readonly AdvisorDomainKeyword[] = [
+export interface AdvisorTaskDefinition {
+  task: AdvisorIntentTask;
+  definition: AdvisorLocalizedText;
+  examples: readonly AdvisorTaskExample[];
+}
+
+export interface AdvisorRecordGroupDefinition {
+  groupId: AdvisorRecordGroupId;
+  definition: AdvisorLocalizedText;
+}
+
+export const ADVISOR_DOMAIN_DEFINITIONS: readonly AdvisorDomainDefinition[] = [
   {
     "domain": "sensitivity",
-    "keywords": [
-      "敏感期",
-      "蒙氏敏感期",
-      "sensitive period"
+    "definition": {
+      "zh": "蒙台梭利敏感期：某个阶段孩子对秩序、语言、细节、社交等特别投入的一般知识。",
+      "en": "Montessori sensitive periods: general knowledge about stages when a child is especially drawn to order, language, detail, social play and similar."
+    },
+    "examples": {
+      "zh": [
+        "现在处在什么敏感期",
+        "敏感期要注意什么",
+        "孩子特别执着于物品摆放是敏感期吗"
+      ],
+      "en": [
+        "Which sensitive period is my child in?",
+        "What should I know about sensitive periods?"
+      ]
+    },
+    "recordGroups": [
+      "journal"
     ]
   },
   {
     "domain": "sleep",
-    "keywords": [
-      "睡眠",
-      "夜醒",
-      "作息",
-      "入睡",
-      "午睡",
+    "definition": {
+      "zh": "睡眠：夜间睡眠时长、入睡与起床时间、午睡、作息规律、夜醒。",
+      "en": "Sleep: night sleep duration, bedtime and wake time, naps, routine regularity, night waking."
+    },
+    "examples": {
+      "zh": [
+        "最近睡得够吗",
+        "作息规律吗",
+        "几点睡比较合适",
+        "午睡情况怎么样",
+        "写作业太晚会影响睡眠吗"
+      ],
+      "en": [
+        "Is my child sleeping enough lately?",
+        "Is the bedtime routine regular?",
+        "How are the naps going?"
+      ]
+    },
+    "recordGroups": [
       "sleep"
     ]
   },
   {
     "domain": "sexuality",
-    "keywords": [
-      "性教育",
-      "身体边界",
-      "隐私",
-      "sexuality",
-      "sex education"
-    ]
+    "definition": {
+      "zh": "性教育与身体边界：身体隐私、界限、与孩子谈论身体和青春期话题的方式。",
+      "en": "Sexuality education and body boundaries: body privacy, boundaries, and how to talk with a child about bodies and puberty topics."
+    },
+    "examples": {
+      "zh": [
+        "怎么跟孩子讲身体隐私",
+        "性教育从什么时候开始",
+        "孩子问宝宝从哪来怎么回答"
+      ],
+      "en": [
+        "How do I explain body privacy?",
+        "When should sex education start?"
+      ]
+    },
+    "recordGroups": []
   },
   {
     "domain": "digital",
-    "keywords": [
-      "屏幕",
-      "手机",
-      "平板",
-      "电子设备",
-      "digital",
-      "screen time"
-    ]
+    "definition": {
+      "zh": "数字使用：看屏幕、手机、平板、电脑、游戏、短视频等电子设备使用的时长和习惯。",
+      "en": "Digital use: time and habits around screens, phones, tablets, computers, games and short videos."
+    },
+    "examples": {
+      "zh": [
+        "孩子玩手机的时间多吗",
+        "数字使用要怎么管",
+        "每天看平板多久合适",
+        "打游戏停不下来怎么办"
+      ],
+      "en": [
+        "How much screen time is okay?",
+        "How should we handle phone use?",
+        "My child can't stop gaming"
+      ]
+    },
+    "recordGroups": []
   },
   {
     "domain": "vaccine",
-    "keywords": [
-      "疫苗",
-      "接种",
-      "vaccin"
+    "definition": {
+      "zh": "疫苗接种：已接种的疫苗、接种日期和接种记录。",
+      "en": "Vaccination: vaccines received, vaccination dates and vaccination records."
+    },
+    "examples": {
+      "zh": [
+        "疫苗打了哪些",
+        "上一针是什么时候打的",
+        "接种记录全吗"
+      ],
+      "en": [
+        "Which vaccines has my child had?",
+        "When was the last shot?"
+      ]
+    },
+    "recordGroups": [
+      "vaccine"
     ]
   },
   {
     "domain": "checkup",
-    "keywords": [
-      "体检",
-      "儿保",
-      "检查",
-      "checkup"
+    "definition": {
+      "zh": "体检与儿保：常规体检、儿保检查及其中记录的测量和检查项目。",
+      "en": "Checkups: routine health checkups and well-child visits and the measurements recorded there."
+    },
+    "examples": {
+      "zh": [
+        "上次体检记录了什么",
+        "儿保检查做过哪些"
+      ],
+      "en": [
+        "What did the last checkup record?",
+        "Which well-child checks were done?"
+      ]
+    },
+    "recordGroups": [
+      "growth",
+      "vision",
+      "dental",
+      "medical"
     ]
   },
   {
     "domain": "growth",
-    "keywords": [
-      "身高",
-      "体重",
-      "头围",
-      "百分位",
-      "生长",
+    "definition": {
+      "zh": "生长：身高、体重、头围、BMI 的测量记录和变化。",
+      "en": "Growth: height, weight, head circumference and BMI records and their changes."
+    },
+    "examples": {
+      "zh": [
+        "身高长得怎么样",
+        "和上次比长高了吗",
+        "体重最近有变化吗"
+      ],
+      "en": [
+        "How is height developing?",
+        "Has my child grown since last time?"
+      ]
+    },
+    "recordGroups": [
       "growth"
     ]
   },
   {
     "domain": "vision",
-    "keywords": [
-      "视力",
-      "散光",
-      "远视储备",
+    "definition": {
+      "zh": "视力：左右眼视力、眼轴、眼压等眼部检查记录，以及近视相关的问题。",
+      "en": "Vision: left and right visual acuity, axial length, eye pressure and other eye exam records, and myopia-related questions."
+    },
+    "examples": {
+      "zh": [
+        "视力最近怎么样",
+        "度数有变化吗",
+        "眼轴长了多少",
+        "近视加深了吗"
+      ],
+      "en": [
+        "How is my child's eyesight lately?",
+        "Has the axial length changed?"
+      ]
+    },
+    "recordGroups": [
       "vision"
     ]
   },
   {
     "domain": "outdoor",
-    "keywords": [
-      "户外",
-      "户外活动",
-      "户外时间",
-      "户外目标",
-      "outdoor",
-      "近视防控",
-      "日光"
+    "definition": {
+      "zh": "户外活动：户外时长记录、家长设定的每周户外目标、晒太阳和户外运动的习惯。",
+      "en": "Outdoor time: recorded outdoor minutes, the parent's weekly outdoor goal, and habits of daylight and outdoor play."
+    },
+    "examples": {
+      "zh": [
+        "户外活动够了吗",
+        "这周出去玩了多久",
+        "户外目标完成了吗",
+        "每天晒太阳的时间"
+      ],
+      "en": [
+        "Is my child getting enough outdoor time?",
+        "How much outdoor time this week?"
+      ]
+    },
+    "recordGroups": [
+      "outdoor"
     ]
   },
   {
     "domain": "milestone",
-    "keywords": [
-      "里程碑",
-      "发育",
-      "会不会",
-      "milestone"
+    "definition": {
+      "zh": "发育里程碑：大运动、精细动作、语言、社交等里程碑的达成记录。",
+      "en": "Developmental milestones: recorded achievements in gross motor, fine motor, language, social and similar areas."
+    },
+    "examples": {
+      "zh": [
+        "最近达成了哪些里程碑",
+        "语言方面有什么新进展"
+      ],
+      "en": [
+        "Which milestones were reached recently?",
+        "Any new language progress?"
+      ]
+    },
+    "recordGroups": [
+      "development"
     ]
   },
   {
     "domain": "nutrition",
-    "keywords": [
-      "辅食",
-      "营养",
-      "吃饭",
-      "饮食",
-      "nutrition"
-    ]
+    "definition": {
+      "zh": "营养与饮食：辅食、吃饭、挑食、饮食习惯。",
+      "en": "Nutrition and eating: solid foods, meals, picky eating and eating habits."
+    },
+    "examples": {
+      "zh": [
+        "挑食怎么办",
+        "辅食怎么加",
+        "吃饭很慢"
+      ],
+      "en": [
+        "What about picky eating?",
+        "How should solids be introduced?"
+      ]
+    },
+    "recordGroups": []
   },
   {
     "domain": "dental",
-    "keywords": [
-      "牙",
-      "口腔",
-      "龋",
+    "definition": {
+      "zh": "口腔：换牙、出牙、龋齿、洗牙、牙科就诊和矫正相关记录。",
+      "en": "Dental: tooth eruption and loss, cavities, cleanings, dental visits and orthodontic records."
+    },
+    "examples": {
+      "zh": [
+        "想看牙齿记录",
+        "换牙情况怎么样",
+        "上次看牙是什么时候"
+      ],
+      "en": [
+        "Show me the dental records",
+        "How is tooth replacement going?"
+      ]
+    },
+    "recordGroups": [
       "dental"
     ]
   },
   {
     "domain": "observation",
-    "keywords": [
-      "观察",
-      "日记",
-      "专注",
-      "情绪",
-      "互动",
-      "observation"
+    "definition": {
+      "zh": "日常观察：随记里记录的情绪、专注、社交互动、兴趣和行为。",
+      "en": "Everyday observation: moods, focus, social interaction, interests and behaviour written in journal entries."
+    },
+    "examples": {
+      "zh": [
+        "最近随记里记了什么",
+        "孩子最近情绪怎么样",
+        "专注力的观察",
+        "孩子一直喜欢画画，要不要开始系统学"
+      ],
+      "en": [
+        "What did the recent journal entries say?",
+        "How has my child's mood been?",
+        "My child has loved drawing for years; should we start formal lessons?"
+      ]
+    },
+    "recordGroups": [
+      "journal"
     ]
   }
 ];
-export const ADVISOR_GENERIC_RUNTIME: AdvisorGenericRuntimeClassifier = {
-  "phraseIncludes": [
-    "你的模型",
-    "你是什么模型",
-    "你是谁",
-    "你能做什么",
-    "介绍一下你自己",
-    "在吗",
-    "测试"
-  ],
-  "exactGreetings": [
-    "你好",
-    "您好",
-    "hello",
-    "hi",
-    "hey"
-  ],
-  "compactPunctuationPattern": "[！!,.，。?？\\s]"
-};
+export const ADVISOR_TASK_DEFINITIONS: readonly AdvisorTaskDefinition[] = [
+  {
+    "task": "chat",
+    "definition": {
+      "zh": "问候、闲聊、测试、道谢，或询问你是谁、能做什么；不需要查看孩子的记录。",
+      "en": "Greetings, small talk, tests, thanks, or questions about who you are or what you can do; no child records are needed."
+    },
+    "examples": [
+      {
+        "input": {
+          "zh": "啦啦啦",
+          "en": "la la la"
+        },
+        "output": {
+          "task": "chat",
+          "domains": [],
+          "groups": [],
+          "time": {
+            "kind": "default"
+          },
+          "compare": false,
+          "detail": false
+        }
+      },
+      {
+        "input": {
+          "zh": "你是谁",
+          "en": "Who are you?"
+        },
+        "output": {
+          "task": "chat",
+          "domains": [],
+          "groups": [],
+          "time": {
+            "kind": "default"
+          },
+          "compare": false,
+          "detail": false
+        }
+      }
+    ]
+  },
+  {
+    "task": "knowledge",
+    "definition": {
+      "zh": "询问一般知识或做法，不需要结合这个孩子的具体记录。",
+      "en": "Asks for general knowledge or practices without needing this child's own records."
+    },
+    "examples": [
+      {
+        "input": {
+          "zh": "敏感期是什么意思",
+          "en": "What does sensitive period mean?"
+        },
+        "output": {
+          "task": "knowledge",
+          "domains": [
+            "sensitivity"
+          ],
+          "groups": [],
+          "time": {
+            "kind": "default"
+          },
+          "compare": false,
+          "detail": false
+        }
+      }
+    ]
+  },
+  {
+    "task": "records",
+    "definition": {
+      "zh": "询问这个孩子的记录、近况、变化、比较，或“够不够”“怎么样”这类需要结合孩子记录回答的问题；包括承接上一轮话题的追问。",
+      "en": "Asks about this child's records, recent state, changes, comparisons, or whether something is enough; includes follow-ups that continue the previous topic."
+    },
+    "examples": [
+      {
+        "input": {
+          "zh": "户外活动够了吗",
+          "en": "Is outdoor time enough?"
+        },
+        "output": {
+          "task": "records",
+          "domains": [
+            "outdoor"
+          ],
+          "groups": [
+            "outdoor"
+          ],
+          "time": {
+            "kind": "default"
+          },
+          "compare": false,
+          "detail": false
+        }
+      },
+      {
+        "input": {
+          "zh": "睡眠、敏感期、数字使用和户外都说一下",
+          "en": "Tell me about sleep, sensitive periods, digital use and outdoor time"
+        },
+        "output": {
+          "task": "records",
+          "domains": [
+            "sleep",
+            "sensitivity",
+            "digital",
+            "outdoor"
+          ],
+          "groups": [
+            "sleep",
+            "outdoor",
+            "journal"
+          ],
+          "time": {
+            "kind": "default"
+          },
+          "compare": false,
+          "detail": false
+        }
+      },
+      {
+        "context": {
+          "zh": "上一轮在聊户外活动",
+          "en": "The previous turn discussed outdoor time"
+        },
+        "input": {
+          "zh": "户外先不说了，想看牙齿记录",
+          "en": "Forget outdoor for now, show me the dental records"
+        },
+        "output": {
+          "task": "records",
+          "domains": [
+            "dental"
+          ],
+          "groups": [
+            "dental"
+          ],
+          "time": {
+            "kind": "default"
+          },
+          "compare": false,
+          "detail": false
+        }
+      },
+      {
+        "input": {
+          "zh": "这个月睡眠怎么样，详细说说",
+          "en": "How was sleep this month? Please go into detail"
+        },
+        "output": {
+          "task": "records",
+          "domains": [
+            "sleep"
+          ],
+          "groups": [
+            "sleep"
+          ],
+          "time": {
+            "kind": "this-month"
+          },
+          "compare": false,
+          "detail": true
+        }
+      },
+      {
+        "input": {
+          "zh": "过去一年的睡眠记录统计一下",
+          "en": "Summarise the sleep records of the past year"
+        },
+        "output": {
+          "task": "records",
+          "domains": [
+            "sleep"
+          ],
+          "groups": [
+            "sleep"
+          ],
+          "time": {
+            "kind": "recent-days",
+            "days": 365
+          },
+          "compare": false,
+          "detail": false
+        }
+      }
+    ]
+  },
+  {
+    "task": "overview",
+    "definition": {
+      "zh": "要求对孩子近期整体情况做综合回顾，不限定某个方面。",
+      "en": "Asks for an overall review of the child's recent state across areas rather than one topic."
+    },
+    "examples": [
+      {
+        "input": {
+          "zh": "最近孩子整体发展情况怎么样",
+          "en": "How is my child doing overall lately?"
+        },
+        "output": {
+          "task": "overview",
+          "domains": [],
+          "groups": [],
+          "time": {
+            "kind": "default"
+          },
+          "compare": false,
+          "detail": false
+        }
+      }
+    ]
+  },
+  {
+    "task": "follow-up",
+    "definition": {
+      "zh": "承接上一轮的话题继续追问，例如要和上次比较、问依据、要求详细，没有提出新的方面。",
+      "en": "Continues the previous topic, for example asking to compare with last time, for the basis, or for more detail, without naming a new area."
+    },
+    "examples": [
+      {
+        "context": {
+          "zh": "上一轮在聊视力记录",
+          "en": "The previous turn discussed vision records"
+        },
+        "input": {
+          "zh": "那和上次比呢",
+          "en": "And compared with last time?"
+        },
+        "output": {
+          "task": "follow-up",
+          "domains": [],
+          "groups": [],
+          "time": {
+            "kind": "default"
+          },
+          "compare": true,
+          "detail": false
+        }
+      },
+      {
+        "context": {
+          "zh": "上一轮在聊牙齿记录",
+          "en": "The previous turn discussed dental records"
+        },
+        "input": {
+          "zh": "为什么这么说，依据是哪条？",
+          "en": "Why do you say that? What is it based on?"
+        },
+        "output": {
+          "task": "follow-up",
+          "domains": [],
+          "groups": [],
+          "time": {
+            "kind": "default"
+          },
+          "compare": false,
+          "detail": false
+        }
+      },
+      {
+        "context": {
+          "zh": "上一轮在聊牙齿记录",
+          "en": "The previous turn discussed dental records"
+        },
+        "input": {
+          "zh": "可以详细讲一下吗？",
+          "en": "Could you go into more detail?"
+        },
+        "output": {
+          "task": "follow-up",
+          "domains": [],
+          "groups": [],
+          "time": {
+            "kind": "default"
+          },
+          "compare": false,
+          "detail": true
+        }
+      }
+    ]
+  },
+  {
+    "task": "clarify",
+    "definition": {
+      "zh": "即使结合前面的对话也无法确定在问什么，或所指有多种合理理解且会影响回答。",
+      "en": "Even with the earlier conversation it is unclear what is being asked, or several reasonable readings would change the answer."
+    },
+    "examples": [
+      {
+        "context": {
+          "zh": "这是对话的第一句",
+          "en": "This is the first message of the conversation"
+        },
+        "input": {
+          "zh": "那个怎么办",
+          "en": "What about that?"
+        },
+        "output": {
+          "task": "clarify",
+          "domains": [],
+          "groups": [],
+          "time": {
+            "kind": "default"
+          },
+          "compare": false,
+          "detail": false
+        }
+      }
+    ]
+  }
+];
+export const ADVISOR_RECORD_GROUP_DEFINITIONS: readonly AdvisorRecordGroupDefinition[] = [
+  {
+    "groupId": "growth",
+    "definition": {
+      "zh": "身高、体重、头围、BMI 测量",
+      "en": "Height, weight, head circumference and BMI measurements"
+    }
+  },
+  {
+    "groupId": "vision",
+    "definition": {
+      "zh": "左右眼视力、眼轴、眼压等眼部检查",
+      "en": "Left and right visual acuity, axial length, eye pressure and other eye exams"
+    }
+  },
+  {
+    "groupId": "fitness",
+    "definition": {
+      "zh": "体能测试成绩和运动记录",
+      "en": "Fitness test results and sport activity records"
+    }
+  },
+  {
+    "groupId": "sleep",
+    "definition": {
+      "zh": "每晚睡眠时长、入睡和起床时间、午睡",
+      "en": "Nightly sleep duration, bedtime and wake time, naps"
+    }
+  },
+  {
+    "groupId": "outdoor",
+    "definition": {
+      "zh": "户外活动时长和家长设定的每周户外目标",
+      "en": "Outdoor activity minutes and the parent's weekly outdoor goal"
+    }
+  },
+  {
+    "groupId": "vaccine",
+    "definition": {
+      "zh": "疫苗接种记录",
+      "en": "Vaccination records"
+    }
+  },
+  {
+    "groupId": "dental",
+    "definition": {
+      "zh": "出牙、换牙、龋齿、洗牙、牙科就诊和矫正记录",
+      "en": "Tooth eruption and loss, cavities, cleanings, dental visits and orthodontic records"
+    }
+  },
+  {
+    "groupId": "medical",
+    "definition": {
+      "zh": "就诊、急诊、住院、体检、用药等医疗事件",
+      "en": "Doctor visits, emergencies, hospital stays, checkups, medication and other medical events"
+    }
+  },
+  {
+    "groupId": "development",
+    "definition": {
+      "zh": "发育里程碑、青春期发育自评、骨龄、体脂率",
+      "en": "Developmental milestones, puberty self-assessments, bone age and body fat"
+    }
+  },
+  {
+    "groupId": "posture",
+    "definition": {
+      "zh": "体态自查（肩、背、骨盆、腿、足跟等）",
+      "en": "Posture self-checks (shoulders, back, pelvis, legs, heels and similar)"
+    }
+  },
+  {
+    "groupId": "journal",
+    "definition": {
+      "zh": "家长写的成长随记和观察",
+      "en": "Growth journal entries and observations written by the parent"
+    }
+  }
+];

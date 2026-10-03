@@ -40,7 +40,7 @@ export function AdvisorSidebar({
                 onClick={() => onSelectConversation(conv.conversationId)}
                 className={cn(
                   'flex w-full flex-col gap-1 parentos-radius-lg px-3 py-3 text-left transition-all duration-[var(--nimi-motion-fast)] hover:bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_5%,transparent)]',
-                  active && 'bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_9%,var(--nimi-surface-card))] shadow-[var(--nimi-elevation-base)]',
+                  active && 'bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_9%,var(--nimi-surface-card))] ring-1 ring-inset ring-[color-mix(in_srgb,var(--nimi-action-primary-bg)_18%,transparent)]',
                 )}
               >
                 <p

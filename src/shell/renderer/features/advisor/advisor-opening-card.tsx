@@ -1,17 +1,26 @@
-import { OBSERVATION_DIMENSIONS } from '../../knowledge-base/index.js';
-import type { AdvisorSnapshot } from './advisor-boundary.js';
-import type { JournalEntryRow } from '../../bridge/sqlite-bridge.js';
+import type { ReactNode } from 'react';
+import type { AdvisorFacts, AdvisorRecordGroupId } from './advisor-context.js';
+import { AdvisorHeroMascot } from './advisor-mascot.js';
 import { i18nText } from '../../i18n/index.js';
 
 
-const DIMENSION_NAME_BY_ID = new Map<string, string>(
-  OBSERVATION_DIMENSIONS.map((d) => [d.dimensionId, d.displayName]),
-);
+const GROUP_ICONS: Partial<Record<AdvisorRecordGroupId, string>> = {
+  growth: '📏',
+  vision: '👁️',
+  fitness: '🏃',
+  sleep: '🌙',
+  outdoor: '☀️',
+  vaccine: '💉',
+  dental: '🦷',
+  medical: '🩺',
+  development: '🌱',
+  posture: '🧍',
+  journal: '📝',
+};
 
 type LatestFact = {
   icon: string;
   label: string;
-  detail: string;
   dateIso: string;
 };
 
@@ -20,10 +29,11 @@ function padDate(value: number) {
 }
 
 function humanizeDate(iso: string) {
-  const d = new Date(iso);
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00`);
   if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
   const today = new Date();
-  const diffDays = Math.floor((today.getTime() - d.getTime()) / 86400000);
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((today.getTime() - d.getTime()) / 86400000);
   if (diffDays <= 0) return i18nText('Common.relative.today');
   if (diffDays === 1) return i18nText('Common.relative.yesterday');
   if (diffDays < 7) return i18nText('Common.relative.daysAgo', { days: diffDays });
@@ -31,87 +41,11 @@ function humanizeDate(iso: string) {
   return `${d.getFullYear()}-${padDate(d.getMonth() + 1)}-${padDate(d.getDate())}`;
 }
 
-function pickJournalFact(
-  entries: JournalEntryRow[],
-  siblingNames: string[],
-): LatestFact | null {
-  const sorted = [...entries].sort((a, b) => b.recordedAt.localeCompare(a.recordedAt));
-  const containsSibling = (text: string) => {
-    const head = text.trim().slice(0, 16);
-    return siblingNames.some((n) => n.length > 0 && head.includes(n));
-  };
-
-  for (const entry of sorted) {
-    const dimName = entry.dimensionId ? DIMENSION_NAME_BY_ID.get(entry.dimensionId) : null;
-    if (dimName) {
-      return { icon: '📝', label: i18nText('Advisor.fact.journal'), detail: dimName, dateIso: entry.recordedAt };
-    }
-    const text = entry.textContent?.trim() ?? '';
-    if (text && !containsSibling(text)) {
-      const short = text.length > 10 ? `${text.slice(0, 10)}…` : text;
-      return { icon: '📝', label: i18nText('Advisor.fact.journal'), detail: short, dateIso: entry.recordedAt };
-    }
-  }
-
-  const fallback = sorted[0];
-  if (!fallback) return null;
-  return { icon: '📝', label: i18nText('Advisor.fact.journal'), detail: i18nText('Advisor.fact.journal'), dateIso: fallback.recordedAt };
-}
-
-function pickLatestFacts(snapshot: AdvisorSnapshot, siblingNames: string[]): LatestFact[] {
-  const facts: LatestFact[] = [];
-
-  const latestMeasurement = [...snapshot.measurements]
-    .sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))[0];
-  if (latestMeasurement) {
-    facts.push({
-      icon: '📏',
-      label: i18nText('Advisor.fact.latestMeasurement'),
-      detail: `${latestMeasurement.typeId} ${latestMeasurement.value}`,
-      dateIso: latestMeasurement.measuredAt,
-    });
-  }
-
-  const latestVaccine = [...snapshot.vaccines]
-    .sort((a, b) => b.vaccinatedAt.localeCompare(a.vaccinatedAt))[0];
-  if (latestVaccine) {
-    facts.push({
-      icon: '💉',
-      label: i18nText('Advisor.fact.latestVaccine'),
-      detail: latestVaccine.vaccineName ?? i18nText('Advisor.fact.vaccineRecord'),
-      dateIso: latestVaccine.vaccinatedAt,
-    });
-  }
-
-  const achievedMilestones = snapshot.milestones.filter((m) => m.achievedAt);
-  const latestMilestone = [...achievedMilestones]
-    .sort((a, b) => (b.achievedAt ?? '').localeCompare(a.achievedAt ?? ''))[0];
-  if (latestMilestone?.achievedAt) {
-    facts.push({
-      icon: '🌱',
-      label: i18nText('Advisor.fact.milestone'),
-      detail: latestMilestone.milestoneId ?? i18nText('Advisor.fact.achievedOne'),
-      dateIso: latestMilestone.achievedAt,
-    });
-  }
-
-  const latestOutdoor = [...snapshot.outdoorRecords]
-    .sort((a, b) => b.activityDate.localeCompare(a.activityDate))[0];
-  if (latestOutdoor) {
-    facts.push({
-      icon: '☀️',
-      label: i18nText('Advisor.fact.outdoor'),
-      detail: i18nText('Common.duration.minutes', { minutes: latestOutdoor.durationMinutes }),
-      dateIso: latestOutdoor.activityDate,
-    });
-  }
-
-  const journalFact = pickJournalFact(snapshot.journalEntries, siblingNames);
-  if (journalFact) {
-    facts.push(journalFact);
-  }
-
-  return facts
+/** The two most recently recorded categories the advisor can read. */
+function pickLatestFacts(facts: AdvisorFacts): LatestFact[] {
+  return facts.groups
+    .filter((group) => group.status === 'ok' && group.latestRecordDate)
+    .map((group) => ({ icon: GROUP_ICONS[group.group] ?? '•', label: group.label, dateIso: group.latestRecordDate as string }))
     .sort((a, b) => b.dateIso.localeCompare(a.dateIso))
     .slice(0, 2);
 }
@@ -119,33 +53,37 @@ function pickLatestFacts(snapshot: AdvisorSnapshot, siblingNames: string[]): Lat
 export type AdvisorOpeningCardProps = {
   childName: string;
   ageLabel: string;
-  snapshot: AdvisorSnapshot | null;
-  siblingNames: string[];
+  facts: AdvisorFacts | null;
+  /** Starter questions, shown under the greeting. */
+  children?: ReactNode;
 };
 
-export function AdvisorOpeningCard({ childName, ageLabel, snapshot, siblingNames }: AdvisorOpeningCardProps) {
-  const facts = snapshot ? pickLatestFacts(snapshot, siblingNames) : [];
+/** Greeting that fills an empty conversation: the mascot, the child context it reads, and starters. */
+export function AdvisorOpeningCard({ childName, ageLabel, facts: openingFacts, children }: AdvisorOpeningCardProps) {
+  const facts = openingFacts ? pickLatestFacts(openingFacts) : [];
 
   return (
-    <div className="shrink-0 px-5 pb-1 pt-4">
-      <div className="mx-auto max-w-2xl">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-1">
-          <div className="flex items-center gap-1.5 text-[14px] text-slate-500">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            <span className="font-medium text-slate-700">{childName}</span>
-            <span className="text-slate-400">· {ageLabel}</span>
-          </div>
+    <div className="flex min-h-0 flex-1 flex-col overflow-auto px-6 pb-4 pt-8">
+      <div className="my-auto flex flex-col items-center text-center">
+        <AdvisorHeroMascot size={76} />
+        <h2 className="mt-9 text-[20px] font-bold leading-snug tracking-tight text-[var(--nimi-text-primary)]">
+          {i18nText('Advisor.opening.title', { childName })}
+        </h2>
+        <div className="mt-3.5 flex max-w-2xl flex-wrap items-center justify-center gap-2">
+          <span className="advisor-context-chip">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--nimi-status-success)]" aria-hidden="true" />
+            <span className="font-medium text-[var(--nimi-text-primary)]">{childName}</span>
+            <span className="text-[var(--nimi-text-muted)]">· {ageLabel}</span>
+          </span>
           {facts.map((fact) => (
-            <span
-              key={`${fact.label}-${fact.dateIso}`}
-              className="inline-flex items-center gap-1 text-[13px] text-slate-500"
-            >
+            <span key={`${fact.label}-${fact.dateIso}`} className="advisor-context-chip">
               <span aria-hidden>{fact.icon}</span>
-              <span className="text-slate-600">{fact.detail}</span>
-              <span className="text-slate-400">· {humanizeDate(fact.dateIso)}</span>
+              <span>{fact.label}</span>
+              <span className="text-[var(--nimi-text-muted)]">· {humanizeDate(fact.dateIso)}</span>
             </span>
           ))}
         </div>
+        {children}
       </div>
     </div>
   );

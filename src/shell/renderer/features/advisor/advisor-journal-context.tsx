@@ -1,4 +1,5 @@
-import { ADVISOR_EMPTY_GRADIENT } from './advisor-theme.js';
+import { ArrowRight } from 'lucide-react';
+import { AdvisorHeroMascot } from './advisor-mascot.js';
 import { AdvisorRuntimeGateNotice } from './advisor-runtime-gate.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -36,14 +37,15 @@ export type AdvisorJournalContextProps = {
 
 export function AdvisorJournalContext({ context, runtimeAvailable, onSelectStarter }: AdvisorJournalContextProps) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6">
-      <div className={`${ADVISOR_EMPTY_GRADIENT} w-full max-w-md rounded-[30px] border border-white/80 p-6 shadow-[0_20px_52px_rgba(15,23,42,0.08)]`}>
-        <p className="mb-4 text-[14px] font-semibold text-slate-900">
+    <div className="flex min-h-0 flex-1 flex-col items-center overflow-auto px-6 pb-[5vh] pt-10">
+      <div className="my-auto flex w-full max-w-md flex-col items-center">
+        <AdvisorHeroMascot size={76} />
+        <h2 className="mb-5 mt-9 text-center text-[20px] font-bold leading-snug tracking-tight text-[var(--nimi-text-primary)]">
           {i18nText('Advisor.journalContext.title')}
-        </p>
+        </h2>
 
         {/* Journal entry preview card */}
-        <div className="mb-4 rounded-2xl border border-slate-200/60 bg-white/90 p-4">
+        <div className="advisor-journal-preview mb-4 w-full rounded-2xl p-4 text-left">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             {context.dimensionName && (
               <span className="rounded-full border border-emerald-200/60 bg-emerald-50 px-2 py-0.5 text-[12px] font-medium text-emerald-700">
@@ -75,9 +77,11 @@ export function AdvisorJournalContext({ context, runtimeAvailable, onSelectStart
 
         {/* Starter buttons */}
         {runtimeAvailable === false ? (
-          <AdvisorRuntimeGateNotice />
+          <div className="w-full">
+            <AdvisorRuntimeGateNotice />
+          </div>
         ) : (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex w-full flex-col gap-2">
           {JOURNAL_CONTEXT_STARTER_KEYS.map((starterKey) => {
             const starter = i18nText(starterKey);
             return (
@@ -85,9 +89,14 @@ export function AdvisorJournalContext({ context, runtimeAvailable, onSelectStart
               key={starterKey}
               type="button"
               onClick={() => onSelectStarter(starter)}
-              className="rounded-xl border border-slate-200/60 bg-white/90 px-3.5 py-2.5 text-left text-[14px] text-slate-700 transition-colors hover:bg-slate-50/80"
+              className="advisor-suggestion-chip group flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-[14px] text-[var(--nimi-text-primary)]"
             >
-              {starter}
+              <span>{starter}</span>
+              <ArrowRight
+                size={15}
+                aria-hidden="true"
+                className="shrink-0 text-[var(--nimi-text-muted)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--nimi-action-primary-bg)]"
+              />
             </button>
             );
           })}

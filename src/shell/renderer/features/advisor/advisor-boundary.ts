@@ -1,54 +1,8 @@
-import {
-  ADVISOR_DOMAIN_KEYWORDS,
-  ADVISOR_GENERIC_RUNTIME,
-  KNOWLEDGE_SOURCES,
-  NEEDS_REVIEW_DOMAINS,
-  NURTURE_MODES,
-  REVIEWED_DOMAINS,
-} from '../../knowledge-base/index.js';
-import type {
-  JournalEntryRow,
-  MeasurementRow,
-  MilestoneRecordRow,
-  OutdoorRecordRow,
-  VaccineRecordRow,
-} from '../../bridge/sqlite-bridge.js';
-import {
-  getJournalEntries,
-  getMeasurements,
-  getMilestoneRecords,
-  getOutdoorGoal,
-  getOutdoorRecords,
-  getVaccineRecords,
-} from '../../bridge/sqlite-bridge.js';
-import { i18nText } from '../../i18n/index.js';
-import { formatAge } from '../../app-shell/app-store.js';
-
-export interface AdvisorSnapshot {
-  child: {
-    childId: string;
-    displayName: string;
-    gender: string;
-    birthDate: string;
-    nurtureMode: string;
-  };
-  ageMonths: number;
-  measurements: MeasurementRow[];
-  vaccines: VaccineRecordRow[];
-  milestones: MilestoneRecordRow[];
-  journalEntries: JournalEntryRow[];
-  outdoorRecords: OutdoorRecordRow[];
-  outdoorGoalMinutes: number | null;
-}
-
-export interface BuildAdvisorSnapshotInput {
-  childId: string;
-  displayName: string;
-  gender: string;
-  birthDate: string;
-  nurtureMode: string;
-  ageMonths: number;
-}
+import { NEEDS_REVIEW_DOMAINS, REVIEWED_DOMAINS, type AdvisorRecordGroupId } from '../../knowledge-base/index.js';
+import { filterAIResponse } from '../../engine/ai-safety-filter.js';
+import { i18nText, i18nTextForLanguage } from '../../i18n/index.js';
+import { stripReasoningMarkup, type AdvisorIntent } from './advisor-intent.js';
+import type { AdvisorKnowledgeEntry, AdvisorKnowledgeSelection } from './advisor-knowledge.js';
 
 export type AdvisorPromptStrategy =
   | 'reviewed-advice'
@@ -56,378 +10,186 @@ export type AdvisorPromptStrategy =
   | 'unknown-clarifier'
   | 'generic-chat';
 
-function normalize(text: string) {
-  return text.toLowerCase();
-}
-
-function getSourceLabels(domains: string[]) {
-  return KNOWLEDGE_SOURCES
-    .filter((source) => domains.includes(source.domain))
-    .map((source) => `${source.domain}: ${source.source}`);
-}
-
-function advisorListJoin(items: string[]) {
-  return items.join(i18nText('Advisor.structuredFallback.listSeparator'));
-}
-
-function advisorNurtureModeLabel(modeId: string) {
-  return NURTURE_MODES.find((mode) => mode.modeId === modeId)?.displayName ?? modeId;
-}
-
-function advisorGenderLabel(gender: string) {
-  if (gender === 'male') {
-    return i18nText('Advisor.structuredFallback.genderMale');
-  }
-  if (gender === 'female') {
-    return i18nText('Advisor.structuredFallback.genderFemale');
-  }
-  return gender;
-}
-
-function advisorJournalContentTypeLabel(contentType: string) {
-  switch (contentType) {
-    case 'text':
-      return i18nText('Advisor.structuredFallback.contentTypeText');
-    case 'voice':
-      return i18nText('Advisor.structuredFallback.contentTypeVoice');
-    case 'image':
-      return i18nText('Advisor.structuredFallback.contentTypeImage');
-    case 'mixed':
-      return i18nText('Advisor.structuredFallback.contentTypeMixed');
-    default:
-      return contentType;
-  }
-}
-
-function summarizeMeasurements(measurements: MeasurementRow[]) {
-  const latestByType = new Map<string, MeasurementRow>();
-  for (const measurement of [...measurements].sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))) {
-    if (!latestByType.has(measurement.typeId)) {
-      latestByType.set(measurement.typeId, measurement);
-    }
-  }
-
-  return [...latestByType.values()]
-    .map((measurement) => `${measurement.typeId}: ${measurement.value} (${measurement.measuredAt.slice(0, 10)})`)
-    .join('；');
-}
-
-function summarizeVaccines(vaccines: VaccineRecordRow[]) {
-  if (vaccines.length === 0) {
-    return i18nText('Advisor.structuredFallback.noVaccines');
-  }
-
-  const latest = [...vaccines].sort((a, b) => b.vaccinatedAt.localeCompare(a.vaccinatedAt))[0];
-  if (!latest) {
-    return i18nText('Advisor.structuredFallback.noVaccines');
-  }
-
-  return i18nText('Advisor.structuredFallback.latestVaccine', {
-    count: vaccines.length,
-    name: latest.vaccineName ?? i18nText('Advisor.structuredFallback.unknownVaccine'),
-    date: latest.vaccinatedAt.slice(0, 10),
-  });
-}
-
-function summarizeMilestones(milestones: MilestoneRecordRow[]) {
-  const achieved = milestones.filter((item) => item.achievedAt);
-  if (achieved.length === 0) {
-    return i18nText('Advisor.structuredFallback.noMilestones');
-  }
-
-  const latest = [...achieved].sort((a, b) => (b.achievedAt ?? '').localeCompare(a.achievedAt ?? ''))[0];
-  if (!latest?.achievedAt) {
-    return i18nText('Advisor.structuredFallback.achievedMilestones', { count: achieved.length });
-  }
-
-  return i18nText('Advisor.structuredFallback.latestMilestone', {
-    count: achieved.length,
-    milestoneId: latest.milestoneId ?? i18nText('Advisor.structuredFallback.unknownMilestone'),
-    date: latest.achievedAt.slice(0, 10),
-  });
-}
-
-function summarizeOutdoor(records: OutdoorRecordRow[], goalMinutes: number | null) {
-  if (records.length === 0) {
-    return i18nText('Advisor.structuredFallback.noOutdoor');
-  }
-
-  // Compute this week's total
-  const now = new Date();
-  const day = now.getDay();
-  const mondayOffset = day === 0 ? -6 : 1 - day;
-  const monday = new Date(now);
-  monday.setDate(monday.getDate() + mondayOffset);
-  const weekStart = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
-
-  const thisWeek = records.filter((r) => r.activityDate >= weekStart);
-  const thisWeekTotal = thisWeek.reduce((sum, r) => sum + r.durationMinutes, 0);
-  const goal = goalMinutes ?? 630;
-
-  return i18nText('Advisor.structuredFallback.outdoorSummary', {
-    count: records.length,
-    totalMinutes: thisWeekTotal,
-    goalMinutes: goal,
-  });
-}
-
-function summarizeJournal(journalEntries: JournalEntryRow[]) {
-  const latest = journalEntries[0];
-  if (!latest) {
-    return i18nText('Advisor.structuredFallback.noJournal');
-  }
-
-  return i18nText('Advisor.structuredFallback.latestJournal', {
-    date: latest.recordedAt.slice(0, 10),
-    contentType: advisorJournalContentTypeLabel(latest.contentType),
-  });
-}
-
-export async function buildAdvisorSnapshot(input: BuildAdvisorSnapshotInput): Promise<AdvisorSnapshot> {
-  const [measurements, vaccines, milestones, journalEntries, outdoorRecords, outdoorGoal] = await Promise.all([
-    getMeasurements(input.childId),
-    getVaccineRecords(input.childId),
-    getMilestoneRecords(input.childId),
-    getJournalEntries(input.childId, 20),
-    getOutdoorRecords(input.childId),
-    getOutdoorGoal(input.childId),
-  ]);
-
-  return {
-    child: {
-      childId: input.childId,
-      displayName: input.displayName,
-      gender: input.gender,
-      birthDate: input.birthDate,
-      nurtureMode: input.nurtureMode,
-    },
-    ageMonths: input.ageMonths,
-    measurements,
-    vaccines,
-    milestones,
-    journalEntries,
-    outdoorRecords,
-    outdoorGoalMinutes: outdoorGoal,
-  };
-}
-
-export function buildMinimalAdvisorSnapshot(input: BuildAdvisorSnapshotInput): AdvisorSnapshot {
-  return {
-    child: {
-      childId: input.childId,
-      displayName: input.displayName,
-      gender: input.gender,
-      birthDate: input.birthDate,
-      nurtureMode: input.nurtureMode,
-    },
-    ageMonths: input.ageMonths,
-    measurements: [],
-    vaccines: [],
-    milestones: [],
-    journalEntries: [],
-    outdoorRecords: [],
-    outdoorGoalMinutes: null,
-  };
-}
-
-export function serializeAdvisorSnapshot(snapshot: AdvisorSnapshot): string {
-  return JSON.stringify(snapshot);
-}
-
-export function parseAdvisorSnapshot(raw: string): AdvisorSnapshot {
-  const parsed = JSON.parse(raw) as AdvisorSnapshot;
-  if (!parsed?.child?.childId || !Array.isArray(parsed.measurements) || !Array.isArray(parsed.vaccines)
-    || !Array.isArray(parsed.milestones) || !Array.isArray(parsed.journalEntries)) {
-    throw new Error('advisor snapshot payload is malformed');
-  }
-  return parsed;
-}
-
-export function inferRequestedDomains(question: string): string[] {
-  const normalized = normalize(question);
-  return ADVISOR_DOMAIN_KEYWORDS
-    .filter((row) => row.keywords.some((keyword) => normalized.includes(keyword.toLowerCase())))
-    .map((row) => row.domain);
-}
-
-export function canUseAdvisorRuntime(domains: string[]) {
-  return domains.length > 0 && domains.every((domain) => REVIEWED_DOMAINS.includes(domain));
-}
-
-export function canUseAdvisorGenericRuntime(question: string, domains: string[]) {
-  if (domains.length > 0) {
-    return false;
-  }
-  const normalized = question.trim();
-  if (!normalized) {
-    return false;
-  }
-  const lower = normalized.toLowerCase();
-  if (ADVISOR_GENERIC_RUNTIME.phraseIncludes.some((phrase) => lower.includes(phrase.toLowerCase()))) {
-    return true;
-  }
-  const compact = lower.replace(new RegExp(ADVISOR_GENERIC_RUNTIME.compactPunctuationPattern, 'gu'), '');
-  return ADVISOR_GENERIC_RUNTIME.exactGreetings.some((phrase) => compact === phrase.toLowerCase());
-}
-
-export function resolveAdvisorPromptStrategy(question: string, domains: string[]): AdvisorPromptStrategy {
-  if (canUseAdvisorGenericRuntime(question, domains)) {
+/**
+ * Code, not the model, decides the answer scope. A parse result can narrow
+ * the scope but never grants knowledge a needs-review domain lacks.
+ */
+// @nimi-authority: rule.parentos.advs.r002
+export function resolveAdvisorPromptStrategy(
+  intent: AdvisorIntent,
+  groups: readonly AdvisorRecordGroupId[],
+  knowledge: AdvisorKnowledgeSelection,
+): AdvisorPromptStrategy {
+  if (intent.task === 'chat') {
     return 'generic-chat';
   }
-  if (domains.length === 0) {
+  if (intent.task === 'clarify' || (intent.domains.length === 0 && groups.length === 0)) {
     return 'unknown-clarifier';
   }
-  if (canUseAdvisorRuntime(domains)) {
+  if (intent.task === 'overview' || intent.domains.some((domain) => NEEDS_REVIEW_DOMAINS.includes(domain))) {
+    return 'needs-review-descriptive';
+  }
+  if (
+    intent.domains.length > 0
+    && intent.domains.every((domain) => REVIEWED_DOMAINS.includes(domain))
+    && knowledge.entries.length > 0
+  ) {
     return 'reviewed-advice';
   }
   return 'needs-review-descriptive';
 }
 
-export function appendAdvisorSources(text: string, domains: string[]) {
-  const sources = getSourceLabels(domains);
-  if (sources.length === 0) {
-    return text.trim();
+const CITATION_PATTERN = /[[【]\s*(K\d+)\s*[\]】]/gu;
+const URL_PATTERN = /https?:\/\//iu;
+// Raw fact JSON or its field names must never reach a parent.
+const INTERNAL_FORMAT_PATTERN = /```|\b(?:periodNote|recordsInPeriod|latestBeforePeriod|latestRecordDate|recordsAllTime|thisWeekSoFar|minutesStillToWeeklyGoal|daysLeftThisWeekIncludingToday|latestChange|no-records)\b/u;
+
+export type AdvisorAnswerCheck =
+  | { readonly ok: true; readonly body: string; readonly cited: readonly AdvisorKnowledgeEntry[] }
+  | { readonly ok: false; readonly reason: 'safety' | 'citation' | 'format' | 'empty' };
+
+/**
+ * Runs once on the completed answer: banned wording, citation ids that were
+ * never provided, and model-written URLs all discard the whole answer.
+ */
+// @nimi-authority: rule.parentos.advs.r004
+export function checkAdvisorAnswer(raw: string, entries: readonly AdvisorKnowledgeEntry[]): AdvisorAnswerCheck {
+  const text = stripReasoningMarkup(raw);
+  if (!text) {
+    return { ok: false, reason: 'empty' };
   }
-
-  return `${text.trim()}\n\n${i18nText('Advisor.structuredFallback.sources', {
-    sources: advisorListJoin(sources),
-  })}`;
+  if (!filterAIResponse(text).safe) {
+    return { ok: false, reason: 'safety' };
+  }
+  const provided = new Map(entries.map((entry) => [entry.citeId, entry]));
+  const order: string[] = [];
+  for (const match of text.matchAll(CITATION_PATTERN)) {
+    const id = match[1] ?? '';
+    if (!provided.has(id)) {
+      return { ok: false, reason: 'citation' };
+    }
+    if (!order.includes(id)) order.push(id);
+  }
+  if (URL_PATTERN.test(text)) {
+    return { ok: false, reason: 'citation' };
+  }
+  if (INTERNAL_FORMAT_PATTERN.test(text)) {
+    return { ok: false, reason: 'format' };
+  }
+  const body = stripSectionBrackets(stripModelSourceLines(text.replace(CITATION_PATTERN, (_match, id: string) => `[${order.indexOf(id) + 1}]`)));
+  if (!body) {
+    return { ok: false, reason: 'empty' };
+  }
+  return {
+    ok: true,
+    body,
+    cited: order.map((id) => provided.get(id)).filter((entry): entry is AdvisorKnowledgeEntry => Boolean(entry)),
+  };
 }
 
-export function buildAdvisorRuntimeUserMessage(
-  question: string,
-  domains: string[],
-  snapshot: AdvisorSnapshot,
-) {
-  const domainText = domains.join(i18nText('Advisor.runtimePrompt.domainSeparator'));
-  return [
-    i18nText('Advisor.runtimePrompt.reviewed.localOnly'),
-    i18nText('Advisor.runtimePrompt.reviewed.insufficientEvidence'),
-    i18nText('Advisor.runtimePrompt.question', { question }),
-    i18nText('Advisor.runtimePrompt.reviewed.domains', { domains: domainText }),
-    i18nText('Advisor.runtimePrompt.snapshot', { snapshot: serializeAdvisorSnapshot(snapshot) }),
-  ].join('\n');
+function footerLabels(key: 'Advisor.sources.knowledgeTitle' | 'Advisor.sources.localFactsTitle') {
+  return [i18nTextForLanguage('zh', key), i18nTextForLanguage('en', key)];
 }
 
-export function buildAdvisorGenericRuntimeUserMessage(question: string) {
-  return [
-    i18nText('Advisor.runtimePrompt.generic.scope'),
-    i18nText('Advisor.runtimePrompt.generic.allowed'),
-    i18nText('Advisor.runtimePrompt.generic.boundary'),
-    i18nText('Advisor.runtimePrompt.userMessage', { question }),
-  ].join('\n');
+function sourceLabelStems() {
+  return [...footerLabels('Advisor.sources.knowledgeTitle'), ...footerLabels('Advisor.sources.localFactsTitle')]
+    .map((label) => label.replace(/[：:]\s*$/u, '').trim())
+    .filter(Boolean);
 }
 
-export function buildAdvisorNeedsReviewRuntimeUserMessage(
-  question: string,
-  domains: string[],
-  snapshot: AdvisorSnapshot,
-) {
-  const domainText = domains.join(i18nText('Advisor.runtimePrompt.domainSeparator'));
-  return [
-    i18nText('Advisor.runtimePrompt.needsReview.scope'),
-    i18nText('Advisor.runtimePrompt.needsReview.localFactsOnly'),
-    i18nText('Advisor.runtimePrompt.needsReview.forbidden'),
-    i18nText('Advisor.runtimePrompt.needsReview.expertBoundary'),
-    i18nText('Advisor.runtimePrompt.question', { question }),
-    i18nText('Advisor.runtimePrompt.needsReview.domains', { domains: domainText }),
-    i18nText('Advisor.runtimePrompt.snapshot', { snapshot: serializeAdvisorSnapshot(snapshot) }),
-  ].join('\n');
+// A model-written attribution heading such as "来源：…" or "Sources: …".
+const MODEL_SOURCE_LABEL = /^\s*(?:[-*•>]\s*)?(?:\*\*)?(?:来源|资料来源|数据来源|信息来源|参考来源|参考文献|sources?|references?)(?:\*\*)?\s*[：:]/iu;
+const LIST_ITEM = /^\s*(?:[-*•]|\d+[.)、]|\[\d+\])\s*\S/u;
+
+/**
+ * Source lines are rendered by the app from provided entries and read
+ * records only; a model-written "based on …" or "来源：…" line is removed
+ * rather than shown, and a bare source heading takes its list with it.
+ */
+function stripModelSourceLines(text: string): string {
+  const stems = sourceLabelStems();
+  const lines = text.split('\n');
+  const kept: string[] = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? '';
+    let cut = MODEL_SOURCE_LABEL.test(line) ? 0 : -1;
+    for (const stem of stems) {
+      const match = new RegExp(`${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[：:]`, 'u').exec(line);
+      if (match && (cut < 0 || match.index < cut)) cut = match.index;
+    }
+    if (cut < 0) {
+      kept.push(line);
+      continue;
+    }
+    const head = line.slice(0, cut).replace(/[\s*>•-]+$/u, '');
+    const rest = line.slice(cut).replace(/^[^：:]*[：:]/u, '').replace(/\*\*/g, '').trim();
+    if (!head.trim() && !rest) {
+      while (index + 1 < lines.length && LIST_ITEM.test(lines[index + 1] ?? '')) index += 1;
+    }
+    if (head.trim()) kept.push(head);
+  }
+  return kept
+    .filter((line, index, all) => line.trim() !== '' || (index > 0 && all[index - 1]?.trim() !== ''))
+    .join('\n')
+    .trim();
 }
 
-export function buildAdvisorUnknownClarifierRuntimeUserMessage(
-  question: string,
-  snapshot: AdvisorSnapshot,
-) {
-  return [
-    i18nText('Advisor.runtimePrompt.unknown.scope'),
-    i18nText('Advisor.runtimePrompt.unknown.noConclusion'),
-    i18nText('Advisor.runtimePrompt.unknown.useRecordCategories'),
-    i18nText('Advisor.runtimePrompt.userMessage', { question }),
-    i18nText('Advisor.runtimePrompt.unknown.localSummary', {
-      measurements: snapshot.measurements.length,
-      vaccines: snapshot.vaccines.length,
-      milestones: snapshot.milestones.length,
-      journals: snapshot.journalEntries.length,
-    }),
-  ].join('\n');
+const SECTION_TITLE_KEYS = [
+  'Advisor.answerPrompt.factsTitle',
+  'Advisor.answerPrompt.coverageTitle',
+  'Advisor.answerPrompt.knowledgeTitle',
+  'Advisor.answerPrompt.childTitle',
+] as const;
+
+/** An echoed instruction heading such as 【可用资料】 loses its brackets. */
+function stripSectionBrackets(text: string): string {
+  let out = text;
+  for (const key of SECTION_TITLE_KEYS) {
+    for (const language of ['zh', 'en']) {
+      const bracketed = /^(【[^】]+】|\[[^\]]+\])/u.exec(i18nTextForLanguage(language, key))?.[1];
+      if (bracketed) out = out.split(bracketed).join(bracketed.slice(1, -1));
+    }
+  }
+  return out;
 }
 
-export function buildStructuredAdvisorFallback(
-  question: string,
-  domains: string[],
-  snapshot: AdvisorSnapshot,
-  options: {
-    note?: string;
-  } = {},
-) {
-  const allDomains = domains.length > 0 ? domains : ['profile'];
-  const sourceLabels = getSourceLabels(domains);
-  const lines = [
-    i18nText('Advisor.structuredFallback.question', { question }),
-    i18nText('Advisor.structuredFallback.childLine', {
-      name: snapshot.child.displayName,
-      age: formatAge(snapshot.ageMonths),
-      mode: advisorNurtureModeLabel(snapshot.child.nurtureMode),
-    }),
-    i18nText('Advisor.structuredFallback.profileFacts', {
-      birthDate: snapshot.child.birthDate,
-      gender: advisorGenderLabel(snapshot.child.gender),
-    }),
-  ];
+/** True for the persisted source block appended under an answer. */
+export function isAdvisorSourceBlock(block: string): boolean {
+  const labels = [...footerLabels('Advisor.sources.knowledgeTitle'), ...footerLabels('Advisor.sources.localFactsTitle')];
+  return labels.some((label) => block.startsWith(label));
+}
 
-  if (allDomains.includes('growth')) {
-    lines.push(i18nText('Advisor.structuredFallback.growthRecords', {
-      summary: summarizeMeasurements(snapshot.measurements) || i18nText('Advisor.structuredFallback.noGrowthData'),
+/** An earlier answer without its app-rendered source block, for model history. */
+export function stripAdvisorSourceBlocks(content: string): string {
+  return content
+    .replace(/\r/g, '')
+    .split(/\n{2,}/)
+    .filter((block) => !isAdvisorSourceBlock(block.trim()))
+    .join('\n\n')
+    .trim();
+}
+
+/**
+ * The persisted assistant content: the checked answer plus a source block
+ * built only from provided entries' own titles and provenance, or from the
+ * local record categories and dates the answer was given.
+ */
+// @nimi-authority: rule.parentos.advs.r005
+export function renderAdvisorAnswerContent(input: {
+  body: string;
+  cited: readonly AdvisorKnowledgeEntry[];
+  localFactSources: string | null;
+}): string {
+  if (input.cited.length > 0) {
+    const lines = input.cited.map((entry, index) => i18nText('Advisor.sources.knowledgeLine', {
+      n: index + 1,
+      title: entry.title,
+      citation: entry.citation,
     }));
+    return `${input.body}\n\n${i18nText('Advisor.sources.knowledgeTitle')}\n${lines.join('\n')}`;
   }
-
-  if (allDomains.includes('vaccine')) {
-    lines.push(i18nText('Advisor.structuredFallback.vaccineRecords', { summary: summarizeVaccines(snapshot.vaccines) }));
+  if (input.localFactSources) {
+    return `${input.body}\n\n${i18nText('Advisor.sources.localFactsTitle')}${input.localFactSources}`;
   }
-
-  if (allDomains.includes('milestone')) {
-    lines.push(i18nText('Advisor.structuredFallback.milestoneRecords', { summary: summarizeMilestones(snapshot.milestones) }));
-  }
-
-  if (allDomains.includes('observation')) {
-    lines.push(i18nText('Advisor.structuredFallback.observationRecords', { summary: summarizeJournal(snapshot.journalEntries) }));
-  }
-
-  if (allDomains.includes('outdoor') || allDomains.includes('vision')) {
-    lines.push(i18nText('Advisor.structuredFallback.outdoorRecords', { summary: summarizeOutdoor(snapshot.outdoorRecords, snapshot.outdoorGoalMinutes) }));
-  }
-
-  if (allDomains.length === 1 && allDomains[0] === 'profile') {
-    lines.push(
-      i18nText('Advisor.structuredFallback.profileRecords', {
-        measurements: snapshot.measurements.length,
-        vaccines: snapshot.vaccines.length,
-        milestones: snapshot.milestones.length,
-        journals: snapshot.journalEntries.length,
-      }),
-    );
-  }
-
-  if (domains.some((domain) => NEEDS_REVIEW_DOMAINS.includes(domain))) {
-    lines.push(i18nText('Advisor.structuredFallback.needsReviewLine'));
-    lines.push(i18nText('Advisor.structuredFallback.expertLine'));
-  } else if (domains.length === 0) {
-    lines.push(i18nText('Advisor.structuredFallback.unknownDomainLine'));
-    lines.push(i18nText('Advisor.structuredFallback.clarifyLine', {
-      domains: advisorListJoin([...REVIEWED_DOMAINS]),
-    }));
-  } else {
-    lines.push(i18nText('Advisor.structuredFallback.runtimeFallbackLine'));
-  }
-
-  if (sourceLabels.length > 0) {
-    lines.push(i18nText('Advisor.structuredFallback.sources', { sources: advisorListJoin(sourceLabels) }));
-  }
-
-  if (options.note) {
-    lines.push(options.note);
-  }
-
-  return lines.join('\n');
+  return input.body;
 }

@@ -85,7 +85,7 @@ assets: &parentos_reference_data_asset_entries
     ownerContract: rule.parentos.advs.r002
     assetContract: rule.parentos.know.r001
     generatedModule: advisor-classifier.gen.ts
-    updatePolicy: "Runtime classifier content asset. Spec owns advisor routing and reviewed-domain gates; the asset body owns concrete keywords and generic-runtime phrase sets."
+    updatePolicy: "Advisor intent-parse content asset. Spec owns task typing, strategy selection, and reviewed-domain gates; the asset body owns domain definitions, natural-expression and task examples, and record-group definitions supplied to the bounded intent-parse call."
   - assetId: pediatric-drug-catalog
     path: data/knowledge/assets/pediatric-drug-catalog/asset.json
     storageModel: directory_backed_asset

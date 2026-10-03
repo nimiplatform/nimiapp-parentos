@@ -1,0 +1,46 @@
+[
+  {
+    "groupId": "growth",
+    "definition": { "zh": "身高、体重、头围、BMI 测量", "en": "Height, weight, head circumference and BMI measurements" }
+  },
+  {
+    "groupId": "vision",
+    "definition": { "zh": "左右眼视力、眼轴、眼压等眼部检查", "en": "Left and right visual acuity, axial length, eye pressure and other eye exams" }
+  },
+  {
+    "groupId": "fitness",
+    "definition": { "zh": "体能测试成绩和运动记录", "en": "Fitness test results and sport activity records" }
+  },
+  {
+    "groupId": "sleep",
+    "definition": { "zh": "每晚睡眠时长、入睡和起床时间、午睡", "en": "Nightly sleep duration, bedtime and wake time, naps" }
+  },
+  {
+    "groupId": "outdoor",
+    "definition": { "zh": "户外活动时长和家长设定的每周户外目标", "en": "Outdoor activity minutes and the parent's weekly outdoor goal" }
+  },
+  {
+    "groupId": "vaccine",
+    "definition": { "zh": "疫苗接种记录", "en": "Vaccination records" }
+  },
+  {
+    "groupId": "dental",
+    "definition": { "zh": "出牙、换牙、龋齿、洗牙、牙科就诊和矫正记录", "en": "Tooth eruption and loss, cavities, cleanings, dental visits and orthodontic records" }
+  },
+  {
+    "groupId": "medical",
+    "definition": { "zh": "就诊、急诊、住院、体检、用药等医疗事件", "en": "Doctor visits, emergencies, hospital stays, checkups, medication and other medical events" }
+  },
+  {
+    "groupId": "development",
+    "definition": { "zh": "发育里程碑、青春期发育自评、骨龄、体脂率", "en": "Developmental milestones, puberty self-assessments, bone age and body fat" }
+  },
+  {
+    "groupId": "posture",
+    "definition": { "zh": "体态自查（肩、背、骨盆、腿、足跟等）", "en": "Posture self-checks (shoulders, back, pelvis, legs, heels and similar)" }
+  },
+  {
+    "groupId": "journal",
+    "definition": { "zh": "家长写的成长随记和观察", "en": "Growth journal entries and observations written by the parent" }
+  }
+]

@@ -9,7 +9,8 @@
  * `parentos-ai-mascot-*` 区段，并遵循 prefers-reduced-motion。
  *
  * ParentosAiMascotStatic 是非交互形态：用于“暂无数据”等 AI 尚不可用、
- * 但仍想展示小精灵存在感的位置（装饰性，aria-hidden）。
+ * 但仍想展示小精灵存在感的位置（装饰性，aria-hidden）；成长顾问页也用它
+ * 作为顾问的形象与对话头像。
  */
 import { useId, type MouseEvent } from 'react';
 
@@ -70,8 +71,10 @@ function MascotSvg({ size }: { size: number }) {
       <ellipse cx="20.5" cy="13.5" rx="12" ry="7" fill={`url(#${glowWhiteId})`} transform="rotate(-25 20.5 13.5)" />
       <ellipse cx="47" cy="49" rx="8" ry="5" fill={`url(#${glowMintId})`} transform="rotate(35 47 49)" />
       {/* 球体轮廓：浅色底上靠淡紫描边定义边缘，深色底上白亮边强化玻璃感 */}
-      <circle cx="32" cy="32" r="28.4" fill="none" stroke="#A9B8F2" strokeWidth="1" opacity="0.55" />
-      <circle cx="32" cy="32" r="28" fill="none" stroke="white" strokeWidth="1.1" opacity="0.4" />
+      <g className="parentos-ai-mascot-rim">
+        <circle cx="32" cy="32" r="28.4" fill="none" stroke="#A9B8F2" strokeWidth="1" opacity="0.55" />
+        <circle cx="32" cy="32" r="28" fill="none" stroke="white" strokeWidth="1.1" opacity="0.4" />
+      </g>
       {/* 两只眼睛：白色竖胶囊；外层 g 控制“看向”（上下左右转眼），内层 rect 控制眨眼 */}
       <g className="parentos-ai-mascot-eye-look">
         <rect className="parentos-ai-mascot-eye" x="20" y="23" width="8" height="14" rx="4" fill="white" />
@@ -110,10 +113,20 @@ export function ParentosAiMascotButton(props: ParentosAiMascotButtonProps) {
   );
 }
 
+interface ParentosAiMascotStaticProps {
+  /** 像素尺寸，默认 28。 */
+  size?: number;
+  /** 切到“思考”动效（左右摇摆 + 眼珠扫描），与按钮的 thinking 一致。 */
+  thinking?: boolean;
+  /** 停掉全部动效，用于同屏多只小精灵时只让最新的一只保持灵动。 */
+  still?: boolean;
+}
+
 /** 非交互吉祥物：保留待机浮动与眨眼动效，但不可点击、不响应 hover。 */
-export function ParentosAiMascotStatic({ size = 28 }: { size?: number }) {
+export function ParentosAiMascotStatic({ size = 28, thinking = false, still = false }: ParentosAiMascotStaticProps) {
+  const stateClass = thinking ? ' is-thinking' : still ? ' is-still' : '';
   return (
-    <span className="parentos-ai-mascot-static" style={{ width: size, height: size }} aria-hidden="true">
+    <span className={`parentos-ai-mascot-static${stateClass}`} style={{ width: size, height: size }} aria-hidden="true">
       <MascotSvg size={size} />
     </span>
   );

@@ -47,9 +47,9 @@ export const KNOWLEDGE_ASSET_PROJECTION_FINGERPRINTS: Record<string, KnowledgeAs
     "authorityClass": "curated_knowledge_asset"
   },
   "advisor-classifier": {
-    "projectionFingerprint": "afb1bb6820aef5c0b97d0bff898fa890a2689fe80fd4ed8cd25e7c9d3dcd2720",
-    "schemaVersion": 1,
-    "contentVersion": "2026-06-17.1",
+    "projectionFingerprint": "da5bcec367567a064fa5cef9da5aead5e0075f2b0f554fb2940217be7eb0a037",
+    "schemaVersion": 2,
+    "contentVersion": "2026-09-30.2",
     "authorityClass": "curated_knowledge_asset"
   },
   "pediatric-drug-catalog": {

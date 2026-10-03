@@ -1,17 +1,9 @@
 import type { ChildProfile } from '../../app-shell/app-store.js';
-import {
-  getAllergyRecords, getDentalRecords, getFitnessAssessments, getGrowthReports,
-  getJournalEntries, getMeasurements, getMedicalEvents, getMilestoneRecords,
-  getReminderStates, getSleepRecords, getTannerAssessments, getVaccineRecords,
-  insertGrowthReport,
-} from '../../bridge/sqlite-bridge.js';
+import { getGrowthReports, insertGrowthReport } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { generateNarrativeReport } from './narrative-prompt.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
-import {
-  hasParentosAIConfigCapability,
-  PARENTOS_TEXT_CAPABILITY_CONTRACT,
-} from '../settings/parentos-ai-config.js';
+import { hasReportTextRuntime, loadReportDomainData } from './report-ai-refresh.js';
 import { findNextEligibleRollingReportPeriod, requireValidGrowthReports } from './report-cycle.js';
 import { buildStructuredGrowthReport } from './structured-report.js';
 
@@ -23,36 +15,12 @@ async function generateNextEligibleMonthlyReport(child: ChildProfile): Promise<s
   if (!period) return null;
 
   const now = isoNow();
-  const [measurements, milestones, vaccines, journalEntries, reminderStates] = await Promise.all([
-    getMeasurements(child.childId), getMilestoneRecords(child.childId),
-    getVaccineRecords(child.childId), getJournalEntries(child.childId, 200),
-    getReminderStates(child.childId),
-  ]);
+  const data = await loadReportDomainData(child.childId);
 
   let report: Awaited<ReturnType<typeof generateNarrativeReport>> | ReturnType<typeof buildStructuredGrowthReport> | null = null;
-  if (await hasParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)) {
-    const [sleepRecords, dentalRecords, allergyRecords, medicalEvents, fitnessAssessments, tannerAssessments] = await Promise.all([
-      getSleepRecords(child.childId), getDentalRecords(child.childId), getAllergyRecords(child.childId),
-      getMedicalEvents(child.childId), getFitnessAssessments(child.childId), getTannerAssessments(child.childId),
-    ]);
+  if (await hasReportTextRuntime()) {
     try {
-      report = await generateNarrativeReport(
-        child,
-        { start: period.periodStart, end: period.periodEnd },
-        {
-          measurements,
-          milestones,
-          vaccines,
-          journalEntries,
-          reminderStates,
-          sleepRecords,
-          dentalRecords,
-          allergyRecords,
-          medicalEvents,
-          fitnessAssessments,
-          tannerAssessments,
-        },
-      );
+      report = await generateNarrativeReport(child, { start: period.periodStart, end: period.periodEnd }, data);
     } catch (error) {
       catchLog('reports', 'action:auto-generate-narrative-report-failed', 'warn')(error);
     }
@@ -65,11 +33,11 @@ async function generateNextEligibleMonthlyReport(child: ChildProfile): Promise<s
       now,
       periodStart: period.periodStart,
       periodEnd: period.periodEnd,
-      measurements,
-      milestones,
-      vaccines,
-      journalEntries,
-      reminderStates,
+      measurements: data.measurements,
+      milestones: data.milestones,
+      vaccines: data.vaccines,
+      journalEntries: data.journalEntries,
+      reminderStates: data.reminderStates,
     });
   }
 
