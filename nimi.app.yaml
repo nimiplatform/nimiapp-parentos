@@ -49,5 +49,8 @@ storage_policy:
   kind: app-owned-os-storage
   os_storage_disclosure:
     - path_pattern: <Electron appData>/Nimi/ParentOS/{data,cache,tmp}/**
-      purpose: Device-local family SQLite data, media and temporary files under %APPDATA% on Windows or ~/Library/Application Support on macOS. Retained after Nimi uninstall; managed by ParentOS.
-      expected_size_band: Durable media writes enforce a 2 GiB partition limit; images up to 25 MiB and journal audio up to 64 MiB per object.
+      purpose: Device-local family SQLite data, media and temporary files under
+        %APPDATA% on Windows or ~/Library/Application Support on macOS. Retained
+        after Nimi uninstall; managed by ParentOS.
+      expected_size_band: Durable media writes enforce a 2 GiB partition limit; images
+        up to 25 MiB and journal audio up to 64 MiB per object.

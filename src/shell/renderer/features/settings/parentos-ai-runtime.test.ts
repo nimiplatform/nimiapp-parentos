@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const generateCandidateMock = vi.fn();
+const executeMock = vi.fn();
 const requireCapabilityMock = vi.fn();
 
 vi.mock('../../infra/parentos-nimi-client.js', () => ({
   getParentOSNimiClient: () => ({
-    ai: { text: { generateCandidate: generateCandidateMock } },
+    ai: { scenario: { execute: executeMock } },
   }),
 }));
 
@@ -23,12 +23,11 @@ function textMessage(role: 'system' | 'user', text: string) {
   return { role, content: [{ type: 'text' as const, text }] };
 }
 
-describe('runParentosTextGenerate (unary text-candidate contract)', () => {
+describe('runParentosTextGenerate (bounded synchronous text contract)', () => {
   beforeEach(() => {
     requireCapabilityMock.mockReset().mockResolvedValue(undefined);
-    generateCandidateMock.mockReset().mockResolvedValue({
-      text: '观察到孩子在持续积累。',
-      finishReason: 'stop',
+    executeMock.mockReset().mockResolvedValue({
+      output: { type: 'text-generate', items: [{ type: 'text', text: '观察到孩子在持续积累。' }], finishReason: 'stop' },
       traceId: 'trace-1',
     });
   });
@@ -47,7 +46,7 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
       ok: false,
       error: { reasonCode: 'parentos-ai-capability-not-configured' },
     });
-    expect(generateCandidateMock).not.toHaveBeenCalled();
+    expect(executeMock).not.toHaveBeenCalled();
   });
 
   it('preserves a typed AIConfig access failure before dispatch', async () => {
@@ -64,10 +63,10 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
       ok: false,
       error: { reasonCode: 'local-app-access-denied' },
     });
-    expect(generateCandidateMock).not.toHaveBeenCalled();
+    expect(executeMock).not.toHaveBeenCalled();
   });
 
-  it('maps system+user messages onto the candidate contract with clamped defaults', async () => {
+  it('maps system+user messages onto synchronous text.generate with clamped defaults', async () => {
     const result = await runParentosTextGenerate({
       surfaceId: 'parentos.advisor',
       messages: [textMessage('system', '规则'), textMessage('user', '问题')],
@@ -80,7 +79,8 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
       expect(result.finishReason).toBe('stop');
       expect(result.traceId).toBe('trace-1');
     }
-    expect(generateCandidateMock).toHaveBeenCalledWith({
+    expect(executeMock).toHaveBeenCalledWith({
+      type: 'text-generate',
       messages: [
         { role: 'system', text: '规则' },
         { role: 'user', text: '问题' },
@@ -88,10 +88,10 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
       temperature: 0.5,
       topP: 1,
       maxTokens: 4096,
-    });
+    }, undefined);
   });
 
-  it('fails closed when the prompt exceeds the unary byte budget', async () => {
+  it('fails closed when the prompt exceeds the foreground byte budget', async () => {
     const huge = '长'.repeat(40 * 1024);
     const result = await runParentosTextGenerate({
       surfaceId: 'parentos.report',
@@ -102,7 +102,7 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
     if (!result.ok) {
       expect(result.error.reasonCode).toBe('parentos-ai-input-over-budget');
     }
-    expect(generateCandidateMock).not.toHaveBeenCalled();
+    expect(executeMock).not.toHaveBeenCalled();
   });
 
   it('fails closed on non-text message parts instead of dropping them', async () => {
@@ -121,10 +121,10 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
     if (!result.ok) {
       expect(result.error.reasonCode).toBe('parentos-ai-message-part-unsupported');
     }
-    expect(generateCandidateMock).not.toHaveBeenCalled();
+    expect(executeMock).not.toHaveBeenCalled();
   });
 
-  it('fails closed on roles the unary contract cannot represent', async () => {
+  it('fails closed on roles outside the product text contract', async () => {
     const result = await runParentosTextGenerate({
       surfaceId: 'parentos.advisor',
       messages: [
@@ -137,7 +137,7 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
     if (!result.ok) {
       expect(result.error.reasonCode).toBe('parentos-ai-message-role-unsupported');
     }
-    expect(generateCandidateMock).not.toHaveBeenCalled();
+    expect(executeMock).not.toHaveBeenCalled();
   });
 
   it('fails closed when a vision surface is sent through the text-only helper', async () => {
@@ -150,11 +150,11 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
     if (!result.ok) {
       expect(result.error.reasonCode).toBe('parentos-ai-surface-not-admitted');
     }
-    expect(generateCandidateMock).not.toHaveBeenCalled();
+    expect(executeMock).not.toHaveBeenCalled();
   });
 
   it('propagates typed runtime failures as bounded errors', async () => {
-    generateCandidateMock.mockRejectedValue(Object.assign(new Error('denied'), {
+    executeMock.mockRejectedValue(Object.assign(new Error('denied'), {
       reasonCode: 'local-app-access-denied',
     }));
 
@@ -177,7 +177,41 @@ describe('runParentosTextGenerate (unary text-candidate contract)', () => {
       messages: [textMessage('user', '问题')],
       signal: controller.signal,
     })).rejects.toMatchObject({ name: 'AbortError' });
-    expect(generateCandidateMock).not.toHaveBeenCalled();
+    expect(executeMock).not.toHaveBeenCalled();
+  });
+
+  it('does not dispatch when cancellation happens while checking the configuration', async () => {
+    const controller = new AbortController();
+    let release!: () => void;
+    requireCapabilityMock.mockImplementation(() => new Promise<void>(resolve => { release = resolve; }));
+    const pending = runParentosTextGenerate({ surfaceId: 'parentos.advisor', messages: [textMessage('user', '问题')], signal: controller.signal });
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    release();
+    expect(executeMock).not.toHaveBeenCalled();
+  });
+
+  it('forwards a live AbortSignal to the protected execute operation and settles its cancellation', async () => {
+    const controller = new AbortController();
+    executeMock.mockImplementation((_spec, options) => new Promise((_resolve, reject) => {
+      options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true });
+    }));
+    const pending = runParentosTextGenerate({ surfaceId: 'parentos.advisor', messages: [textMessage('user', '问题')], signal: controller.signal });
+    await vi.waitFor(() => expect(executeMock).toHaveBeenCalledOnce());
+    expect(executeMock.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('discards a result that arrives after cancellation even if a test carrier ignores the signal', async () => {
+    const controller = new AbortController();
+    let release!: (result: unknown) => void;
+    executeMock.mockImplementation(() => new Promise(resolve => { release = resolve; }));
+    const pending = runParentosTextGenerate({ surfaceId: 'parentos.advisor', messages: [textMessage('user', '问题')], signal: controller.signal });
+    await vi.waitFor(() => expect(executeMock).toHaveBeenCalledOnce());
+    controller.abort();
+    release({ output: { type: 'text-generate', items: [{ type: 'text', text: 'Late output' }], finishReason: 'stop' }, traceId: 'old-trace' });
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
   });
 
   it('creates a typed surface-unavailable error', () => {

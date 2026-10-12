@@ -18,7 +18,7 @@
 | Native data sidecar | Rust, launched by Electron | `src-tauri/src/bin/parentos_host.rs` |
 | Frontend | React 19 + Vite 7 + Tailwind 4 | `src/shell/renderer/` |
 | Local storage | SQLite (rusqlite, bundled) | `src-tauri/src/sqlite/` |
-| AI | Nimi App Access protected Local App consumption on the Local or Cloud route the user selects in AIConfig: bounded foreground text candidate generation plus Scenario Job `audio.transcribe` (declared via `app_access: [runtime.consume]` in `nimi.app.yaml`) | via `@nimiplatform/sdk/app` + `@nimiplatform/kit/features/generation/runtime` |
+| AI | Nimi App Access protected Local App consumption on the Local or Cloud route the user selects in AIConfig: bounded cancellable synchronous `text.generate` plus Scenario Job `audio.transcribe` (declared via `app_access: [runtime.consume]` in `nimi.app.yaml`) | via `@nimiplatform/sdk/app` + `@nimiplatform/kit/features/generation/runtime` |
 | UI components | `@nimiplatform/kit` | npm dependency |
 | State | Zustand | `app-shell/app-store.ts` |
 | Charts | recharts | growth curves |

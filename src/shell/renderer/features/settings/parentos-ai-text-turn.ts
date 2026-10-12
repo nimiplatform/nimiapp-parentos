@@ -162,7 +162,8 @@ export async function runParentosTextTurn(input: ParentosTextTurnInput): Promise
         textItems.set(event.itemIndex, (textItems.get(event.itemIndex) ?? '') + event.text);
         continue;
       }
-      if (event.type === 'reasoning-continuity') {
+      // Only the completed answer enters the safety-checked product result.
+      if (event.type === 'reasoning-continuity' || event.type === 'reasoning-summary') {
         continue;
       }
       if (event.type === 'tool-call') {

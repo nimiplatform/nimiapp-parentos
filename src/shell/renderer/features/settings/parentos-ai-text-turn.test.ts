@@ -60,7 +60,12 @@ describe('runParentosTextTurn', () => {
   });
 
   it('sends real roles without tools and returns text only after completed/stop', async () => {
-    streamTurnMock.mockResolvedValue(subscription([delta(1, '本周'), delta(2, '已记录 90 分钟。'), completed(3, 'stop')]));
+    streamTurnMock.mockResolvedValue(subscription([
+      delta(1, '本周'),
+      { type: 'reasoning-summary', sequence: '2', traceId: 't', itemIndex: 1, text: 'Not the safety-checked answer', itemCompleted: true },
+      delta(3, '已记录 90 分钟。'),
+      completed(4, 'stop'),
+    ]));
     const result = await runParentosTextTurn(baseInput());
     expect(result).toEqual({ ok: true, text: '本周已记录 90 分钟。', traceId: 't' });
     const request = streamTurnMock.mock.calls[0]?.[0];

@@ -163,10 +163,12 @@ describe('check-parentos-ai-boundary', () => {
     expect(errors).toEqual([]);
   });
 
-  it('requires the unary text-candidate helper with budget guards and no legacy surfaces', () => {
+  it('requires the cancellable synchronous text helper with budget guards and no legacy surfaces', () => {
     const errors = findRuntimeHelperBoundaryErrors([
       'export async function runParentosTextGenerate',
-      'getParentOSNimiClient().ai.text.generateCandidate({',
+      'getParentOSNimiClient().ai.scenario.execute({',
+      "type: 'text-generate'",
+      'input.signal?.throwIfAborted()',
       'isParentosAISurfaceExecutable(input.surfaceId)',
       'requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)',
       'export function createParentosAISurfaceUnavailableError',
@@ -184,7 +186,9 @@ describe('check-parentos-ai-boundary', () => {
   it('flags legacy first-party execution surfaces in the runtime helper', () => {
     const errors = findRuntimeHelperBoundaryErrors([
       'export async function runParentosTextGenerate',
-      'getParentOSNimiClient().ai.text.generateCandidate({',
+      'getParentOSNimiClient().ai.scenario.execute({',
+      "type: 'text-generate'",
+      'input.signal?.throwIfAborted()',
       'isParentosAISurfaceExecutable(input.surfaceId)',
       'requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)',
       'export function createParentosAISurfaceUnavailableError',

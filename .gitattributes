@@ -1,1 +1,4 @@
 LICENSE text eol=lf
+
+# Preserve the exact App-owned license bytes in release archives.
+LICENSE -text

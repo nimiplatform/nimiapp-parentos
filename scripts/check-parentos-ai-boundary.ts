@@ -55,6 +55,7 @@ function hasTextRuntimePath(content: string) {
     || content.includes('runtime.ai.text.stream')
     || content.includes('ai.text.generateCandidate')
     || content.includes('ai.text.streamTurn')
+    || content.includes('ai.scenario.execute')
     || content.includes('runParentosTextGenerate')
     || content.includes('runParentosTextTurn');
 }
@@ -447,7 +448,9 @@ export function findRuntimeHelperBoundaryErrors(parentosAiRuntimeSource: string)
 
   for (const marker of [
     'export async function runParentosTextGenerate',
-    'getParentOSNimiClient().ai.text.generateCandidate({',
+    'getParentOSNimiClient().ai.scenario.execute({',
+    "type: 'text-generate'",
+    'input.signal?.throwIfAborted()',
     'isParentosAISurfaceExecutable(input.surfaceId)',
     'requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT)',
     'export function createParentosAISurfaceUnavailableError',

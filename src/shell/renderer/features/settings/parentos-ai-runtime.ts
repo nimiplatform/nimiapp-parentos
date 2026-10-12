@@ -1,4 +1,4 @@
-import type { NimiLocalAppTextCandidateMessage } from '@nimiplatform/sdk/app';
+import type { NimiLocalAppTextMessage } from '@nimiplatform/sdk/app';
 import type { NimiMessage } from '@nimiplatform/sdk/contracts';
 import { getParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import {
@@ -12,15 +12,15 @@ import {
   PARENTOS_TEXT_CAPABILITY_CONTRACT,
 } from './parentos-ai-config.js';
 
-// ParentOS text surfaces deliberately use the bounded foreground candidate
-// operation even though current App Access also exposes text-turn streaming
-// and Scenario Jobs. This path admits at most 8 messages (system first and at
+// ParentOS keeps its product text budget on the cancellable synchronous
+// text.generate operation. This path admits at most 8 messages (system first and at
 // least one user), 32 KiB per message, 64 KiB aggregate, and 4096 output
 // tokens. Tools and attachments remain outside this text helper.
 const MAX_CANDIDATE_MESSAGES = 8;
 const MAX_CANDIDATE_MESSAGE_BYTES = 32 * 1024;
 const MAX_CANDIDATE_PROMPT_BYTES = 64 * 1024;
 const MAX_CANDIDATE_TOKENS = 4096;
+type ParentosTextMessage = Pick<NimiLocalAppTextMessage, 'text'> & { readonly role: 'system' | 'user' };
 
 export type ParentosTextGenerateDefaults = {
   readonly temperature?: number;
@@ -88,11 +88,11 @@ function textFromMessageContent(message: NimiMessage): string {
   return segments.join('');
 }
 
-function toCandidateMessages(
+function toParentosTextMessages(
   messages: readonly NimiMessage[],
-): readonly NimiLocalAppTextCandidateMessage[] {
+): readonly ParentosTextMessage[] {
   const systemTexts: string[] = [];
-  const userMessages: NimiLocalAppTextCandidateMessage[] = [];
+  const userMessages: ParentosTextMessage[] = [];
   for (const message of messages) {
     const text = textFromMessageContent(message);
     if (message.role === 'system' || message.role === 'developer') {
@@ -105,14 +105,14 @@ function toCandidateMessages(
       userMessages.push({ role: 'user', text });
       continue;
     }
-    // The unary surface admits system/user roles only; history compaction is a
-    // product decision and must never fabricate roles silently.
+    // These foreground workflows admit system/user source inputs. A separate
+    // conversation workflow would have to carry its canonical history explicitly.
     throw createParentosAIError(
-      `ParentOS text generation cannot map role "${String(message.role)}" onto the unary candidate contract.`,
+      `ParentOS foreground text generation does not accept role "${String(message.role)}".`,
       'parentos-ai-message-role-unsupported',
     );
   }
-  const candidate: NimiLocalAppTextCandidateMessage[] = [];
+  const candidate: ParentosTextMessage[] = [];
   if (systemTexts.length > 0) {
     candidate.push({ role: 'system', text: systemTexts.join('\n\n') });
   }
@@ -132,7 +132,7 @@ function toCandidateMessages(
   return candidate;
 }
 
-function assertPromptBudget(messages: readonly NimiLocalAppTextCandidateMessage[]): void {
+function assertPromptBudget(messages: readonly ParentosTextMessage[]): void {
   const encoder = new TextEncoder();
   let totalBytes = 0;
   for (const message of messages) {
@@ -165,6 +165,19 @@ function resolveMaxTokens(value: number | undefined): number {
   return Math.min(Math.max(resolved, 1), MAX_CANDIDATE_TOKENS);
 }
 
+async function awaitPreparation<T>(pending: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return pending;
+  let onAbort!: () => void;
+  const cancellation = new Promise<T>((_resolve, reject) => {
+    onAbort = () => reject(new DOMException('The operation was aborted.', 'AbortError'));
+    if (signal.aborted) onAbort();
+    else signal.addEventListener('abort', onAbort, { once: true });
+  });
+  try { return await Promise.race([pending, cancellation]); }
+  finally { signal.removeEventListener('abort', onAbort); }
+}
+
+// @nimi-authority: rule.parentos.advs.r011
 export async function runParentosTextGenerate(
   input: ParentosTextGenerationInput,
 ): Promise<ParentosTextGenerateResult> {
@@ -179,22 +192,33 @@ export async function runParentosTextGenerate(
     if (policy.inputKind !== 'structured-local' && policy.inputKind !== 'closed-set') {
       throw createParentosAISurfaceUnavailableError(input.surfaceId);
     }
-    await requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT);
-    const messages = toCandidateMessages(input.messages);
+    await awaitPreparation(requireParentosAIConfigCapability(PARENTOS_TEXT_CAPABILITY_CONTRACT), input.signal);
+    input.signal?.throwIfAborted();
+    const messages = toParentosTextMessages(input.messages);
     assertPromptBudget(messages);
-    const result = await getParentOSNimiClient().ai.text.generateCandidate({
+    const result = await getParentOSNimiClient().ai.scenario.execute({
+      type: 'text-generate',
       messages,
       temperature: clampNumber(input.defaults?.temperature, 0.7, 0, 2),
       topP: clampNumber(input.defaults?.topP, 1, 0, 1),
       maxTokens: resolveMaxTokens(input.defaults?.maxTokens),
-    });
+    }, input.signal ? { signal: input.signal } : undefined);
+    input.signal?.throwIfAborted();
+    if (!('type' in result.output) || result.output.type !== 'text-generate'
+      || result.output.finishReason === 'tool-calls'
+      || result.output.items.some((item) => item.type === 'tool-call')) {
+      throw createParentosAIError('ParentOS text generation returned an unexpected output.', 'parentos-ai-output-invalid');
+    }
+    const text = result.output.items.filter((item) => item.type === 'text').map((item) => item.text).join('');
+    if (!text.trim()) throw createParentosAIError('ParentOS text generation returned no text.', 'parentos-ai-output-invalid');
     return {
       ok: true,
-      text: result.text,
-      finishReason: result.finishReason,
+      text,
+      finishReason: result.output.finishReason,
       traceId: result.traceId,
     };
   } catch (error) {
+    if (input.signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw error;
     }

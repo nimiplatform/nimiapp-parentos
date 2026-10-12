@@ -1,3 +1,7 @@
+## 0.1.9 · Published platform dependencies
+
+Uses public npm SDK 0.21.0, Kit/native 0.19.3, App Tools 0.12.1 and nimi-coding 0.6.5 with frozen registry lockfiles. Local Nimi tarball overrides are removed; Desktop-supervised development and installed Apps use the same published carrier.
+
 # ParentOS 0.1.7
 
 补充面向家长的受众、AI 文字输出及健康数据使用声明，供支持该字段的 Nimi 展示。保留 SDK 0.11 / Kit 0.7 配对；不新增业务能力或运行门禁。发行与 Catalog 准入独立进行，声明不构成安全认证。
