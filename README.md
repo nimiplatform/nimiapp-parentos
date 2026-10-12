@@ -1,5 +1,15 @@
 # nimiapp-parentos
 
+## Published dependency and Catalog acceptance (2026-10-13)
+
+Current public release: [0.1.9](https://github.com/nimiplatform/nimiapp-parentos/releases/tag/v0.1.9); [Registry admission #83](https://github.com/nimiplatform/nimi-app-registry/pull/83) is merged for macOS arm64 and Windows x64. Frozen locks use published SDK 0.21.0, Kit/native 0.19.3, App Tools 0.12.1 and nimi-coding 0.6.5; no local Nimi archive or source-link resolution is required.
+
+Repository checks and managed production builds, package provenance and immutable Release checks passed for both declared targets. Actual Catalog download, installation and AI acceptance ran on macOS arm64 through source Nimi Home and its matching protected Runtime (Nimi main 35498102b). Runtime identity and App Access checks remain enforced.
+
+The installed Catalog package retained the synthetic child records. A real local-model advisor turn summarized the recorded 82 cm / 11.2 kg measurements, distinguished missing observations and avoided diagnosis or ranking. The full answer survived a Home stop/launch.
+
+**NOT-VERIFIED:** Windows GUI installation and AI use. Voice recording/transcription and other advisor workflows were not rerun. No private child data was sent to a cloud model.
+
 成长底稿，全年龄儿童成长的操作系统
 
 > Migrated from the `apps/parentos` workspace in the `nimi-realm` monorepo. The
