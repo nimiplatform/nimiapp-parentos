@@ -164,6 +164,27 @@ describe('ChildrenSettingsPage', () => {
     expect(container.querySelector('input[type="date"]')?.classList.contains('parentos-child-birth-date')).toBe(true);
   });
 
+  it('returns Welcome add-child to the timeline after consuming the intent when children exist but none is selected', async () => {
+    const existing = {
+      childId: 'child-1', familyId: 'fam-1', displayName: 'Mimi', gender: 'female' as const,
+      birthDate: '2024-01-15', birthWeightKg: null, birthHeightCm: null, birthHeadCircCm: null,
+      avatarPath: null, nurtureMode: 'balanced' as const, nurtureModeOverrides: null,
+      allergies: null, medicalNotes: null, recorderProfiles: null,
+      createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    childRows = [existing];
+    useAppStore.setState({ familyId: 'fam-1', activeChildId: null, children: [existing] });
+    const { container } = renderPage({ kind: 'add-child' });
+    await waitFor(() => expect(JSON.parse(screen.getByTestId('navigation-probe').textContent!).intent).toBeNull());
+    fireEvent.change(container.querySelector('input:not([type="file"]):not([type="date"]):not([type="number"])')!, { target: { value: 'New child' } });
+    fireEvent.change(container.querySelector('input[type="date"]')!, { target: { value: '2025-01-15' } });
+    fireEvent.click(screen.getByRole('button', { name: /添加$/i }));
+    await waitFor(() => expect(JSON.parse(screen.getByTestId('navigation-probe').textContent!).position).toEqual({ id: '/timeline' }));
+    expect(useAppStore.getState().children).toHaveLength(2);
+    expect(useAppStore.getState().activeChildId).not.toBe(existing.childId);
+    expect(createFamily).not.toHaveBeenCalled();
+  });
+
   it('links back to the onboarding landing when no child profile exists', async () => {
     renderPage();
 

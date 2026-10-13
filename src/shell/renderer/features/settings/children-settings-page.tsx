@@ -111,6 +111,7 @@ export default function ChildrenSettingsPage() {
   const navigate = owner.open;
   const fromProfile = position.id === '/settings/children' && position.returnTo === 'profile';
   const openAddForm = intent?.kind === 'add-child';
+  const addCompletionPage = useRef<'/timeline' | '/profile' | null>(openAddForm ? fromProfile ? '/profile' : '/timeline' : null);
   const [showForm, setShowForm] = useState(openAddForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingChildId, setDeletingChildId] = useState<string | null>(null);
@@ -120,6 +121,7 @@ export default function ChildrenSettingsPage() {
   const initialOpenHandledRef = useRef(false);
 
   const resetForm = () => {
+    addCompletionPage.current = null;
     setForm(createEmptyForm());
     setShowForm(false);
     setEditingId(null);
@@ -128,11 +130,12 @@ export default function ChildrenSettingsPage() {
 
   useEffect(() => {
     if (!openAddForm || !intent || !owner.consumeIntent(intent)) return;
+    addCompletionPage.current = fromProfile ? '/profile' : '/timeline';
     setForm(createEmptyForm());
     setEditingId(null);
     setDeletingChildId(null);
     setShowForm(true);
-  }, [openAddForm, intent, owner]);
+  }, [openAddForm, intent, owner, fromProfile]);
 
   const refreshChildren = async (fid: string | null) => {
     if (!fid) return;
@@ -151,8 +154,7 @@ export default function ChildrenSettingsPage() {
   const handleAdd = async () => {
     if (!form.displayName || !form.birthDate) return;
     const now = isoNow(), childId = ulid();
-    const shouldEnterDashboard = !fromProfile && (openAddForm || children.length === 0);
-    const destination = shouldEnterDashboard ? { id: '/timeline' as const } : fromProfile ? { id: '/profile' as const } : { id: '/settings/children' as const };
+    const destination = { id: addCompletionPage.current ?? (!fromProfile && children.length === 0 ? '/timeline' : fromProfile ? '/profile' : '/settings/children') } as const;
     const result = await owner.switchChild(childId, destination, async signal => {
       let fid = familyId;
       if (!fid) { fid = ulid(); await createFamily(fid, i18nText('Children.defaultFamilyName'), now); }
@@ -210,6 +212,7 @@ export default function ChildrenSettingsPage() {
   const startEdit = (childId: string) => {
     const c = children.find((i) => i.childId === childId);
     if (!c) return;
+    addCompletionPage.current = null;
     setForm({
       displayName: c.displayName, gender: c.gender, birthDate: c.birthDate,
       birthWeightKg: c.birthWeightKg?.toString() ?? '', birthHeightCm: c.birthHeightCm?.toString() ?? '',
@@ -304,7 +307,7 @@ export default function ChildrenSettingsPage() {
             <p className="mt-0.5 text-[14px] text-[var(--nimi-text-muted)]">{i18nText('Children.settings.subtitle')}</p>
           </div>
           {!showForm && (
-            <Button onClick={() => { setForm(createEmptyForm()); setShowForm(true); }} tone="primary" size="md" className="text-[14px]">
+            <Button onClick={() => { addCompletionPage.current = null; setForm(createEmptyForm()); setShowForm(true); }} tone="primary" size="md" className="text-[14px]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
               {i18nText('Children.settings.action.addChild')}
             </Button>
