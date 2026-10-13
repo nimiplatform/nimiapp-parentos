@@ -6,7 +6,7 @@ allowBuilds:
   esbuild: true
   protobufjs: true
 overrides:
-  "@nimiplatform/kit": file:.nimi/local/packages/kit-0.21.0.tgz
+  "@nimiplatform/kit": file:.nimi/local/packages/kit-0.21.0-cp5-final.tgz
   "@nimiplatform/sdk": file:.nimi/local/packages/sdk-0.21.0.tgz
   "@nimiplatform/app-tools": file:.nimi/local/packages/app-tools-0.13.0-cp4.tgz
   "@nimiplatform/kit-protected-local-win32-x64": file:.nimi/local/packages/native-win-0.21.0.tgz

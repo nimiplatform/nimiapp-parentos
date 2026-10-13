@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@nimiplatform/kit': file:.nimi/local/packages/kit-0.21.0.tgz
+  '@nimiplatform/kit': file:.nimi/local/packages/kit-0.21.0-cp5-final.tgz
   '@nimiplatform/sdk': file:.nimi/local/packages/sdk-0.21.0.tgz
   '@nimiplatform/app-tools': file:.nimi/local/packages/app-tools-0.13.0-cp4.tgz
   '@nimiplatform/kit-protected-local-win32-x64': file:.nimi/local/packages/native-win-0.21.0.tgz
@@ -16,8 +16,8 @@ importers:
   .:
     dependencies:
       '@nimiplatform/kit':
-        specifier: file:.nimi/local/packages/kit-0.21.0.tgz
-        version: file:.nimi/local/packages/kit-0.21.0.tgz(@types/node@25.9.1)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(electron@44.7.0)(react-dom@19.2.6(react@19.2.6))(react-i18next@17.0.16(i18next@26.4.4(typescript@5.9.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(react@19.2.6)
+        specifier: file:.nimi/local/packages/kit-0.21.0-cp5-final.tgz
+        version: file:.nimi/local/packages/kit-0.21.0-cp5-final.tgz(@types/node@25.9.1)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(electron@44.7.0)(react-dom@19.2.6(react@19.2.6))(react-i18next@17.0.16(i18next@26.4.4(typescript@5.9.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(react@19.2.6)
       '@nimiplatform/sdk':
         specifier: file:.nimi/local/packages/sdk-0.21.0.tgz
         version: file:.nimi/local/packages/sdk-0.21.0.tgz(@grpc/grpc-js@1.14.5)
@@ -765,8 +765,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@nimiplatform/kit@file:.nimi/local/packages/kit-0.21.0.tgz':
-    resolution: {integrity: sha512-7xrMqtrNfpM+4MHgb/EzwBeFVDMO7q54XenV/45OCfwr0bUygjp0m2Ub2Czw5R5bGIaF2CQEpldtpUHsW1ndvw==, tarball: file:.nimi/local/packages/kit-0.21.0.tgz}
+  '@nimiplatform/kit@file:.nimi/local/packages/kit-0.21.0-cp5-final.tgz':
+    resolution: {integrity: sha512-zYgSArMCrHp8n2b3Q31Yh97CYxX/0r2wd9mebq1SCALmuU3Mnd7ItzsoGuwOI0svcDayPs5UEtZeWZIMaIKqPg==, tarball: file:.nimi/local/packages/kit-0.21.0-cp5-final.tgz}
     version: 0.21.0
     peerDependencies:
       electron: ^44.0.0
@@ -4118,7 +4118,7 @@ snapshots:
   '@nimiplatform/kit-protected-local-win32-x64@file:.nimi/local/packages/native-win-0.21.0.tgz':
     optional: true
 
-  '@nimiplatform/kit@file:.nimi/local/packages/kit-0.21.0.tgz(@types/node@25.9.1)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(electron@44.7.0)(react-dom@19.2.6(react@19.2.6))(react-i18next@17.0.16(i18next@26.4.4(typescript@5.9.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(react@19.2.6)':
+  '@nimiplatform/kit@file:.nimi/local/packages/kit-0.21.0-cp5-final.tgz(@types/node@25.9.1)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(electron@44.7.0)(react-dom@19.2.6(react@19.2.6))(react-i18next@17.0.16(i18next@26.4.4(typescript@5.9.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(react@19.2.6)':
     dependencies:
       '@grpc/grpc-js': 1.14.5
       '@nimiplatform/sdk': file:.nimi/local/packages/sdk-0.21.0.tgz(@grpc/grpc-js@1.14.5)
