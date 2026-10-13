@@ -9,14 +9,11 @@
 //   2. render the placeholder through `NoActiveChildPlaceholder` so the
 //      "请先添加孩子" copy + helper-text styling is centralized.
 //
-// These assertions are the jsdom-equivalent of the browser visual-evidence
-// requirement in preflight.md#Visual Verification: the parentos renderer
-// runs inside a Tauri host (vite-only preview crashes on `invoke`), so the
-// shell-composition contract is verified through real DOM rendering here.
+// These DOM tests cover shell composition only. Electron product acceptance is separate.
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation, NavigationProbe } from '../../../testing/navigation.js';
 import { TooltipProvider } from '@nimiplatform/kit/ui';
 import { useAppStore } from '../../../app-shell/app-store.js';
 
@@ -111,9 +108,9 @@ describe('profile detail pages: no-active-child empty state', () => {
     const Page = mod.default;
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <Page />
-        </MemoryRouter>
+        <NavigationProbe /></TestNavigation>
       </TooltipProvider>,
     );
 
@@ -124,8 +121,8 @@ describe('profile detail pages: no-active-child empty state', () => {
     expect(layout?.querySelector('.nimi-back-link')).not.toBeNull();
 
     // The back link must point to /profile (router-aware via BackLink asChild)
-    const backHref = layout?.querySelector('.nimi-back-link')?.getAttribute('href');
-    expect(backHref).toBe('/profile');
+    fireEvent.click(layout!.querySelector('.nimi-back-link')!);
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/profile'));
 
     // Page title visible
     expect(screen.getAllByText(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))[0]).toBeTruthy();

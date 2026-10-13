@@ -1,5 +1,5 @@
 import { Surface, cn } from '@nimiplatform/kit/ui';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { ArrowUpRight, Bone, Percent, Ruler } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { MeasurementRow } from '../../bridge/sqlite-bridge.js';
@@ -82,13 +82,13 @@ export function TannerOverviewCards({
         >
           {i18nText('Tanner.redesign.measurements')}
         </h2>
-        <Link
-          to="/profile/growth?metric=growth.height"
+        <DestinationLink
+          destination={{ id: '/profile/growth', metric: 'growth.height' }}
           className="flex items-center gap-1 text-[12.5px] text-[color-mix(in_srgb,var(--nimi-action-primary-bg)_75%,var(--nimi-text-primary))] no-underline hover:underline"
         >
           {i18nText('Tanner.overview.heightGrowthCurveLink')}
           <ArrowUpRight size={14} />
-        </Link>
+        </DestinationLink>
       </div>
       {tiles.length ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">

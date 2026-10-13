@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore, type ChildProfile } from '../../app-shell/app-store.js';
 import ProfilePage from './profile-page.js';
@@ -67,9 +67,9 @@ describe('ProfilePage capture entry', () => {
 
   it('opens manual health-data capture from the profile capture query parameter', async () => {
     render(
-      <MemoryRouter initialEntries={['/profile?capture=manual']}>
+      <TestNavigation initial={{ id: '/profile' }} intent={{ kind: 'capture' }}>
         <ProfilePage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'health-capture-modal' });
@@ -81,9 +81,9 @@ describe('ProfilePage capture entry', () => {
 
   it.each(['growth', 'sleep'])('opens manual health-data capture with the %s group selected', async (groupId) => {
     render(
-      <MemoryRouter initialEntries={[`/profile?capture=manual&group=${groupId}`]}>
+      <TestNavigation initial={{ id: '/profile' }} intent={{ kind: 'capture', groupId }}>
         <ProfilePage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'health-capture-modal' });

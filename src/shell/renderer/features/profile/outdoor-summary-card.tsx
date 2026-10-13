@@ -1,6 +1,6 @@
 import { Surface } from '@nimiplatform/kit/ui';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { getOutdoorGoal, getOutdoorRecords, type OutdoorRecordRow } from '../../bridge/sqlite-bridge.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import {
@@ -42,8 +42,8 @@ export function OutdoorSummaryCard({ childId }: { childId: string }) {
 
   return (
     <Surface
-      as={Link}
-      to="/profile/outdoor"
+      as={DestinationLink}
+      destination={{ id: '/profile/outdoor' }}
       data-testid="vision-outdoor-summary"
       tone="card"
       material="glass-regular"

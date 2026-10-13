@@ -9,7 +9,7 @@ import {
   ModalHeader,
 } from '../profile/health-record-modal-shell.js';
 import { useCallback, useEffect, useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { ulid, isoNow } from '../../bridge/ulid.js';
 import {
@@ -191,7 +191,7 @@ export function OutdoorPage() {
 
   const backLink = (
     <div className="flex items-center gap-2 mb-5">
-      <Link to="/profile" className="text-[14px] hover:underline text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.backToProfile')}</Link>
+      <DestinationLink destination={{ id: '/profile' }} className="text-[14px] hover:underline text-[var(--nimi-text-muted)]">{i18nText('Outdoor.page.backToProfile')}</DestinationLink>
     </div>
   );
 

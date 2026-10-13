@@ -1,6 +1,6 @@
 import { Button, Surface } from '@nimiplatform/kit/ui';
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { getGrowthReports } from '../../bridge/sqlite-bridge.js';
 import { GROWTH_STANDARDS } from '../../knowledge-base/index.js';
@@ -122,7 +122,7 @@ export default function ReportHistoryPage() {
       }
       actions={
         <Button asChild tone="primary" size="md">
-          <Link to="/profile">{i18nText('Reports.history.uploadNew')}</Link>
+          <DestinationLink destination={{ id: '/profile' }}>{i18nText('Reports.history.uploadNew')}</DestinationLink>
         </Button>
       }
     >
@@ -133,7 +133,7 @@ export default function ReportHistoryPage() {
           <p className="text-[16px] font-medium text-[var(--nimi-text-primary)]">{i18nText('Reports.history.emptyTitle')}</p>
           <p className="text-[14px] mt-1 mb-4 text-[var(--nimi-text-muted)]">{i18nText('Reports.history.emptyBody')}</p>
           <Button asChild tone="primary" size="md">
-            <Link to="/profile">{i18nText('Reports.history.uploadFirst')}</Link>
+            <DestinationLink destination={{ id: '/profile' }}>{i18nText('Reports.history.uploadFirst')}</DestinationLink>
           </Button>
         </Surface>
       ) : (

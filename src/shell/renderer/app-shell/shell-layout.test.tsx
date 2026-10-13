@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ShellLayout } from './shell-layout.js';
 import { useAppStore } from './app-store.js';
@@ -73,15 +73,15 @@ describe('ShellLayout', () => {
   });
 
   it('shows /reports in navigation and lets the active child switch in-place', async () => {
-    const { container } = render(
-      <MemoryRouter>
+    render(
+      <TestNavigation>
         <ShellLayout>
           <div>APP_CONTENT</div>
         </ShellLayout>
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
-    expect(container.querySelector('a[href="/reports"]')).toBeTruthy();
+    expect(screen.getByRole('link', { name: '报告' })).toBeTruthy();
     expect(screen.getByTestId('shell-main-drag-region')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '孩子与应用菜单' }));
@@ -94,11 +94,11 @@ describe('ShellLayout', () => {
 
   it('keeps sidebar overflow layers above the main content region', () => {
     const { container } = render(
-      <MemoryRouter>
+      <TestNavigation>
         <ShellLayout>
           <div>APP_CONTENT</div>
         </ShellLayout>
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     const shellRoot = container.firstElementChild;
@@ -114,11 +114,11 @@ describe('ShellLayout', () => {
 
   it('clips the ambient halo overflow without making the shell root scrollable', () => {
     const { container } = render(
-      <MemoryRouter>
+      <TestNavigation>
         <ShellLayout>
           <div>APP_CONTENT</div>
         </ShellLayout>
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     const shellRoot = container.firstElementChild;
@@ -131,11 +131,11 @@ describe('ShellLayout', () => {
 
   it('places the ParentOS logo at the top of the sidebar and the child/app menu at its bottom', () => {
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <ShellLayout>
           <div>APP_CONTENT</div>
         </ShellLayout>
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     const nav = document.querySelector('nav');
@@ -156,11 +156,11 @@ describe('ShellLayout', () => {
     });
 
     const { container } = render(
-      <MemoryRouter>
+      <TestNavigation>
         <ShellLayout>
           <div>APP_CONTENT</div>
         </ShellLayout>
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     expect(container.querySelector('nav')).toBeNull();
@@ -172,11 +172,11 @@ describe('ShellLayout', () => {
 
   it('exposes profile and settings navigation without an app-owned account identity', async () => {
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <ShellLayout>
           <div>APP_CONTENT</div>
         </ShellLayout>
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     fireEvent.click(screen.getByRole('button', { name: '孩子与应用菜单' }));

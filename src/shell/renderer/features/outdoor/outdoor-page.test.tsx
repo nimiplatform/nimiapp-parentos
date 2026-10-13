@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { i18n, i18nText } from '../../i18n/index.js';
@@ -21,9 +21,9 @@ vi.mock('../../bridge/sqlite-bridge.js', () => bridge);
 
 async function renderPage() {
   const view = render(
-    <MemoryRouter>
+    <TestNavigation>
       <OutdoorPage />
-    </MemoryRouter>,
+    </TestNavigation>,
   );
   await act(async () => {});
   return view;

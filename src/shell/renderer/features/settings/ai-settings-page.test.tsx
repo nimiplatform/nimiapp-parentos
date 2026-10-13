@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { TooltipProvider } from '@nimiplatform/kit/ui';
 import { runtimeAIConfigStructToJson } from '@nimiplatform/kit/core/sdk-contract';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -174,9 +174,9 @@ describe('AiSettingsPage', () => {
   function renderPage() {
     return render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <AiSettingsPage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
   }

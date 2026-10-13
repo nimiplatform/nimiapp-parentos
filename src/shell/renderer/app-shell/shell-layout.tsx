@@ -1,10 +1,10 @@
+import type { ParentOSDestination } from './navigation-destinations.js';
 import { lazy, Suspense, useState, useRef, useEffect, type ReactNode, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { DestinationLink, useParentOSNavigation, useParentOSPosition } from './app-navigation.js';
 import { Home, User, BookText, MessageCircle, TrendingUp, Settings, Check, Plus, type LucideProps } from 'lucide-react';
 import { AmbientBackground, Surface, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths, type ChildProfile } from './app-store.js';
-import { startParentosWindowDrag } from '../bridge/window-drag.js';
 import { setAppSetting } from '../bridge/sqlite-bridge.js';
 import { isoNow } from '../bridge/ulid.js';
 import { ChildAvatar } from '../shared/child-avatar.js';
@@ -14,13 +14,13 @@ const ProfileTodoDrawer = lazy(() => import('../features/profile/profile-todo-dr
   default: m.ProfileTodoDrawer,
 })));
 
-const navItems: Array<{ to: string; labelKey: string; Icon: ComponentType<LucideProps> }> = [
-  { to: '/timeline', labelKey: 'Shell.navigation.timeline', Icon: Home },
-  { to: '/profile', labelKey: 'Shell.navigation.profile', Icon: User },
-  { to: '/journal', labelKey: 'Shell.navigation.journal', Icon: BookText },
-  { to: '/advisor', labelKey: 'Shell.navigation.advisor', Icon: MessageCircle },
-  { to: '/reports', labelKey: 'Shell.navigation.reports', Icon: TrendingUp },
-  { to: '/settings', labelKey: 'Shell.navigation.settings', Icon: Settings },
+const navItems: Array<{ to: ParentOSDestination; labelKey: string; Icon: ComponentType<LucideProps> }> = [
+  { to: { id: '/timeline' }, labelKey: 'Shell.navigation.timeline', Icon: Home },
+  { to: { id: '/profile' }, labelKey: 'Shell.navigation.profile', Icon: User },
+  { to: { id: '/journal' }, labelKey: 'Shell.navigation.journal', Icon: BookText },
+  { to: { id: '/advisor' }, labelKey: 'Shell.navigation.advisor', Icon: MessageCircle },
+  { to: { id: '/reports' }, labelKey: 'Shell.navigation.reports', Icon: TrendingUp },
+  { to: { id: '/settings' }, labelKey: 'Shell.navigation.settings', Icon: Settings },
 ];
 
 /* ── Child/App Menu (child switcher + app entries) ─────────── */
@@ -37,7 +37,7 @@ function ChildAppMenu({ childList, activeChildId, onSwitchChild }: {
   onSwitchChild: (id: string) => void;
 }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { open: navigate } = useParentOSNavigation();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -144,7 +144,7 @@ function ChildAppMenu({ childList, activeChildId, onSwitchChild }: {
             <button
               type="button"
               role="menuitem"
-              onClick={() => { closeMenu(); navigate('/settings/children'); }}
+              onClick={() => { closeMenu(); void navigate({ id: '/settings/children' }); }}
               className="group flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--nimi-border-strong)] text-[var(--nimi-text-muted)] transition-colors duration-[var(--nimi-motion-fast)] group-hover:border-[var(--nimi-action-primary-bg)] group-hover:text-[var(--nimi-action-primary-bg)]">
@@ -165,7 +165,7 @@ function ChildAppMenu({ childList, activeChildId, onSwitchChild }: {
                 key={item.id}
                 type="button"
                 role="menuitem"
-                onClick={() => { closeMenu(); navigate(item.route); }}
+                onClick={() => { closeMenu(); void navigate({ id: item.route }); }}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] text-[var(--nimi-text-secondary)] transition-all hover:bg-[var(--nimi-action-ghost-hover)] hover:text-[var(--nimi-text-primary)]"
               >
                 <item.icon size={18} strokeWidth={1.8} className="text-[var(--nimi-text-muted)]" />
@@ -179,11 +179,11 @@ function ChildAppMenu({ childList, activeChildId, onSwitchChild }: {
   );
 }
 
-export function ShellLayout({ children }: { children: ReactNode }) {
+export function ShellLayout({ children, sidebarVisible = true }: { children: ReactNode; sidebarVisible?: boolean }) {
   const { t } = useTranslation();
-  const { children: childList, activeChildId, setActiveChildId } = useAppStore();
-  const location = useLocation();
-  const isProfileDetailPage = /^\/profile\/[^/]+/.test(location.pathname);
+  const { children: childList, activeChildId } = useAppStore();
+  const owner = useParentOSNavigation(), position = useParentOSPosition();
+  const isProfileDetailPage = position.id.startsWith('/profile/');
   const hasActiveChild = childList.some((child) => child.childId === activeChildId);
 
   useEffect(() => {
@@ -202,7 +202,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
     // leave a blank strip at the bottom of the window.
     <AmbientBackground variant="mesh" className="isolate flex h-full overflow-clip">
       {/* Sidebar — transparent, shares global bg */}
-      {hasActiveChild ? (
+      {hasActiveChild && sidebarVisible ? (
         <nav
           className="relative z-30 flex w-[62px] shrink-0 flex-col items-center overflow-visible bg-transparent pt-6 pb-5"
         >
@@ -217,13 +217,14 @@ export function ShellLayout({ children }: { children: ReactNode }) {
             {navItems.map((item) => {
               const label = t(item.labelKey);
               return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
+                <DestinationLink
+                  key={item.to.id}
+                  destination={item.to}
                   aria-label={label}
-                  className={({ isActive }) =>
+                  aria-current={(item.to.id === '/profile' ? position.id.startsWith('/profile') : item.to.id === '/settings' ? position.id.startsWith('/settings') : position.id === item.to.id) ? 'page' : undefined}
+                  className={
                     `group relative flex items-center justify-center w-[40px] h-[40px] rounded-xl transition-all duration-150 ${
-                      isActive
+                      (item.to.id === '/profile' ? position.id.startsWith('/profile') : item.to.id === '/settings' ? position.id.startsWith('/settings') : position.id === item.to.id)
                         ? 'bg-[var(--nimi-text-primary)] text-[var(--nimi-text-inverse)] shadow-[var(--nimi-elevation-base)]'
                         : 'text-[var(--nimi-text-muted)] hover:bg-[var(--nimi-action-ghost-hover)] hover:text-[var(--nimi-text-primary)]'
                     }`
@@ -235,7 +236,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
                   >
                     {label}
                   </span>
-                </NavLink>
+                </DestinationLink>
               );
             })}
           </div>
@@ -244,23 +245,15 @@ export function ShellLayout({ children }: { children: ReactNode }) {
             <ChildAppMenu
               childList={childList}
               activeChildId={activeChildId}
-              onSwitchChild={setActiveChildId}
+              onSwitchChild={id => { void owner.switchChild(id); }}
             />
           </div>
         </nav>
       ) : null}
 
+      {hasActiveChild && !sidebarVisible ? <div className="absolute bottom-4 left-4 z-40"><ChildAppMenu childList={childList} activeChildId={activeChildId} onSwitchChild={id => { void owner.switchChild(id); }} /></div> : null}
       <div className="flex min-w-0 flex-1 flex-col">
         <main className="relative z-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden"
-          onMouseDown={(e) => {
-            if (e.button !== 0) return;
-            const rect = e.currentTarget.getBoundingClientRect();
-            if (e.clientY - rect.top > 40) return;
-            const tag = (e.target as HTMLElement).tagName;
-            const interactive = (e.target as HTMLElement).closest('a, button, input, select, textarea, [role="button"], [tabindex]');
-            if (interactive || tag === 'A' || tag === 'BUTTON' || tag === 'INPUT') return;
-            void startParentosWindowDrag();
-          }}
           data-testid="shell-main-drag-region"
         >
           <div className="h-full">{children}</div>

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ReminderSettingsPage from './reminder-settings-page.js';
 import { useAppStore } from '../../app-shell/app-store.js';
@@ -59,9 +59,9 @@ describe('ReminderSettingsPage', () => {
 
   it('renders the empty reminder settings state in English', async () => {
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <ReminderSettingsPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     expect(await screen.findByText('Reminder management')).toBeTruthy();

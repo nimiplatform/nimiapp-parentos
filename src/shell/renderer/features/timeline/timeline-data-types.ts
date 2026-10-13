@@ -1,3 +1,4 @@
+import type { ParentOSDestination } from '../../app-shell/navigation-destinations.js';
 import type * as React from 'react';
 import type { ReminderState } from '../../engine/reminder-engine.js';
 import type { ReminderPriority } from '../../knowledge-base/index.js';
@@ -88,7 +89,7 @@ export interface RecentChangeItem {
   title: string;
   detail: string;
   timestamp: string;
-  to: string;
+  to: ParentOSDestination;
   icon: string;
   /** Optional structured fields — allow the card to render a hero metric + soft secondary line. */
   metric?: { value: string; unit?: string | null } | null;
@@ -101,7 +102,7 @@ export interface DataGapAlertItem {
   id: 'growth_freshness_gap' | 'growth_missing_baseline';
   title: string;
   detail: string;
-  to: string;
+  to: ParentOSDestination;
 }
 
 export interface GrowthSnapshotMetric {
@@ -126,7 +127,7 @@ export interface RecentLineItem {
   title: string;
   detail: string;
   recordedAt: string;
-  to: string;
+  to: ParentOSDestination;
   badge: string;
   badgeTone?: 'default' | 'keepsake';
   tag?: string | null;

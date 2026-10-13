@@ -163,7 +163,7 @@ export function findReportsBoundaryErrors(input: {
 }) {
   const errors: string[] = [];
 
-  if (!input.routesSource.includes('path="/reports"')) {
+  if (!/['"]\/reports['"]:\s*ReportsPage/.test(input.routesSource)) {
     errors.push('/reports route is missing from routes.tsx');
   }
 

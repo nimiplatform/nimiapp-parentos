@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink, type ParentOSDestination } from '../../../app-shell/app-navigation.js';
 import { useTranslation } from 'react-i18next';
 import {
   BackLink,
@@ -14,7 +14,7 @@ export type ProfileDetailShellProps = {
   actions?: ReactNode;
   subnav?: ReactNode;
   aiSummary?: ReactNode;
-  backTo?: string;
+  backTo?: ParentOSDestination;
   backLabel?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -26,7 +26,7 @@ export function ProfileDetailShell({
   actions,
   subnav,
   aiSummary,
-  backTo = '/profile',
+  backTo = { id: '/profile' },
   backLabel,
   children,
   className,
@@ -54,7 +54,7 @@ export function ProfileDetailShell({
       title={title}
       back={
         <BackLink asChild>
-          <Link to={backTo}>{label}</Link>
+          <DestinationLink destination={backTo}>{label}</DestinationLink>
         </BackLink>
       }
       actions={composedActions}

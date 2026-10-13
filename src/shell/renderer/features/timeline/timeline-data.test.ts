@@ -489,7 +489,7 @@ describe('timeline home view model helpers', () => {
     expect(homeVm.recentChanges[0]?.label).toBe('珍藏');
     expect(homeVm.recentChanges[0]?.title).toBe('读完第一本桥梁书');
     expect(homeVm.recentChanges[0]?.detail).toContain('取得成果');
-    expect(homeVm.recentChanges[0]?.to).toBe('/journal?filter=keepsake');
+    expect(homeVm.recentChanges[0]?.to).toEqual({ id: '/journal', filter: 'keepsake' });
     expect(homeVm.recentLines[0]?.badge).toBe('珍藏');
     expect(homeVm.recentLines[0]?.badgeTone).toBe('keepsake');
     expect(homeVm.recentLines[0]?.tag).toBe('取得成果');

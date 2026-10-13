@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import type { OrthoCycleSummary } from './timeline-data-types.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -54,8 +54,8 @@ export function OrthoCycleProgressWidget({ cycle }: { cycle: OrthoCycleSummary }
   })();
 
   return (
-    <Link
-      to="/profile/dental?tab=orthodontic"
+    <DestinationLink
+      destination={{ id: '/profile/dental', tab: 'orthodontic' }}
       className="mx-2 mb-3 block rounded-[14px] px-3 py-3 transition-colors hover:bg-white"
       style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(226,232,240,0.7)' }}
     >
@@ -85,6 +85,6 @@ export function OrthoCycleProgressWidget({ cycle }: { cycle: OrthoCycleSummary }
       <p className="mt-2 text-[12px]" style={{ color: accent, fontWeight: 500 }}>
         {status.text}
       </p>
-    </Link>
+    </DestinationLink>
   );
 }

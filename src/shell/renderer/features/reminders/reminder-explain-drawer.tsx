@@ -16,7 +16,7 @@
  */
 
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { DestinationLink, type ParentOSDestination } from '../../app-shell/app-navigation.js';
 import type { ReminderKind } from '../../knowledge-base/index.js';
 import type { ActiveReminder } from '../../engine/reminder-engine.js';
 import {
@@ -47,7 +47,8 @@ interface FooterPrimary {
   variant: 'action' | 'link' | 'capture';
   label: string;
   action?: ReminderActionType;
-  to?: string;
+  to?: ParentOSDestination;
+  intent?: import('../../app-shell/navigation-destinations.js').ParentOSIntent;
 }
 
 /**
@@ -69,7 +70,6 @@ function resolveFooterPrimary(reminder: ActiveReminder): FooterPrimary[] {
     completedAt: reminder.state?.completedAt ?? null,
     notApplicable: reminder.state?.notApplicable ?? 0,
   });
-  const ruleRoute = `?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}`;
 
   if (kind === 'task') {
     if (progression === 'completed') {
@@ -122,10 +122,10 @@ function resolveFooterPrimary(reminder: ActiveReminder): FooterPrimary[] {
   // consult
   if (progression === 'consulted') {
     return [
-      { variant: 'link', label: i18nText('Reminders.action.reopenAdvisor'), to: `/advisor${ruleRoute}` },
+      { variant: 'link', label: i18nText('Reminders.action.reopenAdvisor'), to: { id: '/advisor' }, intent: { kind: 'advisor-topic', reminder: { ruleId: reminder.rule.ruleId, repeatIndex: reminder.repeatIndex } } },
     ];
   }
-  return [{ variant: 'link', label: i18nText('Reminders.action.askAdvisor'), to: `/advisor${ruleRoute}` }];
+  return [{ variant: 'link', label: i18nText('Reminders.action.askAdvisor'), to: { id: '/advisor' }, intent: { kind: 'advisor-topic', reminder: { ruleId: reminder.rule.ruleId, repeatIndex: reminder.repeatIndex } } }];
 }
 
 const KIND_BADGE: Record<ReminderKind, { labelKey: string; fg: string; bg: string }> = {
@@ -339,9 +339,9 @@ export function ReminderExplainDrawer({ reminder, onClose, onAction, onOpenCaptu
                 : { background: '#fff', color: '#1e293b', border: '1px solid #e2e8f0' };
               if (primary.variant === 'link' && primary.to) {
                 return (
-                  <Link key={`${primary.label}-${index}`} to={primary.to} onClick={onClose} className={className} style={style}>
+                  <DestinationLink key={`${primary.label}-${index}`} destination={primary.to} intent={primary.intent} onClick={onClose} className={className} style={style}>
                     {primary.label}
-                  </Link>
+                  </DestinationLink>
                 );
               }
               if (primary.variant === 'action' && primary.action) {

@@ -1,7 +1,7 @@
 import { Button } from '@nimiplatform/kit/ui';
 import { ArrowRight, ChevronLeft, ChevronRight, Plus, Sun } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { i18nText } from '../../i18n/index.js';
 import { HERO_ACCENT_TEXT, HERO_CTA_CLASS } from './outdoor-goal-onboarding.js';
 import {
@@ -73,9 +73,9 @@ export function OutdoorWeekHero({
 
   return (
     <div className="min-w-0">
-      <Link to="/profile" className="text-[14px] text-[var(--nimi-text-muted)] hover:underline">
+      <DestinationLink destination={{ id: '/profile' }} className="text-[14px] text-[var(--nimi-text-muted)] hover:underline">
         {i18nText('Outdoor.page.backToProfile')}
-      </Link>
+      </DestinationLink>
 
       <div className="parentos-onboarding-enter-left mt-8 flex flex-col">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">

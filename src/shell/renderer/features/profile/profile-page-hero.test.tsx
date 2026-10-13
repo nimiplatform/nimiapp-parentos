@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { TestNavigation, NavigationProbe } from '../../testing/navigation.js';
 import { describe, expect, it, vi } from 'vitest';
 import { ProfileHero } from './profile-page-hero.js';
 
@@ -17,7 +17,7 @@ describe('ProfileHero', () => {
   it('renders add health data as a soft primary action', () => {
     const onAddRecord = vi.fn();
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <ProfileHero
           child={child}
           ageMonths={72}
@@ -26,7 +26,7 @@ describe('ProfileHero', () => {
           lastRecordedDaysAgo={2}
           onAddRecord={onAddRecord}
         />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     const addButton = screen.getByRole('button', { name: /添加健康数据/ });
@@ -38,30 +38,15 @@ describe('ProfileHero', () => {
     expect(onAddRecord).toHaveBeenCalledOnce();
   });
 
-  it('renders edit action with icon without violating single-child slot constraints', () => {
+  it('renders edit action with icon without violating single-child slot constraints', async () => {
     render(
-      <MemoryRouter initialEntries={['/profile']}>
-        <Routes>
-          <Route
-            path="/profile"
-            element={(
-              <ProfileHero
-                child={child}
-                ageMonths={72}
-                completeness={80}
-                recordCount={3}
-                lastRecordedDaysAgo={2}
-                onAddRecord={vi.fn()}
-              />
-            )}
-          />
-          <Route path="/settings/children" element={<div>children settings</div>} />
-        </Routes>
-      </MemoryRouter>,
+      <TestNavigation initial={{ id: '/profile' }}>
+        <ProfileHero child={child} ageMonths={72} completeness={80} recordCount={3} lastRecordedDaysAgo={2} onAddRecord={vi.fn()} /><NavigationProbe />
+      </TestNavigation>,
     );
 
     fireEvent.click(screen.getByRole('button', { name: /编辑资料/ }));
 
-    expect(screen.getByText('children settings')).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/settings/children'));
   });
 });

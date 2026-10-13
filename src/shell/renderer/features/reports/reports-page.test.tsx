@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation, NavigationProbe } from '../../testing/navigation.js';
 import ReportsPage from './reports-page.js';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { getRollingReportPeriod } from './report-cycle.js';
@@ -187,7 +187,7 @@ describe('ReportsPage', () => {
     });
   });
 
-  const renderPage = () => render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+  const renderPage = () => render(<TestNavigation><ReportsPage /><NavigationProbe /></TestNavigation>);
 
   function setClosedFirstCycle() {
     const child = useAppStore.getState().children[0];
@@ -205,7 +205,8 @@ describe('ReportsPage', () => {
       expect(screen.getByText('记录满一个月后，将自动生成第一份成长报告')).toBeTruthy();
     });
 
-    expect(screen.getByRole('link', { name: /记录一个瞬间/i }).getAttribute('href')).toBe('/journal');
+    fireEvent.click(screen.getByRole('link', { name: /记录一个瞬间/i }));
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/journal'));
     const advancedToggle = screen.getByRole('button', { name: /高级选项/i });
     expect(advancedToggle.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(advancedToggle);

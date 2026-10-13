@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink, type ParentOSDestination } from '../../app-shell/app-navigation.js';
 import { Surface } from '@nimiplatform/kit/ui';
 import { i18nText } from '../../i18n/index.js';
 
@@ -32,12 +32,12 @@ export function Cd({
   );
 }
 
-export function Hdr({ title, to, link }: { title: string; to?: string; link?: string }) {
+export function Hdr({ title, destination, link }: { title: string; destination?: ParentOSDestination; link?: string }) {
   const linkLabel = link ?? i18nText('Timeline.action.viewAll');
   return (
     <div className="mb-5 flex items-center justify-between">
       <h3 className="text-[16px] font-semibold" style={{ color: textMain }}>{title}</h3>
-      {to ? <Link to={to} className="text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>{linkLabel}</Link> : null}
+      {destination ? <DestinationLink destination={destination} className="text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>{linkLabel}</DestinationLink> : null}
     </div>
   );
 }

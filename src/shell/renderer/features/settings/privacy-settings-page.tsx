@@ -21,18 +21,18 @@ export default function PrivacySettingsPage() {
       <SettingsInfoCard icon={Bot} title={t('PrivacySettings.ai.title')}>
         <p>{t('PrivacySettings.ai.body')}</p>
         <p>{t('PrivacySettings.ai.account')}</p>
-        <SettingsInfoLink to="/settings/ai">{t('PrivacySettings.ai.action')}</SettingsInfoLink>
+        <SettingsInfoLink destination={{ id: '/settings/ai' }}>{t('PrivacySettings.ai.action')}</SettingsInfoLink>
       </SettingsInfoCard>
       <SettingsInfoCard icon={Database} title={t('PrivacySettings.backup.title')}>
         <p>{t('PrivacySettings.backup.body')}</p>
         <p>{t('PrivacySettings.backup.restore')}</p>
         <p>{t('PrivacySettings.backup.care')}</p>
-        <SettingsInfoLink to="/settings#data-backup">{t('PrivacySettings.backup.action')}</SettingsInfoLink>
+        <SettingsInfoLink destination={{ id: '/settings', focus: 'data-backup' }}>{t('PrivacySettings.backup.action')}</SettingsInfoLink>
       </SettingsInfoCard>
       <SettingsInfoCard icon={Baby} title={t('PrivacySettings.delete.title')}>
         <p>{t('PrivacySettings.delete.body')}</p>
         <p>{t('PrivacySettings.delete.exports')}</p>
-        <SettingsInfoLink to="/settings/children">{t('PrivacySettings.delete.action')}</SettingsInfoLink>
+        <SettingsInfoLink destination={{ id: '/settings/children' }}>{t('PrivacySettings.delete.action')}</SettingsInfoLink>
       </SettingsInfoCard>
     </SettingsInfoLayout>
   );

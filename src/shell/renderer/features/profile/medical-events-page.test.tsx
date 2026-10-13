@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@nimiplatform/kit/ui';
 import MedicalEventsPage from './medical-events-page.js';
@@ -87,9 +87,9 @@ const EVENTS: MedicalEventRow[] = [
 function renderPage() {
   return render(
     <TooltipProvider>
-      <MemoryRouter>
+      <TestNavigation>
         <MedicalEventsPage />
-      </MemoryRouter>
+      </TestNavigation>
     </TooltipProvider>,
   );
 }

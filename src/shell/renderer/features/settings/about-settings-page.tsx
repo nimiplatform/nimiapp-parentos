@@ -32,8 +32,8 @@ export default function AboutSettingsPage() {
       <SettingsInfoCard icon={Sparkles} title={t('AboutSettings.nimi.title')}>
         <p>{t('AboutSettings.nimi.body')}</p>
         <div className="flex flex-wrap gap-x-6 gap-y-2">
-          <SettingsInfoLink to="/settings/ai">{t('PrivacySettings.ai.action')}</SettingsInfoLink>
-          <SettingsInfoLink to="/settings/privacy">{t('Settings.info.privacy.label')}</SettingsInfoLink>
+          <SettingsInfoLink destination={{ id: '/settings/ai' }}>{t('PrivacySettings.ai.action')}</SettingsInfoLink>
+          <SettingsInfoLink destination={{ id: '/settings/privacy' }}>{t('Settings.info.privacy.label')}</SettingsInfoLink>
         </div>
       </SettingsInfoCard>
     </SettingsInfoLayout>

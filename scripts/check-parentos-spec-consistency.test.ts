@@ -12,8 +12,8 @@ describe('check-parentos-spec-consistency', () => {
         { path: '/timeline', nav: true },
         { path: '/settings', nav: true },
       ],
-      routerSource: '<Route path="/timeline" /><Route path="/settings" /><Route path="/reports" />',
-      navSource: "const navItems = [{ to: '/timeline' }, { to: '/settings' }]",
+      destinationSource: "'/timeline': Page,'/settings': Page,'/reports': Page,",
+      navSource: "const navItems = [{ to: { id: '/timeline' } }, { to: { id: '/settings' } }]",
       canonicalAuthorityExists: true,
     });
 
@@ -25,8 +25,8 @@ describe('check-parentos-spec-consistency', () => {
   it('fails when the v2 canonical authority landing is missing', () => {
     const errors = findRouteConsistencyErrors({
       routes: [{ path: '/timeline', nav: true }],
-      routerSource: '<Route path="/timeline" />',
-      navSource: "const navItems = [{ to: '/timeline' }]",
+      destinationSource: "'/timeline': Page,",
+      navSource: "const navItems = [{ to: { id: '/timeline' } }]",
       canonicalAuthorityExists: false,
     });
 

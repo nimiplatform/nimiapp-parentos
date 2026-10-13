@@ -1,8 +1,20 @@
 packages:
   - .
-
 allowBuilds:
   core-js: true
   electron-winstaller: false
   esbuild: true
   protobufjs: true
+overrides:
+  "@nimiplatform/kit": file:.nimi/local/packages/kit-0.21.0.tgz
+  "@nimiplatform/sdk": file:.nimi/local/packages/sdk-0.21.0.tgz
+  "@nimiplatform/app-tools": file:.nimi/local/packages/app-tools-0.13.0-cp4.tgz
+  "@nimiplatform/kit-protected-local-win32-x64": file:.nimi/local/packages/native-win-0.21.0.tgz
+  "@nimiplatform/kit-protected-local-darwin-arm64": file:.nimi/local/packages/native-darwin-0.21.0.tgz
+supportedArchitectures:
+  os:
+    - win32
+    - darwin
+  cpu:
+    - x64
+    - arm64

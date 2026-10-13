@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { TestNavigation, NavigationProbe } from '../../testing/navigation.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AISummaryCard } from './ai-summary-card.js';
 
@@ -22,7 +22,7 @@ function failWith(reasonCode: string) {
 
 function renderCard() {
   return render(
-    <MemoryRouter>
+    <TestNavigation>
       <AISummaryCard
         domain="overview"
         childName="Mimi"
@@ -31,7 +31,7 @@ function renderCard() {
         gender="female"
         dataContext="身高 110.8 cm"
       />
-    </MemoryRouter>,
+    <NavigationProbe /></TestNavigation>,
   );
 }
 
@@ -45,7 +45,8 @@ describe('AISummaryCard unavailable guidance (PO-PROF-016)', () => {
     renderCard();
 
     expect(await screen.findByText('尚未配置 AI 模型，配置后即可查看智能分析')).toBeTruthy();
-    expect(screen.getByRole('link', { name: '去配置 AI' }).getAttribute('href')).toBe('/settings/ai');
+    fireEvent.click(screen.getByRole('link', { name: '去配置 AI' }));
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/settings/ai'));
     expect(screen.queryByRole('button', { name: '重试' })).toBeNull();
     expect(screen.queryByRole('button', { name: '重新生成' })).toBeNull();
   });
@@ -65,7 +66,8 @@ describe('AISummaryCard unavailable guidance (PO-PROF-016)', () => {
 
     const retry = await screen.findByRole('button', { name: '重试' });
     expect(screen.getByText('智能分析暂时无法生成，请重试或检查 AI 设置')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'AI 设置' }).getAttribute('href')).toBe('/settings/ai');
+    fireEvent.click(screen.getByRole('link', { name: 'AI 设置' }));
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/settings/ai'));
 
     textGenerateMock.mockResolvedValue({ ok: true, text: '观察到身高稳步增长。', finishReason: 'stop', traceId: 'trace-1' });
     fireEvent.click(retry);

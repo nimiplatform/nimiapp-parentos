@@ -1,3 +1,4 @@
+import type { ParentOSDestination } from '../../app-shell/navigation-destinations.js';
 import type { ChildProfile, NurtureMode } from '../../app-shell/app-store.js';
 import type { ReminderAgenda } from '../../engine/reminder-engine.js';
 import { MILESTONE_CATALOG, OBSERVATION_DIMENSIONS, REMINDER_RULES } from '../../knowledge-base/index.js';
@@ -30,39 +31,39 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const milestoneById = new Map(MILESTONE_CATALOG.map((item) => [item.milestoneId, item]));
 const MEASUREMENT_META: Record<
   string,
-  { label: string; unit: string; domain: RecentChangeItem['domain']; to: string; icon: string }
+  { label: string; unit: string; domain: RecentChangeItem['domain']; to: ParentOSDestination; icon: string }
 > = {
-  height: { label: i18nText('Profile.metrics.growth.height'), unit: i18nText('Common.unit.centimeter'), domain: 'growth', to: '/profile/growth?metric=growth.height', icon: '📏' },
-  weight: { label: i18nText('Profile.metrics.growth.weight'), unit: i18nText('Common.unit.kilogram'), domain: 'growth', to: '/profile/growth?metric=growth.weight', icon: '⚖️' },
-  'head-circumference': { label: i18nText('Profile.metrics.growth.headCircumference'), unit: i18nText('Common.unit.centimeter'), domain: 'growth', to: '/profile/growth?metric=growth.head_circumference', icon: '🍼' },
-  bmi: { label: 'BMI', unit: '', domain: 'growth', to: '/profile/growth?metric=growth.bmi', icon: '📈' },
-  'vision-left': { label: i18nText('Profile.metrics.vision.leftVisualAcuity'), unit: '', domain: 'vision', to: '/profile/vision?metric=vision.left_visual_acuity', icon: '👀' },
-  'vision-right': { label: i18nText('Profile.metrics.vision.rightVisualAcuity'), unit: '', domain: 'vision', to: '/profile/vision?metric=vision.right_visual_acuity', icon: '👀' },
-  'bone-age': { label: i18nText('Profile.metrics.development.boneAgeYears'), unit: i18nText('Common.unit.year'), domain: 'bone-age', to: '/profile/tanner', icon: '🦴' },
+  height: { label: i18nText('Profile.metrics.growth.height'), unit: i18nText('Common.unit.centimeter'), domain: 'growth', to: { id: '/profile/growth', metric: 'growth.height' }, icon: '📏' },
+  weight: { label: i18nText('Profile.metrics.growth.weight'), unit: i18nText('Common.unit.kilogram'), domain: 'growth', to: { id: '/profile/growth', metric: 'growth.weight' }, icon: '⚖️' },
+  'head-circumference': { label: i18nText('Profile.metrics.growth.headCircumference'), unit: i18nText('Common.unit.centimeter'), domain: 'growth', to: { id: '/profile/growth', metric: 'growth.head_circumference' }, icon: '🍼' },
+  bmi: { label: 'BMI', unit: '', domain: 'growth', to: { id: '/profile/growth', metric: 'growth.bmi' }, icon: '📈' },
+  'vision-left': { label: i18nText('Profile.metrics.vision.leftVisualAcuity'), unit: '', domain: 'vision', to: { id: '/profile/vision', metric: 'vision.left_visual_acuity' }, icon: '👀' },
+  'vision-right': { label: i18nText('Profile.metrics.vision.rightVisualAcuity'), unit: '', domain: 'vision', to: { id: '/profile/vision', metric: 'vision.right_visual_acuity' }, icon: '👀' },
+  'bone-age': { label: i18nText('Profile.metrics.development.boneAgeYears'), unit: i18nText('Common.unit.year'), domain: 'bone-age', to: { id: '/profile/tanner' } as const, icon: '🦴' },
 };
 
 interface QuickLink {
   id: string;
-  to: string;
+  to: ParentOSDestination;
   label: string;
   emoji: string;
   ageGate?: (ageMonths: number) => boolean;
 }
 
 const QLINKS_REGISTRY: QuickLink[] = [
-  { id: 'growth', to: '/profile/growth', label: i18nText('Timeline.quickLink.growth'), emoji: '📏' },
-  { id: 'vaccines', to: '/profile/vaccines', label: i18nText('Timeline.quickLink.vaccines'), emoji: '💉', ageGate: (age) => age <= 84 },
-  { id: 'sleep', to: '/profile/sleep', label: i18nText('Timeline.quickLink.sleep'), emoji: '😴' },
-  { id: 'journal', to: '/journal', label: i18nText('Timeline.quickLink.journal'), emoji: '📝' },
-  { id: 'reports', to: '/reports', label: i18nText('Timeline.quickLink.reports'), emoji: '📄' },
-  { id: 'medical', to: '/profile/medical-events', label: i18nText('Timeline.quickLink.medical'), emoji: '🏥' },
-  { id: 'milestones', to: '/profile/milestones', label: i18nText('Timeline.quickLink.milestones'), emoji: '🎯', ageGate: (age) => age <= 72 },
-  { id: 'outdoor', to: '/profile/outdoor', label: i18nText('Timeline.quickLink.outdoor'), emoji: '🌳', ageGate: (age) => age >= 6 },
-  { id: 'vision', to: '/profile/vision', label: i18nText('Timeline.quickLink.vision'), emoji: '👁️', ageGate: (age) => age >= 36 },
-  { id: 'dental', to: '/profile/dental', label: i18nText('Timeline.quickLink.dental'), emoji: '🦷', ageGate: (age) => age >= 6 },
-  { id: 'fitness', to: '/profile/fitness', label: i18nText('Timeline.quickLink.fitness'), emoji: '🏃', ageGate: (age) => age >= 36 },
-  { id: 'tanner', to: '/profile/tanner', label: i18nText('Timeline.quickLink.tanner'), emoji: '🌱', ageGate: (age) => age >= 84 },
-  { id: 'posture', to: '/profile/posture', label: i18nText('Timeline.quickLink.posture'), emoji: '🧍', ageGate: (age) => age >= 60 },
+  { id: 'growth', to: { id: '/profile/growth' } as const, label: i18nText('Timeline.quickLink.growth'), emoji: '📏' },
+  { id: 'vaccines', to: { id: '/profile/vaccines' } as const, label: i18nText('Timeline.quickLink.vaccines'), emoji: '💉', ageGate: (age) => age <= 84 },
+  { id: 'sleep', to: { id: '/profile/sleep' } as const, label: i18nText('Timeline.quickLink.sleep'), emoji: '😴' },
+  { id: 'journal', to: { id: '/journal' } as const, label: i18nText('Timeline.quickLink.journal'), emoji: '📝' },
+  { id: 'reports', to: { id: '/reports' } as const, label: i18nText('Timeline.quickLink.reports'), emoji: '📄' },
+  { id: 'medical', to: { id: '/profile/medical-events' } as const, label: i18nText('Timeline.quickLink.medical'), emoji: '🏥' },
+  { id: 'milestones', to: { id: '/profile/milestones' } as const, label: i18nText('Timeline.quickLink.milestones'), emoji: '🎯', ageGate: (age) => age <= 72 },
+  { id: 'outdoor', to: { id: '/profile/outdoor' } as const, label: i18nText('Timeline.quickLink.outdoor'), emoji: '🌳', ageGate: (age) => age >= 6 },
+  { id: 'vision', to: { id: '/profile/vision' } as const, label: i18nText('Timeline.quickLink.vision'), emoji: '👁️', ageGate: (age) => age >= 36 },
+  { id: 'dental', to: { id: '/profile/dental' } as const, label: i18nText('Timeline.quickLink.dental'), emoji: '🦷', ageGate: (age) => age >= 6 },
+  { id: 'fitness', to: { id: '/profile/fitness' } as const, label: i18nText('Timeline.quickLink.fitness'), emoji: '🏃', ageGate: (age) => age >= 36 },
+  { id: 'tanner', to: { id: '/profile/tanner' } as const, label: i18nText('Timeline.quickLink.tanner'), emoji: '🌱', ageGate: (age) => age >= 84 },
+  { id: 'posture', to: { id: '/profile/posture' } as const, label: i18nText('Timeline.quickLink.posture'), emoji: '🧍', ageGate: (age) => age >= 60 },
 ];
 
 const QLINKS_TIERS: Array<{ maxAge: number; topIds: string[] }> = [
@@ -341,7 +342,7 @@ function buildSleepRecordChanges(sleepRecords: DashData['sleepRecords']): Recent
           subtitle: timeLabel,
           summary: null,
           timestamp: `${record.sleepDate}T00:00:00.000Z`,
-          to: '/profile/sleep',
+          to: { id: '/profile/sleep' } as const,
           icon: '😴',
           iconName: 'moon' as const,
         };
@@ -393,7 +394,7 @@ function buildJournalChanges(journalEntries: DashData['journalEntries']): Recent
           subtitle: isKeepsake && reasonLabel ? i18nText('Timeline.journal.keepsakeSubtitle', { reason: reasonLabel, time: relTime }) : relTime,
           summary: summary || null,
           timestamp: entry.recordedAt,
-          to: isKeepsake ? '/journal?filter=keepsake' : '/journal',
+          to: { id: '/journal', filter: isKeepsake ? 'keepsake' : 'all' },
           icon: isKeepsake ? '✨' : entry.contentType === 'voice' ? '🎙️' : '📝',
           iconName,
         };
@@ -415,7 +416,7 @@ export function buildRecentChanges(dash: DashData): RecentChangeItem[] {
         subtitle: fmtRel(record.achievedAt!),
         summary: null,
         timestamp: record.achievedAt!,
-        to: '/profile/milestones',
+        to: { id: '/profile/milestones' } as const,
         icon: '🏆',
         iconName: 'trophy' as const,
       })),
@@ -433,7 +434,7 @@ export function buildRecentChanges(dash: DashData): RecentChangeItem[] {
         subtitle: fmtRel(record.vaccinatedAt),
         summary: null,
         timestamp: record.vaccinatedAt,
-        to: '/profile/vaccines',
+        to: { id: '/profile/vaccines' } as const,
         icon: '💉',
         iconName: 'syringe' as const,
       })),
@@ -478,7 +479,7 @@ export function buildDataGapAlert(
       id: 'growth_missing_baseline',
       title: i18nText('Timeline.dataGap.missingBaselineTitle'),
       detail: i18nText('Timeline.dataGap.missingBaselineDetail'),
-      to: '/profile',
+      to: { id: '/profile' } as const,
     };
   }
   const staleParts = [height, weight]
@@ -496,7 +497,7 @@ export function buildDataGapAlert(
     id: 'growth_freshness_gap',
     title: i18nText('Timeline.dataGap.staleTitle'),
     detail: i18nText('Timeline.dataGap.staleDetail', { parts: staleParts.join(i18nText('Common.list.separator')) }),
-    to: '/profile',
+    to: { id: '/profile' } as const,
   };
 }
 
@@ -592,7 +593,7 @@ function buildRecentLines(journalEntries: DashData['journalEntries']): RecentLin
             : i18nText('Timeline.journal.keepsakeReplayMoment')
           : fmtRel(entry.recordedAt),
         recordedAt: entry.recordedAt,
-        to: isKeepsake ? '/journal?filter=keepsake' : '/journal',
+        to: { id: '/journal', filter: isKeepsake ? 'keepsake' : 'all' },
         badge: isKeepsake ? i18nText('Timeline.journal.badgeKeepsake') : i18nText('Timeline.journal.badgeNote'),
         badgeTone: isKeepsake ? 'keepsake' : 'default',
         tag: reasonLabel,

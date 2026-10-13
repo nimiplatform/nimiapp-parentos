@@ -1,7 +1,7 @@
 import { Button } from '@nimiplatform/kit/ui';
 import { ArrowRight } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import type { ChildProfile } from '../../app-shell/app-store.js';
 import { i18nText } from '../../i18n/index.js';
 import heroBoyUrl from './assets/outdoor-goal-hero-boy.webp';
@@ -57,12 +57,12 @@ export function OutdoorGoalHero({ gender, children }: {
       <div aria-hidden="true" className="parentos-outdoor-hero__veil pointer-events-none" />
 
       <div className="relative z-10 flex flex-1 flex-col px-5 pt-[72px] sm:px-10 min-[60rem]:h-full min-[60rem]:overflow-y-auto min-[60rem]:pb-6 min-[60rem]:pl-20 min-[60rem]:pr-0 xl:pl-24">
-        <Link
-          to="/profile"
+        <DestinationLink
+          destination={{ id: '/profile' }}
           className="self-start text-[14px] text-[var(--nimi-text-muted)] hover:underline"
         >
           {i18nText('Outdoor.page.backToProfile')}
-        </Link>
+        </DestinationLink>
 
         {/* my-auto rather than justify-center: centers when there is room,
             yet stays scrollable from the top when the copy overflows. */}

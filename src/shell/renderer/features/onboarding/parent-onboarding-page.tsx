@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { BrandHeader } from './brand-header.js';
 import { CreateChildButton } from './create-child-button.js';
 import { GrowthJourney } from './growth-journey.js';
@@ -9,12 +9,12 @@ import { IntroSection } from './intro-section.js';
  * The whole page exists to funnel into one action: 建立宝贝档案.
  */
 export function ParentOnboardingPage() {
-  const navigate = useNavigate();
+  const { open: navigate } = useParentOSNavigation();
 
   // Connects to the existing create-child flow: the children settings page
   // opens its profile form directly when navigated with intent 'add-child'.
   const handleCreateChild = () => {
-    navigate('/settings/children', { state: { intent: 'add-child' } });
+    void navigate({ id: '/settings/children' }, { kind: 'add-child' });
   };
 
   return (

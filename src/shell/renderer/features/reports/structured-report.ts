@@ -1,3 +1,4 @@
+import type { ParentOSDestination, ParentOSIntent } from '../../app-shell/navigation-destinations.js';
 import { computeAgeMonthsAt, formatAge, type ChildProfile } from '../../app-shell/app-store.js';
 import type {
   JournalEntryRow,
@@ -488,12 +489,18 @@ export function buildStructuredGrowthReport(snapshot: StructuredGrowthReportSnap
 
 /* ── Action items builder (used by narrative-prompt.ts) ── */
 
-const DOMAIN_ROUTES: Record<string, string> = {
-  vaccine: '/profile', checkup: '/profile', growth: '/profile',
-  vision: '/profile', dental: '/profile', sleep: '/profile',
-  'bone-age': '/profile', sensitivity: '/journal', milestone: '/profile',
-  posture: '/profile', fitness: '/profile/fitness', tanner: '/profile',
+const DOMAIN_DESTINATIONS: Record<string, ParentOSDestination> = {
+  vaccine: { id: '/profile' }, checkup: { id: '/profile' }, growth: { id: '/profile' },
+  vision: { id: '/profile' }, dental: { id: '/profile' }, sleep: { id: '/profile' },
+  'bone-age': { id: '/profile' }, sensitivity: { id: '/journal' }, milestone: { id: '/profile' },
+  posture: { id: '/profile' }, fitness: { id: '/profile/fitness' }, tanner: { id: '/profile' },
 };
+
+export function reportActionIntent(action: ActionItem): ParentOSIntent {
+  const rule = action.ruleId ? reminderRuleById.get(action.ruleId) : undefined;
+  return { kind: 'advisor-topic', topic: rule?.title ?? action.text, description: rule?.description,
+    record: rule ? DOMAIN_DESTINATIONS[rule.domain] ?? { id: '/profile' } : undefined };
+}
 
 export function buildNarrativeActionItems(reminderStates: ReminderStateRow[]): ActionItem[] {
   return openReminderStates(reminderStates)
@@ -503,11 +510,9 @@ export function buildNarrativeActionItems(reminderStates: ReminderStateRow[]): A
     .map((item) => {
       const rule = item.rule!;
       const statusLabel = item.state.status === 'overdue' ? i18nText('Reports.structured.action.overdueSuffix') : '';
-      const route = DOMAIN_ROUTES[rule.domain] ?? '/profile';
       return {
         id: `action-${item.state.ruleId}`,
         text: `${rule.title}${statusLabel}`,
-        linkTo: `/advisor?topic=${encodeURIComponent(rule.title)}&desc=${encodeURIComponent(rule.description)}&record=${encodeURIComponent(route)}`,
         ruleId: item.state.ruleId,
       };
     });

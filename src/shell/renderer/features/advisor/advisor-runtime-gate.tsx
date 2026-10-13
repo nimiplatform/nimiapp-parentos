@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@nimiplatform/kit/ui';
 import { ParentosAiMascotStatic } from '../profile/parentos-ai-mascot-button.js';
@@ -9,10 +9,10 @@ import { i18nText } from '../../i18n/index.js';
 function AdvisorRuntimeGateAction({ size }: { size: 'sm' | 'lg' }) {
   return (
     <Button asChild tone="primary" size={size} className="rounded-full">
-      <Link to="/settings/ai">
+      <DestinationLink destination={{ id: '/settings/ai' }}>
         {i18nText('Advisor.runtimeGate.action')}
         <ArrowRight size={size === 'lg' ? 16 : 14} aria-hidden="true" />
-      </Link>
+      </DestinationLink>
     </Button>
   );
 }

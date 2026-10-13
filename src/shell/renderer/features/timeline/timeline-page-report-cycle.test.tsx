@@ -2,7 +2,7 @@
 
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { useAppStore, type ChildProfile } from '../../app-shell/app-store.js';
 import { getRollingReportPeriod } from '../reports/report-cycle.js';
 import TimelinePage from './timeline-page.js';
@@ -22,7 +22,7 @@ vi.mock('./reminder-panel-controller.js', () => ({
   useReminderPanelController: () => controllerState.value,
 }));
 
-vi.mock('../../knowledge-base/index.js', () => ({ SENSITIVE_PERIODS: [] }));
+vi.mock('../../knowledge-base/index.js', async importOriginal => ({ ...(await importOriginal<typeof import('../../knowledge-base/index.js')>()), SENSITIVE_PERIODS: [] }));
 vi.mock('./timeline-data.js', () => ({
   C: { sub: '#666' },
   buildTimelineHomeViewModel: () => ({
@@ -127,7 +127,7 @@ describe('TimelinePage rolling report evaluation', () => {
   });
 
   it('evaluates the next cycle even when a prior monthly report exists', async () => {
-    render(<MemoryRouter><TimelinePage /></MemoryRouter>);
+    render(<TestNavigation><TimelinePage /></TestNavigation>);
 
     await waitFor(() => expect(autoGenerateMonthlyReportMock).toHaveBeenCalledTimes(1));
     expect(autoGenerateMonthlyReportMock).toHaveBeenCalledWith(useAppStore.getState().children[0]);

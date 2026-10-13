@@ -14,7 +14,7 @@ import { Button, Timeline, TimelineDivider, TimelineGroup } from '@nimiplatform/
  * Both streams are merged into a single ExamView list via `buildExamViews`.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParentOSPosition, useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { useTranslation } from 'react-i18next';
 import { computeAgeMonths, useAppStore } from '../../app-shell/app-store.js';
 import {
@@ -84,12 +84,11 @@ export default function VisionPage() {
   const { activeChildId, children } = useAppStore();
   const child = children.find((c) => c.childId === activeChildId);
 
-  const [searchParams] = useSearchParams();
+  const position = useParentOSPosition(), { open } = useParentOSNavigation();
   const [measurements, setMeasurements] = useState<MeasurementRow[]>([]);
   const [medicalEvents, setMedicalEvents] = useState<MedicalEventRow[]>([]);
-  const [chartType, setChartType] = useState<GrowthTypeId>(
-    () => METRIC_ID_TO_CHART_TYPE[searchParams.get('metric') ?? ''] ?? 'axial-length-right',
-  );
+  const chartType = METRIC_ID_TO_CHART_TYPE[position.id === '/profile/vision' ? position.metric ?? '' : ''] ?? 'axial-length-right';
+  const setChartType = (value: GrowthTypeId) => { const metric = Object.keys(METRIC_ID_TO_CHART_TYPE).find(id => METRIC_ID_TO_CHART_TYPE[id] === value); if (metric) void open({ id: '/profile/vision', metric: metric as import('../../knowledge-base/index.js').HealthMetricId }); };
 
   const [showForm, setShowForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState<VisionRecord | null>(null);

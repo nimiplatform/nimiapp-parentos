@@ -1,23 +1,16 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { fireEvent, render, screen, within, waitFor } from '@testing-library/react';
+import { TestNavigation } from '../../testing/navigation.js';
+import { useParentOSPosition, useParentOSIntent } from '../../app-shell/app-navigation.js';
 import { describe, expect, it } from 'vitest';
 import { ParentOnboardingPage } from './parent-onboarding-page.js';
 
-function ChildrenSettingsProbe() {
-  const location = useLocation();
-  return <div data-testid="children-settings-probe">{JSON.stringify(location.state)}</div>;
-}
+function ChildrenSettingsProbe() { const position = useParentOSPosition(), intent = useParentOSIntent(); return <div data-testid="children-settings-probe">{JSON.stringify({position,intent})}</div>; }
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={['/']}>
-      <Routes>
-        <Route path="/" element={<ParentOnboardingPage />} />
-        <Route path="/settings/children" element={<ChildrenSettingsProbe />} />
-      </Routes>
-    </MemoryRouter>,
+    <TestNavigation><ParentOnboardingPage /><ChildrenSettingsProbe /></TestNavigation>,
   );
 }
 
@@ -47,12 +40,12 @@ describe('ParentOnboardingPage', () => {
     }
   });
 
-  it('connects the call to action to the existing create-child flow', () => {
+  it('connects the call to action to the existing create-child flow', async () => {
     renderPage();
 
     fireEvent.click(screen.getByRole('button', { name: '建立宝贝档案' }));
 
     const probe = screen.getByTestId('children-settings-probe');
-    expect(probe.textContent).toContain('add-child');
+    await waitFor(() => expect(probe.textContent).toContain('add-child'));
   });
 });

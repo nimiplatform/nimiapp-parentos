@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import type { ParentOSDestination, ParentOSIntent } from '../../app-shell/navigation-destinations.js';
+import { TestNavigation, NavigationProbe } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore } from '../../app-shell/app-store.js';
 import type { ParentosTextTurnInput, ParentosTextTurnResult } from '../settings/parentos-ai-text-turn.js';
@@ -112,11 +113,11 @@ function child(childId: string, displayName: string) {
   };
 }
 
-function renderAdvisorPage(initialEntries: Array<string | { pathname: string; state?: unknown }> = ['/']) {
+function renderAdvisorPage(initial: ParentOSDestination = { id: '/advisor' }, intent?: ParentOSIntent) {
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
+    <TestNavigation initial={initial} intent={intent}>
       <AdvisorPage />
-    </MemoryRouter>,
+    <NavigationProbe /></TestNavigation>,
   );
 }
 
@@ -199,7 +200,8 @@ describe('AdvisorPage', () => {
     ai.available = false;
     renderAdvisorPage();
     await waitFor(() => expect(screen.getByRole('link', { name: '去连接 AI' })).toBeTruthy());
-    expect(screen.getByRole('link', { name: '去连接 AI' }).getAttribute('href')).toBe('/settings/ai');
+    fireEvent.click(screen.getByRole('link', { name: '去连接 AI' }));
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/settings/ai'));
     expect(screen.queryByPlaceholderText('输入问题...')).toBeNull();
     expect(ai.runParentosTextTurn).not.toHaveBeenCalled();
   });
@@ -303,7 +305,7 @@ describe('AdvisorPage', () => {
 
   it('writes a reminder consultation only with a checked answer', async () => {
     bridge.getReminderStates.mockResolvedValue([{ childId: 'child-1', ruleId: 'PO-REM-INT-003', repeatIndex: 0 }]);
-    renderAdvisorPage(['/?reminderRuleId=PO-REM-INT-003&repeatIndex=0']);
+    renderAdvisorPage({ id: '/advisor' }, { kind: 'advisor-topic', reminder: { ruleId: 'PO-REM-INT-003', repeatIndex: 0 } });
     await openNewConversation();
     ai.answer = '这可能是发育迟缓。';
     send('孩子一直喜欢画画，要不要系统学？');
@@ -323,7 +325,7 @@ describe('AdvisorPage', () => {
   });
 
   it('saves the checked answer without a consult mark when the reminder has no row', async () => {
-    renderAdvisorPage(['/?reminderRuleId=PO-REM-INT-003&repeatIndex=0']);
+    renderAdvisorPage({ id: '/advisor' }, { kind: 'advisor-topic', reminder: { ruleId: 'PO-REM-INT-003', repeatIndex: 0 } });
     await openNewConversation();
     ai.answer = '记录里还没有和画画相关的随记；可以先记下每次投入的时长和表现。';
     send('孩子一直喜欢画画，要不要系统学？');
@@ -333,20 +335,8 @@ describe('AdvisorPage', () => {
   });
 
   it('starts a journal conversation with the entry as the question context', async () => {
-    renderAdvisorPage([{
-      pathname: '/',
-      state: {
-        journalEntryContext: {
-          entryId: 'journal-1',
-          recordedAt: '2026-09-27T13:00:00.000Z',
-          contentType: 'text',
-          textContent: '作业写到很晚，十一点才睡。',
-          dimensionName: '自我管理',
-          tags: ['作业'],
-          recorderName: '妈妈',
-        },
-      },
-    }]);
+    bridge.getJournalEntries.mockResolvedValue([{ entryId: 'journal-1', recordedAt: '2026-09-27T13:00:00.000Z', contentType: 'text', textContent: '作业写到很晚，十一点才睡。', dimensionId: null, selectedTags: JSON.stringify(['作业']), recorderId: null }]);
+    renderAdvisorPage({ id: '/advisor', journalEntryId: 'journal-1' });
     await waitFor(() => expect(screen.getByText('关于这条随记，你想聊什么？')).toBeTruthy());
     ai.intent = JSON.stringify({ task: 'records', domains: ['sleep', 'observation'], groups: ['sleep', 'journal'], time: { kind: 'default' }, compare: false, detail: false });
     ai.answer = '家长记录里提到作业写到很晚、十一点才睡；睡眠记录这段时间还没有。';

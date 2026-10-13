@@ -1700,7 +1700,8 @@
   },
   "Advisor": {
     "page": {
-      "noActiveChild": "Please add a child profile first"
+      "noActiveChild": "Please add a child profile first",
+      "referenceUnavailable": "This record or conversation is unavailable. Choose an available item from the list."
     },
     "transcript": {
       "user": "You",
@@ -2432,6 +2433,13 @@
         "addTodo": "Add to todos",
         "skip": "Skip"
       }
+    },
+    "leave": {
+      "title": "Save your changes?",
+      "description": "Save or discard your changes before leaving, or keep editing.",
+      "cancel": "Keep editing",
+      "discard": "Discard changes",
+      "save": "Save and leave"
     }
   },
   "Vaccine": {
@@ -4843,7 +4851,8 @@
       "childInfo": "Child information: {{childName}}, {{ageLabel}}, {{gender}}",
       "dataLabel": "{{label}} data:",
       "noRecords": "No recorded data yet"
-    }
+    },
+    "generateHint": "Select Update to generate an AI summary of these records."
   },
   "Growth": {
     "standard": {

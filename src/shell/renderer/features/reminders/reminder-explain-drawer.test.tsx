@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ActiveReminder } from '../../engine/reminder-engine.js';
 import { ReminderExplainDrawer } from './reminder-explain-drawer.js';
@@ -53,14 +53,14 @@ describe('ReminderExplainDrawer', () => {
     document.body.appendChild(host);
 
     const { container } = render(
-      <MemoryRouter>
+      <TestNavigation>
         <ReminderExplainDrawer
           reminder={makeReminder()}
           onClose={vi.fn()}
           onAction={vi.fn()}
           onOpenCapture={vi.fn()}
         />
-      </MemoryRouter>,
+      </TestNavigation>,
       { container: host },
     );
 

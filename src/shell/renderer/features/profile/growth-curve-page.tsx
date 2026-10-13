@@ -1,6 +1,6 @@
 import { Button, IconButton, Tooltip } from '@nimiplatform/kit/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useParentOSPosition, useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { useTranslation } from 'react-i18next';
 import { computeAgeMonths, computeAgeMonthsAt, useAppStore } from '../../app-shell/app-store.js';
 import { getMeasurements, updateMeasurement, deleteMeasurement } from '../../bridge/sqlite-bridge.js';
@@ -249,14 +249,13 @@ export default function GrowthCurvePage() {
   const { activeChildId, children } = useAppStore();
   const child = children.find((item) => item.childId === activeChildId);
   const [measurements, setMeasurements] = useState<MeasurementRow[]>([]);
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { open: navigate } = useParentOSNavigation();
+  const position = useParentOSPosition();
   // Deep link from the /profile group card: ?metric=<healthMetricId> opens the
   // corresponding chart tab (PO-GROWTH-DETAIL-002 admitted query param). Falls
   // back to height when absent or unrecognized.
-  const [selectedType, setSelectedType] = useState<string>(
-    () => METRIC_ID_TO_GROWTH_TYPE[searchParams.get('metric') as HealthMetricId] ?? 'height',
-  );
+  const selectedType = METRIC_ID_TO_GROWTH_TYPE[(position.id === '/profile/growth' ? position.metric : undefined) as HealthMetricId] ?? 'height';
+  const setSelectedType = (value: string) => { const metric = (Object.keys(METRIC_ID_TO_GROWTH_TYPE) as HealthMetricId[]).find(id => METRIC_ID_TO_GROWTH_TYPE[id] === value); if (metric) void navigate({ id: '/profile/growth', metric }); };
   const [showForm, setShowForm] = useState(false);
   const [growthStandard, setGrowthStandard] = useState<GrowthStandard>('china');
   const [whoDatasets, setWhoDatasets] = useState<Record<string, WHOLMSDataset | null>>({});
@@ -412,7 +411,7 @@ export default function GrowthCurvePage() {
     if (latestH) lines.push(t('Profile.rich.growth.latestHeight', { value: latestH.value }));
     if (latestW) lines.push(t('Profile.rich.growth.latestWeight', { value: latestW.value }));
     const desc = lines.join('\\n');
-    navigate(`/advisor?topic=${encodeURIComponent(topic)}&desc=${encodeURIComponent(desc)}`);
+    void navigate({ id: '/advisor' }, { kind: 'advisor-topic', topic, description: desc, record: { id: '/profile/growth' } });
   };
 
   const handleEditMeasurement = (measurement: MeasurementRow) => {

@@ -1,11 +1,11 @@
 import { type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink, type ParentOSDestination } from '../../../app-shell/app-navigation.js';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '@nimiplatform/kit/ui';
 
 export type GenericMetricDetailShellProps = {
-  backTo?: string;
+  backTo?: ParentOSDestination;
   backLabel?: ReactNode;
   topAction?: ReactNode;
   children: ReactNode;
@@ -23,7 +23,7 @@ export type GenericMetricDetailShellProps = {
  * caller-provided; this shell only owns the outer container + back row.
  */
 export function GenericMetricDetailShell({
-  backTo = '/profile',
+  backTo = { id: '/profile' },
   backLabel,
   topAction,
   children,
@@ -35,8 +35,8 @@ export function GenericMetricDetailShell({
     <div className={cn('h-full overflow-y-auto hide-scrollbar bg-transparent', className)}>
       <div className="mx-auto max-w-5xl px-6 pb-8 pt-5">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <Link
-            to={backTo}
+          <DestinationLink
+            destination={backTo}
             className={cn(
               'inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors',
               'bg-[color-mix(in_srgb,var(--nimi-surface-card)_35%,transparent)] text-[var(--nimi-text-muted)]',
@@ -45,7 +45,7 @@ export function GenericMetricDetailShell({
           >
             <ArrowLeft size={14} />
             {label}
-          </Link>
+          </DestinationLink>
           {topAction}
         </div>
         {children}

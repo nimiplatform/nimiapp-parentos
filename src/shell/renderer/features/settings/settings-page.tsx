@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation } from 'react-router-dom';
+import { DestinationLink, useParentOSPosition, type ParentOSDestination } from '../../app-shell/app-navigation.js';
 import {
   Baby,
   BellRing,
@@ -32,7 +32,7 @@ import {
 import { saveAndApplyAppLanguage } from '../../i18n/app-language.js';
 
 type SettingsSection = {
-  readonly to: string;
+  readonly to: ParentOSDestination;
   readonly icon: LucideIcon;
   readonly labelKey: string;
   readonly descKey: string;
@@ -41,28 +41,28 @@ type SettingsSection = {
 
 const sections: readonly SettingsSection[] = [
   {
-    to: '/settings/children',
+    to: { id: '/settings/children' },
     icon: Baby,
     labelKey: 'Settings.sections.children.label',
     descKey: 'Settings.sections.children.desc',
     iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-info)_12%,var(--nimi-surface-card))] text-[var(--nimi-status-info)]',
   },
   {
-    to: '/settings/nurture-mode',
+    to: { id: '/settings/nurture-mode' },
     icon: Sprout,
     labelKey: 'Settings.sections.nurtureMode.label',
     descKey: 'Settings.sections.nurtureMode.desc',
     iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-success)_12%,var(--nimi-surface-card))] text-[var(--nimi-status-success)]',
   },
   {
-    to: '/settings/reminders',
+    to: { id: '/settings/reminders' },
     icon: BellRing,
     labelKey: 'Settings.sections.reminders.label',
     descKey: 'Settings.sections.reminders.desc',
     iconClassName: 'bg-[color-mix(in_srgb,var(--nimi-status-warning)_12%,var(--nimi-surface-card))] text-[var(--nimi-status-warning)]',
   },
   {
-    to: '/settings/ai',
+    to: { id: '/settings/ai' },
     icon: Bot,
     labelKey: 'Settings.sections.ai.label',
     descKey: 'Settings.sections.ai.desc',
@@ -72,13 +72,13 @@ const sections: readonly SettingsSection[] = [
 
 const infoCards = [
   {
-    to: '/settings/privacy',
+    to: { id: '/settings/privacy' },
     icon: ShieldCheck,
     labelKey: 'Settings.info.privacy.label',
     descKey: 'Settings.info.privacy.desc',
   },
   {
-    to: '/settings/about',
+    to: { id: '/settings/about' },
     icon: Info,
     labelKey: 'Settings.info.about.label',
     descKey: 'Settings.info.about.desc',
@@ -88,10 +88,11 @@ const infoCards = [
 // @nimi-authority: rule.parentos.shell.r006
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
-  const { hash } = useLocation();
+  const position = useParentOSPosition();
+  const focus = position.id === '/settings' ? position.focus : undefined;
   useEffect(() => {
-    if (hash === '#data-backup') document.getElementById('data-backup')?.scrollIntoView({ block: 'center' });
-  }, [hash]);
+    if (focus === 'data-backup') document.getElementById('data-backup')?.scrollIntoView({ block: 'center' });
+  }, [focus]);
   const [currentUser, setCurrentUser] = useState<NimiCurrentUserDisplay | null>(null);
   const [languageSaving, setLanguageSaving] = useState(false);
   const [seedStatus, setSeedStatus] = useState<'idle' | 'seeding' | 'done' | 'error'>('idle');
@@ -252,9 +253,9 @@ export default function SettingsPage() {
           {sections.map((section) => {
             const SectionIcon = section.icon;
             return (
-              <Link
-                key={section.to}
-                to={section.to}
+              <DestinationLink
+                key={section.to.id}
+                destination={section.to}
                 className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
               >
                 <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center parentos-radius-14', section.iconClassName)}>
@@ -265,7 +266,7 @@ export default function SettingsPage() {
                   <p className="mt-0.5 text-[13px] leading-snug text-[var(--nimi-text-muted)]">{t(section.descKey)}</p>
                 </div>
                 <ChevronRight size={16} className="shrink-0 text-[var(--nimi-text-muted)]" aria-hidden="true" />
-              </Link>
+              </DestinationLink>
             );
           })}
         </Surface>
@@ -338,7 +339,7 @@ export default function SettingsPage() {
           {infoCards.map((card) => {
             const InfoIcon = card.icon;
             return (
-              <Link key={card.labelKey} to={card.to} className="flex items-center gap-4 rounded-xl px-5 py-4 transition-colors hover:bg-[var(--nimi-action-ghost-hover)] focus-visible:outline-2 focus-visible:outline-offset-2">
+              <DestinationLink key={card.labelKey} destination={card.to} className="flex items-center gap-4 rounded-xl px-5 py-4 transition-colors hover:bg-[var(--nimi-action-ghost-hover)] focus-visible:outline-2 focus-visible:outline-offset-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center parentos-radius-14 bg-[var(--nimi-action-secondary-bg)] text-[var(--nimi-text-muted)]">
                   <InfoIcon size={18} aria-hidden="true" />
                 </div>
@@ -347,7 +348,7 @@ export default function SettingsPage() {
                   <p className="mt-0.5 text-[13px] leading-snug text-[var(--nimi-text-muted)]">{t(card.descKey, { version })}</p>
                 </div>
                 <ChevronRight size={16} className="shrink-0 text-[var(--nimi-text-muted)]" aria-hidden="true" />
-              </Link>
+              </DestinationLink>
             );
           })}
         </Surface>

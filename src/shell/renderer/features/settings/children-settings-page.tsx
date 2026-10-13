@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useParentOSNavigation, DestinationLink } from '../../app-shell/app-navigation.js';
+import { useParentOSPosition, useParentOSIntent } from '../../app-shell/app-navigation.js';
 import { convertFileSrc } from '../../bridge/shell-command.js';
 import { Button, DatePicker, Surface, TextField, SelectField, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, type NurtureMode } from '../../app-shell/app-store.js';
@@ -101,20 +102,15 @@ function nurtureModeLabel(mode: string): string {
   return key ? i18nText(key) : mode;
 }
 
-type ChildrenSettingsLocationState = {
-  from?: 'profile';
-  intent?: 'add-child';
-} | null;
 
 /* ── page ─────────────────────────────────────────────────── */
 
 export default function ChildrenSettingsPage() {
-  const { activeChildId, children, familyId, setActiveChildId, setChildren, setFamilyId } = useAppStore();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const locationState = location.state as ChildrenSettingsLocationState;
-  const fromProfile = locationState?.from === 'profile';
-  const openAddForm = locationState?.intent === 'add-child';
+  const { activeChildId, children, familyId, setChildren, setFamilyId } = useAppStore();
+  const position = useParentOSPosition(), intent = useParentOSIntent(), owner = useParentOSNavigation();
+  const navigate = owner.open;
+  const fromProfile = position.id === '/settings/children' && position.returnTo === 'profile';
+  const openAddForm = intent?.kind === 'add-child';
   const [showForm, setShowForm] = useState(openAddForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingChildId, setDeletingChildId] = useState<string | null>(null);
@@ -127,16 +123,16 @@ export default function ChildrenSettingsPage() {
     setForm(createEmptyForm());
     setShowForm(false);
     setEditingId(null);
-    if (fromProfile) navigate('/profile');
+    if (fromProfile) void navigate({ id: '/profile' });
   };
 
   useEffect(() => {
-    if (!openAddForm) return;
+    if (!openAddForm || !intent || !owner.consumeIntent(intent)) return;
     setForm(createEmptyForm());
     setEditingId(null);
     setDeletingChildId(null);
     setShowForm(true);
-  }, [openAddForm, location.key]);
+  }, [openAddForm, intent, owner]);
 
   const refreshChildren = async (fid: string | null) => {
     if (!fid) return;
@@ -154,13 +150,15 @@ export default function ChildrenSettingsPage() {
 
   const handleAdd = async () => {
     if (!form.displayName || !form.birthDate) return;
-    const now = isoNow();
-    const childId = ulid();
+    const now = isoNow(), childId = ulid();
     const shouldEnterDashboard = !fromProfile && (openAddForm || children.length === 0);
-    try {
+    const destination = shouldEnterDashboard ? { id: '/timeline' as const } : fromProfile ? { id: '/profile' as const } : { id: '/settings/children' as const };
+    const result = await owner.switchChild(childId, destination, async signal => {
       let fid = familyId;
-      if (!fid) { fid = ulid(); await createFamily(fid, i18nText('Children.defaultFamilyName'), now); setFamilyId(fid); }
+      if (!fid) { fid = ulid(); await createFamily(fid, i18nText('Children.defaultFamilyName'), now); }
+      if (signal.aborted) return;
       const avatarPath = await uploadAvatar(childId);
+      if (signal.aborted) return;
       await createChild({
         childId, familyId: fid, displayName: form.displayName, gender: form.gender,
         birthDate: form.birthDate, birthWeightKg: form.birthWeightKg ? parseFloat(form.birthWeightKg) : null,
@@ -170,10 +168,11 @@ export default function ChildrenSettingsPage() {
         allergies: parseCsvList(form.allergies), medicalNotes: parseCsvList(form.medicalNotes),
         recorderProfiles: serializeRecorder(form.recorder), now,
       });
-      setActiveChildId(childId);
-      await refreshChildren(fid); resetForm();
-      if (shouldEnterDashboard) navigate('/timeline', { replace: true });
-    } catch { /* bridge */ }
+      if (signal.aborted) return;
+      await refreshChildren(fid);
+      return () => setFamilyId(fid);
+    });
+    if (result.status === 'committed') resetForm();
   };
 
   const handleUpdate = async () => {
@@ -197,13 +196,15 @@ export default function ChildrenSettingsPage() {
   };
 
   const handleDelete = async (childId: string) => {
-    try {
+    const target = activeChildId === childId ? null : activeChildId;
+    const result = await owner.switchChild(target, { id: '/settings/children' }, async signal => {
+      if (signal.aborted) return;
       await deleteChild(childId);
       clearJournalLocalDraft(childId);
-      if (activeChildId === childId) setActiveChildId(null);
-      setDeletingChildId(null);
+      if (signal.aborted) return;
       await refreshChildren(familyId);
-    } catch { /* bridge */ }
+    });
+    if (result.status === 'committed') setDeletingChildId(null);
   };
 
   const startEdit = (childId: string) => {
@@ -284,8 +285,8 @@ export default function ChildrenSettingsPage() {
         {/* Back link — with no child profile the shell hides the sidebar, so
             point back to the onboarding landing (/timeline) instead of trapping
             the user on the settings pages. */}
-        <Link
-          to={fromProfile ? '/profile' : children.length === 0 ? '/timeline' : '/settings'}
+        <DestinationLink
+          destination={{ id: fromProfile ? '/profile' : children.length === 0 ? '/timeline' : '/settings' }}
           className="mb-5 inline-flex items-center gap-1 text-[14px] text-[var(--nimi-text-muted)] hover:underline"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
@@ -294,7 +295,7 @@ export default function ChildrenSettingsPage() {
             : children.length === 0
               ? i18nText('Children.settings.backToTimeline')
               : i18nText('Children.settings.backToSettings')}
-        </Link>
+        </DestinationLink>
 
         {/* Header */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -364,7 +365,7 @@ export default function ChildrenSettingsPage() {
                 </div>
                 <div className="flex gap-2 shrink-0">
                   {!isActive && (
-                    <Button onClick={() => setActiveChildId(child.childId)} tone="secondary" size="sm" className="text-[13px]">
+                    <Button onClick={() => { void owner.switchChild(child.childId, { id: '/settings/children' }); }} tone="secondary" size="sm" className="text-[13px]">
                       {i18nText('Children.settings.action.setActive')}
                     </Button>
                   )}

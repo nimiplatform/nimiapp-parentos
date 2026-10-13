@@ -13,7 +13,7 @@ import {
 describe('check-parentos-ai-boundary', () => {
   it('allows reports runtime usage inside the admitted narrative surface', () => {
     const errors = findReportsBoundaryErrors({
-      routesSource: '<Route path="/reports" />',
+      routesSource: "'/reports': ReportsPage,",
       reportFiles: [
         {
           path: 'features/reports/narrative-prompt.ts',
@@ -27,7 +27,7 @@ describe('check-parentos-ai-boundary', () => {
 
   it('fails when report runtime usage is missing safety markers', () => {
     const errors = findReportsBoundaryErrors({
-      routesSource: '<Route path="/reports" />',
+      routesSource: "<Route path=\"/reports\" />",
       reportFiles: [
         {
           path: 'features/reports/unsafe.ts',

@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { nimiToast } from '@nimiplatform/kit/ui';
 import { useAppStore } from '../../app-shell/app-store.js';
-import { focusMainWindow } from '../../bridge/index.js';
 import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import { i18nText } from '../../i18n/index.js';
 import {
@@ -32,9 +31,9 @@ declare global {
  * stays usable; reopening resumes publication.
  */
 export function ReminderActivityBridge() {
-  const navigate = useNavigate();
-  const navigateRef = useRef(navigate);
-  navigateRef.current = navigate;
+  const owner = useParentOSNavigation();
+  const ownerRef = useRef(owner);
+  ownerRef.current = owner;
   const activeChildId = useAppStore((state) => state.activeChildId);
   const children = useAppStore((state) => state.children);
 
@@ -42,11 +41,10 @@ export function ReminderActivityBridge() {
     if (!hasParentOSNimiClient()) return undefined;
     beginReminderActivitySession((childId) => useAppStore.getState().children.find((child) => child.childId === childId));
     const registration = registerReminderOpenHandler({
-      selectChild: (childId) => useAppStore.getState().setActiveChildId(childId),
-      navigate: (path) => navigateRef.current(path),
-      focus: focusMainWindow,
+      openReminder: (childId, focus) => ownerRef.current.switchChild(childId, { id: '/reminders', focus }),
     });
     const stopWatching = window.parentOSHost?.onSessionInvalidated(() => {
+      ownerRef.current.reset();
       endReminderActivitySession();
       void registration.stop();
       nimiToast.warning(i18nText('Reminders.activity.sessionChanged'), {

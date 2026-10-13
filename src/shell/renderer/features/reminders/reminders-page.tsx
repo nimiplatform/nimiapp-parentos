@@ -1,5 +1,6 @@
+import type { ParentOSDestination } from '../../app-shell/navigation-destinations.js';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useParentOSPosition, DestinationLink } from '../../app-shell/app-navigation.js';
 import { Button, EmptyState, InlineAlert, nimiToast, Popover, PopoverContent, PopoverTrigger, StatusBadge, Surface, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
 import {
@@ -107,17 +108,17 @@ function useCustomTodos(childId: string | null) {
 }
 
 type ReminderPrimaryAction =
-  | { label: string; to: string; kind?: 'link' }
+  | { label: string; to: ParentOSDestination; intent?: import('../../app-shell/navigation-destinations.js').ParentOSIntent; kind?: 'link' }
   | { label: string; kind: 'capture' };
 
 function primaryAction(reminder: ActiveReminder): ReminderPrimaryAction {
   // W5 will replace these Link primaries with drawer-driven actions per PO-REMI-011.
   // For W4a we only normalize the kind dispatch to the new 4-kind taxonomy.
   if (reminder.kind === 'guide' || reminder.kind === 'practice') {
-    return { label: i18nText('Reminders.action.openNote'), to: `/journal?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}` };
+    return { label: i18nText('Reminders.action.openNote'), to: { id: '/journal', reminder: { ruleId: reminder.rule.ruleId, repeatIndex: reminder.repeatIndex } } };
   }
   if (reminder.kind === 'consult') {
-    return { label: i18nText('Reminders.action.askAdvisor'), to: `/advisor?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}` };
+    return { label: i18nText('Reminders.action.askAdvisor'), to: { id: '/advisor' }, intent: { kind: 'advisor-topic', reminder: { ruleId: reminder.rule.ruleId, repeatIndex: reminder.repeatIndex } } };
   }
   if (reminder.rule.domain === 'vaccine') return { label: i18nText('Reminders.action.recordVaccine'), to: domainDetailRoute(reminder.rule.domain) };
   if (isRecordDataReminder(reminder)) return { label: i18nText('Reminders.action.recordData'), kind: 'capture' };
@@ -313,7 +314,7 @@ function ReminderRow({ reminder, onOpenDetail, onComplete, onSchedule, onNotAppl
           </Button>
         ) : (
           <Button asChild tone="primary" size="sm">
-            <Link to={primary.to} onClick={(event) => event.stopPropagation()}>{primary.label}</Link>
+            <DestinationLink destination={primary.to} intent={primary.intent} onClick={(event) => event.stopPropagation()}>{primary.label}</DestinationLink>
           </Button>
         )}
         {canComplete && (
@@ -340,8 +341,8 @@ export default function RemindersPage() {
   const [scheduleModalReminder, setScheduleModalReminder] = useState<ActiveReminder | null>(null);
   const [activeReminder, setActiveReminder] = useState<ActiveReminder | null>(null);
   const [captureSelection, setCaptureSelection] = useState<RecordDataReminderSelection | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const focusParam = searchParams.get('focus');
+  const position = useParentOSPosition();
+  const focusParam = position.id === '/reminders' ? position.focus : undefined;
   const ageMonths = child ? computeAgeMonths(child.birthDate) : 0;
   const localToday = getLocalToday();
   const repeatableRuleIds = useMemo(() => REMINDER_RULES.filter((r) => r.repeatRule).map((r) => r.ruleId), []);
@@ -369,27 +370,22 @@ export default function RemindersPage() {
 
   const agenda = agendaResult.kind === 'ok' ? agendaResult.agenda : null;
 
-  // An App activity open request lands here with ?focus=<ruleId>:<round>; the
+  // An App activity open request carries the exact typed rule and round; the
   // exact round opens in the explanation drawer (PO-REMI-017), nothing more.
   useEffect(() => {
     if (!focusParam || !child) return undefined;
+    setActiveReminder(null);
     let cancelled = false;
-    const separator = focusParam.lastIndexOf(':');
-    const ruleId = focusParam.slice(0, separator);
-    const repeatIndex = Number(focusParam.slice(separator + 1));
+    const { ruleId, repeatIndex } = focusParam;
     void evaluatePublishedReminders(child).then((reminders) => {
       if (cancelled) return;
       const found = reminders.find((reminder) => reminder.rule.ruleId === ruleId && reminder.repeatIndex === repeatIndex);
       if (found) setActiveReminder(found);
       else nimiToast.warning(i18nText('Reminders.activity.focusUnavailable'));
-      setSearchParams((previous) => {
-        const next = new URLSearchParams(previous);
-        next.delete('focus');
-        return next;
-      }, { replace: true });
+
     }).catch(catchLog('reminders', 'action:focus-reminder-failed'));
     return () => { cancelled = true; };
-  }, [focusParam, child, setSearchParams]);
+  }, [focusParam, child]);
 
   useEffect(() => {
     if (!child || !agenda) return;
@@ -469,7 +465,7 @@ export default function RemindersPage() {
           description={i18nText('Reminders.page.noChildDescription')}
           action={(
             <Button asChild tone="secondary" size="sm">
-              <Link to="/timeline">{i18nText('Reminders.action.backHome')}</Link>
+              <DestinationLink destination={{ id: '/timeline' }}>{i18nText('Reminders.action.backHome')}</DestinationLink>
             </Button>
           )}
         />
@@ -512,9 +508,9 @@ export default function RemindersPage() {
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button asChild tone="ghost" size="sm" className="aspect-square px-0">
-            <Link to="/timeline" aria-label={i18nText('Reminders.action.backHome')}>
+            <DestinationLink destination={{ id: '/timeline' }} aria-label={i18nText('Reminders.action.backHome')}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-            </Link>
+            </DestinationLink>
           </Button>
           <div>
             <h1 className={cn('text-[24px] font-semibold tracking-tight', textPrimaryClass)}>{i18nText('Reminders.page.title')}</h1>

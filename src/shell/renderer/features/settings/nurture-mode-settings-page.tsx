@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { useTranslation } from 'react-i18next';
 import { SelectField, Surface, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, type NurtureMode } from '../../app-shell/app-store.js';
@@ -71,7 +71,7 @@ export default function NurtureModeSettingsPage() {
     return (
       <div className="h-full overflow-y-auto bg-transparent">
         <div className="mx-auto max-w-3xl px-6 pb-6 pt-[86px]">
-          <Link to="/settings" className="text-[14px] text-[var(--nimi-text-muted)] hover:underline">{t('Settings.common.backToSettings')}</Link>
+          <DestinationLink destination={{ id: '/settings' }} className="text-[14px] text-[var(--nimi-text-muted)] hover:underline">{t('Settings.common.backToSettings')}</DestinationLink>
           <p className="mt-6 text-[14px] text-[var(--nimi-text-muted)]">{t('Settings.common.noActiveChild')}</p>
         </div>
       </div>
@@ -135,10 +135,10 @@ export default function NurtureModeSettingsPage() {
     <div className="h-full overflow-y-auto bg-transparent">
       <div className="mx-auto max-w-3xl px-6 pb-6 pt-[86px]">
 
-        <Link to="/settings" className="mb-5 inline-flex items-center gap-1 text-[14px] text-[var(--nimi-text-muted)] hover:underline">
+        <DestinationLink destination={{ id: '/settings' }} className="mb-5 inline-flex items-center gap-1 text-[14px] text-[var(--nimi-text-muted)] hover:underline">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
           {t('Settings.common.backToSettings')}
-        </Link>
+        </DestinationLink>
 
         {/* ── Header ─────────────────────────────────────── */}
         <div className="mb-6">

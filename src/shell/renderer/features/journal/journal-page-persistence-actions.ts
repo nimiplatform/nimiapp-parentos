@@ -59,7 +59,7 @@ export function createJournalPersistenceActions(input: {
   voiceDraft: VoiceDraft;
   photoDrafts: PhotoDraft[];
   recordedAt: string | null;
-  searchParams: URLSearchParams;
+  reminder?: import('../../app-shell/navigation-destinations.js').ReminderReference;
   recorderSessionRef: MutableRefObject<VoiceRecordingSession | null>;
   skipLocalDraftPersistRef: MutableRefObject<boolean>;
   setSubmitError: SetOptionalString;
@@ -79,7 +79,7 @@ export function createJournalPersistenceActions(input: {
   setVoiceDraft: SetVoiceDraft;
   reloadEntries: () => Promise<void>;
   resetComposer: () => void;
-  clearReminderSearchParams: () => void;
+  clearReminderContext: () => void;
   closeKeepsakePrompt: () => void;
   clearVoiceDraft: () => void;
   deleteTarget: JournalEntryRow | null;
@@ -269,7 +269,7 @@ export function createJournalPersistenceActions(input: {
     }
   };
 
-  const handleSubmit = async (aiTags?: JournalTagInsertRow[]) => {
+  const handleSubmit = async (aiTags?: JournalTagInsertRow[]): Promise<boolean> => {
     const now = isoNow();
     input.setSubmitError(null);
     input.setSaving(true);
@@ -292,7 +292,7 @@ export function createJournalPersistenceActions(input: {
         if (input.captureMode === 'text') {
           if (!input.textContent.trim() && !mergedPhotoPaths && !preservedVoicePath) {
             input.setSaving(false);
-            return;
+            return false;
           }
           const textContent = input.textContent.trim() || null;
           const contentType = resolveJournalContentType({
@@ -313,7 +313,7 @@ export function createJournalPersistenceActions(input: {
         } else {
           if (!input.voiceDraft.blob || !input.voiceDraft.mimeType || input.voiceDraft.status === 'recording' || input.voiceDraft.status === 'transcribing') {
             input.setSaving(false);
-            return;
+            return false;
           }
           let savedVoicePath: string | null = null;
           try {
@@ -356,7 +356,7 @@ export function createJournalPersistenceActions(input: {
       }
 
       await input.reloadEntries();
-      const reminderRuleId = input.searchParams.get('reminderRuleId');
+      const reminderRuleId = input.reminder?.ruleId;
       if (reminderRuleId) {
         // Journal completions historically marked the paired reminder as handled.
         // The journal flow is opened by both guide-kind and practice-kind reminders
@@ -369,10 +369,10 @@ export function createJournalPersistenceActions(input: {
         await completeReminderByRule({
           childId: input.childId,
           ruleId: reminderRuleId,
-          repeatIndex: Number(input.searchParams.get('repeatIndex') ?? '0') || 0,
+          repeatIndex: input.reminder?.repeatIndex ?? 0,
           kind: rule?.kind ?? 'practice',
         }).catch(catchLog('journal', 'action:complete-reminder-after-journal-failed', 'warn'));
-        input.clearReminderSearchParams();
+        input.clearReminderContext();
       }
       const savedDimensionId = input.selectedDimension;
       if (!input.editingEntryId) {
@@ -420,8 +420,10 @@ export function createJournalPersistenceActions(input: {
           input.setPendingKeepsakePromptEntry(stubEntry);
         }
       }
+      return true;
     } catch {
       input.setSubmitError(i18nText('Journal.error.saveFailed'));
+      return false;
     } finally {
       input.setSaving(false);
     }

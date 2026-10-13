@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { useTranslation } from 'react-i18next';
 import { Button, Surface } from '@nimiplatform/kit/ui';
 import { useAppStore } from '../../app-shell/app-store.js';
@@ -51,10 +51,10 @@ export default function ReminderSettingsPage() {
   return (
     <div className="min-h-full bg-transparent p-6">
       <div className="mx-auto max-w-3xl">
-        <Link to="/settings" className="mb-5 inline-flex items-center gap-1 text-[14px] text-[var(--nimi-text-muted)] hover:underline">
+        <DestinationLink destination={{ id: '/settings' }} className="mb-5 inline-flex items-center gap-1 text-[14px] text-[var(--nimi-text-muted)] hover:underline">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
           {t('Settings.common.backToSettings')}
-        </Link>
+        </DestinationLink>
 
         <h1 className="mb-2 text-[24px] font-bold text-[var(--nimi-text-primary)]">{t('Settings.reminders.title')}</h1>
         <p className="mb-6 text-[14px] text-[var(--nimi-text-muted)]">{t('Settings.reminders.desc')}</p>

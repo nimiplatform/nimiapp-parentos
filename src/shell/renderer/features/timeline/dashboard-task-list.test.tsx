@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { describe, expect, it, vi } from 'vitest';
 import { DashboardTaskList, type DashboardTaskCaptureIntent } from './dashboard-task-list.js';
 import type { ActiveReminder, ReminderAgenda } from '../../engine/reminder-engine.js';
@@ -12,7 +12,7 @@ vi.mock('@tauri-apps/api/core', () => ({
 }));
 
 function renderInRouter(node: ReactNode) {
-  return render(<MemoryRouter>{node}</MemoryRouter>);
+  return render(<TestNavigation>{node}</TestNavigation>);
 }
 
 function makeAgenda(overrides: Partial<ReminderAgenda> = {}): ReminderAgenda {

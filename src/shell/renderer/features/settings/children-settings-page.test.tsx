@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ComponentProps } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation, NavigationProbe } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ChildrenSettingsPage from './children-settings-page.js';
 import { useAppStore } from '../../app-shell/app-store.js';
@@ -67,11 +67,11 @@ vi.mock('../../bridge/ulid.js', () => {
   };
 });
 
-function renderPage(initialEntries: ComponentProps<typeof MemoryRouter>['initialEntries'] = ['/settings/children']) {
+function renderPage(intent?: ComponentProps<typeof TestNavigation>['intent']) {
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
+    <TestNavigation initial={{ id: '/settings/children' }} intent={intent}>
       <ChildrenSettingsPage />
-    </MemoryRouter>,
+    <NavigationProbe /></TestNavigation>,
   );
 }
 
@@ -156,22 +156,23 @@ describe('ChildrenSettingsPage', () => {
     expect(profiles![0]!.name).toBe('爸爸');
   });
 
-  it('opens the add child form directly from the welcome create-profile intent', () => {
-    const { container } = renderPage([{ pathname: '/settings/children', state: { intent: 'add-child' } }]);
+  it('opens the add child form directly from the welcome create-profile intent', async () => {
+    const { container } = renderPage({ kind: 'add-child' });
 
-    expect(screen.getByRole('heading', { name: '添加孩子' })).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole('heading', { name: '添加孩子' })).toBeTruthy());
     expect(screen.queryByText('还没有添加孩子')).toBeNull();
     expect(container.querySelector('input[type="date"]')?.classList.contains('parentos-child-birth-date')).toBe(true);
   });
 
-  it('links back to the onboarding landing when no child profile exists', () => {
+  it('links back to the onboarding landing when no child profile exists', async () => {
     renderPage();
 
     const backLink = screen.getByRole('link', { name: '返回首页' });
-    expect(backLink.getAttribute('href')).toBe('/timeline');
+    fireEvent.click(backLink);
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/timeline'));
   });
 
-  it('links back to settings when a child profile exists', () => {
+  it('links back to settings when a child profile exists', async () => {
     useAppStore.setState({
       bootstrapReady: true,
       familyId: 'fam-1',
@@ -188,7 +189,8 @@ describe('ChildrenSettingsPage', () => {
     renderPage();
 
     const backLink = screen.getByRole('link', { name: '返回设置' });
-    expect(backLink.getAttribute('href')).toBe('/settings');
+    fireEvent.click(backLink);
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/settings'));
   });
 
   it('deletes a child with confirmation', async () => {

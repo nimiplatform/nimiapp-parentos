@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { DestinationLink, useParentOSPosition } from '../../app-shell/app-navigation.js';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { CalendarClock, Plus } from 'lucide-react';
@@ -55,7 +55,8 @@ function sourceLabel(source: HealthRecordEvent['sourceSurface'], t: TFunction) {
 }
 
 export default function HealthMetricDetailPage() {
-  const { metricId: routeMetricId } = useParams();
+  const position = useParentOSPosition();
+  const routeMetricId = position.id === '/profile/health/:metricId' ? position.metricId : undefined;
   const { t } = useTranslation();
   const activeChildId = useAppStore((state) => state.activeChildId);
   const children = useAppStore((state) => state.children);
@@ -140,7 +141,7 @@ export default function HealthMetricDetailPage() {
   const hasCaptureProtocol = (metric?.captureProtocolIds.length ?? 0) > 0;
 
   if (!metricId || !metric) {
-    return <Navigate to="/profile" replace />;
+    return <DestinationLink destination={{ id: '/profile' }}>{t('Profile.detail.backToProfile')}</DestinationLink>;
   }
 
   if (!activeChild) {

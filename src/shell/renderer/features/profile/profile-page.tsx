@@ -1,7 +1,7 @@
 import { Button, Surface } from '@nimiplatform/kit/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { useParentOSPosition, useParentOSNavigation, useParentOSIntent } from '../../app-shell/app-navigation.js';
 import { RefreshCw } from 'lucide-react';
 import { computeAgeMonths, useAppStore } from '../../app-shell/app-store.js';
 import {
@@ -24,9 +24,7 @@ import { ProfileGroupCard } from './profile-page-group-card.js';
 import { formatMetricSnapshotValue, groupLabel, metricLabel } from './health-record-display.js';
 import { ProfilePostureCard } from './profile-page-posture-card.js';
 
-const PROFILE_CAPTURE_SEARCH_PARAM = 'capture';
 const PROFILE_CAPTURE_MANUAL_VALUE = 'manual';
-const PROFILE_CAPTURE_GROUP_SEARCH_PARAM = 'group';
 const PROFILE_CAPTURE_GROUP_IDS = new Set<string>(
   getHealthRecordEventCaptureProtocolOptions().map((option) => option.group.groupId),
 );
@@ -86,10 +84,10 @@ function buildOverviewDataContext(snapshot: HealthRecordSnapshot, t: TFunction):
 // @nimi-authority: rule.parentos.prof.r019
 export default function ProfilePage() {
   const { t } = useTranslation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const focusGroupId = searchParams.get('focus');
-  const captureMode = searchParams.get(PROFILE_CAPTURE_SEARCH_PARAM);
-  const requestedCaptureGroupId = searchParams.get(PROFILE_CAPTURE_GROUP_SEARCH_PARAM);
+  const position = useParentOSPosition(), owner = useParentOSNavigation(), intent = useParentOSIntent();
+  const focusGroupId = position.id === '/profile' ? position.focus : undefined;
+  const captureMode = intent?.kind === 'capture' ? 'manual' : undefined;
+  const requestedCaptureGroupId = intent?.kind === 'capture' ? intent.groupId : undefined;
   const activeChildId = useAppStore((state) => state.activeChildId);
   const children = useAppStore((state) => state.children);
   const activeChild = children.find((child) => child.childId === activeChildId);
@@ -138,11 +136,8 @@ export default function ProfilePage() {
     setCaptureMetricId(null);
     setCaptureOpen(true);
 
-    const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.delete(PROFILE_CAPTURE_SEARCH_PARAM);
-    nextSearchParams.delete(PROFILE_CAPTURE_GROUP_SEARCH_PARAM);
-    setSearchParams(nextSearchParams, { replace: true });
-  }, [activeChild, captureMode, requestedCaptureGroupId, searchParams, setSearchParams]);
+    if (intent?.kind === 'capture') owner.consumeIntent(intent);
+  }, [activeChild, captureMode, requestedCaptureGroupId, intent, owner]);
 
   // ?focus=<groupId> is set when the user records data from the timeline
   // dashboard; after the group card mounts we scroll it into view and clear
@@ -152,8 +147,8 @@ export default function ProfilePage() {
     const target = document.getElementById(`profile-group-${focusGroupId}`);
     if (!target) return;
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setSearchParams({}, { replace: true });
-  }, [focusGroupId, loading, setSearchParams]);
+
+  }, [focusGroupId, loading]);
 
   const ageMonths = activeChild ? computeAgeMonths(activeChild.birthDate) : 0;
   const snapshot = useMemo(() => {

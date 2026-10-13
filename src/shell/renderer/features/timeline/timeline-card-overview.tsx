@@ -1,5 +1,5 @@
 import { useState, type ComponentType } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink, type ParentOSDestination } from '../../app-shell/app-navigation.js';
 import { Bone, BookOpen, ChevronDown, Eye, Mic, Moon, PenLine, Ruler, Sparkles, Syringe, Trophy } from 'lucide-react';
 import { type ChildProfile } from '../../app-shell/app-store.js';
 import { ChildAvatar } from '../../shared/child-avatar.js';
@@ -87,7 +87,7 @@ const QUICK_LINK_ICON_META: Record<string, { src: string; offsetX?: number; scal
 };
 
 const DEFAULT_QUICK_LINK_ICON_META: { src: string; offsetX?: number; scale?: number; bg?: string } = { src: smartScanIcon };
-const PROFILE_MANUAL_CAPTURE_PATH = '/profile?capture=manual';
+const PROFILE_MANUAL_CAPTURE_DESTINATION: ParentOSDestination = { id: '/profile' };
 
 function QuickLinkIcon({ src, offsetX = 0, scale = 1, bg }: { src: string; offsetX?: number; scale?: number; bg?: string }) {
   return (
@@ -174,12 +174,12 @@ export function ChildContextCard({ child, ageMonths }: { child: ChildProfile; ag
             <span className="mr-1.5 inline-block h-[6px] w-[6px] rounded-full" style={{ background: '#36adf2' }} />
             {describeNurtureMode(child.nurtureMode)}
           </span>
-          <Link to="/profile" className="flex w-full items-center justify-center whitespace-nowrap rounded-xl px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-black/[0.04]" style={{ color: '#1d1d1f' }}>
+          <DestinationLink destination={{ id: '/profile' }} className="flex w-full items-center justify-center whitespace-nowrap rounded-xl px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-black/[0.04]" style={{ color: '#1d1d1f' }}>
             {i18nText('Timeline.home.viewFullProfile')}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1 opacity-60">
               <path d="M9 5l7 7-7 7" />
             </svg>
-          </Link>
+          </DestinationLink>
         </div>
       </div>
     </div>
@@ -188,8 +188,8 @@ export function ChildContextCard({ child, ageMonths }: { child: ChildProfile; ag
 
 function RecentChangeLeadCell({ item }: { item: RecentChangeItem }) {
   return (
-    <Link
-      to={item.to}
+    <DestinationLink
+      destination={item.to}
       className="dashboard-inset dashboard-inset--interactive col-span-1 flex flex-col justify-center rounded-[22px] p-5 transition-all duration-200 hover:-translate-y-0.5 sm:col-span-3 sm:p-6"
     >
       <div className="flex items-center gap-3">
@@ -211,14 +211,14 @@ function RecentChangeLeadCell({ item }: { item: RecentChangeItem }) {
         </p>
       ) : null}
       <p className="mt-4 text-[13px] font-medium tabular-nums" style={{ color: textSoft }}>{item.subtitle ?? item.detail}</p>
-    </Link>
+    </DestinationLink>
   );
 }
 
 function RecentChangeSecondaryCell({ item }: { item: RecentChangeItem }) {
   return (
-    <Link
-      to={item.to}
+    <DestinationLink
+      destination={item.to}
       className="dashboard-inset dashboard-inset--interactive block rounded-[18px] p-4 transition-all duration-200 hover:-translate-y-0.5"
     >
       <div className="flex items-start gap-3">
@@ -229,7 +229,7 @@ function RecentChangeSecondaryCell({ item }: { item: RecentChangeItem }) {
           <p className="mt-1.5 text-[12px] tabular-nums" style={{ color: textSoft }}>{item.subtitle ?? item.detail}</p>
         </div>
       </div>
-    </Link>
+    </DestinationLink>
   );
 }
 
@@ -246,9 +246,9 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
             {i18nText('Timeline.home.recentChangesTitle')}
           </h2>
         </div>
-        <Link to="/profile" className="text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>
+        <DestinationLink destination={{ id: '/profile' }} className="text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>
           {i18nText('Timeline.home.viewProfile')}
-        </Link>
+        </DestinationLink>
       </div>
 
       {lead ? (
@@ -273,13 +273,13 @@ export function RecentChangesHeroCard({ items }: { items: RecentChangeItem[] }) 
             {i18nText('Timeline.home.noRecentBody')}
           </p>
           {/* Sky blue from the ParentOS logo, one shade deeper so the white label stays legible. */}
-          <Link
-            to={PROFILE_MANUAL_CAPTURE_PATH}
+          <DestinationLink
+            destination={PROFILE_MANUAL_CAPTURE_DESTINATION} intent={{ kind: 'capture' }}
             className="mt-5 inline-flex items-center gap-2 self-start rounded-full bg-[#36adf2] px-5 py-2.5 text-[14px] font-medium text-white shadow-[0_4px_12px_rgba(54,173,242,0.32)] transition-all hover:-translate-y-0.5 hover:bg-[#22a5f1] hover:shadow-[0_8px_20px_rgba(54,173,242,0.38)]"
           >
             <PenLine size={15} strokeWidth={2} aria-hidden="true" />
             {i18nText('Timeline.home.recordOne')} <span aria-hidden="true">→</span>
-          </Link>
+          </DestinationLink>
         </div>
       )}
     </Cd>
@@ -321,9 +321,9 @@ function StageInsightGroup({ title, items, overflow }: { title: string; items: S
         })}
       </div>
       {overflow > 0 ? (
-        <Link to="/reminders" className="mt-4 inline-block text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>
+        <DestinationLink destination={{ id: '/reminders' }} className="mt-4 inline-block text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>
           {i18nText('Timeline.home.stageInsightOverflow', { count: overflow })}
-        </Link>
+        </DestinationLink>
       ) : null}
     </div>
   );
@@ -340,9 +340,9 @@ export function StageInsightCard({ summary }: { summary: StageInsightSummary }) 
             {i18nText('Timeline.home.stageInsightTitle', { ageLabel: summary.ageLabel })}
           </h2>
         </div>
-        <Link to="/reminders" className="text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>
+        <DestinationLink destination={{ id: '/reminders' }} className="text-[13px] font-medium transition-colors hover:text-[#1e293b]" style={{ color: textMuted }}>
           {i18nText('Timeline.home.viewAllReminders')}
-        </Link>
+        </DestinationLink>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {summary.health.length > 0 ? <StageInsightGroup title={i18nText('Timeline.home.stageInsightHealthGroup')} items={summary.health} overflow={summary.healthOverflow} /> : null}
@@ -354,9 +354,9 @@ export function StageInsightCard({ summary }: { summary: StageInsightSummary }) 
 
 // @nimi-authority: rule.parentos.time.r008
 const GETTING_STARTED_STEPS = [
-  { id: 'growth', titleKey: 'Timeline.home.coldStartStep1Title', bodyKey: 'Timeline.home.coldStartStep1Body', to: '/profile?capture=manual&group=growth' },
-  { id: 'sleep', titleKey: 'Timeline.home.coldStartStep2Title', bodyKey: 'Timeline.home.coldStartStep2Body', to: '/profile?capture=manual&group=sleep' },
-  { id: 'journal', titleKey: 'Timeline.home.coldStartStep3Title', bodyKey: 'Timeline.home.coldStartStep3Body', to: '/journal' },
+  { id: 'growth', titleKey: 'Timeline.home.coldStartStep1Title', bodyKey: 'Timeline.home.coldStartStep1Body', to: { id: '/profile' }, groupId: 'growth' },
+  { id: 'sleep', titleKey: 'Timeline.home.coldStartStep2Title', bodyKey: 'Timeline.home.coldStartStep2Body', to: { id: '/profile' }, groupId: 'sleep' },
+  { id: 'journal', titleKey: 'Timeline.home.coldStartStep3Title', bodyKey: 'Timeline.home.coldStartStep3Body', to: { id: '/journal' } },
 ] as const;
 
 export function GettingStartedCard() {
@@ -375,13 +375,13 @@ export function GettingStartedCard() {
             </span>
             <p className="mt-3 text-[14px] font-semibold" style={{ color: textMain }}>{i18nText(step.titleKey)}</p>
             <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>{i18nText(step.bodyKey)}</p>
-            <Link
-              to={step.to}
+            <DestinationLink
+              destination={step.to as ParentOSDestination} intent={'groupId' in step ? { kind: 'capture', groupId: step.groupId } : undefined}
               className="mt-3 inline-flex self-start rounded-full px-4 py-1.5 text-[13px] font-medium text-white hover:-translate-y-0.5"
               style={{ background: textMain, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
             >
               {i18nText('Timeline.home.coldStartStepCta')}
-            </Link>
+            </DestinationLink>
           </div>
         ))}
       </div>
@@ -392,7 +392,7 @@ export function GettingStartedCard() {
 export function StageFocusCard({ periods }: { periods: Array<{ periodId: string; title: string; observableSigns: string[]; ageRange: { peakMonths: number } }> }) {
   return (
     <Cd cls="@container col-span-4">
-      <Hdr title={i18nText('Timeline.home.stageFocusTitle')} to="/reminders" link={i18nText('Timeline.home.viewAllReminders')} />
+      <Hdr title={i18nText('Timeline.home.stageFocusTitle')} destination={{ id: '/reminders' }} link={i18nText('Timeline.home.viewAllReminders')} />
       {periods.length > 0 ? (
         // Two periods sit side by side when the card spans the full row.
         <div className={`grid gap-4${periods.length > 1 ? ' @2xl:grid-cols-2' : ''}`}>
@@ -405,9 +405,9 @@ export function StageFocusCard({ periods }: { periods: Array<{ periodId: string;
                 </div>
                 <p className="mt-2 text-[14px] leading-relaxed" style={{ color: textMuted }}>{period.observableSigns[0] ?? i18nText('Timeline.home.stageFocusFallback')}</p>
               </div>
-              <Link to={`/journal?topic=${encodeURIComponent(period.title)}`}
+              <DestinationLink destination={{ id: '/journal' }}
                 className="inline-flex shrink-0 rounded-full px-4 py-1.5 text-[13px] font-medium text-white hover:-translate-y-0.5"
-                style={{ background: textMain, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>{i18nText('Timeline.home.recordAction')}</Link>
+                style={{ background: textMain, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>{i18nText('Timeline.home.recordAction')}</DestinationLink>
             </div>
           ))}
         </div>
@@ -431,11 +431,11 @@ export function QuickLinksStrip({ ageMonths }: { ageMonths: number }) {
           (() => {
             const iconMeta = QUICK_LINK_ICON_META[item.id] ?? DEFAULT_QUICK_LINK_ICON_META;
             return (
-              <Link key={item.id} to={item.to}
+              <DestinationLink key={item.id} destination={item.to}
                 className="dashboard-quick-link group flex flex-col items-center rounded-[20px] px-3 py-5 transition-all duration-200 hover:-translate-y-1">
                 <QuickLinkIcon src={iconMeta.src} offsetX={iconMeta.offsetX} scale={iconMeta.scale} bg={iconMeta.bg} />
                 <p className="text-[13px] font-semibold" style={{ color: textMain }}>{item.label}</p>
-              </Link>
+              </DestinationLink>
             );
           })()
         ))}

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { ArrowRight, RotateCcw } from 'lucide-react';
 import type { AiMessageRow } from '../../bridge/sqlite-bridge.js';
 import { AdvisorAvatar, type AdvisorAvatarState } from './advisor-mascot.js';
@@ -206,10 +206,10 @@ function AdvisorFailureCard({
         ) : null}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {failure.kind === 'ai-unavailable' ? (
-            <Link to="/settings/ai" className="advisor-thinking-stop">
+            <DestinationLink destination={{ id: '/settings/ai' }} className="advisor-thinking-stop">
               {i18nText('Advisor.runtimeGate.action')}
               <ArrowRight size={12} aria-hidden="true" />
-            </Link>
+            </DestinationLink>
           ) : null}
           {canRetry ? <RetryButton onRetry={onRetry} /> : null}
         </div>

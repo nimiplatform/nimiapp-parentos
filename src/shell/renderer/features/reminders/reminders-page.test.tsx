@@ -6,7 +6,7 @@
 
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { nimiToast } from '@nimiplatform/kit/ui';
 import { useAppStore, type ChildProfile } from '../../app-shell/app-store.js';
 import { applyReminderAction } from '../../engine/reminder-actions.js';
@@ -116,9 +116,9 @@ describe('RemindersPage', () => {
 
   it('renders the reminders surface for a cold-start 9y9m child', async () => {
     render(
-      <MemoryRouter initialEntries={['/reminders']}>
+      <TestNavigation initial={{ id: '/reminders' }}>
         <RemindersPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     // The page first paints a loading state, then the agenda content; wait for
@@ -135,9 +135,9 @@ describe('RemindersPage', () => {
 
   it('keeps low-frequency actions behind the more menu instead of a flat button row', async () => {
     render(
-      <MemoryRouter initialEntries={['/reminders']}>
+      <TestNavigation initial={{ id: '/reminders' }}>
         <RemindersPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     await waitFor(() => {
@@ -161,9 +161,9 @@ describe('RemindersPage', () => {
 
   it('schedules from the more menu via the schedule modal', async () => {
     render(
-      <MemoryRouter initialEntries={['/reminders']}>
+      <TestNavigation initial={{ id: '/reminders' }}>
         <RemindersPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     await waitFor(() => {
@@ -193,9 +193,9 @@ describe('RemindersPage', () => {
 
   it('exposes the explain drawer through a focusable title button', async () => {
     render(
-      <MemoryRouter initialEntries={['/reminders']}>
+      <TestNavigation initial={{ id: '/reminders' }}>
         <RemindersPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     await waitFor(() => {

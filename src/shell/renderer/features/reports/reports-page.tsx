@@ -1,5 +1,6 @@
+import { reportActionIntent } from './structured-report.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink, useParentOSPageWorkAllowed } from '../../app-shell/app-navigation.js';
 import { Button, DatePicker, NimiText, nimiToast, StatusBadge, Surface, TextareaField } from '@nimiplatform/kit/ui';
 import { ArrowRight, ChevronDown, Eye, Pencil, Star } from 'lucide-react';
 import { computeAgeMonthsAt, formatAge, useAppStore, type ChildProfile } from '../../app-shell/app-store.js';
@@ -193,10 +194,10 @@ function NarrativeViewer({ content, reportId, onContentUpdate }: { content: Narr
 
     {content.actionItems.length > 0 && (<div className="report-glass-card report-card-pad">
       <h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.nextActions')}</h3>
-      <div className="space-y-2">{content.actionItems.map((a) => (<Link key={a.id} to={a.linkTo ?? '/advisor'} className="report-action-link">
+      <div className="space-y-2">{content.actionItems.map((a) => (<DestinationLink key={a.id} destination={{ id: '/advisor' }} intent={reportActionIntent(a)} className="report-action-link">
         <ArrowRight size={16} className="report-icon-accent" strokeWidth={2} />
         <span className="report-action-link-text">{a.text}</span>
-      </Link>))}</div>
+      </DestinationLink>))}</div>
     </div>)}
 
     {content.closingMessage && (<div className="report-soft-panel report-soft-panel--success">
@@ -224,10 +225,10 @@ function StructuredViewer({ content }: { content: StructuredGrowthReportContent 
     </div>
     {actionItems.length > 0 && <div className="report-glass-card report-card-pad">
       <h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.focusTitle')}</h3>
-      <div className="space-y-2">{actionItems.map((a) => (<Link key={a.id} to={a.linkTo ?? '/advisor'} className="report-action-link">
+      <div className="space-y-2">{actionItems.map((a) => (<DestinationLink key={a.id} destination={{ id: '/advisor' }} intent={reportActionIntent(a)} className="report-action-link">
         <ArrowRight size={16} className="report-icon-accent" strokeWidth={2} />
         <span className="report-action-link-text">{a.text}</span>
-      </Link>))}</div>
+      </DestinationLink>))}</div>
     </div>}
     {content.metrics.length > 0 && <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{content.metrics.map((m) => (<div key={m.id} className="report-glass-card report-metric-card"><div className="report-data-label">{m.label}</div><div className="report-metric-value">{m.value}</div>{m.detail && <div className="report-data-detail">{m.detail}</div>}</div>))}</div>}
     {content.overview.length > 0 && <div className="report-glass-card report-card-pad"><h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.overview')}</h3><ul className="space-y-2">{content.overview.map((item) => <li key={item} className="report-list-item report-list-item--panel">{item}</li>)}</ul></div>}
@@ -288,6 +289,7 @@ export default function ReportsPage() {
 
 // Keep asynchronous report refreshes in the child's own mounted view.
 function ReportsChildPage({ child }: { child: ChildProfile }) {
+  const pageWorkAllowed = useParentOSPageWorkAllowed();
   const [reports, setReports] = useState<PersistedReport[]>([]);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -355,6 +357,7 @@ function ReportsChildPage({ child }: { child: ChildProfile }) {
         return;
       }
 
+      if (!pageWorkAllowed) { setReportLoadState('ready'); return; }
       const firstCycle = getFirstReportAccumulation(child.createdAt);
       const hasFirstMonthlyReport = rows.some((report) => (
         report.reportType === 'monthly' && report.periodStart === firstCycle.periodStart
@@ -381,7 +384,7 @@ function ReportsChildPage({ child }: { child: ChildProfile }) {
     })();
 
     return () => { cancelled = true; };
-  }, [child, reloadKey]);
+  }, [child, reloadKey, pageWorkAllowed]);
 
   if (!child) return <div className="report-page-shell"><div className="report-page-container"><p className="report-muted-text">{i18nText('Reports.page.noChild')}</p></div></div>;
 

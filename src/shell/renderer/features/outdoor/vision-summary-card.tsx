@@ -1,7 +1,7 @@
 import { Surface } from '@nimiplatform/kit/ui';
 import { ChevronRight, Eye } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { getMeasurements, type MeasurementRow } from '../../bridge/sqlite-bridge.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { EYE_SET, groupByDate } from '../profile/vision-data.js';
@@ -81,8 +81,8 @@ export function VisionSummaryCard({ childId, className = '' }: { childId: string
         {i18nText('Outdoor.visionSummary.why')}
       </p>
 
-      <Link
-        to="/profile/vision"
+      <DestinationLink
+        destination={{ id: '/profile/vision' }}
         data-testid="outdoor-vision-summary"
         className={`group mt-4 flex items-center gap-4 rounded-2xl bg-white/85 px-5 py-4 no-underline shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--nimi-text-primary)_6%,transparent)] transition-colors hover:bg-white ${FOCUS_RING}`}
       >
@@ -126,7 +126,7 @@ export function VisionSummaryCard({ childId, className = '' }: { childId: string
           aria-hidden="true"
           className="shrink-0 text-[var(--nimi-text-muted)] transition-transform group-hover:translate-x-0.5"
         />
-      </Link>
+      </DestinationLink>
     </Surface>
   );
 }

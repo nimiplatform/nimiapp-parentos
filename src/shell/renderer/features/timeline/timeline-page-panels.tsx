@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink, type ParentOSDestination } from '../../app-shell/app-navigation.js';
 import { canMarkNotApplicable, type ReminderActionType } from '../../engine/reminder-actions.js';
 import { type ActiveReminder } from '../../engine/reminder-engine.js';
 import { ReminderExplainDrawer } from '../reminders/reminder-explain-drawer.js';
@@ -22,7 +22,7 @@ const ACTION_PILL_CLASS = 'inline-flex h-7 min-h-7 shrink-0 items-center justify
 const ACTION_LABEL_CLASS = 'block text-[13px] leading-none font-medium tracking-[0.01em]';
 
 type ReminderPrimaryLink =
-  | { label: string; to: string; kind?: 'link' }
+  | { label: string; to: ParentOSDestination; intent?: import('../../app-shell/navigation-destinations.js').ParentOSIntent; kind?: 'link' }
   | { label: string; kind: 'capture' };
 
 function reminderPrimaryLink(reminder: ActiveReminder): ReminderPrimaryLink {
@@ -31,21 +31,21 @@ function reminderPrimaryLink(reminder: ActiveReminder): ReminderPrimaryLink {
   if (reminder.kind === 'consult') {
     return {
       label: i18nText('Timeline.reminderAction.askAdvisor'),
-      to: `/advisor?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}`,
+      to: { id: '/advisor' }, intent: { kind: 'advisor-topic', reminder: { ruleId: reminder.rule.ruleId, repeatIndex: reminder.repeatIndex } },
     };
   }
 
   if (reminder.kind === 'practice') {
     return {
       label: i18nText('Timeline.reminderAction.openNote'),
-      to: `/journal?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}`,
+      to: { id: '/journal', reminder: { ruleId: reminder.rule.ruleId, repeatIndex: reminder.repeatIndex } },
     };
   }
 
   if (reminder.kind === 'guide') {
     return {
       label: i18nText('Timeline.reminderAction.viewGuide'),
-      to: `/journal?reminderRuleId=${encodeURIComponent(reminder.rule.ruleId)}&repeatIndex=${reminder.repeatIndex}`,
+      to: { id: '/journal', reminder: { ruleId: reminder.rule.ruleId, repeatIndex: reminder.repeatIndex } },
     };
   }
 
@@ -118,9 +118,9 @@ function PrimaryActionPill({
   }
 
   return (
-    <Link to={primary.to} className={ACTION_PILL_CLASS} style={{ background: '#1e293b', color: '#fff' }}>
+    <DestinationLink destination={primary.to} intent={primary.intent} className={ACTION_PILL_CLASS} style={{ background: '#1e293b', color: '#fff' }}>
       <span className={ACTION_LABEL_CLASS}>{primary.label}</span>
-    </Link>
+    </DestinationLink>
   );
 }
 
@@ -206,9 +206,9 @@ function OverdueGroup({
         );
       })}
       {open && totalCount > items.length && (
-        <Link to="/reminders" className="block py-1 text-center text-[12px]" style={{ color: '#475569' }}>
+        <DestinationLink destination={{ id: '/reminders' }} className="block py-1 text-center text-[12px]" style={{ color: '#475569' }}>
           {i18nText('Timeline.reminderPanel.viewAllWithCount', { count: totalCount })}
-        </Link>
+        </DestinationLink>
       )}
     </div>
   );
@@ -328,13 +328,13 @@ function ObservationNudgeSection({ nudges }: { nudges: ObservationNudge[] }) {
             <p className="text-[14px] font-medium leading-snug" style={{ color: '#1e293b' }}>{nudge.nudgeText}</p>
             <p className="mt-0.5 text-[12px]" style={{ color: '#475569' }}>{nudge.parentQuestion}</p>
           </div>
-          <Link
-            to={`/journal?dimensionId=${encodeURIComponent(nudge.dimensionId)}`}
+          <DestinationLink
+            destination={{ id: '/journal', dimensionId: nudge.dimensionId }}
             className="shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium text-white opacity-0 transition-all group-hover:opacity-100 hover:-translate-y-0.5"
             style={{ background: '#1e293b', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
             {i18nText('Timeline.reminderAction.observe')}
-          </Link>
+          </DestinationLink>
         </div>
       ))}
     </div>
@@ -444,7 +444,7 @@ export function ReminderPanel({
       {!embedded && (
         <div className="mb-5 flex items-center justify-between px-3">
           <h3 className="text-[18px] font-semibold tracking-tight" style={{ color: '#1e293b', letterSpacing: '-0.3px' }}>{i18nText('Timeline.reminderPanel.title')}</h3>
-          <Link to="/reminders" className="text-[13px] font-medium" style={{ color: '#475569' }}>{i18nText('Timeline.action.viewAll')}</Link>
+          <DestinationLink destination={{ id: '/reminders' }} className="text-[13px] font-medium" style={{ color: '#475569' }}>{i18nText('Timeline.action.viewAll')}</DestinationLink>
         </div>
       )}
 

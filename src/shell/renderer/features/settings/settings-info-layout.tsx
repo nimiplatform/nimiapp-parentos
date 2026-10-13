@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { DestinationLink, type ParentOSDestination } from '../../app-shell/app-navigation.js';
 import { ArrowUpRight, ChevronLeft, type LucideIcon } from 'lucide-react';
 import { Surface } from '@nimiplatform/kit/ui';
 
@@ -9,9 +9,9 @@ export function SettingsInfoLayout({ title, children }: { title: string; childre
   return (
     <div className="h-full overflow-y-auto bg-transparent">
       <div className="mx-auto max-w-3xl px-6 pb-10 pt-[72px]">
-        <Link to="/settings" className="mb-5 inline-flex items-center gap-1.5 rounded-lg text-sm text-[var(--nimi-text-secondary)] hover:text-[var(--nimi-action-primary-bg)] focus-visible:outline-2 focus-visible:outline-offset-4">
+        <DestinationLink destination={{ id: '/settings' }} className="mb-5 inline-flex items-center gap-1.5 rounded-lg text-sm text-[var(--nimi-text-secondary)] hover:text-[var(--nimi-action-primary-bg)] focus-visible:outline-2 focus-visible:outline-offset-4">
           <ChevronLeft size={16} aria-hidden="true" />{t('SettingsDetails.back')}
-        </Link>
+        </DestinationLink>
         <h1 className="mb-6 text-2xl font-bold tracking-tight text-[var(--nimi-text-primary)]">{title}</h1>
         <div className="space-y-5">{children}</div>
       </div>
@@ -31,6 +31,6 @@ export function SettingsInfoCard({ icon: Icon, title, children }: { icon: Lucide
   );
 }
 
-export function SettingsInfoLink({ to, children }: { to: string; children: ReactNode }) {
-  return <Link to={to} className="inline-flex items-center gap-1.5 rounded-lg font-medium text-[var(--nimi-action-primary-bg)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">{children}<ArrowUpRight size={15} aria-hidden="true" /></Link>;
+export function SettingsInfoLink({ destination, children }: { destination: ParentOSDestination; children: ReactNode }) {
+  return <DestinationLink destination={destination} className="inline-flex items-center gap-1.5 rounded-lg font-medium text-[var(--nimi-action-primary-bg)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">{children}<ArrowUpRight size={15} aria-hidden="true" /></DestinationLink>;
 }

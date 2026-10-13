@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { fireEvent, render } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { describe, expect, it } from 'vitest';
 import type { HealthMetricSnapshot } from '../../engine/health-record-domain.js';
 import {
@@ -70,7 +70,7 @@ function makeSnapshot(metricId: HealthMetricId, recorded: boolean): HealthMetric
 describe('ProfileGroupCard category action buttons', () => {
   it('renders record, update, and sport activity actions with the light primary treatment', () => {
     const { container } = render(
-      <MemoryRouter>
+      <TestNavigation>
         <ProfileGroupCard
           group={{
             group: requireGroup('fitness'),
@@ -82,7 +82,7 @@ describe('ProfileGroupCard category action buttons', () => {
           }}
           onCapture={() => undefined}
         />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     const expandButton = container.querySelector<HTMLButtonElement>('button[aria-expanded]');

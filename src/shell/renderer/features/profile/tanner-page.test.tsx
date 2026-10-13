@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { TooltipProvider } from '@nimiplatform/kit/ui';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TannerPage from './tanner-page.js';
 import { TannerCaptureContent } from './tanner-assessment-form.js';
@@ -61,9 +61,9 @@ function record(overrides: Partial<TannerAssessmentRow> = {}): TannerAssessmentR
 function page() {
   return render(
     <TooltipProvider>
-      <MemoryRouter>
+      <TestNavigation>
         <TannerPage />
-      </MemoryRouter>
+      </TestNavigation>
     </TooltipProvider>,
   );
 }

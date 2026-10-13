@@ -10,7 +10,7 @@
 // no renderer-local catalog rules.
 
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { Cd, Hdr, textMain, textMuted, textSoft } from './timeline-card-primitives.js';
 import type { CustomTodoRow } from '../../bridge/sqlite-bridge.js';
 import type { ActiveReminder, ReminderAgenda } from '../../engine/reminder-engine.js';
@@ -88,7 +88,7 @@ function CatalogRow({
   childId: string;
   onDashboardTaskCapture: (intent: DashboardTaskCaptureIntent) => void;
 }) {
-  const navigate = useNavigate();
+  const { open: navigate } = useParentOSNavigation();
   const row = entry.catalogRow!;
   const title = catalogTitle(row);
 
@@ -102,7 +102,7 @@ function CatalogRow({
       return;
     }
     if (row.family === 'observe') {
-      navigate('/journal');
+      void navigate({ id: '/journal' });
     }
   };
 

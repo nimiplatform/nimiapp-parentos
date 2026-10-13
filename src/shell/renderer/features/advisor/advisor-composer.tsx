@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink, type ParentOSDestination } from '../../app-shell/app-navigation.js';
 import { Plus, Send, Square } from 'lucide-react';
 import { Button, cn } from '@nimiplatform/kit/ui';
 import { i18nText } from '../../i18n/index.js';
@@ -15,7 +15,7 @@ export type AdvisorComposerProps = {
   onStop: () => void;
   disabled: boolean;
   isStreaming: boolean;
-  recordRoute: string | null;
+  recordRoute: ParentOSDestination | null;
 };
 
 // @nimi-authority: rule.parentos.advs.r006
@@ -58,10 +58,10 @@ export function AdvisorComposer({
         {recordRoute && (
           <div className="mb-2">
             <Button asChild tone="secondary" size="sm">
-              <Link to={recordRoute} className="inline-flex items-center gap-1.5">
+              <DestinationLink destination={recordRoute} className="inline-flex items-center gap-1.5">
                 <Plus size={14} aria-hidden="true" />
                 {i18nText('Advisor.composer.recordData')}
-              </Link>
+              </DestinationLink>
             </Button>
           </div>
         )}

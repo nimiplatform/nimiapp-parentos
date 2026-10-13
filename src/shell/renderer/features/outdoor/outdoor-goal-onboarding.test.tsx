@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { TestNavigation, NavigationProbe } from '../../testing/navigation.js';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChildProfile } from '../../app-shell/app-store.js';
 import { OutdoorGoalHero, OutdoorGoalIntro } from './outdoor-goal-onboarding.js';
@@ -8,24 +8,25 @@ import { i18nText } from '../../i18n/index.js';
 
 function renderOnboarding(gender: ChildProfile['gender'] = 'male', onSetGoal = vi.fn()) {
   const view = render(
-    <MemoryRouter>
+    <TestNavigation>
       <OutdoorGoalHero gender={gender}>
         <OutdoorGoalIntro onSetGoal={onSetGoal} />
       </OutdoorGoalHero>
-    </MemoryRouter>,
+    <NavigationProbe /></TestNavigation>,
   );
   return { ...view, onSetGoal };
 }
 
 describe('OutdoorGoalHero + OutdoorGoalIntro', () => {
-  it('renders the hero illustration as decoration behind the guide copy', () => {
+  it('renders the hero illustration as decoration behind the guide copy', async () => {
     const { container } = renderOnboarding();
 
     const hero = container.querySelector('img[src*="outdoor-goal-hero"]');
     expect(hero).not.toBeNull();
     expect(hero?.getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByRole('heading', { name: i18nText('Outdoor.page.goalOnboarding.title') })).toBeTruthy();
-    expect(screen.getByRole('link', { name: i18nText('Outdoor.page.backToProfile') }).getAttribute('href')).toBe('/profile');
+    fireEvent.click(screen.getByRole('link', { name: i18nText('Outdoor.page.backToProfile') }));
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/profile'));
   });
 
   it.each([
@@ -40,23 +41,23 @@ describe('OutdoorGoalHero + OutdoorGoalIntro', () => {
     expect(hero?.style.getPropertyValue('--parentos-outdoor-art-shoe')).not.toBe('');
   });
 
-  it('starts goal setup from the primary action', () => {
+  it('starts goal setup from the primary action', async () => {
     const { onSetGoal } = renderOnboarding();
 
     fireEvent.click(screen.getByRole('button', { name: i18nText('Outdoor.page.goalOnboarding.setGoal') }));
     expect(onSetGoal).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the same illustration element when its content changes step', () => {
+  it('keeps the same illustration element when its content changes step', async () => {
     const { container, rerender } = renderOnboarding();
     const art = container.querySelector('img.parentos-outdoor-hero__art');
 
     rerender(
-      <MemoryRouter>
+      <TestNavigation>
         <OutdoorGoalHero gender="male">
           <p>step two</p>
         </OutdoorGoalHero>
-      </MemoryRouter>,
+      <NavigationProbe /></TestNavigation>,
     );
 
     expect(screen.getByText('step two')).toBeTruthy();

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { app, BrowserWindow, ipcMain, Menu, protocol, session, webContents } from 'electron';
 import { configureNimiElectronAppHostProfile } from '@nimiplatform/kit/shell/electron/host-profile';
 
@@ -16,7 +16,8 @@ try {
 }
 
 const {
-  createNimiElectronStandardApplicationMenuTemplate,
+  createNimiElectronAppChromeHost,
+  createNimiElectronAppChromeWindowOptions,
   isAllowedElectronRendererUrl,
   registerNimiElectronAppAssetProtocolScheme,
   registerNimiElectronAppBridge,
@@ -38,6 +39,10 @@ const rendererDistIndex = path.join(appRoot, 'dist', 'index.html');
 const rendererDistUrl = pathToFileURL(rendererDistIndex).toString();
 const developmentRendererUrl = readDevelopmentRendererUrl();
 const rendererUrl = developmentRendererUrl || rendererDistUrl;
+const appPackage = JSON.parse(readFileSync(path.join(appRoot, 'package.json'), 'utf8')) as { version: string; license?: string };
+const chromeHost = createNimiElectronAppChromeHost({ app, metadata: { name: 'ParentOS', version: appPackage.version, ...(appPackage.license ? { license: appPackage.license } : {}) }, allowedRendererUrls: [rendererUrl],
+  menu: { buildFromTemplate: template => Menu.buildFromTemplate(template as Electron.MenuItemConstructorOptions[]), setApplicationMenu: menu => Menu.setApplicationMenu(menu as Electron.Menu | null) },
+});
 const rendererLoadFailureUrl = createRendererLoadFailureUrl(developmentRendererUrl);
 const rendererFailureLoads = new WeakMap<BrowserWindow, Promise<void>>();
 let mainWindow: BrowserWindow | undefined;
@@ -45,7 +50,6 @@ let mainWindow: BrowserWindow | undefined;
 bootLog('module-loaded');
 
 app.setName('ParentOS');
-installParentOSStandardApplicationMenu();
 configureParentOSElectronChromiumRuntime();
 registerNimiElectronAppAssetProtocolScheme(protocol);
 
@@ -58,6 +62,7 @@ async function bootstrapElectron(): Promise<void> {
   app.once('before-quit', () => hostClient.close());
 
   registerNimiElectronAppBridge({
+    chromeHost,
     appId: PARENTOS_APP_ID,
     allowedRendererUrls: [rendererUrl],
     assetMediaPlatform: { protocol, webRequest: session.defaultSession.webRequest, webContents },
@@ -104,11 +109,7 @@ function configureParentOSElectronChromiumRuntime(): void {
   app.commandLine.appendSwitch('disable-background-networking');
 }
 
-function installParentOSStandardApplicationMenu(): void {
-  Menu.setApplicationMenu(Menu.buildFromTemplate(
-    createNimiElectronStandardApplicationMenuTemplate({ appName: 'ParentOS' }),
-  ));
-}
+app.on('will-quit', () => chromeHost.dispose());
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -119,6 +120,7 @@ app.on('window-all-closed', () => {
 async function createMainWindow(): Promise<BrowserWindow> {
   bootLog('create-window:start');
   const window = new BrowserWindow({
+    ...createNimiElectronAppChromeWindowOptions(process.platform),
     width: 1320,
     height: 900,
     minWidth: 360,
@@ -133,6 +135,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
     },
   });
   bootLog('create-window:constructed');
+  chromeHost.bindWindow(window);
   mainWindow = window;
   window.on('closed', () => {
     if (mainWindow === window) {

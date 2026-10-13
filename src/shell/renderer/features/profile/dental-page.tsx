@@ -1,6 +1,5 @@
 import { PillTabs } from '@nimiplatform/kit/ui';
-import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParentOSPosition, useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
 import { DentalHistoryView } from './dental-history-view.js';
 import { OrthodonticPage } from './orthodontic-page.js';
@@ -11,9 +10,7 @@ import { i18nText } from '../../i18n/index.js';
 
 type DentalTab = 'history' | 'orthodontic';
 
-function readInitialTab(searchParams: URLSearchParams): DentalTab {
-  return searchParams.get('tab') === 'orthodontic' ? 'orthodontic' : 'history';
-}
+
 
 /**
  * Top-level dental page. Responsibility is shell chrome (back link, title,
@@ -30,8 +27,9 @@ function readInitialTab(searchParams: URLSearchParams): DentalTab {
 export default function DentalPage() {
   const { activeChildId, children } = useAppStore();
   const child = children.find((c) => c.childId === activeChildId);
-  const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<DentalTab>(() => readInitialTab(searchParams));
+  const position = useParentOSPosition(), { open } = useParentOSNavigation();
+  const activeTab = position.id === '/profile/dental' ? position.tab ?? 'history' : 'history';
+  const setActiveTab = (tab: DentalTab) => { void open({ id: '/profile/dental', tab }); };
 
   if (!child) {
     return (

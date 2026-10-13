@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useParentOSNavigation, useParentOSPosition, useParentOSIntent, type ParentOSDestination } from '../../app-shell/app-navigation.js';
 import { useAppStore, computeAgeMonths, computeAgeMonthsAt, formatAge, type ChildProfile } from '../../app-shell/app-store.js';
 import {
   createConversation,
   getAiMessages,
+  getJournalEntries,
   getConversations,
   insertAiMessage,
   insertConsultationAiMessage,
@@ -23,6 +24,8 @@ import { AdvisorSidebar } from './advisor-sidebar.js';
 import { AdvisorTranscript, type AdvisorTranscriptFailure } from './advisor-transcript.js';
 import { AdvisorComposer } from './advisor-composer.js';
 import { AdvisorEmptyState } from './advisor-empty-state.js';
+import { OBSERVATION_DIMENSIONS } from '../../knowledge-base/index.js';
+import { parseSelectedTags } from '../journal/journal-page-helpers.js';
 import { AdvisorJournalContext, type JournalEntryAdvisorContext } from './advisor-journal-context.js';
 import { AdvisorSuggestions, AdvisorSuggestionsSkeleton } from './advisor-suggestions.js';
 import { generateAdvisorSuggestions, type AdvisorSuggestion } from './advisor-suggestion-engine.js';
@@ -46,9 +49,6 @@ import {
   type AdvisorTurnPhase,
 } from './advisor-turn.js';
 
-type AdvisorLocationState = {
-  journalEntryContext?: JournalEntryAdvisorContext;
-} | null;
 
 type ReminderConsultationAnchor = {
   childId: string;
@@ -155,20 +155,18 @@ function toAdvisorChildContext(child: ChildProfile, atIso: string): AdvisorChild
 export default function AdvisorPage() {
   const { activeChildId, children } = useAppStore();
   const child = children.find((item) => item.childId === activeChildId);
-  const location = useLocation();
-  const journalEntryContext = (location.state as AdvisorLocationState | undefined)?.journalEntryContext ?? null;
-  const [searchParams, setSearchParams] = useSearchParams();
+  const owner = useParentOSNavigation(), position = useParentOSPosition(), intent = useParentOSIntent();
+  const advisorPosition = position.id === '/advisor' ? position : null;
+  const journalEntryId = advisorPosition?.journalEntryId;
   const [conversations, setConversations] = useState<ConversationRow[]>([]);
-  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const activeConvId = advisorPosition?.conversationId ?? null;
   const [messages, setMessages] = useState<AiMessageRow[]>([]);
   const [input, setInput] = useState('');
   const [stoppedConversationId, setStoppedConversationId] = useState<string | null>(null);
   const [turn, setTurn] = useState<TurnView | null>(null);
   const [turnFailure, setTurnFailure] = useState<TurnFailureView | null>(null);
   const [runtimeAvailable, setRuntimeAvailable] = useState<boolean | null>(null);
-  const [recordRoute, setRecordRoute] = useState<string | null>(null);
-  const topicHandledRef = useRef<string | null>(null);
-  const journalHandledRef = useRef<string | null>(null);
+  const [recordRoute, setRecordRoute] = useState<ParentOSDestination | null>(null);
   const [pendingJournalContext, setPendingJournalContext] = useState<JournalEntryAdvisorContext | null>(null);
   const [suggestions, setSuggestions] = useState<AdvisorSuggestion[]>([]);
   const [suggestionsState, setSuggestionsState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
@@ -176,6 +174,7 @@ export default function AdvisorPage() {
   const suggestionsAbortRef = useRef<AbortController | null>(null);
   const snapshotConvRef = useRef<string | null>(null);
   const suggestionConvRef = useRef<string | null>(null);
+  const explicitNewConversations = useRef(new Set<string>());
   const pendingReminderConsultationAnchorRef = useRef<ReminderConsultationAnchor | null>(null);
 
   // rule.parentos.advs.r006: request ownership. A turn stays current only while
@@ -210,21 +209,6 @@ export default function AdvisorPage() {
   const stopActiveTurn = useCallback(() => {
     turnRef.current?.abort.abort();
   }, []);
-
-  const readReminderConsultationAnchorFromSearch = (): ReminderConsultationAnchor | null => {
-    if (!child) {
-      return null;
-    }
-    const reminderRuleId = searchParams.get('reminderRuleId')?.trim();
-    if (!reminderRuleId) {
-      return null;
-    }
-    return {
-      childId: child.childId,
-      ruleId: reminderRuleId,
-      repeatIndex: Number(searchParams.get('repeatIndex') ?? '0') || 0,
-    };
-  };
 
   // @nimi-authority: rule.parentos.advs.r006a
   const saveAssistantMessage = async (conversationId: string, content: string, contextSnapshot: string) => {
@@ -363,18 +347,21 @@ export default function AdvisorPage() {
     if (!child || turnRef.current) {
       return;
     }
+    const opening = owner.navigation.getSnapshot();
     const convId = ulid();
     await createConversation({ conversationId: convId, childId: child.childId, title: params.title, now: isoNow() });
     const reminderConsultationAnchor = params.reminderConsultationAnchor
       ?? pendingReminderConsultationAnchorRef.current
-      ?? readReminderConsultationAnchorFromSearch()
       ?? undefined;
     if (reminderConsultationAnchor) {
       consultationAnchorByConversationRef.current.set(convId, reminderConsultationAnchor);
       pendingReminderConsultationAnchorRef.current = null;
     }
+    const current = owner.navigation.getSnapshot();
+    if (current.generation !== opening.generation || current.current.key !== opening.current.key || activeChildIdRef.current !== child.childId) return;
+    const selected = await owner.navigation.replace({ id: '/advisor', conversationId: convId });
+    if (selected.status !== 'committed' && selected.status !== 'unchanged') return;
     activeConvIdRef.current = convId;
-    setActiveConvId(convId);
     setMessages([]);
     setTurnFailure(null);
     setConversations(await getConversations(child.childId));
@@ -386,7 +373,6 @@ export default function AdvisorPage() {
   useEffect(() => {
     cancelActiveTurn();
     activeConvIdRef.current = null;
-    setActiveConvId(null);
     setMessages([]);
     setTurnFailure(null);
     setOpeningFacts(null);
@@ -431,46 +417,31 @@ export default function AdvisorPage() {
     void checkRuntime();
   }, []);
 
-  // ── Handle incoming topic from reminder panel ─────────────
+  // Consume the App action before starting work. History contains references only.
   useEffect(() => {
-    // rule.parentos.advs.r003: without a configured text model the advisor must
-    // not start a Q&A turn, so reminder/topic openings wait until the runtime
-    // check succeeds.
-    if (runtimeAvailable !== true) return;
-    const topic = searchParams.get('topic');
-    const desc = searchParams.get('desc') ?? '';
-    const record = searchParams.get('record');
-    const reminderRuleId = searchParams.get('reminderRuleId')?.trim() || null;
-    const repeatIndex = Number(searchParams.get('repeatIndex') ?? '0') || 0;
-    if (reminderRuleId && child) {
-      pendingReminderConsultationAnchorRef.current = { childId: child.childId, ruleId: reminderRuleId, repeatIndex };
-      if (!topic) {
-        setSearchParams({}, { replace: true });
-      }
-    }
-    if (!topic || !child || topicHandledRef.current === topic) return;
+    if (runtimeAvailable !== true || !child || intent?.kind !== 'advisor-topic' || !owner.consumeIntent(intent)) return;
+    const anchor = intent.reminder ? { childId: child.childId, ...intent.reminder } : undefined;
+    if (anchor) pendingReminderConsultationAnchorRef.current = anchor;
+    if (intent.record) setRecordRoute(intent.record);
+    if (intent.topic) void startConversationWithQuestion({ title: intent.topic, question: buildTopicQuestion(intent.topic, intent.description ?? ''), reminderConsultationAnchor: anchor }).catch(catchLog('advisor', 'action:start-topic-conversation-failed'));
+  }, [intent, child, runtimeAvailable, owner]);
 
-    topicHandledRef.current = topic;
-    if (record) setRecordRoute(record);
-    setSearchParams({}, { replace: true });
-
-    startConversationWithQuestion({
-      title: topic,
-      question: buildTopicQuestion(topic, desc),
-      reminderConsultationAnchor: reminderRuleId
-        ? { childId: child.childId, ruleId: reminderRuleId, repeatIndex }
-        : undefined,
-    }).catch(catchLog('advisor', 'action:start-topic-conversation-failed'));
-  }, [searchParams, child, runtimeAvailable]);
-
+  const [referenceFailure, setReferenceFailure] = useState(false);
   useEffect(() => {
-    if (!child || !journalEntryContext || journalHandledRef.current === journalEntryContext.entryId) {
-      return;
-    }
-    journalHandledRef.current = journalEntryContext.entryId;
-    setRecordRoute(null);
-    setPendingJournalContext(journalEntryContext);
-  }, [child, journalEntryContext]);
+    let active = true;
+    setPendingJournalContext(null); setReferenceFailure(false);
+    if (!child || !journalEntryId) return;
+    void getJournalEntries(child.childId).then(rows => {
+      if (!active) return;
+      const entry = rows.find(row => row.entryId === journalEntryId);
+      if (!entry) { setReferenceFailure(true); return; }
+      setPendingJournalContext({ entryId: entry.entryId, recordedAt: entry.recordedAt, contentType: entry.contentType, textContent: entry.textContent,
+        dimensionName: OBSERVATION_DIMENSIONS.find(d => d.dimensionId === entry.dimensionId)?.displayName ?? null,
+        tags: parseSelectedTags(entry.selectedTags), recorderName: child.recorderProfiles?.find(p => p.id === entry.recorderId)?.name ?? null });
+    }).catch(() => { if (active) setReferenceFailure(true); });
+    return () => { active = false; };
+  }, [child, journalEntryId]);
+  useEffect(() => { cancelActiveTurn(); setMessages([]); setTurnFailure(null); }, [activeConvId, cancelActiveTurn]);
 
   // Opening context for an empty conversation: the same task-scoped reader,
   // over every record group for the default window.
@@ -512,7 +483,7 @@ export default function AdvisorPage() {
   }, [child, activeConvId, messages.length]);
 
   useEffect(() => {
-    if (!activeConvId || !openingFacts || !child) return;
+    if (!activeConvId || !openingFacts || !child || !explicitNewConversations.current.has(activeConvId)) return;
     if (messages.length > 0) return;
     if (advisorFactsReadFailures(openingFacts).length > 0) return;
     if (runtimeAvailable !== true) {
@@ -561,28 +532,27 @@ export default function AdvisorPage() {
 
   const selectConversation = (conversationId: string) => {
     if (conversationId === activeConvId) return;
-    cancelActiveTurn();
-    activeConvIdRef.current = conversationId;
-    setActiveConvId(conversationId);
-    setMessages([]);
-    setTurnFailure(null);
-    setRecordRoute(null);
+    void owner.open({ id: '/advisor', conversationId });
   };
 
   const handleNewConversation = async () => {
     cancelActiveTurn();
+    const opening = owner.navigation.getSnapshot();
     const convId = ulid();
     try {
       await createConversation({ conversationId: convId, childId: child.childId, title: null, now: isoNow() });
       const reminderConsultationAnchor = pendingReminderConsultationAnchorRef.current
-        ?? readReminderConsultationAnchorFromSearch();
+;
       if (reminderConsultationAnchor) {
         consultationAnchorByConversationRef.current.set(convId, reminderConsultationAnchor);
         pendingReminderConsultationAnchorRef.current = null;
-        setSearchParams({}, { replace: true });
       }
+      const current = owner.navigation.getSnapshot();
+      if (current.generation !== opening.generation || current.current.key !== opening.current.key || activeChildIdRef.current !== child.childId) return;
+      explicitNewConversations.current.add(convId);
+      const selected = await owner.open({ id: '/advisor', conversationId: convId });
+      if (selected.status !== 'committed' && selected.status !== 'unchanged') return;
       activeConvIdRef.current = convId;
-      setActiveConvId(convId);
       setMessages([]);
       setTurnFailure(null);
       setRecordRoute(null);
@@ -643,6 +613,7 @@ export default function AdvisorPage() {
     : null;
   const canRetry = !busy && runtimeAvailable === true
     && (Boolean(unanswered) || Boolean(failureForView && !failureForView.userPersisted && failureForView.failure.kind !== 'input-too-long'));
+  const referenceUnavailable = referenceFailure || Boolean(activeConvId && !conversations.some(conversation => conversation.conversationId === activeConvId));
 
   return (
     <div className="advisor-page-shell flex h-full min-h-0 gap-5 px-5 pb-3 pt-4">
@@ -654,7 +625,7 @@ export default function AdvisorPage() {
       />
 
       <div className="advisor-main-panel flex min-w-0 flex-1 flex-col overflow-hidden">
-        {!activeConvId && pendingJournalContext ? (
+        {referenceUnavailable ? <div role="status" className="p-6">{i18nText('Advisor.page.referenceUnavailable')}</div> : !activeConvId && pendingJournalContext ? (
           <AdvisorJournalContext
             context={pendingJournalContext}
             runtimeAvailable={runtimeAvailable}

@@ -8,7 +8,7 @@ import { Button, Surface } from '@nimiplatform/kit/ui';
  * (AI settings for configuration problems, retry for transient failures).
  */
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink, useParentOSPageWorkAllowed } from '../../app-shell/app-navigation.js';
 import { ArrowRight, RotateCw } from 'lucide-react';
 import { getAppSetting, setAppSetting } from '../../bridge/sqlite-bridge.js';
 import { isoNow } from '../../bridge/ulid.js';
@@ -153,7 +153,7 @@ function AISummaryUnavailableActions({
         className="rounded-full"
         trailingIcon={<ArrowRight size={14} aria-hidden="true" />}
       >
-        <Link to="/settings/ai">{i18nText('AISummary.configureAI')}</Link>
+        <DestinationLink destination={{ id: '/settings/ai' }}>{i18nText('AISummary.configureAI')}</DestinationLink>
       </Button>
     );
   }
@@ -170,7 +170,7 @@ function AISummaryUnavailableActions({
       </Button>
       {reason === 'host-absent' ? null : (
         <Button asChild tone="ghost" size="sm" className="rounded-full">
-          <Link to="/settings/ai">{i18nText('AISummary.openAISettings')}</Link>
+          <DestinationLink destination={{ id: '/settings/ai' }}>{i18nText('AISummary.openAISettings')}</DestinationLink>
         </Button>
       )}
     </>
@@ -195,7 +195,8 @@ function AISummarySurface({ compact = false, children }: { compact?: boolean; ch
 
 // @nimi-authority: rule.parentos.prof.r016
 export function AISummaryCard(props: AISummaryCardProps) {
-  const { domain, childId, dataContext } = props;
+  const { domain, childId, dataContext, childName, ageLabel, gender } = props;
+  const pageWorkAllowed = useParentOSPageWorkAllowed();
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [unavailableReason, setUnavailableReason] = useState<AISummaryUnavailableReason | null>(null);
@@ -224,6 +225,7 @@ export function AISummaryCard(props: AISummaryCardProps) {
       } catch { /* bridge unavailable */ }
     }
 
+    if (!skipCache && !pageWorkAllowed) return;
     setLoading(true);
     setUnavailableReason(null);
     try {
@@ -238,7 +240,7 @@ export function AISummaryCard(props: AISummaryCardProps) {
       const runGenerate = async (budget: number) => {
         const result = await runParentosTextGenerate({
           surfaceId,
-          messages: [{ role: 'user', content: [{ type: 'text', text: buildPrompt(props) }] }],
+          messages: [{ role: 'user', content: [{ type: 'text', text: buildPrompt({ domain, childId, dataContext, childName, ageLabel, gender }) }] }],
           defaults: { temperature: 0.3, maxTokens: budget },
         });
         if (!result.ok) {
@@ -288,7 +290,7 @@ export function AISummaryCard(props: AISummaryCardProps) {
     } finally {
       setLoading(false);
     }
-  }, [childId, domain, dataContext, props]);
+  }, [childId, domain, dataContext, childName, ageLabel, gender, pageWorkAllowed]);
 
   useEffect(() => { void generate(); }, [generate]);
 
@@ -344,7 +346,7 @@ export function AISummaryCard(props: AISummaryCardProps) {
               </p>
             ) : summary ? (
               <p className="mt-1.5 text-[14px] leading-[1.75] text-[var(--nimi-text-primary)]">{summary}</p>
-            ) : null}
+            ) : <p className="mt-1 text-[14px] leading-6 text-[var(--nimi-text-secondary)]">{i18nText('AISummary.generateHint')}</p>}
           </div>
         </div>
         {unavailableReason ? (

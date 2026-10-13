@@ -1,6 +1,6 @@
 import { IconButton, cn } from '@nimiplatform/kit/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { getCustomTodos } from '../../bridge/sqlite-bridge.js';
 import type { CustomTodoRow } from '../../bridge/sqlite-bridge.js';
@@ -120,13 +120,13 @@ export function ProfileTodoDrawer() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Link
-                  to="/reminders"
+                <DestinationLink
+                  destination={{ id: '/reminders' }}
                   onClick={closeDrawer}
                   className="text-[13px] font-medium transition-colors hover:underline text-[var(--nimi-text-muted)]"
                 >
                   {i18nText('Timeline.todoDrawer.viewAll')}
-                </Link>
+                </DestinationLink>
                 <IconButton
                   tone="ghost"
                   size="sm"

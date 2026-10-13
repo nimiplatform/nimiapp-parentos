@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useParentOSPageWorkAllowed } from '../../app-shell/app-navigation.js';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { WelcomePage } from './welcome-page.js';
 import { SENSITIVE_PERIODS } from '../../knowledge-base/index.js';
@@ -37,6 +38,7 @@ const SUMMARY_GRID_CLS: Record<number, string> = {
 
 // @nimi-authority: rule.parentos.time.r011
 export default function TimelinePage() {
+  const pageWorkAllowed = useParentOSPageWorkAllowed();
   const { activeChildId, children: childList } = useAppStore();
   const child = childList.find((item) => item.childId === activeChildId);
 
@@ -68,13 +70,13 @@ export default function TimelinePage() {
   );
 
   useEffect(() => {
-    if (!child || loading) return;
+    if (!child || loading || !pageWorkAllowed) return;
     autoGenerateMonthlyReport(child)
       .then((id) => {
         if (id) void reload();
       })
       .catch(catchLog('timeline', 'action:auto-generate-monthly-report-failed', 'warn'));
-  }, [child, loading, reload]);
+  }, [child, loading, reload, pageWorkAllowed]);
 
   if (!child) {
     return <WelcomePage />;

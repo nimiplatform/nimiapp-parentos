@@ -1,6 +1,6 @@
 import { Button, nimiToast, Surface } from '@nimiplatform/kit/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import {
   deleteAttachment,
   deleteDentalRecord,
@@ -105,7 +105,7 @@ export function OrthodonticPage({
   childBirthDate,
   ageMonths,
 }: Props) {
-  const navigate = useNavigate();
+  const { open: navigate } = useParentOSNavigation();
   const [cases, setCases] = useState<OrthodonticCaseRow[]>([]);
   const [appliances, setAppliances] = useState<OrthodonticApplianceRow[]>([]);
   const [intervalsByAppliance, setIntervalsByAppliance] = useState<
@@ -331,12 +331,7 @@ export function OrthodonticPage({
     const descParts: string[] = [i18nText('Orthodontic.page.askAiDesc.date', { date: eventDate })];
     if (record.hospital) descParts.push(i18nText('Orthodontic.page.askAiDesc.clinic', { clinic: record.hospital }));
     if (record.notes) descParts.push(i18nText('Orthodontic.page.askAiDesc.notes', { notes: record.notes }));
-    const params = new URLSearchParams({
-      topic: meta.label,
-      desc: descParts.join('；'),
-      record: 'dental',
-    });
-    navigate(`/advisor?${params.toString()}`);
+    void navigate({ id: '/advisor' }, { kind: 'advisor-topic', topic: meta.label, description: descParts.join('；'), record: { id: '/profile/dental', tab: 'orthodontic' } });
   };
 
   const handleEditRecord = (record: DentalRecordRow) => {

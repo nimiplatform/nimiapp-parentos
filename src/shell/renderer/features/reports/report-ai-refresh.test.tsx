@@ -2,7 +2,7 @@
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation, NavigationProbe } from '../../testing/navigation.js';
 import ReportsPage from './reports-page.js';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { getRollingReportPeriod } from './report-cycle.js';
@@ -106,7 +106,7 @@ describe('report AI refresh', () => {
     useAppStore.setState({ bootstrapReady: false, familyId: null, activeChildId: null, children: [] });
   });
 
-  const renderPage = () => render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+  const renderPage = () => render(<TestNavigation><ReportsPage /><NavigationProbe /></TestNavigation>);
 
   it('rewrites a local monthly report in place once AI is connected', async () => {
     generateNarrativeMock.mockImplementation(async ({ period }: { period: { start: string; end: string } }) => ({
@@ -135,7 +135,8 @@ describe('report AI refresh', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText('AI 未连接')).toBeTruthy());
-    expect(screen.getByRole('link', { name: '去连接 AI' }).getAttribute('href')).toBe('/settings/ai');
+    fireEvent.click(screen.getByRole('link', { name: '去连接 AI' }));
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/settings/ai'));
     expect(screen.queryByRole('button', { name: '用 AI 重写本期报告' })).toBeNull();
     expect(updateGrowthReportContentMock).not.toHaveBeenCalled();
   });

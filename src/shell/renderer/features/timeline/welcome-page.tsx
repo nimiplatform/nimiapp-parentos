@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { DestinationLink, useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { Landmark, Plus } from 'lucide-react';
 import { AmbientBackground, buttonVariants, cn } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
@@ -31,7 +31,7 @@ const STEPS: readonly StepSpec[] = [
 
 export function WelcomePage() {
   const children = useAppStore((s) => s.children);
-  const setActiveChildId = useAppStore((s) => s.setActiveChildId);
+  const { switchChild } = useParentOSNavigation();
   const hasChildren = children.length > 0;
 
   if (!hasChildren) {
@@ -84,7 +84,7 @@ export function WelcomePage() {
                       <button
                         key={child.childId}
                         type="button"
-                        onClick={() => setActiveChildId(child.childId)}
+                        onClick={() => { void switchChild(child.childId); }}
                         className="group flex items-center gap-3 rounded-full border border-[var(--nimi-material-glass-thin-border)] bg-[var(--nimi-surface-card)] py-2 pl-2.5 pr-5 text-left text-[var(--nimi-text-primary)] shadow-[var(--nimi-elevation-base)] transition-all duration-[var(--nimi-motion-fast)] hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--nimi-action-primary-bg)_30%,var(--nimi-material-glass-thin-border))]"
                       >
                         <ChildAvatar child={child} ageMonths={age} className="h-9 w-9 shrink-0 rounded-full object-cover" />
@@ -95,14 +95,14 @@ export function WelcomePage() {
                       </button>
                     );
                   })}
-                  <Link
-                    to="/settings/children"
-                    state={{ intent: 'add-child' }}
+                  <DestinationLink
+                    destination={{ id: '/settings/children' }}
+                    intent={{ kind: 'add-child' }}
                     className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'gap-2 border border-dashed border-[var(--nimi-border-strong)] px-5')}
                   >
                     <Plus size={16} />
                     {i18nText('Timeline.welcome.addChild')}
-                  </Link>
+                  </DestinationLink>
                 </div>
               </div>
             </div>

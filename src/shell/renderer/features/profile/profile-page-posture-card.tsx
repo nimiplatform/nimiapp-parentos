@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { ChevronRight, PersonStanding } from 'lucide-react';
 import { Surface } from '@nimiplatform/kit/ui';
 import { getPostureAssessments, type PostureAssessmentRow } from '../../bridge/sqlite-bridge.js';
@@ -39,8 +39,8 @@ export function ProfilePostureCard({ childId }: { childId: string }) {
       tone="card"
       className="parentos-stacked-glass-card overflow-hidden rounded-2xl shadow-[var(--nimi-elevation-base)]"
     >
-      <Link
-        to="/profile/posture"
+      <DestinationLink
+        destination={{ id: '/profile/posture' }}
         className="block w-full px-5 py-5 transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
       >
         <div className="flex items-start gap-3">
@@ -64,7 +64,7 @@ export function ProfilePostureCard({ childId }: { childId: string }) {
           </div>
           <ChevronRight size={18} className="text-[var(--nimi-text-muted)]" />
         </div>
-      </Link>
+      </DestinationLink>
     </Surface>
   );
 }

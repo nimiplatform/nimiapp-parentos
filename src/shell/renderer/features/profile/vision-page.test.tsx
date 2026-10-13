@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { act, type ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import VisionPage from './vision-page.js';
 import { useAppStore } from '../../app-shell/app-store.js';
@@ -151,9 +151,9 @@ describe('VisionPage OCR intake', () => {
     });
 
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <VisionPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     const guideButton = await screen.findByRole('button', { name: /录入指引/ });
@@ -181,9 +181,9 @@ describe('VisionPage OCR intake', () => {
     });
 
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <VisionPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     fireEvent.click(await screen.findByRole('button', { name: /录入检查/ }));
@@ -206,9 +206,9 @@ describe('VisionPage OCR intake', () => {
     });
 
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <VisionPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     fireEvent.click(await screen.findByRole('button', { name: /录入检查/ }));
@@ -234,9 +234,9 @@ describe('VisionPage OCR intake', () => {
     ]);
 
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <VisionPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     // Open the editor via 提醒设置.
@@ -284,9 +284,9 @@ describe('VisionPage OCR intake', () => {
     ]);
 
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <VisionPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     const settingsBtn = await screen.findByRole('button', { name: /提醒设置/ });
@@ -317,9 +317,9 @@ describe('VisionPage OCR intake', () => {
     ]);
 
     render(
-      <MemoryRouter initialEntries={['/profile/vision?metric=vision.left_visual_acuity']}>
+      <TestNavigation initial={{ id: '/profile/vision', metric: 'vision.left_visual_acuity' }}>
         <VisionPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     // ?metric=vision.left_visual_acuity selects the left-eye visual-acuity
@@ -360,9 +360,9 @@ describe('VisionPage OCR intake', () => {
     ]);
 
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <VisionPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     // The exam timeline accordion is open by default — expand the exam card

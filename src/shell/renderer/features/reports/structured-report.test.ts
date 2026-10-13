@@ -237,7 +237,7 @@ describe('structured-report', () => {
     // Priority follow-ups surface as clickable action items and round-trip.
     expect(content.actionItems).toHaveLength(1);
     expect(content.actionItems?.[0]?.ruleId).toBe('PO-REM-VAC-001');
-    expect(content.actionItems?.[0]?.linkTo).toContain('/advisor');
+    expect(content.actionItems?.[0]).not.toHaveProperty('linkTo');
     const reparsed = parseReportContent(JSON.stringify(content));
     if (reparsed.version !== 1) throw new Error('expected v1 reparse');
     expect(reparsed.actionItems).toHaveLength(1);

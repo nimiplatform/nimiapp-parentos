@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import type { ParentOSDestination } from '../../app-shell/navigation-destinations.js';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import JournalPage from './journal-page.js';
 import { useAppStore } from '../../app-shell/app-store.js';
@@ -48,7 +49,8 @@ vi.mock('../../engine/observation-matcher.js', () => ({
   getActiveDimensions: (dimensions: unknown) => dimensions,
 }));
 
-vi.mock('../../knowledge-base/index.js', () => ({
+vi.mock('../../knowledge-base/index.js', async importOriginal => ({
+  ...(await importOriginal<typeof import('../../knowledge-base/index.js')>()),
   REMINDER_RULES: [
     {
       ruleId: 'PO-REM-GUIDE-001',
@@ -120,11 +122,11 @@ vi.mock('../../engine/reminder-actions.js', () => ({
   completeReminderByRule: completeReminderByRuleMock,
 }));
 
-function renderPage(initialEntry = '/journal') {
+function renderPage(initial: ParentOSDestination = { id: '/journal' }) {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+    <TestNavigation initial={initial}>
       <JournalPage />
-    </MemoryRouter>,
+    </TestNavigation>,
   );
 }
 
@@ -392,7 +394,7 @@ describe('JournalPage', () => {
   });
 
   it('completes the linked reminder after save when reminder context is present', async () => {
-    renderPage('/journal?reminderRuleId=PO-REM-GUIDE-001&repeatIndex=2');
+    renderPage({ id: '/journal', reminder: { ruleId: 'PO-REM-GUIDE-001', repeatIndex: 2 } });
 
     fireEvent.change(getComposerTextarea(), {
       target: { value: '今天留意到她会主动回应别人。' },
@@ -638,7 +640,7 @@ describe('JournalPage', () => {
   it('shows a keepsake empty-state hint when the keepsake filter has no entries', async () => {
     getJournalEntriesMock.mockResolvedValue([createJournalEntry()]);
 
-    renderPage('/journal?filter=keepsake');
+    renderPage({ id: '/journal', filter: 'keepsake' });
 
     await waitFor(() => {
       expect(screen.getByText('还没有珍藏的成长瞬间')).toBeTruthy();

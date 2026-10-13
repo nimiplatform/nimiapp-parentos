@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 import type { OutdoorRecordRow } from '../../bridge/sqlite-bridge.js';
 import { getWeekStart, computeWeekSummary, buildOutdoorMessage, fmtDate, DEFAULT_OUTDOOR_GOAL_MINUTES } from '../outdoor/outdoor-helpers.js';
@@ -61,7 +61,7 @@ function MiniTrendRow({ trend }: { trend: GrowthTrendItem }) {
 export function GrowthSnapshotCard({ snapshot }: { snapshot: { updatedAt: string | null; updatedLabel: string; metrics: GrowthSnapshotMetric[]; trends: GrowthTrendItem[] } }) {
   return (
     <Cd cls="col-span-4 flex flex-col">
-      <Hdr title={i18nText('Timeline.home.growthSnapshotTitle')} to="/profile/growth" link={i18nText('Timeline.home.viewCurves')} />
+      <Hdr title={i18nText('Timeline.home.growthSnapshotTitle')} destination={{ id: '/profile/growth' }} link={i18nText('Timeline.home.viewCurves')} />
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.latestGrowthMeasurement')}</p>
         <span className="text-[12px]" style={{ color: '#64748b' }}>{snapshot.updatedLabel}</span>
@@ -90,11 +90,11 @@ const RECENT_LINE_GRID_CLS: Record<number, string> = {
 export function RecentLinesCard({ lines }: { lines: RecentLineItem[] }) {
   return (
     <Cd cls="@container col-span-8">
-      <Hdr title={i18nText('Timeline.home.recentLinesTitle')} to="/journal" link={i18nText('Timeline.home.viewAllRecords')} />
+      <Hdr title={i18nText('Timeline.home.recentLinesTitle')} destination={{ id: '/journal' }} link={i18nText('Timeline.home.viewAllRecords')} />
       {lines.length > 0 ? (
         <div className={`grid gap-4 ${RECENT_LINE_GRID_CLS[lines.length] ?? RECENT_LINE_GRID_CLS[4]}`}>
           {lines.map((line) => (
-            <Link key={line.id} to={line.to} className="dashboard-inset dashboard-inset--interactive rounded-[16px] p-5 transition-all duration-200 hover:-translate-y-1">
+            <DestinationLink key={line.id} destination={line.to} className="dashboard-inset dashboard-inset--interactive rounded-[16px] p-5 transition-all duration-200 hover:-translate-y-1">
               <div className="flex items-center justify-between gap-2">
                 <span
                   className="rounded-full px-2 py-0.5 text-[12px] font-medium"
@@ -109,7 +109,7 @@ export function RecentLinesCard({ lines }: { lines: RecentLineItem[] }) {
               <p className="mt-3 line-clamp-3 text-[14px] font-medium leading-relaxed" style={{ color: textMain }}>{line.title}</p>
               <p className="mt-2 text-[12px]" style={{ color: textMuted }}>{line.detail}</p>
               {line.tag ? <p className="mt-2 text-[12px] font-medium" style={{ color: '#b45309' }}>{line.tag}</p> : null}
-            </Link>
+            </DestinationLink>
           ))}
         </div>
       ) : (
@@ -140,7 +140,7 @@ export function OutdoorGoalCard({
   if (goalMinutes === null) {
     return (
       <Cd cls="col-span-4">
-        <Hdr title={i18nText('Timeline.home.outdoorGoalTitle')} to="/profile/outdoor" link={i18nText('Timeline.home.setGoal')} />
+        <Hdr title={i18nText('Timeline.home.outdoorGoalTitle')} destination={{ id: '/profile/outdoor' }} link={i18nText('Timeline.home.setGoal')} />
         <div className="dashboard-inset rounded-[16px] p-5">
           <p className="text-[14px] font-semibold" style={{ color: textMain }}>{i18nText('Timeline.home.noOutdoorGoalTitle')}</p>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: textMuted }}>
@@ -153,7 +153,7 @@ export function OutdoorGoalCard({
 
   return (
     <Cd cls="col-span-4">
-      <Hdr title={i18nText('Timeline.home.outdoorGoalTitle')} to="/profile/outdoor" />
+      <Hdr title={i18nText('Timeline.home.outdoorGoalTitle')} destination={{ id: '/profile/outdoor' }} />
       <div className="space-y-3">
         <div className="flex items-end justify-between">
           <p className="text-[18px] font-bold tabular-nums" style={{ color: textMain }}>

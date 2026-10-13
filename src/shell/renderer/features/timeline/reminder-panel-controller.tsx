@@ -9,7 +9,7 @@
 // props for `<ReminderPanel>` and a ready-to-render `modalsNode`.
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { nimiToast } from '@nimiplatform/kit/ui';
 import { computeAgeMonths, type ChildProfile } from '../../app-shell/app-store.js';
 import {
@@ -18,6 +18,7 @@ import {
   DASHBOARD_TASK_CATALOG,
   HEALTH_CAPTURE_PROTOCOLS,
   type HealthCaptureProtocolId,
+  type HealthMetricGroupId,
 } from '../../knowledge-base/index.js';
 import {
   buildAllergyProfile,
@@ -64,7 +65,7 @@ const PROTOCOL_GROUP_LOOKUP = new Map(
 );
 
 interface HealthCaptureSelection {
-  groupId: string;
+  groupId: HealthMetricGroupId;
   metricId?: string | null;
   linkedReminder?: LinkedHealthRecordReminder | null;
 }
@@ -105,7 +106,7 @@ export interface ReminderPanelController {
  * child profile is selected — the hook stays inert (empty agenda) in that case.
  */
 export function useReminderPanelController(child: ChildProfile | undefined): ReminderPanelController {
-  const navigate = useNavigate();
+  const { open: navigate } = useParentOSNavigation();
   const { d, loading, reload } = useDash(child?.childId ?? null);
   const ageMonths = child ? computeAgeMonths(child.birthDate) : 0;
   const localToday = getLocalToday();
@@ -279,7 +280,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
           // Closing an open wear-gap interval is a per-appliance action with no
           // dashboard-resident modal yet; jump to /profile so the parent can
           // manage the interval from the orthodontic surface.
-          navigate('/profile');
+          void navigate({ id: '/profile' });
           return;
         }
         const dashboard = await getOrthodonticDashboard(child.childId);
@@ -384,7 +385,7 @@ export function useReminderPanelController(child: ChildProfile | undefined): Rem
           onSaved={() => {
             const groupId = captureSelection.groupId;
             setCaptureSelection(null);
-            navigate(`/profile?focus=${encodeURIComponent(groupId)}`);
+            void navigate({ id: '/profile', focus: groupId });
           }}
         />
       ) : null}

@@ -188,6 +188,7 @@ describe('growth record reminder projection', () => {
   });
 
   it('accepts only exact admitted reminder object references', () => {
+    expect(parseReminderActivityObjectRef(reminderActivityObjectRef('child-lin-keran', 'PO-REM-CHK-004', 2))).toEqual({ childId: 'child-lin-keran', ruleId: 'PO-REM-CHK-004', repeatIndex: 2 });
     expect(parseReminderActivityObjectRef(reminderActivityObjectRef(CHILD_ID, 'PO-REM-GRO-002', 2))).toEqual({ childId: CHILD_ID, ruleId: 'PO-REM-GRO-002', repeatIndex: 2 });
     expect(parseReminderActivityObjectRef(`reminder:${CHILD_ID}:PO-REM-VAC-001:0`)).toEqual({ childId: CHILD_ID, ruleId: 'PO-REM-VAC-001', repeatIndex: 0 });
     expect(parseReminderActivityObjectRef(`reminder:${CHILD_ID}:PO-REM-GRO-002:01`)).toBeNull();
@@ -473,31 +474,46 @@ describe('admitted reminder publication', () => {
     await syncReminderActivity(CHILD_ID);
     const care = runtime.putCalls.find((input) => input.type === CARE_REMINDER_ACTIVITY_TYPE && input.todoState === 'open')!;
     const target = parseReminderActivityObjectRef(String(care.objectRef))!;
-    const selectChild = vi.fn();
-    const navigate = vi.fn();
-    registerReminderOpenHandler({ selectChild, navigate, focus: async () => undefined });
+    const openReminder = vi.fn(async () => ({ status: 'committed' }));
+    registerReminderOpenHandler({ openReminder });
     runtime.putCalls = [];
 
     await expect(nimi.handler!({ activityId: 'act_care', objectRef: String(care.objectRef), type: CARE_REMINDER_ACTIVITY_TYPE })).resolves.toBe('opened');
-    expect(selectChild).toHaveBeenCalledExactlyOnceWith(CHILD_ID);
-    expect(navigate).toHaveBeenCalledExactlyOnceWith(`/reminders?focus=${encodeURIComponent(`${target.ruleId}:${target.repeatIndex}`)}`);
+    expect(openReminder).toHaveBeenCalledExactlyOnceWith(CHILD_ID, { ruleId: target.ruleId, repeatIndex: target.repeatIndex });
     await expect(nimi.handler!({ activityId: 'act_care', objectRef: String(care.objectRef), type: GROWTH_REMINDER_ACTIVITY_TYPE })).resolves.toBe('object-unavailable');
-    expect(selectChild).toHaveBeenCalledTimes(1);
+    expect(openReminder).toHaveBeenCalledTimes(1);
     expect(runtime.putCalls).toHaveLength(0);
   });
 
+  it('waits for the leave transaction and never reports a cancelled open as opened', async () => {
+    let settle!: (value: { status: string }) => void;
+    const openReminder = vi.fn(() => new Promise<{ status: string }>(resolve => { settle = resolve; }));
+    registerReminderOpenHandler({ openReminder });
+    let answered = false;
+    const opening = nimi.handler!({ activityId: 'act_1', objectRef: reminderActivityObjectRef(CHILD_ID, 'PO-REM-GRO-002', 2), type: GROWTH_REMINDER_ACTIVITY_TYPE });
+    const rejection = expect(opening).rejects.toThrow('Reminder navigation cancelled.');
+    void opening.then(() => { answered = true; }, () => { answered = true; });
+    await vi.waitFor(() => expect(openReminder).toHaveBeenCalledTimes(1));
+    expect(answered).toBe(false);
+    settle({ status: 'cancelled' });
+    await rejection;
+  });
+
+  it.each(['busy', 'failed', 'invalidated'])('does not acknowledge a %s switching transaction', async status => {
+    registerReminderOpenHandler({ openReminder: async () => ({ status }) });
+    await expect(nimi.handler!({ activityId: 'act_1', objectRef: reminderActivityObjectRef(CHILD_ID, 'PO-REM-GRO-002', 2), type: GROWTH_REMINDER_ACTIVITY_TYPE })).rejects.toThrow(`Reminder navigation ${status}.`);
+  });
+
   it('opens the exact round of the right child and reports anything else as unavailable', async () => {
-    const selectChild = vi.fn();
-    const navigate = vi.fn();
-    registerReminderOpenHandler({ selectChild, navigate, focus: async () => undefined });
+    const openReminder = vi.fn(async () => ({ status: 'committed' }));
+    registerReminderOpenHandler({ openReminder });
     const objectRef = reminderActivityObjectRef(CHILD_ID, 'PO-REM-GRO-002', 2);
     await expect(nimi.handler!({ activityId: 'act_1', objectRef, type: GROWTH_REMINDER_ACTIVITY_TYPE })).resolves.toBe('opened');
-    expect(selectChild).toHaveBeenCalledWith(CHILD_ID);
-    expect(navigate).toHaveBeenCalledWith(`/reminders?focus=${encodeURIComponent('PO-REM-GRO-002:2')}`);
+    expect(openReminder).toHaveBeenCalledWith(CHILD_ID, { ruleId: 'PO-REM-GRO-002', repeatIndex: 2 });
     await expect(nimi.handler!({ activityId: 'act_2', objectRef, type: 'org.other.thing.v1' })).resolves.toBe('object-unavailable');
     await expect(nimi.handler!({ activityId: 'act_3', objectRef: reminderActivityObjectRef('01K0OTHER0000000000000000', 'PO-REM-GRO-002', 2), type: GROWTH_REMINDER_ACTIVITY_TYPE })).resolves.toBe('object-unavailable');
     await expect(nimi.handler!({ activityId: 'act_4', objectRef: reminderActivityObjectRef(CHILD_ID, 'PO-REM-GRO-002', 7), type: GROWTH_REMINDER_ACTIVITY_TYPE })).resolves.toBe('object-unavailable');
-    expect(selectChild).toHaveBeenCalledTimes(1);
+    expect(openReminder).toHaveBeenCalledTimes(1);
   });
 });
 

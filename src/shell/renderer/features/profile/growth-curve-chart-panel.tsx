@@ -1,5 +1,5 @@
 import { Surface, Tooltip as KitTooltip, cn } from '@nimiplatform/kit/ui';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import {
   Area,
   CartesianGrid,
@@ -372,9 +372,9 @@ export function GrowthCurveChartPanel({
                 </div>
                 <div className="flex items-center gap-3 mt-1.5">
                   <span className="text-[12px] text-[var(--nimi-text-muted)]">{i18nText('GrowthCurve.boneAge.evaluatedAt', { date: latest.measuredAt.split('T')[0] })}</span>
-            <Link to="/profile" className="text-[12px] hover:underline text-[var(--nimi-action-primary-bg)]">
+            <DestinationLink destination={{ id: '/profile' }} className="text-[12px] hover:underline text-[var(--nimi-action-primary-bg)]">
                     {i18nText('GrowthCurve.boneAge.tannerLink')}
-                  </Link>
+                  </DestinationLink>
                 </div>
               </div>
             </div>

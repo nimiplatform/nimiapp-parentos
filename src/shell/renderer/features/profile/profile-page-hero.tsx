@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { useTranslation } from 'react-i18next';
 import { Pencil, Plus } from 'lucide-react';
 import { Button, Surface } from '@nimiplatform/kit/ui';
@@ -26,7 +26,7 @@ export interface ProfileHeroProps {
 // @nimi-authority: rule.parentos.hrec.r007
 export function ProfileHero({ child, ageMonths, completeness, recordCount, lastRecordedDaysAgo, onAddRecord }: ProfileHeroProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { open: navigate } = useParentOSNavigation();
   const subtitleParts = [
     t(child.gender === 'male' ? 'Profile.gender.male' : 'Profile.gender.female'),
     formatAgeText(ageMonths, t),
@@ -89,7 +89,7 @@ export function ProfileHero({ child, ageMonths, completeness, recordCount, lastR
           </Button>
           <Button
             onClick={() => {
-              void navigate('/settings/children', { state: { from: 'profile' } });
+              void navigate({ id: '/settings/children', returnTo: 'profile' });
             }}
             tone="secondary"
             size="md"

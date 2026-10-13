@@ -3,7 +3,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { TooltipProvider } from '@nimiplatform/kit/ui';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import GrowthCurvePage from './growth-curve-page.js';
 import { GrowthCurveChartPanel } from './growth-curve-chart-panel.js';
@@ -166,9 +166,9 @@ describe('GrowthCurvePage', () => {
   it('fails closed for WHO weight beyond official coverage with an out-of-range note', async () => {
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -201,7 +201,7 @@ describe('GrowthCurvePage', () => {
 
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurveChartPanel
             chartData={[{ age: 121, value: 110, date: '2026-01-01' }]}
             selectedType="height"
@@ -213,7 +213,7 @@ describe('GrowthCurvePage', () => {
             measurements={[]}
             ageMonths={121}
           />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -227,9 +227,9 @@ describe('GrowthCurvePage', () => {
   it('renders the hero card with percentile dial, big value, and the trend-stat row when data present', async () => {
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -251,9 +251,9 @@ describe('GrowthCurvePage', () => {
   it('opens the metric tab named by the ?metric= deep link instead of the height default', async () => {
     render(
       <TooltipProvider>
-        <MemoryRouter initialEntries={['/profile/growth?metric=growth.weight']}>
+        <TestNavigation initial={{ id: '/profile/growth', metric: 'growth.weight' }}>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -273,9 +273,9 @@ describe('GrowthCurvePage', () => {
 
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -324,9 +324,9 @@ describe('GrowthCurvePage', () => {
 
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -345,9 +345,9 @@ describe('GrowthCurvePage', () => {
 
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -390,9 +390,9 @@ describe('GrowthCurvePage', () => {
 
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -404,9 +404,9 @@ describe('GrowthCurvePage', () => {
   it('renders the next-check card with badge, lede, and CTA when data present', async () => {
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -437,9 +437,9 @@ describe('GrowthCurvePage', () => {
 
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -454,9 +454,9 @@ describe('GrowthCurvePage', () => {
   it('opens the next-check reschedule modal with date + cadence controls when the 更改 CTA is clicked', async () => {
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -505,9 +505,9 @@ describe('GrowthCurvePage', () => {
 
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -562,9 +562,9 @@ describe('GrowthCurvePage', () => {
 
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -601,9 +601,9 @@ describe('GrowthCurvePage', () => {
 
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 
@@ -637,9 +637,9 @@ describe('GrowthCurvePage', () => {
   it('opens HealthCaptureModal with initialGroupId="growth" + initialMetricId from the selected metric when the Add CTA is clicked', async () => {
     render(
       <TooltipProvider>
-        <MemoryRouter>
+        <TestNavigation>
           <GrowthCurvePage />
-        </MemoryRouter>
+        </TestNavigation>
       </TooltipProvider>,
     );
 

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink, type ParentOSDestination } from '../../app-shell/app-navigation.js';
 import { useTranslation } from 'react-i18next';
 import { Activity, Award, ChevronDown, ChevronRight, Eye, Footprints, Moon, PersonStanding, Plus, Smile, Stethoscope, Sun, Syringe } from 'lucide-react';
 import { Surface } from '@nimiplatform/kit/ui';
 import type { HealthGroupSnapshot, HealthMetricSnapshot } from '../../engine/health-record-domain.js';
 import type { HealthMetricGroupId, HealthMetricId } from '../../knowledge-base/index.js';
 import { formatDate, formatMetricSnapshotValue, formatMetricSnapshotValueParts, groupLabel, metricLabel } from './health-record-display.js';
+import { healthMetricDestination } from '../../app-shell/navigation-destinations.js';
 import { i18nText } from '../../i18n/index.js';
 
 interface GroupVisual {
@@ -52,15 +53,9 @@ function isSportActivityMetric(metric: HealthMetricSnapshot['metric']): boolean 
 // the card deep-links the clicked metric via ?metric=<metricId> so the page
 // opens on that metric's tab instead of its default. data/structured/parentos/routes.yaml admits the
 // query param for both /profile/growth and /profile/vision.
-const METRIC_DEEP_LINK_ROUTES = new Set(['/profile/growth', '/profile/vision']);
 
-function metricDetailRoute(metric: HealthMetricSnapshot['metric']): string {
-  const route = metric.detailRoute ?? '/profile';
-  if (METRIC_DEEP_LINK_ROUTES.has(route)) {
-    return `${route}?metric=${encodeURIComponent(metric.metricId)}`;
-  }
-  return route;
-}
+
+function metricDetailRoute(metric: HealthMetricSnapshot['metric']): ParentOSDestination { return healthMetricDestination(metric.metricId, metric.detailRoute); }
 
 export interface ProfileGroupCardProps {
   group: HealthGroupSnapshot;
@@ -91,7 +86,8 @@ export function ProfileGroupCard({ group, onCapture }: ProfileGroupCardProps) {
     .map((snapshot) => metricLabel(snapshot.metric, t))
     .join(t('Profile.group.metricSeparator'));
   const reviewStatus = computeReviewStatus(visibleMetrics);
-  const groupRoute = visibleMetrics[0]?.metric.detailRoute ?? group.metrics[0]?.metric.detailRoute ?? '/profile';
+  const groupMetric = visibleMetrics[0]?.metric ?? group.metrics[0]?.metric;
+  const groupRoute: ParentOSDestination = groupMetric ? healthMetricDestination(groupMetric.metricId, groupMetric.detailRoute) : { id: '/profile' };
 
   return (
     <Surface
@@ -175,7 +171,7 @@ function ExpandedRows({
   onCapture,
 }: {
   metrics: readonly HealthMetricSnapshot[];
-  groupRoute: string;
+  groupRoute: ParentOSDestination;
   groupId: string;
   showSportActivityRow?: boolean;
   onCapture?: (groupId: string, metricId?: HealthMetricId) => void;
@@ -196,13 +192,13 @@ function ExpandedRows({
         ) : null}
       </ul>
       <div className="mt-3 flex items-center justify-end px-3">
-        <Link
-          to={groupRoute}
+        <DestinationLink
+          destination={groupRoute}
           className="inline-flex items-center gap-1 text-[12px] font-medium transition-colors hover:opacity-80 text-[var(--nimi-action-primary-bg)]"
         >
           {t('Profile.group.viewAll')}
           <span aria-hidden>→</span>
-        </Link>
+        </DestinationLink>
       </div>
     </div>
   );
@@ -224,8 +220,8 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
 
   return (
     <li>
-      <Link
-        to={route}
+      <DestinationLink
+        destination={route}
         className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-[var(--nimi-action-ghost-hover)] sm:grid-cols-[minmax(160px,1fr)_minmax(120px,auto)_minmax(80px,auto)_auto]"
       >
         <div className="min-w-0">
@@ -276,7 +272,7 @@ function ExpandedRow({ snapshot, onCapture }: { snapshot: HealthMetricSnapshot; 
             </button>
           )}
         </div>
-      </Link>
+      </DestinationLink>
     </li>
   );
 }
@@ -338,8 +334,8 @@ function PreviewTile({ snapshot }: { snapshot: HealthMetricSnapshot }) {
   const value = formatMetricSnapshotValue(snapshot, t);
   const date = formatDate(snapshot.latestEvent?.effectiveDate, t);
   return (
-    <Link
-      to={route}
+    <DestinationLink
+      destination={route}
       className="block rounded-xl bg-[color-mix(in_srgb,var(--nimi-surface-panel)_65%,transparent)] px-4 py-3 transition-colors hover:bg-[var(--nimi-action-ghost-hover)]"
     >
       <div className="flex items-baseline justify-between gap-2">
@@ -350,7 +346,7 @@ function PreviewTile({ snapshot }: { snapshot: HealthMetricSnapshot }) {
         </span>
       </div>
       <p className="mt-1 text-[15px] font-semibold text-[var(--nimi-text-primary)]">{value}</p>
-    </Link>
+    </DestinationLink>
   );
 }
 

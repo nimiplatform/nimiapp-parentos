@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { useTranslation } from 'react-i18next';
 import { nimiToast } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths, computeAgeMonthsAt } from '../../app-shell/app-store.js';
@@ -69,7 +69,7 @@ type DentalPhotoPayload = {
 
 export function DentalHistoryView() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { open: navigate } = useParentOSNavigation();
   const { activeChildId, children } = useAppStore();
   const child = children.find((c) => c.childId === activeChildId);
   const [records, setRecords] = useState<DentalRecordRow[]>([]);
@@ -538,8 +538,7 @@ export function DentalHistoryView() {
     if (record.severity) descParts.push(t('Profile.rich.dental.severity', { severity: SEVERITY_LABELS[record.severity] ?? record.severity }));
     if (record.hospital) descParts.push(i18nText('Dental.history.askAiDesc.clinic', { clinic: record.hospital }));
     if (record.notes) descParts.push(i18nText('Dental.history.askAiDesc.notes', { notes: record.notes }));
-    const params = new URLSearchParams({ topic, desc: descParts.join('；'), record: 'dental' });
-    navigate(`/advisor?${params.toString()}`);
+    void navigate({ id: '/advisor' }, { kind: 'advisor-topic', topic, description: descParts.join('；'), record: { id: '/profile/dental' } });
   };
 
   const handleDeleteRecord = async (record: DentalRecordRow) => {

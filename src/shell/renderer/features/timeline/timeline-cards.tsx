@@ -36,7 +36,7 @@ export function SleepTrendCard({ summary }: { summary: SleepTrendSummary }) {
   const hasData = summary.points.length > 0;
   return (
     <Cd cls="col-span-4">
-      <Hdr title={i18nText('Timeline.card.sleep.title')} to="/profile/sleep" link={i18nText('Timeline.action.viewDetails')} />
+      <Hdr title={i18nText('Timeline.card.sleep.title')} destination={{ id: '/profile/sleep' }} link={i18nText('Timeline.action.viewDetails')} />
       {hasData ? (
         <>
           <div className="flex items-end justify-between gap-3">
@@ -82,7 +82,7 @@ export function VisionCard({ snapshot }: { snapshot: VisionSnapshotSummary }) {
   const hasData = snapshot.leftEye != null || snapshot.rightEye != null;
   return (
     <Cd cls="col-span-4">
-      <Hdr title={i18nText('Timeline.card.vision.title')} to="/profile/vision" link={i18nText('Timeline.action.viewDetails')} />
+      <Hdr title={i18nText('Timeline.card.vision.title')} destination={{ id: '/profile/vision' }} link={i18nText('Timeline.action.viewDetails')} />
       {hasData ? (
         <>
           <div className="flex items-center justify-between gap-4">
@@ -142,7 +142,7 @@ export function MilestoneTimelineCard({ summary }: { summary: MilestoneTimelineS
   const itemGridCls = hasBoth ? 'grid gap-2' : 'grid gap-2 @3xl:grid-cols-3';
   return (
     <Cd cls="@container col-span-4">
-      <Hdr title={i18nText('Timeline.card.milestone.title')} to="/profile/milestones" link={i18nText('Timeline.action.viewAll')} />
+      <Hdr title={i18nText('Timeline.card.milestone.title')} destination={{ id: '/profile/milestones' }} link={i18nText('Timeline.action.viewAll')} />
       {hasAchieved || hasUpcoming ? (
         <div className={hasBoth ? 'grid gap-4 @md:grid-cols-2 @md:gap-5' : undefined}>
           {hasAchieved ? (
@@ -194,7 +194,7 @@ export function ObservationDistributionCard({ summary }: { summary: ObservationD
   const hasData = summary.items.length > 0;
   return (
     <Cd cls="col-span-4">
-      <Hdr title={i18nText('Timeline.card.observation.title')} to="/journal" link={i18nText('Timeline.action.viewRecords')} />
+      <Hdr title={i18nText('Timeline.card.observation.title')} destination={{ id: '/journal' }} link={i18nText('Timeline.action.viewRecords')} />
       {hasData ? (
         <>
           <p className="mb-5 text-[13px]" style={{ color: textMuted }}>{i18nText('Timeline.card.observation.last30Days', { count: summary.totalEntries })}</p>
@@ -233,7 +233,7 @@ export function MonthlyReportCard({ report }: { report: MonthlyReportSummary }) 
   const actionText = content.version === 2 ? content.actionItems[0]?.text : null;
   return (
     <Cd cls="col-span-4">
-      <Hdr title={i18nText('Timeline.card.monthlyReport.title')} to="/reports" link={i18nText('Timeline.action.viewFullReport')} />
+      <Hdr title={i18nText('Timeline.card.monthlyReport.title')} destination={{ id: '/reports' }} link={i18nText('Timeline.action.viewFullReport')} />
       <p className="text-[14px] leading-[1.8]" style={{ color: textMain }}>{teaser}</p>
       {actionText ? (
         <div className="dashboard-inset mt-4 rounded-[14px] p-4">

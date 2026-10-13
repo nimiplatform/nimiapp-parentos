@@ -30,9 +30,9 @@ function uniqueSorted(values: Iterable<string>) {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right));
 }
 
-export function extractRouterPaths(source: string) {
+export function extractDestinationIds(source: string) {
   const paths: string[] = [];
-  const regex = /path\s*=\s*["']([^"']+)["']/g;
+  const regex = /["'](\/[^"']+)["']:\s*[A-Z]/g;
   for (const match of source.matchAll(regex)) {
     if (match[1] && match[1] !== '*') paths.push(match[1]);
   }
@@ -41,7 +41,7 @@ export function extractRouterPaths(source: string) {
 
 export function extractNavPaths(source: string) {
   const paths: string[] = [];
-  const regex = /to:\s*["']([^"']+)["']/g;
+  const regex = /to:\s*\{\s*id:\s*["']([^"']+)["']/g;
   for (const match of source.matchAll(regex)) {
     if (match[1]) paths.push(match[1]);
   }
@@ -50,7 +50,7 @@ export function extractNavPaths(source: string) {
 
 export function findRouteConsistencyErrors(input: {
   routes: SpecRoute[];
-  routerSource: string;
+  destinationSource: string;
   navSource: string;
   canonicalAuthorityExists: boolean;
 }) {
@@ -63,7 +63,7 @@ export function findRouteConsistencyErrors(input: {
   }
 
   const specPaths = uniqueSorted(input.routes.map((route) => route.path));
-  const routerPaths = extractRouterPaths(input.routerSource);
+  const routerPaths = extractDestinationIds(input.destinationSource);
   const specNavPaths = uniqueSorted(
     input.routes.filter((route) => route.nav === true).map((route) => route.path),
   );
@@ -244,7 +244,7 @@ export function runSpecConsistencyCheck() {
     readFileSync(resolve(ROOT, 'data/structured/parentos/routes.yaml'), 'utf-8'),
   ) as { routes: SpecRoute[] };
 
-  const routerSource = readFileSync(
+  const destinationSource = readFileSync(
     resolve(ROOT, 'src/shell/renderer/app-shell/routes.tsx'),
     'utf-8',
   );
@@ -260,7 +260,7 @@ export function runSpecConsistencyCheck() {
     ...findRouteTableConstraintErrors(routesYaml.routes),
     ...findRouteConsistencyErrors({
       routes: routesYaml.routes,
-      routerSource,
+      destinationSource,
       navSource,
       canonicalAuthorityExists,
     }),

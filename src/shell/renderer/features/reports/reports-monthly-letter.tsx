@@ -1,5 +1,6 @@
+import { reportActionIntent } from './structured-report.js';
 import { useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { Button, IconButton, StatusBadge, TextareaField } from '@nimiplatform/kit/ui';
 import { AlertCircle, ArrowRight, Heart, Pencil, Quote } from 'lucide-react';
 import { NoteAnchor } from './report-user-notes.js';
@@ -519,10 +520,10 @@ export function MonthlyLetterViewer({
                   <h4 className="report-monthly-action-title">
                     {a.text}
                   </h4>
-                  <Link to={a.linkTo ?? '/advisor'} className="report-monthly-action-link">
+                  <DestinationLink destination={{ id: '/advisor' }} intent={reportActionIntent(a)} className="report-monthly-action-link">
                     {i18nText('Reports.monthly.discussInAdvisor')}
                     <ArrowRight size={11} strokeWidth={2} />
-                  </Link>
+                  </DestinationLink>
                 </div>
               </article>
             ))}

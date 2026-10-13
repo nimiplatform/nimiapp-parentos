@@ -7,7 +7,7 @@ import {
   ModalHeader,
 } from './health-record-modal-shell.js';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParentOSNavigation, useParentOSIntent } from '../../app-shell/app-navigation.js';
 import { useAppStore, computeAgeMonths, computeAgeMonthsAt, formatAge } from '../../app-shell/app-store.js';
 import { REMINDER_RULES } from '../../knowledge-base/index.js';
 import type { ReminderRule } from '../../knowledge-base/gen/reminder-rules.gen.js';
@@ -194,11 +194,11 @@ function HistoricalSection({ rules, onRecord }: {
    ================================================================ */
 
 export default function VaccinePage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const intent = useParentOSIntent(), owner = useParentOSNavigation();
   const { activeChildId, children } = useAppStore();
   const child = children.find((c) => c.childId === activeChildId);
   const [records, setRecords] = useState<VaccineRecordRow[]>([]);
-  const [recordingRuleId, setRecordingRuleId] = useState<string | null>(() => searchParams.get('ruleId'));
+  const [recordingRuleId, setRecordingRuleId] = useState<string | null>(null);
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'timeline' | 'list'>('timeline');
 
@@ -257,12 +257,7 @@ export default function VaccinePage() {
     }
   };
 
-  const clearRuleSearch = () => {
-    if (!searchParams.has('ruleId')) return;
-    const next = new URLSearchParams(searchParams);
-    next.delete('ruleId');
-    setSearchParams(next, { replace: true });
-  };
+  useEffect(() => { if (intent?.kind !== 'vaccine-record' || !child || !owner.consumeIntent(intent)) return; setRecordingRuleId(intent.ruleId); }, [intent, child, owner]);
 
   /* Upcoming vaccines: only current window or recently overdue. */
   const upcoming = useMemo(() =>
@@ -606,11 +601,9 @@ export default function VaccinePage() {
           existing={records.find((x) => x.ruleId === recordingRule.ruleId) ?? null}
           onSave={async () => {
             await getVaccineRecords(child.childId).then(setRecords);
-            clearRuleSearch();
           }}
           onClose={() => {
             setRecordingRuleId(null);
-            clearRuleSearch();
           }}
         />
       )}

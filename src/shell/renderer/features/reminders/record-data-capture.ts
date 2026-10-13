@@ -2,6 +2,7 @@ import {
   HEALTH_CAPTURE_PROTOCOLS,
   HEALTH_REMINDER_CAPTURE_TARGETS,
   type HealthRecordDataRuleId,
+  type HealthMetricGroupId,
 } from '../../knowledge-base/index.js';
 import type { ActiveReminder } from '../../engine/reminder-engine.js';
 import type { LinkedHealthRecordReminder } from '../profile/health-capture-orchestrator.js';
@@ -24,7 +25,7 @@ export function canDirectlyCompleteReminder(reminder: Pick<ActiveReminder, 'rule
 
 export interface RecordDataReminderSelection {
   /** Sidebar group to open in HealthCaptureModal. */
-  groupId: string;
+  groupId: HealthMetricGroupId;
   /** Optional metric the reminder asks to capture (forwarded as initialMetricId). */
   metricId?: string | null;
   /** Reminder linkage forwarded into the per-group form's save. */

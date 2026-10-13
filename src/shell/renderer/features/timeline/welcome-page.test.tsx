@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { WelcomePage } from './welcome-page.js';
@@ -23,9 +23,9 @@ describe('WelcomePage', () => {
 
   it('shows the onboarding empty state when no child profile exists', () => {
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <WelcomePage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     expect(screen.getByTestId('parentos-onboarding-page')).toBeTruthy();

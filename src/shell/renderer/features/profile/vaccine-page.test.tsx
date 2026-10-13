@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore, type ChildProfile } from '../../app-shell/app-store.js';
 import type { VaccineRecordRow } from '../../bridge/sqlite-bridge.js';
@@ -50,12 +50,12 @@ function pendingWrite() {
   return { promise, resolve, reject };
 }
 
-function renderPage(search = '') {
-  return render(<MemoryRouter initialEntries={[`/profile/vaccines${search}`]}><VaccinePage /></MemoryRouter>);
+function renderPage(ruleId?: string) {
+  return render(<TestNavigation initial={{ id: '/profile/vaccines' }} intent={ruleId ? { kind: 'vaccine-record', ruleId } : undefined}><VaccinePage /></TestNavigation>);
 }
 
 async function submitRecord(entry: 'catalog' | 'capture') {
-  renderPage(entry === 'catalog' ? `?ruleId=${rule.ruleId}` : '');
+  renderPage(entry === 'catalog' ? rule.ruleId : undefined);
   if (entry === 'capture') {
     fireEvent.click(screen.getByRole('button', { name: i18nText('Vaccine.page.addRecord') }));
     fireEvent.pointerDown(screen.getByRole('combobox'), { button: 0, ctrlKey: false, pointerType: 'mouse' });

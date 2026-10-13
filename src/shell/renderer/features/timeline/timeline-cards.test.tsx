@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { waitFor, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation, NavigationProbe } from '../../testing/navigation.js';
 import { describe, expect, it, vi } from 'vitest';
 import { GettingStartedCard, GrowthSnapshotCard, MilestoneTimelineCard, ObservationDistributionCard, QuickLinksStrip, RecentChangesHeroCard, RecentLinesCard, SleepTrendCard, StageInsightCard } from './timeline-cards.js';
 
@@ -11,11 +11,11 @@ vi.mock('@tauri-apps/api/core', () => ({
 }));
 
 function renderInRouter(node: ReactNode) {
-  return render(<MemoryRouter>{node}</MemoryRouter>);
+  return render(<TestNavigation>{node}<NavigationProbe /></TestNavigation>);
 }
 
 describe('timeline dashboard cards', () => {
-  it('renders sleep trend content when data exists', () => {
+  it('renders sleep trend content when data exists', async () => {
     renderInRouter(
       <SleepTrendCard
         summary={{
@@ -36,7 +36,7 @@ describe('timeline dashboard cards', () => {
     expect(screen.getByText('9h30m')).toBeTruthy();
   });
 
-  it('renders milestone timeline with achieved and upcoming', () => {
+  it('renders milestone timeline with achieved and upcoming', async () => {
     renderInRouter(
       <MilestoneTimelineCard
         summary={{
@@ -57,7 +57,7 @@ describe('timeline dashboard cards', () => {
     expect(screen.getByText('独坐')).toBeTruthy();
   });
 
-  it('renders observation distribution with dimension bars', () => {
+  it('renders observation distribution with dimension bars', async () => {
     renderInRouter(
       <ObservationDistributionCard
         summary={{
@@ -76,7 +76,7 @@ describe('timeline dashboard cards', () => {
     expect(screen.getByText(/共 5 条/)).toBeTruthy();
   });
 
-  it('renders empty states without crashing', () => {
+  it('renders empty states without crashing', async () => {
     renderInRouter(
       <>
         <SleepTrendCard
@@ -101,7 +101,7 @@ describe('timeline dashboard cards', () => {
     expect(screen.getByText('当前阶段暂无匹配的里程碑')).toBeTruthy();
     expect(screen.getByText('还没有带维度标记的观察记录')).toBeTruthy();
   });
-  it('keeps dashboard inner blocks unframed until an entry is hovered', () => {
+  it('keeps dashboard inner blocks unframed until an entry is hovered', async () => {
     const { container } = renderInRouter(
       <>
         <SleepTrendCard
@@ -142,15 +142,15 @@ describe('timeline dashboard cards', () => {
     }
   });
 
-  it('routes the recent-changes empty-state CTA into manual health data capture', () => {
+  it('routes the recent-changes empty-state CTA into manual health data capture', async () => {
     const { container } = renderInRouter(<RecentChangesHeroCard items={[]} />);
 
-    const hrefs = Array.from(container.querySelectorAll('a')).map((link) => link.getAttribute('href'));
-    expect(hrefs).toContain('/profile?capture=manual');
-    expect(hrefs).not.toContain('/journal');
+    fireEvent.click(Array.from(container.querySelectorAll('a')).find(link => link.textContent?.includes('记录'))!);
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('capture'));
+    expect(screen.getByTestId('navigation-probe').textContent).toContain('/profile');
   });
 
-  it('renders keepsake badges and reason tags in recent lines', () => {
+  it('renders keepsake badges and reason tags in recent lines', async () => {
     renderInRouter(
       <RecentLinesCard
         lines={[
@@ -159,7 +159,7 @@ describe('timeline dashboard cards', () => {
             title: '读完第一本桥梁书',
             detail: '珍藏原因：取得成果',
             recordedAt: '2026-04-15T08:00:00.000Z',
-            to: '/journal?filter=keepsake',
+            to: { id: '/journal', filter: 'keepsake' },
             badge: '珍藏',
             badgeTone: 'keepsake',
             tag: '取得成果',
@@ -173,7 +173,7 @@ describe('timeline dashboard cards', () => {
     expect(screen.getByText('取得成果')).toBeTruthy();
   });
 
-  it('renders stage insight groups without exposing internal rule identifiers', () => {
+  it('renders stage insight groups without exposing internal rule identifiers', async () => {
     renderInRouter(
       <StageInsightCard
         summary={{
@@ -199,7 +199,7 @@ describe('timeline dashboard cards', () => {
     expect(screen.queryByText(/PO-TEST-GUIDE/)).toBeNull();
   });
 
-  it('omits empty stage insight groups and links to the reminders surface', () => {
+  it('omits empty stage insight groups and links to the reminders surface', async () => {
     const { container } = renderInRouter(
       <StageInsightCard
         summary={{
@@ -216,11 +216,11 @@ describe('timeline dashboard cards', () => {
 
     expect(screen.queryByText('健康窗口')).toBeNull();
     expect(screen.getByText('发展关注')).toBeTruthy();
-    const hrefs = Array.from(container.querySelectorAll('a')).map((link) => link.getAttribute('href'));
-    expect(hrefs).toContain('/reminders');
+    fireEvent.click(container.querySelector('a')!);
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/reminders'));
   });
 
-  it('renders the per-group overflow count as a link to the reminders surface', () => {
+  it('renders the per-group overflow count as a link to the reminders surface', async () => {
     const { container } = renderInRouter(
       <StageInsightCard
         summary={{
@@ -238,13 +238,14 @@ describe('timeline dashboard cards', () => {
     );
 
     const overflowLink = screen.getByText('还有 6 项 →');
-    expect(overflowLink.closest('a')?.getAttribute('href')).toBe('/reminders');
+    fireEvent.click(overflowLink.closest('a')!);
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/reminders'));
     expect(screen.queryByText('还有 0 项 →')).toBeNull();
     const links = Array.from(container.querySelectorAll('a'));
     expect(links.filter((link) => link.textContent?.startsWith('还有'))).toHaveLength(1);
   });
 
-  it('keeps stage insight descriptions collapsed until a title is clicked, one at a time', () => {
+  it('keeps stage insight descriptions collapsed until a title is clicked, one at a time', async () => {
     renderInRouter(
       <StageInsightCard
         summary={{
@@ -280,18 +281,16 @@ describe('timeline dashboard cards', () => {
     expect(screen.queryByText('被咨询时才发言。')).toBeNull();
   });
 
-  it('renders the getting-started guide with three linked steps', () => {
+  it('renders the getting-started guide with three linked steps', async () => {
     const { container } = renderInRouter(<GettingStartedCard />);
 
     expect(screen.getByText('先从这三件事开始，记录孩子的成长')).toBeTruthy();
     expect(screen.getByText('记录第一次成长测量')).toBeTruthy();
     expect(screen.getByText('记录一次睡眠')).toBeTruthy();
     expect(screen.getByText('写一篇成长随记')).toBeTruthy();
-    const hrefs = Array.from(container.querySelectorAll('a')).map((link) => link.getAttribute('href'));
-    expect(hrefs).toEqual([
-      '/profile?capture=manual&group=growth',
-      '/profile?capture=manual&group=sleep',
-      '/journal',
-    ]);
+    const links = Array.from(container.querySelectorAll('a'));
+    fireEvent.click(links[0]!); await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('growth'));
+    fireEvent.click(links[1]!); await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('sleep'));
+    fireEvent.click(links[2]!); await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/journal'));
   });
 });

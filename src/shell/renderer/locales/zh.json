@@ -1700,7 +1700,8 @@
   },
   "Advisor": {
     "page": {
-      "noActiveChild": "请先添加孩子"
+      "noActiveChild": "请先添加孩子",
+      "referenceUnavailable": "这条记录或对话已不可用。请从列表选择仍可访问的内容。"
     },
     "transcript": {
       "user": "你",
@@ -2432,6 +2433,13 @@
         "addTodo": "添加到待办",
         "skip": "跳过"
       }
+    },
+    "leave": {
+      "title": "保存这次编辑？",
+      "description": "离开前可以保存修改、放弃修改，或继续编辑。",
+      "cancel": "继续编辑",
+      "discard": "放弃修改",
+      "save": "保存并离开"
     }
   },
   "Vaccine": {
@@ -4843,7 +4851,8 @@
       "childInfo": "孩子信息：{{childName}}，{{ageLabel}}，{{gender}}",
       "dataLabel": "{{label}}数据：",
       "noRecords": "暂无记录数据"
-    }
+    },
+    "generateHint": "点击更新，查看当前记录的 AI 解读。"
   },
   "Growth": {
     "standard": {

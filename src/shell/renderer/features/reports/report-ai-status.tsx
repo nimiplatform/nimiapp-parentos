@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { Button } from '@nimiplatform/kit/ui';
 import { Sparkles } from 'lucide-react';
 import { i18nText } from '../../i18n/index.js';
@@ -33,7 +33,7 @@ export function ReportAiStatusCard({
           <p className="report-ai-status-title">{i18nText('Reports.page.ai.offlineTitle')}</p>
           <p className="report-ai-status-text">{i18nText('Reports.page.ai.offlineBody')}</p>
         </div>
-        <Link to="/settings/ai" className="report-ai-status-link">{i18nText('Reports.page.ai.connectAction')}</Link>
+        <DestinationLink destination={{ id: '/settings/ai' }} className="report-ai-status-link">{i18nText('Reports.page.ai.connectAction')}</DestinationLink>
       </div>
     );
   }

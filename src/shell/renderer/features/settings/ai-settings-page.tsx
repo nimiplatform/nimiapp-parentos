@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import {
   AlertCircle,
   Bot,
@@ -190,13 +190,13 @@ export default function AiSettingsPage() {
     <div className="h-full overflow-y-auto bg-transparent">
       <div className="mx-auto max-w-4xl px-6 pb-8 pt-[72px]">
         <div className="mb-6 flex items-center gap-3">
-          <Link
-            to="/settings"
+          <DestinationLink
+            destination={{ id: '/settings' }}
             className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'h-8 min-h-8 w-8 px-0')}
             aria-label={i18nText('AISettings.page.backToSettings')}
           >
             <ChevronLeft size={18} aria-hidden="true" />
-          </Link>
+          </DestinationLink>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-[var(--nimi-text-primary)]">{i18nText('AISettings.page.title')}</h1>
             <p className="mt-1 text-[13px] text-[var(--nimi-text-muted)]">

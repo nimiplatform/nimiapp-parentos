@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Link } from 'react-router-dom';
+import { DestinationLink } from '../../app-shell/app-navigation.js';
 import { Button } from '@nimiplatform/kit/ui';
 import { Plus } from 'lucide-react';
 import { i18n, i18nText } from '../../i18n/index.js';
@@ -119,10 +119,10 @@ export function ReportAccumulatingState({
           <Button size="sm" tone="secondary" onClick={onRetry}>{i18nText('Reports.page.accumulating.retry')}</Button>
         </div>
       ) : (
-        <Link className="report-accumulating-cta" to="/journal">
+        <DestinationLink className="report-accumulating-cta" destination={{ id: '/journal' }}>
           <Plus size={15} strokeWidth={2} aria-hidden="true" />
           {i18nText('Reports.page.accumulating.captureAction')}
-        </Link>
+        </DestinationLink>
       )}
     </article>
   );

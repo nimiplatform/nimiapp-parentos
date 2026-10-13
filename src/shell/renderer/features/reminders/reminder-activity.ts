@@ -34,7 +34,7 @@ const PARENTOS_APP_ID = 'nimi.parentos';
 const RECORD_PAGE_SIZE = 100;
 const MAX_RECORD_PAGES = 10;
 
-const OBJECT_REF = /^reminder:([0-9A-Za-z]{1,64}):(PO-REM-(?:GRO|VAC|CHK|VIS|DEN)-[0-9]{3}):(0|[1-9][0-9]{0,3})$/u;
+const OBJECT_REF = /^reminder:([0-9A-Za-z_-]{1,64}):(PO-REM-(?:GRO|VAC|CHK|VIS|DEN)-[0-9]{3}):(0|[1-9][0-9]{0,3})$/u;
 const SYNC_DEBOUNCE_MS = 300;
 
 /** A round's projected state; its revision is assigned when it is published. */
@@ -502,9 +502,7 @@ export async function retryReminderActivity(): Promise<number> {
  * only; completion follows the persisted source contract of PO-REMI-016.
  */
 export function registerReminderOpenHandler(input: {
-  readonly selectChild: (childId: string) => void;
-  readonly navigate: (path: string) => void;
-  readonly focus: () => Promise<void>;
+  readonly openReminder: (childId: string, focus: { readonly ruleId: string; readonly repeatIndex: number }) => Promise<{ readonly status: string }>;
 }): NimiAppActivityOpenRegistration {
   return getParentOSNimiClient().activity.onOpenRequest(async (request) => {
     if (request.type !== GROWTH_REMINDER_ACTIVITY_TYPE && request.type !== CARE_REMINDER_ACTIVITY_TYPE) return 'object-unavailable';
@@ -517,9 +515,10 @@ export function registerReminderOpenHandler(input: {
       reminder.rule.ruleId === target.ruleId && reminder.repeatIndex === target.repeatIndex
     ));
     if (!instance) return 'object-unavailable';
-    input.selectChild(child.childId);
-    input.navigate(`/reminders?focus=${encodeURIComponent(`${target.ruleId}:${target.repeatIndex}`)}`);
-    await input.focus().catch(() => undefined);
+    const result = await input.openReminder(child.childId, { ruleId: target.ruleId, repeatIndex: target.repeatIndex });
+    if (result.status !== 'committed' && result.status !== 'unchanged') throw new Error(`Reminder navigation ${result.status}.`);
+    // Desktop has already launched or focused this exact activity source.
+    // The fixed local-App carrier does not expose the Desktop shell focus API.
     return 'opened';
   });
 }

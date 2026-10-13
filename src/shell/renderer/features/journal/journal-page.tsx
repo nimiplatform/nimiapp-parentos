@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NimiText } from '@nimiplatform/kit/ui';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
+import { useParentOSPosition } from '../../app-shell/app-navigation.js';
+import type { ParentOSLeaveGuard } from '../../app-shell/navigation-owner.js';
+import { Button, Dialog, DialogContent, DialogTitle, DialogDescription } from '@nimiplatform/kit/ui';
 import { useAppStore, computeAgeMonths } from '../../app-shell/app-store.js';
 import { OBSERVATION_DIMENSIONS } from '../../knowledge-base/index.js';
 import { getActiveDimensions } from '../../engine/observation-matcher.js';
@@ -55,8 +58,12 @@ import { i18nText } from '../../i18n/index.js';
 
 
 export default function JournalPage() {
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const owner = useParentOSNavigation(), navigate = owner.open, position = useParentOSPosition();
+  const journalPosition = position.id === '/journal' ? position : null;
+  const leaveRef = useRef<ParentOSLeaveGuard>(() => 'allow');
+  const [leaveQuestion, setLeaveQuestion] = useState<((answer: 'save' | 'discard' | 'cancel') => void) | null>(null);
+  const editBaseline = useRef<string | null>(null);
+  useEffect(() => owner.registerLeaveGuard((signal, destination) => leaveRef.current(signal, destination)), [owner]);
   const { activeChildId, children } = useAppStore();
   const child = children.find((item) => item.childId === activeChildId);
   const [entries, setEntries] = useState<JournalEntryRow[]>([]);
@@ -80,7 +87,8 @@ export default function JournalPage() {
   const [addingTodo, setAddingTodo] = useState(false);
   const [photoDrafts, setPhotoDrafts] = useState<PhotoDraft[]>([]);
   const [recordedAt, setRecordedAt] = useState<string | null>(null);
-  const [entryFilter, setEntryFilter] = useState<'all' | 'keepsake'>('all');
+  const entryFilter = journalPosition?.filter ?? 'all';
+  const setEntryFilter = (filter: 'all' | 'keepsake') => { void owner.open({ ...journalPosition, id: '/journal', filter }); };
   const [showEmoji, setShowEmoji] = useState(false);
   const [emojiCat, setEmojiCat] = useState<EmojiCategory>('frequent');
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
@@ -107,10 +115,10 @@ export default function JournalPage() {
   const activeMode = 'quick-capture';
 
   const guidedContext: GuidedPromptContext | null = useMemo(() => {
-    const ruleId = searchParams.get('reminderRuleId');
+    const ruleId = journalPosition?.reminder?.ruleId;
     if (!ruleId) return null;
     return getGuidedPrompts(ruleId, REMINDER_RULES);
-  }, [searchParams]);
+  }, [journalPosition?.reminder?.ruleId]);
 
   const activeDimensions = useMemo(
     () => getActiveDimensions(OBSERVATION_DIMENSIONS, ageMonths),
@@ -139,27 +147,9 @@ export default function JournalPage() {
     [activeDimensions],
   );
 
-  // Pre-select dimension from URL param (e.g., from observe page)
   useEffect(() => {
-    const paramDimensionId = searchParams.get('dimensionId');
-    if (paramDimensionId && activeDimensions.some((d) => d.dimensionId === paramDimensionId)) {
-      setSelectedDimension(paramDimensionId);
-      const next = new URLSearchParams(searchParams);
-      next.delete('dimensionId');
-      setSearchParams(next, { replace: true });
-    }
-  }, [searchParams, activeDimensions, setSearchParams]);
-
-  useEffect(() => {
-    const requestedFilter = searchParams.get('filter');
-    if (requestedFilter === 'keepsake') {
-      setEntryFilter('keepsake');
-      return;
-    }
-    if (requestedFilter === 'all') {
-      setEntryFilter('all');
-    }
-  }, [searchParams]);
+    if (!editingEntryId && journalPosition?.dimensionId && activeDimensions.some(d => d.dimensionId === journalPosition.dimensionId)) setSelectedDimension(journalPosition.dimensionId);
+  }, [journalPosition?.dimensionId, activeDimensions, editingEntryId]);
 
   const editingEntry = useMemo(
     () => editingEntryId ? entries.find((entry) => entry.entryId === editingEntryId) ?? null : null,
@@ -410,17 +400,15 @@ export default function JournalPage() {
     };
   }, [entries]);
 
+  const editSignature = JSON.stringify({ textContent, selectedDimension, selectedTags, selectedRecorderId, keepsake, keepsakeTitle, keepsakeReason, moodTag, subjectiveNotes, recordedAt });
+  useEffect(() => { if (editingEntryId && editBaseline.current === null) editBaseline.current = editSignature; if (!editingEntryId) editBaseline.current = null; }, [editingEntryId, editSignature]);
+
   if (!child) return <NimiText role="helper" className="p-8">{i18nText('Journal.page.noActiveChild')}</NimiText>;
 
   /* ── Helpers ── */
 
 
-  const clearReminderSearchParams = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('reminderRuleId');
-    next.delete('repeatIndex');
-    setSearchParams(next, { replace: true });
-  };
+  const clearReminderContext = () => { void owner.navigation.replace({ id: '/journal', filter: journalPosition?.filter, dimensionId: journalPosition?.dimensionId }); };
 
   const closeKeepsakePrompt = () => {
     setPendingKeepsakePromptEntry(null);
@@ -566,7 +554,7 @@ export default function JournalPage() {
     voiceDraft,
     photoDrafts,
     recordedAt,
-    searchParams,
+    reminder: journalPosition?.reminder,
     recorderSessionRef,
     skipLocalDraftPersistRef,
     setSubmitError,
@@ -586,7 +574,7 @@ export default function JournalPage() {
     setVoiceDraft,
     reloadEntries,
     resetComposer,
-    clearReminderSearchParams,
+    clearReminderContext,
     closeKeepsakePrompt,
     clearVoiceDraft,
     deleteTarget,
@@ -595,6 +583,28 @@ export default function JournalPage() {
     promptKeepsakeReason,
     postSaveExperiment,
   });
+
+  leaveRef.current = async (signal, destination) => {
+    if (saving || savingKeepsakePrompt || deleting || voiceDraft.status === 'recording' || voiceDraft.status === 'transcribing') return 'busy';
+    if (destination?.id === '/journal') return 'allow';
+    if (!editingEntryId) {
+      if (draftAutosaveTimer.current) clearTimeout(draftAutosaveTimer.current);
+      const payload = buildLocalDraftPayload(child.childId);
+      if (hasMeaningfulJournalLocalDraft(payload) && !writeJournalLocalDraft({ ...payload, updatedAt: isoNow() })) { setSubmitError(i18nText('Journal.error.saveFailed')); return 'cancel'; }
+      return 'allow';
+    }
+    if (editBaseline.current === editSignature && photoDrafts.length === 0 && !voiceDraft.blob) return 'allow';
+    const answer = await new Promise<'save' | 'discard' | 'cancel'>(resolve => {
+      const abort = () => { setLeaveQuestion(null); resolve('cancel'); };
+      if (signal.aborted) { resolve('cancel'); return; }
+      signal.addEventListener('abort', abort, { once: true });
+      setLeaveQuestion(() => (value: 'save' | 'discard' | 'cancel') => { signal.removeEventListener('abort', abort); setLeaveQuestion(null); resolve(value); });
+    });
+    if (signal.aborted || answer === 'cancel') return 'cancel';
+    if (answer === 'discard') return 'allow';
+    const saved = await handleSubmit();
+    return !signal.aborted && saved ? 'allow' : 'cancel';
+  };
 
   const canSaveText = captureMode === 'text' && (
     textContent.trim().length > 0
@@ -621,6 +631,15 @@ export default function JournalPage() {
 
   return (
     <div className="hide-scrollbar mx-auto min-h-full max-w-3xl px-6 pb-6 pt-12">
+      <Dialog open={leaveQuestion !== null} onOpenChange={open => { if (!open) leaveQuestion?.('cancel'); }}><DialogContent onClose={() => leaveQuestion?.('cancel')}>
+        <DialogTitle>{i18nText('Journal.leave.title')}</DialogTitle>
+        <DialogDescription>{i18nText('Journal.leave.description')}</DialogDescription>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button tone="secondary" onClick={() => leaveQuestion?.('cancel')}>{i18nText('Journal.leave.cancel')}</Button>
+          <Button tone="secondary" onClick={() => leaveQuestion?.('discard')}>{i18nText('Journal.leave.discard')}</Button>
+          <Button onClick={() => leaveQuestion?.('save')}>{i18nText('Journal.leave.save')}</Button>
+        </div>
+      </DialogContent></Dialog>
       <JournalPageCapture
         childPronoun={i18nText(child.gender === 'female' ? 'Common.pronoun.female' : 'Common.pronoun.male')}
         guidedContext={guidedContext}
@@ -640,7 +659,7 @@ export default function JournalPage() {
         onDiscardLocalDraft={discardLocalDraft}
         onRestoreLocalDraft={restoreLocalDraft}
         onResetComposer={resetComposer}
-        onClearReminderSearchParams={clearReminderSearchParams}
+        onClearReminderSearchParams={clearReminderContext}
         captureMode={captureMode}
         onCaptureModeChange={setCaptureMode}
         textContent={textContent}
@@ -706,24 +725,9 @@ export default function JournalPage() {
         entryFilter={entryFilter}
         onFilterChange={setEntryFilter}
         recorderProfiles={child.recorderProfiles}
-        onAskAiAboutEntry={(entry) => {
-          const dimensionName = OBSERVATION_DIMENSIONS.find((item) => item.dimensionId === entry.dimensionId)?.displayName ?? null;
-          const recorderName = child.recorderProfiles?.find((item) => item.id === entry.recorderId)?.name ?? null;
-          navigate('/advisor', {
-            state: {
-              journalEntryContext: {
-                entryId: entry.entryId,
-                recordedAt: entry.recordedAt,
-                contentType: entry.contentType,
-                textContent: entry.textContent,
-                dimensionName,
-                tags: parseSelectedTags(entry.selectedTags),
-                recorderName,
-              },
-            },
-          });
-        }}
+        onAskAiAboutEntry={(entry) => { void navigate({ id: '/advisor', journalEntryId: entry.entryId }); }}
         onEditEntry={(entry) => {
+          editBaseline.current = null;
           setEditingEntryId(entry.entryId);
           setCaptureMode('text');
           setTextContent(entry.textContent ?? '');
@@ -735,7 +739,7 @@ export default function JournalPage() {
           setKeepsakeReason(entry.keepsakeReason ?? null);
           setMoodTag(entry.moodTag);
           setRecordedAt(entry.recordedAt);
-          clearReminderSearchParams();
+          clearReminderContext();
                    try {
             const ga = entry.guidedAnswers ? JSON.parse(entry.guidedAnswers) as Record<string, string> : null;
             setSubjectiveNotes(ga?._subjective ?? '');

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { describe, expect, it } from 'vitest';
 import { OrthoCycleProgressWidget } from './timeline-ortho-cycle-widget.js';
 import type { OrthoCycleSummary } from './timeline-data-types.js';
@@ -21,9 +21,9 @@ const cycle: OrthoCycleSummary = {
 describe('OrthoCycleProgressWidget', () => {
   it('renders elapsed cycle segments with the ParentOS success token', () => {
     render(
-      <MemoryRouter>
+      <TestNavigation>
         <OrthoCycleProgressWidget cycle={cycle} />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     expect(screen.getByText('2/7 天')).toBeTruthy();

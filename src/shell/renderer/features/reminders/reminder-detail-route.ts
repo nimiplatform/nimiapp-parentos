@@ -8,21 +8,22 @@
 
 // @nimi-authority: rule.parentos.remi.r002
 // @nimi-authority: rule.parentos.hrec.r003
-const DOMAIN_DETAIL_ROUTE: Record<string, string> = {
-  vaccine: '/profile/vaccines',
-  checkup: '/profile/medical-events',
-  vision: '/profile/vision',
-  dental: '/profile/dental',
-  growth: '/profile/growth',
-  'bone-age': '/profile/tanner',
-  milestone: '/profile/milestones',
-  posture: '/profile/posture',
-  sleep: '/profile/sleep',
-  tanner: '/profile/tanner',
-  fitness: '/profile/fitness',
-  outdoor: '/profile/outdoor',
+import type { ParentOSDestination } from '../../app-shell/navigation-destinations.js';
+const DOMAIN_DETAIL_ROUTE: Record<string, ParentOSDestination> = {
+  vaccine: { id: '/profile/vaccines' },
+  checkup: { id: '/profile/medical-events' },
+  vision: { id: '/profile/vision' },
+  dental: { id: '/profile/dental' },
+  growth: { id: '/profile/growth' },
+  'bone-age': { id: '/profile/tanner' },
+  milestone: { id: '/profile/milestones' },
+  posture: { id: '/profile/posture' },
+  sleep: { id: '/profile/sleep' },
+  tanner: { id: '/profile/tanner' },
+  fitness: { id: '/profile/fitness' },
+  outdoor: { id: '/profile/outdoor' },
 };
 
-export function domainDetailRoute(domain: string): string {
-  return DOMAIN_DETAIL_ROUTE[domain] ?? '/profile';
+export function domainDetailRoute(domain: string): ParentOSDestination {
+  return DOMAIN_DETAIL_ROUTE[domain] ?? { id: '/profile' };
 }

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { TestNavigation } from '../../testing/navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import NurtureModeSettingsPage from './nurture-mode-settings-page.js';
 import { useAppStore } from '../../app-shell/app-store.js';
@@ -82,9 +82,9 @@ describe('NurtureModeSettingsPage', () => {
 
   it('round-trips global mode changes and domain overrides through updateChild/store state', async () => {
     const { container } = render(
-      <MemoryRouter>
+      <TestNavigation>
         <NurtureModeSettingsPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     const modeButtons = container.querySelectorAll('button');
@@ -128,9 +128,9 @@ describe('NurtureModeSettingsPage', () => {
     await i18n.changeLanguage('en');
 
     const { container } = render(
-      <MemoryRouter>
+      <TestNavigation>
         <NurtureModeSettingsPage />
-      </MemoryRouter>,
+      </TestNavigation>,
     );
 
     expect(container.textContent).toContain("Mimi's nurture mode");

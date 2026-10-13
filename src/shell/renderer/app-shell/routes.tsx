@@ -1,5 +1,8 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useParentOSPosition } from './app-navigation.js';
+import type { ParentOSDestinationId } from './navigation-destinations.js';
+import { useAppStore } from './app-store.js';
+import type { ComponentType } from 'react';
 import { Surface } from '@nimiplatform/kit/ui';
 
 const TimelinePage = lazy(() => import('../features/timeline/timeline-page.js'));
@@ -37,41 +40,39 @@ function PageFallback() {
   );
 }
 
-export function AppRoutes() {
-  const profileRedirect = <Navigate to="/profile" replace />;
+export const PARENTOS_PAGES: Record<ParentOSDestinationId, ComponentType> = {
+  '/timeline': TimelinePage,
+  '/profile': ProfilePage,
+  '/profile/health/:metricId': HealthMetricDetailPage,
+  '/profile/growth': GrowthCurvePage,
+  '/profile/milestones': MilestonePage,
+  '/profile/vaccines': VaccinePage,
+  '/profile/vision': VisionPage,
+  '/profile/dental': DentalPage,
+  '/profile/allergies': AllergyPage,
+  '/profile/sleep': SleepPage,
+  '/profile/medical-events': MedicalEventsPage,
+  '/profile/posture': PosturePage,
+  '/profile/tanner': TannerPage,
+  '/profile/fitness': FitnessPage,
+  '/profile/outdoor': OutdoorPage,
+  '/journal': JournalPage,
+  '/advisor': AdvisorPage,
+  '/reminders': RemindersPage,
+  '/reports': ReportsPage,
+  '/settings': SettingsPage,
+  '/settings/children': ChildrenSettingsPage,
+  '/settings/nurture-mode': NurtureModeSettingsPage,
+  '/settings/reminders': ReminderSettingsPage,
+  '/settings/ai': AiSettingsPage,
+  '/settings/privacy': PrivacySettingsPage,
+  '/settings/about': AboutSettingsPage,
+  '/profile/report-upload': ProfilePage,
+};
 
-  return (
-    <Suspense fallback={<PageFallback />}>
-      <Routes>
-        <Route path="/timeline" element={<TimelinePage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/profile/health/:metricId" element={<HealthMetricDetailPage />} />
-        <Route path="/profile/growth" element={<GrowthCurvePage />} />
-        <Route path="/profile/milestones" element={<MilestonePage />} />
-        <Route path="/profile/vaccines" element={<VaccinePage />} />
-        <Route path="/profile/vision" element={<VisionPage />} />
-        <Route path="/profile/dental" element={<DentalPage />} />
-        <Route path="/profile/allergies" element={<AllergyPage />} />
-        <Route path="/profile/sleep" element={<SleepPage />} />
-        <Route path="/profile/medical-events" element={<MedicalEventsPage />} />
-        <Route path="/profile/posture" element={<PosturePage />} />
-        <Route path="/profile/tanner" element={<TannerPage />} />
-        <Route path="/profile/fitness" element={<FitnessPage />} />
-        <Route path="/profile/outdoor" element={<OutdoorPage />} />
-        <Route path="/profile/report-upload" element={profileRedirect} />
-        <Route path="/journal" element={<JournalPage />} />
-        <Route path="/advisor" element={<AdvisorPage />} />
-        <Route path="/reminders" element={<RemindersPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/settings/children" element={<ChildrenSettingsPage />} />
-        <Route path="/settings/nurture-mode" element={<NurtureModeSettingsPage />} />
-        <Route path="/settings/reminders" element={<ReminderSettingsPage />} />
-        <Route path="/settings/ai" element={<AiSettingsPage />} />
-        <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
-        <Route path="/settings/about" element={<AboutSettingsPage />} />
-        <Route path="*" element={<Navigate to="/timeline" replace />} />
-      </Routes>
-    </Suspense>
-  );
+export function AppRoutes() {
+  const position = useParentOSPosition();
+  const childId = useAppStore(state => state.activeChildId);
+  const Page = PARENTOS_PAGES[position.id];
+  return <Suspense fallback={<PageFallback />}><Page key={childId ?? 'no-child'} /></Suspense>;
 }

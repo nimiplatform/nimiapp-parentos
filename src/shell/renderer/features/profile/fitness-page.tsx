@@ -1,6 +1,6 @@
 import { Button, Surface, Timeline, TimelineGroup } from '@nimiplatform/kit/ui';
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import {
   CartesianGrid,
   Line,
@@ -190,7 +190,7 @@ function summarizeEntry(entry: FitnessEntry): { topic: string; desc: string } {
 }
 
 export default function FitnessPage() {
-  const navigate = useNavigate();
+  const { open: navigate } = useParentOSNavigation();
   const { activeChildId, children } = useAppStore();
   const child = children.find((c) => c.childId === activeChildId);
   const [events, setEvents] = useState<HealthRecordEventRow[]>([]);
@@ -281,8 +281,7 @@ export default function FitnessPage() {
 
   const handleAskAi = (entry: FitnessEntry) => {
     const { topic, desc } = summarizeEntry(entry);
-    const params = new URLSearchParams({ topic, desc, record: 'fitness' });
-    navigate(`/advisor?${params.toString()}`);
+    void navigate({ id: '/advisor' }, { kind: 'advisor-topic', topic, description: desc, record: { id: '/profile/fitness' } });
   };
 
   const handleDelete = async (entry: FitnessEntry) => {
