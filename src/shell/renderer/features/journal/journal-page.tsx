@@ -584,16 +584,14 @@ export default function JournalPage() {
     postSaveExperiment,
   });
 
+  // @nimi-authority: rule.parentos.shell.r011
   leaveRef.current = async (signal, destination) => {
     if (saving || savingKeepsakePrompt || deleting || voiceDraft.status === 'recording' || voiceDraft.status === 'transcribing') return 'busy';
     if (destination?.id === '/journal') return 'allow';
-    if (!editingEntryId) {
-      if (draftAutosaveTimer.current) clearTimeout(draftAutosaveTimer.current);
-      const payload = buildLocalDraftPayload(child.childId);
-      if (hasMeaningfulJournalLocalDraft(payload) && !writeJournalLocalDraft({ ...payload, updatedAt: isoNow() })) { setSubmitError(i18nText('Journal.error.saveFailed')); return 'cancel'; }
-      return 'allow';
-    }
-    if (editBaseline.current === editSignature && photoDrafts.length === 0 && !voiceDraft.blob) return 'allow';
+    const hasUnsavedChanges = editingEntryId
+      ? editBaseline.current !== editSignature || photoDrafts.length > 0 || Boolean(voiceDraft.blob)
+      : hasMeaningfulJournalLocalDraft(buildLocalDraftPayload(child.childId)) || photoDrafts.length > 0 || Boolean(voiceDraft.blob);
+    if (!hasUnsavedChanges) return 'allow';
     const answer = await new Promise<'save' | 'discard' | 'cancel'>(resolve => {
       const abort = () => { setLeaveQuestion(null); resolve('cancel'); };
       if (signal.aborted) { resolve('cancel'); return; }
@@ -637,7 +635,7 @@ export default function JournalPage() {
         <div className="mt-5 flex justify-end gap-2">
           <Button tone="secondary" onClick={() => leaveQuestion?.('cancel')}>{i18nText('Journal.leave.cancel')}</Button>
           <Button tone="secondary" onClick={() => leaveQuestion?.('discard')}>{i18nText('Journal.leave.discard')}</Button>
-          <Button onClick={() => leaveQuestion?.('save')}>{i18nText('Journal.leave.save')}</Button>
+          <Button disabled={!canSaveText && !canSaveVoice} onClick={() => leaveQuestion?.('save')}>{i18nText('Journal.leave.save')}</Button>
         </div>
       </DialogContent></Dialog>
       <JournalPageCapture

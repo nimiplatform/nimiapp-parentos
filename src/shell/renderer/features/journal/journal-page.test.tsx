@@ -2,7 +2,8 @@
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ParentOSDestination } from '../../app-shell/navigation-destinations.js';
-import { TestNavigation } from '../../testing/navigation.js';
+import { NavigationProbe, TestNavigation } from '../../testing/navigation.js';
+import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import JournalPage from './journal-page.js';
 import { useAppStore } from '../../app-shell/app-store.js';
@@ -128,6 +129,19 @@ function renderPage(initial: ParentOSDestination = { id: '/journal' }) {
       <JournalPage />
     </TestNavigation>,
   );
+}
+
+function JournalLeaveControls() {
+  const owner = useParentOSNavigation();
+  return <>
+    <button onClick={() => void owner.open({ id: '/timeline' })}>Leave journal</button>
+    <button onClick={() => void owner.switchChild('child-2')}>Switch child</button>
+    <NavigationProbe />
+  </>;
+}
+
+function renderPageWithLeaveControls() {
+  return render(<TestNavigation initial={{ id: '/journal' }}><JournalPage /><JournalLeaveControls /></TestNavigation>);
 }
 
 function getComposerTextarea() {
@@ -479,6 +493,59 @@ describe('JournalPage', () => {
 
     expect(screen.queryByRole('button', { name: /继续编辑/i })).toBeNull();
     expect((getComposerTextarea() as HTMLTextAreaElement).value).toBe('');
+  });
+
+  it('asks before leaving a new draft, keeps it on cancel and leaves without saving on discard', async () => {
+    renderPageWithLeaveControls();
+    fireEvent.change(getComposerTextarea(), { target: { value: '尚未保存的新随记。' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Leave journal' }));
+    await screen.findByRole('dialog', { name: '保存这次编辑？' });
+    expect(insertJournalEntryWithTagsMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '继续编辑' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect((getComposerTextarea() as HTMLTextAreaElement).value).toBe('尚未保存的新随记。');
+    expect(screen.getByTestId('navigation-probe').textContent).toContain('/journal');
+    fireEvent.click(screen.getByRole('button', { name: 'Leave journal' }));
+    await screen.findByRole('dialog', { name: '保存这次编辑？' });
+    fireEvent.click(screen.getByRole('button', { name: '放弃修改' }));
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/timeline'));
+    expect(insertJournalEntryWithTagsMock).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('parentos:journal-draft:child-1')).toBeNull();
+  });
+
+  it('waits for a new draft to be saved before leaving', async () => {
+    let finishSave!: () => void;
+    insertJournalEntryWithTagsMock.mockImplementationOnce(() => new Promise<void>(resolve => { finishSave = resolve; }));
+    renderPageWithLeaveControls();
+    fireEvent.change(getComposerTextarea(), { target: { value: '明确保存后再离开。' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Leave journal' }));
+    await screen.findByRole('dialog', { name: '保存这次编辑？' });
+    fireEvent.click(screen.getByRole('button', { name: '保存并离开' }));
+    await waitFor(() => expect(insertJournalEntryWithTagsMock).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('navigation-probe').textContent).toContain('/journal');
+    expect(insertJournalEntryWithTagsMock.mock.calls[0]?.[0]).toMatchObject({ childId: 'child-1', textContent: '明确保存后再离开。' });
+    await act(async () => { finishSave(); });
+    await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/timeline'));
+  });
+
+  it('keeps the original child and new draft when a child switch is cancelled or its save fails', async () => {
+    const firstChild = useAppStore.getState().children[0]!;
+    useAppStore.setState({ children: [firstChild, { ...firstChild, childId: 'child-2', displayName: 'Second child' }] });
+    renderPageWithLeaveControls();
+    fireEvent.change(getComposerTextarea(), { target: { value: '属于第一个孩子的草稿。' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Switch child' }));
+    await screen.findByRole('dialog', { name: '保存这次编辑？' });
+    fireEvent.click(screen.getByRole('button', { name: '继续编辑' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(useAppStore.getState().activeChildId).toBe('child-1');
+    insertJournalEntryWithTagsMock.mockRejectedValueOnce(new Error('SQLite write failed'));
+    fireEvent.click(screen.getByRole('button', { name: 'Switch child' }));
+    await screen.findByRole('dialog', { name: '保存这次编辑？' });
+    fireEvent.click(screen.getByRole('button', { name: '保存并离开' }));
+    await screen.findByText('未能保存这条随记，请保留当前内容并重试。');
+    expect(useAppStore.getState().activeChildId).toBe('child-1');
+    expect((getComposerTextarea() as HTMLTextAreaElement).value).toBe('属于第一个孩子的草稿。');
+    expect(screen.getByTestId('navigation-probe').textContent).toContain('/journal');
   });
 
   it('clears legacy localStorage journal draft keys instead of restoring them', async () => {
