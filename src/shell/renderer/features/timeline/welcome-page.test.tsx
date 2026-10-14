@@ -29,6 +29,6 @@ describe('WelcomePage', () => {
     );
 
     expect(screen.getByTestId('parentos-onboarding-page')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '建立宝贝档案' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '建立孩子档案' })).toBeTruthy();
   });
 });

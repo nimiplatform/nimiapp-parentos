@@ -26,7 +26,7 @@ describe('ParentOnboardingPage', () => {
     for (const label of ['主动提醒', '循证支持', '成长记录', '个性化定制']) {
       expect(within(featureList).getByText(label)).toBeTruthy();
     }
-    expect(screen.getByRole('button', { name: '建立宝贝档案' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '建立孩子档案' })).toBeTruthy();
   });
 
   it('renders growth-focus tags around the journey visual', () => {
@@ -43,7 +43,7 @@ describe('ParentOnboardingPage', () => {
   it('connects the call to action to the existing create-child flow', async () => {
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: '建立宝贝档案' }));
+    fireEvent.click(screen.getByRole('button', { name: '建立孩子档案' }));
 
     const probe = screen.getByTestId('children-settings-probe');
     await waitFor(() => expect(probe.textContent).toContain('add-child'));

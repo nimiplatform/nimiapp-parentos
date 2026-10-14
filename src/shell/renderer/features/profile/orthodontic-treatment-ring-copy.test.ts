@@ -105,7 +105,7 @@ describe('computeTreatmentRingCopy', () => {
     });
     expect(copy.kind).toBe('message');
     if (copy.kind === 'message') {
-      expect(copy.message).toContain('没有进行中的装置');
+      expect(copy.message).toContain('没有使用中的装置');
     }
     expectFactRestatement(copy);
   });
@@ -126,7 +126,7 @@ describe('computeTreatmentRingCopy', () => {
     expectFactRestatement(copy);
   });
 
-  it('emits the "未戴中" caption with open-interval age when un-wear is in progress', () => {
+  it('emits the "未佩戴" caption with open-interval age when un-wear is in progress', () => {
     const copy = computeTreatmentRingCopy({
       primaryAppliance: makeAppliance(),
       cycle: makeCycle({
@@ -138,7 +138,7 @@ describe('computeTreatmentRingCopy', () => {
     });
     expect(copy.kind).toBe('cycle');
     if (copy.kind === 'cycle') {
-      expect(copy.caption).toBe('未戴中');
+      expect(copy.caption).toBe('未佩戴');
       // Number = rounded open-interval age hours.
       expect(copy.primaryNumber).toBe('4');
       // Footer keeps cycle wear + percentage so progress remains visible.
@@ -182,7 +182,7 @@ describe('computeTreatmentRingCopy', () => {
     });
     expect(copy.kind).toBe('message');
     if (copy.kind === 'message') {
-      expect(copy.message).toContain('未戴中');
+      expect(copy.message).toContain('未佩戴');
       expect(copy.message).toContain('医嘱每日佩戴 14 小时');
     }
     expectFactRestatement(copy);

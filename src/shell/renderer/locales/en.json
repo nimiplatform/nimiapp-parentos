@@ -8,10 +8,10 @@
   },
   "Onboarding": {
     "title": {
-      "line1": "Science beside every step",
+      "line1": "Science with you at every step",
       "line2": "Your child's growth companion"
     },
-    "description": "Built on an evidence-based child development knowledge base, ParentOS supports every stage from infancy through adolescence, helping families feel calmer and more confident.",
+    "description": "Grounded in child development research, ParentOS supports your family from infancy through adolescence—helping you parent with calm and confidence.",
     "features": {
       "ariaLabel": "ParentOS core capabilities",
       "reminder": {
@@ -24,11 +24,11 @@
       },
       "journal": {
         "title": "Growth journal",
-        "description": "Preserve each meaningful moment and see how things change"
+        "description": "Capture meaningful moments and watch your child grow over time"
       },
       "personalized": {
         "title": "Personalized planning",
-        "description": "A growth plan tailored to your child's information"
+        "description": "A growth plan tailored to your child's profile"
       }
     },
     "cta": "Create Child Profile",
@@ -43,7 +43,7 @@
   "Bootstrap": {
     "failure": {
       "eyebrow": "ParentOS local data",
-      "localDataLocked": "The app-owned local database could not be opened",
+      "localDataLocked": "Could not open the ParentOS local database",
       "reasonCode": "Reason",
       "technicalDetails": "Technical details",
       "nextStep": "Next step",
@@ -52,12 +52,12 @@
       "states": {
         "app-data-unavailable": {
           "title": "ParentOS local data is unavailable",
-          "description": "The native ParentOS host could not open its fixed OS app-data directory. This is an app-host failure, independent of Nimi App Access posture.",
+          "description": "The ParentOS host could not open its local app-data directory. This is a local host issue, not a Nimi App Access problem.",
           "action": "Restart ParentOS. In development, build the ParentOS host sidecar before trying again."
         },
         "app-data-repair-required": {
           "title": "ParentOS local data needs repair",
-          "description": "The app-owned SQLite store or its schema could not be initialized safely.",
+          "description": "The local SQLite database or its schema could not be initialized safely.",
           "action": "Keep the database closed and repair the ParentOS installation or local data before trying again."
         }
       }
@@ -103,13 +103,13 @@
     },
     "language": {
       "title": "Interface language",
-      "desc": "Switch ParentOS interface copy globally.",
+      "desc": "Change the display language across ParentOS.",
       "ariaLabel": "Choose interface language",
       "saveFailed": "Language setting could not be saved"
     },
     "dataTransfer": {
       "title": "Data backup",
-      "desc": "Back up this account’s records, photos, voice recordings and attachments. Restoring replaces current records.",
+      "desc": "Back up the current local profiles, records, photos, voice recordings, and attachments. Restoring replaces the current local data.",
       "export": "Export backup",
       "import": "Restore backup",
       "exporting": "Exporting...",
@@ -117,7 +117,7 @@
       "workingWithProgress": "Working... {{progress}}",
       "exportDone": "Exported to {{fileName}}",
       "exportSummary": "Backed up {{rows}} records and {{media}} media files",
-      "restoreConfirm": "Restore will replace this account’s profiles, records, photos, voice recordings and attachments with the backup. Export a current backup first to keep anything you need. Continue to select a complete backup?",
+      "restoreConfirm": "Restoring will replace the current local profiles, records, photos, voice recordings, and attachments with the backup. Export a backup of your current local data first to keep anything you need. Continue to select a complete backup?",
       "importDone": "Records and media restored",
       "keepOpen": "Keep the app open while the local backup is processed. Large photo and audio collections may take a few minutes.",
       "cleanupPending": "Restore is complete, but some previous media files could not be cleaned up and still use disk space.",
@@ -131,7 +131,7 @@
       },
       "nurtureMode": {
         "label": "Nurture mode",
-        "desc": "Relaxed, balanced, or advanced by domain"
+        "desc": "Set a relaxed, balanced, or advanced pace across domains"
       },
       "reminders": {
         "label": "Reminder management",
@@ -139,12 +139,12 @@
       },
       "ai": {
         "label": "AI Settings",
-        "desc": "Nimi access status and a Local or Cloud model for each AI capability."
+        "desc": "View Nimi access status and choose a Local or Cloud model for each AI capability"
       }
     },
     "nurtureMode": {
       "childTitle": "{{name}}'s nurture mode",
-      "subtitle": "Controls reminder cadence and content depth. Baseline safety rules never weaken.",
+      "subtitle": "Controls reminder cadence and content depth. Baseline safety rules always apply.",
       "globalMode": "Global mode",
       "domainOverrides": "Customize by domain",
       "domainOverridesDesc": "Use a different nurture mode for specific domains",
@@ -171,7 +171,7 @@
         "advanced": {
           "displayName": "Advanced",
           "subtitle": "High detail",
-          "description": "Expose more domain detail and analysis cues for high-effort tracking."
+          "description": "Show deeper domain details and analysis prompts for comprehensive tracking."
         }
       },
       "reminderBehavior": {
@@ -195,7 +195,7 @@
       "title": "Reminder management",
       "desc": "View and manage reminder rules with custom frequencies",
       "emptyTitle": "All reminders use default frequencies",
-      "emptyDesc": "Use “adjust frequency” on the home or reminders page to customize them",
+      "emptyDesc": "Use \"Adjust frequency\" on the Home or Reminders page to customize them",
       "defaultInterval": "Default: every {{months}} months →",
       "disabled": "Disabled",
       "overrideInterval": "Every {{months}} months",
@@ -293,9 +293,9 @@
       "update": "Update",
       "record": "Record",
       "reviewCount": "{{count}} need review",
-      "staleCount": "{{count}} expired",
+      "staleCount": "{{count}} out of date",
       "missingCount": "{{count}} missing",
-      "staleBadge": "Expired",
+      "staleBadge": "Out of date",
       "missingBadge": "Missing"
     },
     "fitness": {
@@ -333,7 +333,7 @@
       "history": "History",
       "noHistory": "No history yet",
       "sources": {
-        "profileConsole": "Profile console",
+        "profileConsole": "Profile page",
         "profileDetail": "Detail page",
         "reminder": "Reminder",
         "ocrTool": "OCR",
@@ -401,7 +401,7 @@
         "activityMinutes": "Outdoor activity duration"
       },
       "vaccine": {
-        "administration": "Vaccine administration"
+        "administration": "Vaccination"
       },
       "dental": {
         "event": "Dental event"
@@ -419,11 +419,11 @@
       "fitnessSchoolAssessment": "School fitness assessment",
       "tannerFemaleSelfAssessment": "Tanner female self-assessment",
       "tannerMaleSelfAssessment": "Tanner male self-assessment",
-      "developmentAuxiliaryMeasurement": "Development auxiliary measurement",
+      "developmentAuxiliaryMeasurement": "Supplementary development measurement",
       "outdoorGoal": "Outdoor goal",
       "outdoorActivity": "Outdoor activity",
       "sleepNight": "Night sleep",
-      "vaccineAdministration": "Vaccine administration",
+      "vaccineAdministration": "Vaccination",
       "dentalEvent": "Dental event",
       "medicalEvent": "Medical event",
       "milestoneAchievement": "Milestone achievement"
@@ -431,7 +431,7 @@
     "capture": {
       "title": "Add health data",
       "group": "Group",
-      "selectProtocol": "Select a protocol",
+      "selectProtocol": "Select record type",
       "recordDate": "Record date",
       "notes": "Notes",
       "required": "Required",
@@ -440,7 +440,7 @@
       "save": "Save",
       "saving": "Saving",
       "close": "Close",
-      "saveFailed": "Capture save failed.",
+      "saveFailed": "Failed to save record.",
       "fieldRequired": "Please enter {{field}}",
       "fixRequiredFields": "Some required fields are missing — please complete them before saving."
     },
@@ -465,7 +465,7 @@
         "optional": "Optional",
         "history": "History",
         "confirmDelete": "Confirm deletion",
-        "deleteCannotUndo": "This data cannot be restored after deletion. Delete this record?",
+        "deleteCannotUndo": "This action cannot be undone. Delete this record?",
         "confirmDeleteAction": "Delete",
         "aiAnalyze": "Analyze with AI",
         "recordsCount": "{{count}} records",
@@ -476,7 +476,7 @@
         "title": "Growth curve",
         "smartRecognize": "Smart recognition",
         "closeRecognize": "Close recognition",
-        "ocrHint": "Upload or photograph a checkup sheet to recognize data automatically",
+        "ocrHint": "Image extraction is not available yet. Enter the measurements manually.",
         "otherMetrics": "Other metrics...",
         "noData": "No data yet",
         "staleHint": "{{days}} days since the last measurement. Consider updating growth data.",
@@ -485,8 +485,8 @@
         "latestWeight": "Latest weight: {{value}} kg",
         "importReadFailed": "Could not read the checkup image. Choose another image.",
         "importSelectAtLeastOne": "Select at least one measurement to import.",
-        "importInvalidCandidate": "Selected OCR candidates must include a valid date and value.",
-        "importFailed": "Import failed. Review the OCR candidates and try again.",
+        "importInvalidCandidate": "Each selected result needs a valid date and value.",
+        "importFailed": "Import failed. Review the recognized items and try again.",
         "percentile": "Percentile"
       },
       "vision": {
@@ -498,7 +498,7 @@
         "recordExam": "Record exam",
         "chooserTitle": "What are you recording?",
         "chooserScreeningTitle": "Screening result",
-        "chooserScreeningDesc": "Red reflex, cover test and similar checks done by a doctor. Records pass or refer only, no prescription numbers",
+        "chooserScreeningDesc": "Doctor-performed checks such as red reflex and cover tests. Records Pass or Refer results only, without prescription numbers.",
         "chooserQuantitativeTitle": "Refraction / axial length",
         "chooserQuantitativeDesc": "Sphere, cylinder and corrected acuity from the prescription, plus axial length",
         "screeningModalTitle": "Record screening result",
@@ -516,14 +516,14 @@
         "followupFrequency": "Reminder frequency",
         "monthsShort": "months",
         "customNextDate": "Set next review date",
-        "customNextDateHint": "only overrides the next visit",
+        "customNextDateHint": "Only overrides the next visit",
         "clear": "Clear",
         "resetToSystem": "Restore system recommendation",
-        "cadenceSuggestion": "At a {{months}}-month cadence, suggested date is {{date}}",
+        "cadenceSuggestion": "At a {{months}}-month cadence, the suggested date is {{date}}.",
         "cadenceRangeError": "Reminder frequency must be between {{min}} and {{max}} months.",
         "customDateFormatError": "Custom date must be in YYYY-MM-DD format.",
         "deleteConfirm": "Delete the exam record from {{date}}?",
-        "ocrNoData": "No importable vision or axial-length data was recognized. Check that the image is clear and is a refraction or axial-length report.",
+        "ocrNoData": "Couldn't find any vision or axial-length data to import. Make sure the image is clear and shows a refraction or axial-length report.",
         "ocrFailed": "Smart recognition failed. Try again.",
         "ageFilter": "{{age}} years",
         "ageFilterDefault": "By age",
@@ -537,7 +537,7 @@
         "curveTitle": "{{metric}} curve",
         "curveFallback": "Trend",
         "emptyMetric": "No {{metric}} records yet",
-        "noAnchor": "No exam record is available as an anchor. Choose a date directly.",
+        "noAnchor": "No exam record is available as a baseline. Choose a date directly.",
         "saveFailed": "Save failed. Try again.",
         "screeningTypes": {
           "redReflex": "Red reflex",
@@ -551,14 +551,14 @@
       "visionBatch": {
         "editTitle": "Edit exam record · {{date}}",
         "createTitle": "Record exam data",
-        "ocrHint": "Upload or photograph a refraction report to fill automatically",
+        "ocrHint": "Image extraction is not available yet. Enter the measurements manually.",
         "examDate": "Exam date",
         "pupilStatus": "Pupil status",
         "hospital": "Hospital / institution",
         "doctor": "Doctor",
         "item": "Item",
-        "od": "OD right eye",
-        "os": "OS left eye",
+        "od": "Right eye (OD)",
+        "os": "Left eye (OS)",
         "hyperopiaReserve": "Hyperopia reserve",
         "behaviorFactors": "Eye-use behavior factors",
         "nearWorkDaily": "Daily near-work time (outside class)",
@@ -584,7 +584,7 @@
         "saveFailed": "Save failed: {{message}}",
         "saved": "Record saved.",
         "deleted": "Record deleted.",
-        "scanSaved": "AI recognition wrote {{count}} eruption records. You can review them in history.",
+        "scanSaved": "AI recognition added {{count}} eruption records. You can review them in history.",
         "recordTopic": "Dental record · {{event}}{{tooth}}",
         "severity": "Severity: {{severity}}"
       }
@@ -618,7 +618,7 @@
       "justNow": "Just now",
       "todayAt": "Today {{time}}",
       "yesterdayAt": "Yesterday {{time}}",
-      "dayBeforeYesterdayAt": "The day before yesterday {{time}}"
+      "dayBeforeYesterdayAt": "2 days ago {{time}}"
     },
     "date": {
       "locale": "en-US",
@@ -672,14 +672,14 @@
       "recovery": {
         "title": "Restore AI features",
         "bridgeAbsent": "Open ParentOS from Apps in the Nimi desktop app. Supported AI features will recover after the connection is restored.",
-        "actionRequired": "Go to Nimi desktop > Apps > ParentOS > AI Capabilities, finish access or model setup, then return and refresh.",
+        "actionRequired": "Check ParentOS access and AI model settings in Nimi Desktop, complete any requested action, then retry here.",
         "unavailable": "Make sure Nimi desktop is running, then check Apps > ParentOS > AI Capabilities. Return here and refresh afterward."
       }
     },
     "declared": {
       "title": "AI models",
-      "description": "Choose a Local or Cloud model for each AI capability. Your records stay on this device either way; with a Cloud model, the input a request needs is sent through Nimi to the cloud service you chose to run that request.",
-      "platformManaged": "This page and Nimi desktop > Apps > ParentOS > AI Capabilities edit the same configuration, kept by Nimi Runtime. Cloud models need a Cloud Connector set up in Nimi desktop first.",
+      "description": "Choose a Local or Cloud model for each AI capability. Your records stay on this device either way. With a Cloud model, the data needed for each request is sent through Nimi to your chosen cloud service.",
+      "platformManaged": "This page and Nimi desktop > Apps > ParentOS > AI Capabilities edit the same configuration, managed by Nimi Runtime. Cloud models need a Cloud Connector set up in Nimi desktop first.",
       "openOwnerConfiguration": "Configure in Nimi",
       "openingOwnerConfiguration": "Opening…",
       "loadFailed": "AI configuration could not be read",
@@ -699,8 +699,8 @@
       "detailTitle": "{{capability}} settings",
       "activeModel": "Active Model",
       "activeModelHint": "Choose another model",
-      "activeModelConfigured": "set up",
-      "activeModelSetupPending": "setup needed",
+      "activeModelConfigured": "Configured",
+      "activeModelSetupPending": "Setup needed",
       "pickerTitle": "Select Model",
       "pickerSearch": "Search models",
       "pickerLoading": "Loading models…",
@@ -733,14 +733,14 @@
       "localChoiceDescription": "Use the model selected under On-device models.",
       "localSelected": "Currently used on this device",
       "localMissing": "These settings use an on-device model, but no model is selected for this capability.",
-      "localBroken": "The selected machine configuration is blocked:",
-      "localUnavailable": "Machine-local configuration status is currently unavailable.",
-      "localMismatch": "The selected machine configuration does not provide required features: {{features}}",
+      "localBroken": "The selected on-device configuration cannot be used:",
+      "localUnavailable": "On-device model status is currently unavailable.",
+      "localMismatch": "The selected on-device configuration does not support required features: {{features}}",
       "openMachine": "Open on-device models",
       "cloudConnectorPicker": "Cloud Connector",
       "cloudConnectorPickerPlaceholder": "Select a configured Connector",
       "cloudConnectorSelectionRequired": "Select a configured Connector before choosing a model.",
-      "cloudNoConnectors": "No configured Cloud Connector is available. Add one in Nimi desktop first.",
+      "cloudNoConnectors": "No configured Cloud Connector is available. Add one in Nimi Desktop first.",
       "openCloudConnectors": "Configure Cloud Connectors",
       "cloudImplementation": "Cloud service",
       "cloudImplementationPlaceholder": "Choose a cloud service",
@@ -749,11 +749,11 @@
       "cloudTargetDialogTitle": "Choose a cloud model",
       "cloudTargetDialogDescription": "Review the provider and model, then confirm your choice.",
       "cloudNotice": "Cloud execution",
-      "cloudNoticeDescription": "Requests use the selected Connector's existing credential and send the input each request needs to that provider, which may charge for it. Your records themselves stay on this device.",
+      "cloudNoticeDescription": "Each request uses the selected Connector's credentials and sends the required input to that provider, which may charge for usage. Your saved records remain on this device.",
       "cloudConnector": "Configured Connector",
       "cloudConnectorPlaceholder": "Choose a connector for this provider",
-      "cloudLoadFailed": "Cloud service, model, and Connector choices could not be loaded.",
-      "cloudBlocked": "This Cloud selection cannot run right now. Choose the model again or choose another model.",
+      "cloudLoadFailed": "Cloud service, model, and Connector options could not be loaded.",
+      "cloudBlocked": "This cloud selection is not available right now. Select the model again or choose another model.",
       "cloudCatalogStale": "The Cloud model list changed after this model was selected. Choose the model again from the current list.",
       "retry": "Retry",
       "saveFailed": "Runtime could not save ParentOS's AI configuration.",
@@ -767,21 +767,21 @@
       "cancel": "Cancel",
       "confirmSelection": "Use selection",
       "capabilityDescription": {
-        "textGenerate": "Used by the growth advisor, reports, journal tags and smart summaries.",
+        "textGenerate": "Powers the growth advisor, reports, journal tags, and smart summaries.",
         "audioTranscribe": "Turns journal voice notes into text."
       }
     },
     "features": {
       "title": "Feature Availability",
       "description": "Feature status under the current platform contract.",
-      "configurationHint": "For features marked “Configure in Nimi,” go to Nimi desktop > Apps > ParentOS > AI Capabilities.",
+      "configurationHint": "For features marked “Configure in Nimi,” open ParentOS AI model settings in Nimi Desktop.",
       "checking": "Checking…",
       "available": "Available",
       "unavailable": "Unavailable",
       "needsAccess": "Available after connecting Nimi",
       "needsConfiguration": "Configure in Nimi",
       "notSupported": "Not supported in this version",
-      "notSupportedHint": "No configurable image-understanding capability is available yet, so this cannot be enabled manually.",
+      "notSupportedHint": "Configurable image understanding is not available yet, so this feature cannot be enabled manually.",
       "routeLocal": "Local model",
       "routeCloud": "Cloud model",
       "advisor": "Growth advisor",
@@ -808,8 +808,8 @@
       "tanner": "Puberty assessment"
     },
     "comingSoon": {
-      "title": "This group capture is coming soon",
-      "description": "This category is being migrated into the unified capture flow."
+      "title": "This record type is not available yet",
+      "description": "This category is being migrated into the unified entry flow."
     }
   },
   "AvatarCrop": {
@@ -823,8 +823,8 @@
     "recorder": {
       "mother": "Mom",
       "father": "Dad",
-      "grandmaPaternal": "Grandma",
-      "grandpaPaternal": "Grandpa",
+      "grandmaPaternal": "Paternal grandma",
+      "grandpaPaternal": "Paternal grandpa",
       "grandmaMaternal": "Maternal grandma",
       "grandpaMaternal": "Maternal grandpa"
     },
@@ -841,12 +841,12 @@
       "backToProfile": "Back to profile",
       "backToSettings": "Back to settings",
       "backToTimeline": "Back to home",
-      "title": "Child management",
+      "title": "Child Profiles",
       "subtitle": "Manage child profiles and basic information",
       "emptyTitle": "No children added yet",
       "emptyDescription": "Use the button above to add the first child.",
       "activeBadge": "Current",
-      "deleteConfirmation": "Deleting {{childName}} will cascade-delete all related data, including growth records, vaccines, journals, and AI conversations. This cannot be undone.",
+      "deleteConfirmation": "Deleting {{childName}} will permanently delete all related data, including growth records, vaccines, journals, and AI conversations. This action cannot be undone.",
       "action": {
         "addChild": "Add child",
         "setActive": "Set active",
@@ -858,7 +858,7 @@
         "add": "Add"
       },
       "form": {
-        "editTitle": "Edit child"
+        "editTitle": "Edit child profile"
       },
       "avatar": {
         "change": "Change avatar",
@@ -894,7 +894,7 @@
   },
   "ReportUpload": {
     "title": "Smart Recognition & Image Archive",
-    "subtitle": "Upload hospital reports to extract data automatically; all images are archived together.",
+    "subtitle": "Upload medical reports to extract data automatically and keep all original images in one place.",
     "ownerTable": {
       "dentalRecords": "Dental records",
       "healthRecordEvents": "Checkup reports",
@@ -921,7 +921,7 @@
       "readImageFailed": "Could not read the image. Choose another one.",
       "noSupportedMeasurements": "No supported measurements were recognized. Make sure the image is clear and is a medical report.",
       "selectAtLeastOne": "Select at least one data item.",
-      "partialImportFailed": "Import partly failed. {{count}} items were imported.",
+      "partialImportFailed": "Import partially failed. {{count}} items were imported.",
       "ocrRuntimeUnavailable": "AI runtime is unavailable, so recognition cannot run."
     },
     "upload": {
@@ -929,7 +929,7 @@
       "dropzoneDescription": "JPG and PNG are supported",
       "previewAlt": "Report preview",
       "analyzingHint": "Recognizing. Please wait...",
-      "readyHint": "Image ready. Start recognition when ready."
+      "readyHint": "Image ready. Start recognition when you're ready."
     },
     "action": {
       "recognizing": "Recognizing...",
@@ -974,7 +974,7 @@
     "tooth": {
       "title": "{{id}} {{name}}{{confidenceHint}}{{historyHint}}",
       "confidenceHint": " · AI confidence {{confidence}}%",
-      "historyHint": " · already in history"
+      "historyHint": " · Already in history"
     },
     "upload": {
       "title": "Oral photo",
@@ -986,7 +986,7 @@
     "status": {
       "analyzing": "AI is analyzing. Please wait...",
       "savingRecord": "Saving record...",
-      "ready": "Ready to analyze..."
+      "ready": "Ready to analyze"
     },
     "review": {
       "detectedSummary": "AI detected {{permanentCount}} permanent teeth and {{primaryCount}} primary teeth as erupted.",
@@ -1003,7 +1003,7 @@
       "reanalyze": "Analyze again",
       "selectAllVisible": "Select all visible",
       "deselectAllVisible": "Deselect all visible",
-      "flipHint": "Use this if AI mirrored left and right.",
+      "flipHint": "Use this if left and right are reversed.",
       "flip": "Mirror left/right",
       "resetAiSelection": "Restore AI default selection",
       "cancel": "Cancel",
@@ -1088,7 +1088,7 @@
       "restoreTodo": "Restore task",
       "delete": "Delete",
       "goRecord": "Record now",
-      "reflect": "I reflected",
+      "reflect": "I've reflected",
       "startPractice": "Start practice",
       "logPractice": "Log again",
       "markHabituated": "Mark as habit",
@@ -1134,17 +1134,17 @@
       "section": {
         "today": {
           "title": "Today",
-          "hint": "Items due today or already overdue; handle them here first."
+          "hint": "Items due today or overdue—start with these first."
         },
         "p0Overflow": {
-          "title": "More important items"
+          "title": "Additional important items"
         },
         "catchup": {
-          "title": "History catch-up"
+          "title": "Past items to catch up on"
         },
         "upcoming": {
           "title": "Upcoming",
-          "hint": "Near-term items and stage guidance worth watching."
+          "hint": "Upcoming items and stage-by-stage guidance to keep an eye on."
         },
         "history": {
           "title": "History",
@@ -1156,7 +1156,7 @@
       },
       "empty": {
         "today": "Nothing needs immediate action today.",
-        "upcoming": "No new near-term items need scheduling.",
+        "upcoming": "No upcoming items need scheduling right now.",
         "history": "No reminder history yet."
       },
       "customCompletedAt": "Completed {{date}}",
@@ -1171,7 +1171,7 @@
         "howTo": "How to do it",
         "doneWhen": "What counts as done",
         "pitfalls": "Common pitfalls",
-        "ifNotNow": "If now is inconvenient",
+        "ifNotNow": "If now isn't a good time",
         "sources": "Sources"
       },
       "incompleteTitle": "Guide is still being completed",
@@ -1194,7 +1194,7 @@
       "disable": "Disable this reminder",
       "customPlaceholder": "Months",
       "monthUnit": "months",
-      "disableWarning": "After disabling, this reminder will no longer appear. You can restore it in Settings -> Reminder management."
+      "disableWarning": "Once disabled, this reminder won't appear again. You can turn it back on in Settings -> Reminder management."
     },
     "schedule": {
       "title": "Schedule a date",
@@ -1202,7 +1202,7 @@
     },
     "activity": {
       "summary": "Round {{round}} · {{start}} to {{end}}",
-      "unsynced": "Reminders have not fully synced to Nimi. Please retry.",
+      "unsynced": "Reminders haven't finished syncing with Nimi. Please try again.",
       "retryNow": "Retry now",
       "sessionChanged": "Your Nimi session changed, so reminder sync stopped. You can keep using ParentOS; reopen it to resume sync.",
       "reopen": "Reopen",
@@ -1210,9 +1210,9 @@
     }
   },
   "DrugCombobox": {
-    "placeholder": "Search drug name or pinyin initials",
-    "noMatch": "No matching drugs found",
-    "addCustom": "+ Add custom drug: \"{{value}}\"",
+    "placeholder": "Search medication name or pinyin initials",
+    "noMatch": "No matching medications found",
+    "addCustom": "+ Add custom medication: \"{{value}}\"",
     "defaultUnit": "dose"
   },
   "Outdoor": {
@@ -1236,12 +1236,12 @@
       "onTrackPrimary": "{{minutes}} minutes logged this week, on a good pace",
       "stillNeeds": "{{minutes}} minutes remaining",
       "behindPrimary": "{{total}} minutes logged this week, {{remaining}} minutes remaining",
-      "remainingDaysPlan": "{{days}} days left this week. Add more outdoor time where possible",
-      "pacePlan": "{{days}} days left this week. Add about {{pace}} minutes per day to approach the goal"
+      "remainingDaysPlan": "{{days}} days left this week—fit in more time outdoors when you can",
+      "pacePlan": "{{days}} days left this week—about {{pace}} minutes a day gets you close to the goal"
     },
     "capture": {
       "invalidDuration": "Enter a valid activity duration in minutes",
-      "saveFailed": "Save failed. Try again",
+      "saveFailed": "Couldn't save. Please try again.",
       "durationPreset": "{{minutes}} min",
       "title": "Record outdoor activity",
       "activityDate": "Activity date",
@@ -1355,7 +1355,7 @@
           "legend": "Full sun · {{minutes}} min outdoors that day"
         },
         "logToday": "Log today's time outdoors",
-        "backfill": "Fill in this week",
+        "backfill": "Log earlier this week",
         "weeklyGoal": "Weekly goal {{minutes}} min",
         "changeGoal": "Change",
         "sceneNote": "Go outside,\ncollect a bigger world",
@@ -1387,10 +1387,10 @@
   },
   "Posture": {
     "cobbLevel": {
-      "normal": "On track",
-      "monitor": "Needs regular monitoring",
-      "brace": "Brace treatment assessment",
-      "surgicalAssessment": "Surgical assessment"
+      "normal": "Cobb ≤ 10°",
+      "monitor": "10° < Cobb ≤ 25°",
+      "brace": "25° < Cobb ≤ 40°",
+      "surgicalAssessment": "Cobb > 40°"
     },
     "age": {
       "yearsMonths": "{{years}} years {{months}} months",
@@ -1449,7 +1449,7 @@
     },
     "table": {
       "angle": "Angle",
-      "grade": "Grade",
+      "grade": "Record range",
       "suggestion": "Suggestion"
     },
     "ui": {
@@ -1463,22 +1463,22 @@
       "why": {
         "title": "Why posture matters",
         "early": {
-          "heading": "Posture issues are better found early",
-          "body": "Scoliosis, uneven shoulders, kyphosis, and similar posture issues are more likely to appear or progress during rapid growth (ages 6-14). When noticed early, exercise intervention and posture correction may help; when noticed late, bracing or surgery may be needed."
+          "heading": "Catching posture issues early makes a difference",
+          "body": "Spinal curvature, uneven shoulders, and other posture changes can become more noticeable or progress during periods of rapid growth. Because clinical care depends on curve magnitude, age, and remaining growth, keeping regular records helps you spot changes and share them with a doctor for individualized evaluation and follow-up."
         },
         "parentActions": {
           "heading": "What parents can do",
           "regularObservation": {
             "label": "Observe regularly",
-            "desc": "Do a simple at-home posture screen every 3-6 months and record it so changes can be compared over time."
+            "desc": "Observe posture in daily life and record photos or notes under consistent conditions so you can compare changes over time."
           },
           "signalWatch": {
-            "label": "Watch daily signals",
-            "desc": "Notice whether the child tilts their head while writing, sits crookedly, has a backpack that keeps sliding to one side, or has one side of the collar sitting higher."
+            "label": "Watch for everyday signs",
+            "desc": "Watch for everyday signs: tilting the head while writing, slouching to one side, a backpack strap that keeps slipping off one shoulder, or a collar that sits uneven."
           },
           "checkupData": {
             "label": "Use checkup data",
-            "desc": "Enter school spine-screening results promptly, and always record Cobb angle data when it is available."
+            "desc": "Keep notes from school spine screenings or clinic visits, and enter the Cobb angle when a clinician has measured it on an X-ray."
           }
         }
       },
@@ -1486,71 +1486,71 @@
         "title": "How to observe at home",
         "preparation": {
           "heading": "Preparation",
-          "body": "Have the child wear fitted clothing or expose the back, then stand naturally in a well-lit place. Feet together, arms relaxed at the sides, eyes forward. Do not ask them to force the chest up or shrug."
+          "body": "Have your child wear fitted clothing or bare their back, then stand naturally in a well-lit area—feet together, arms relaxed at the sides, looking straight ahead. Remind them not to puff out their chest or stiffen their shoulders."
         },
         "fourSteps": {
           "heading": "Four-step observation",
           "shoulder": {
             "label": "1. Check shoulders",
-            "desc": "Stand directly behind the child and compare the highest point of each shoulder. If one side is clearly higher, record left high or right high. If they are roughly level, choose symmetric."
+            "desc": "Stand directly behind your child and compare the top of each shoulder. If one side is clearly higher, record which shoulder is higher; if they are roughly level, select Symmetric."
           },
           "scapula": {
             "label": "2. Check shoulder blades",
-            "desc": "Observe whether the shoulder blades are symmetric. One side protruding or winging may suggest spinal rotation. Take a phone photo for reference."
+            "desc": "Look at whether both shoulder blades sit at a similar height and prominence. A single sign or photo cannot confirm a diagnosis, but taking a photo helps you track changes and discuss any concerns with a doctor."
           },
           "adam": {
-            "label": "3. Forward bend test (Adam test)",
+            "label": "3. Forward bend test (Adam's test)",
             "desc": "Ask the child to put both feet together, bend forward slowly, and let the arms hang naturally. From behind, compare whether both sides of the back are level. A clear rib hump on one side may suggest spinal rotation or scoliosis. This is the most common school-screening method."
           },
           "symmetry": {
             "label": "4. Check overall symmetry",
-            "desc": "Observe whether the head is centered, both waist lines are symmetric, and the pelvis is level. From the front, compare whether the armpit triangles are symmetric."
+            "desc": "Check whether the head is centered, both sides of the waist curve evenly, and the pelvis looks level. With both arms hanging naturally at the sides, compare the waist triangles—the spaces between the arms and the waist."
           }
         },
         "photo": {
           "heading": "Photo guidance",
-          "body": "Each time you observe, take one standing photo from the rear, left side, and right side, plus one photo during the forward bend test. Keep distance and angle consistent so future comparison is easier. Add notes in the remarks field when useful."
+          "body": "Each time you observe, take one standing photo from the back, left side, and right side, plus one photo during the forward bend test. Keep the distance and angle consistent for easier comparison over time, and jot down any extra details in Notes."
         }
       },
       "cobb": {
         "title": "Understanding Cobb angle",
         "definition": {
-          "heading": "What Cobb angle is",
-          "body": "Cobb angle is the key quantitative measure for scoliosis. It is measured from a spinal X-ray and represents the size of the curve. A larger value means a larger curve. It is not estimated by eye; a doctor must measure it from the X-ray."
+          "heading": "What the Cobb angle is",
+          "body": "The Cobb angle is the key quantitative measure for scoliosis. It shows the size of the spinal curve—a higher value means a larger curve. Because it cannot be estimated by eye, a doctor must measure it directly from a spinal X-ray."
         },
         "grading": {
-          "heading": "Cobb angle grading",
+          "heading": "Cobb angle record ranges",
           "normal": {
-            "field": "< 10°",
-            "meaning": "Normal range",
-            "note": "Mild spinal asymmetry can be normal and usually does not need intervention"
+            "field": "≤ 10°",
+            "meaning": "App record group (≤ 10°)",
+            "note": "Grouped in this range for app records. Clinical interpretation still depends on a doctor's X-ray evaluation and your child's growth status."
           },
           "mild": {
-            "field": "10° - 20°",
-            "meaning": "Mild scoliosis",
-            "note": "Observe regularly and review every 6 months. Strengthen core muscles"
+            "field": "10° < Cobb ≤ 25°",
+            "meaning": "App record group (10° < Cobb ≤ 25°)",
+            "note": "Grouped in this range for app records. Follow-up timing and care should be decided by a clinician based on curve pattern, age, and remaining growth."
           },
           "moderate": {
-            "field": "20° - 40°",
-            "meaning": "Moderate scoliosis",
-            "note": "Orthotic bracing may be needed, especially before skeletal maturity. Review every 3-6 months"
+            "field": "25° < Cobb ≤ 40°",
+            "meaning": "App record group (25° < Cobb ≤ 40°)",
+            "note": "Grouped in this range for app records. Whether bracing or other treatment is needed depends on a specialist's assessment of growth and skeletal maturity."
           },
           "severe": {
             "field": "> 40°",
-            "meaning": "Severe scoliosis",
-            "note": "Surgery may be considered. Ongoing specialist follow-up is needed"
+            "meaning": "App record group (> 40°)",
+            "note": "Grouped in this range for app records. Treatment options and follow-up plans should be evaluated individually by a spine specialist together with growth status."
           }
         },
         "source": {
           "heading": "Where the data comes from",
-          "body": "Prioritize Cobb angle values from school spine-screening forms, hospital checkup reports, or orthopedic assessments. If there has been no X-ray exam, leave this blank. Shoulder-symmetry records are still useful."
+          "body": "Enter only the Cobb angle measured by a clinician from an X-ray report. Do not enter the angle of trunk rotation (ATR) from a routine school screening here. If no X-ray has been taken, leave this blank—you can still record shoulder and posture observations."
         }
       },
       "footArch": {
         "title": "Checking foot arch at home",
         "why": {
           "heading": "Why foot arch matters",
-          "body": "The foot arch is the foot's natural spring for cushioning and support. Children's arches usually form gradually from ages 3-6, and some flatness before age 6 can be normal. If flat feet remain obvious after age 6, walking tires easily, or knock-knees or in-toeing appear, it deserves attention."
+          "body": "The foot arch helps cushion and support the body. Arch development varies widely among children, and a flexible flatfoot without pain or stiffness often needs no treatment. If your child has foot pain, stiffness, or discomfort with activity, consult a doctor for an evaluation."
         },
         "wetFootprint": {
           "heading": "Wet footprint test",
@@ -1564,22 +1564,22 @@
           },
           "compare": {
             "label": "3. Read the print",
-            "desc": "Normal arch: the middle footprint has a clear curved gap, about one third to one half of foot width. Flat foot: the footprint is almost a full sole shape with little middle gap. High arch: the middle gap is too large, with only heel and forefoot marks."
+            "desc": "A wet footprint only records the contact shape of the sole—whether the midfoot shows a curved gap, full contact, or mostly heel and forefoot marks. It cannot diagnose flatfoot or a high arch; if you notice pain, stiffness, or walking discomfort, have a clinician evaluate the foot."
           }
         },
         "daily": {
           "heading": "Daily observation points",
           "wear": {
             "label": "Check sole wear",
-            "desc": "Normal wear is usually heavier on the outer heel. Heavy inner-side wear may suggest flat foot or foot valgus."
+            "desc": "Note whether both shoes wear down evenly or show heavy wear along one edge. Shoe wear alone cannot diagnose flatfoot or alignment issues, but you can share uneven wear patterns with a doctor if your child has foot discomfort."
           },
           "fatigue": {
             "label": "Check standing posture",
-            "desc": "From behind, observe whether the Achilles tendon is vertical while the child stands. A clear inward tilt may suggest foot valgus."
+            "desc": "From behind while your child stands naturally, look at the alignment of the heels and Achilles tendons. A single visual check or photo cannot confirm a diagnosis; record what you see and consult a doctor if there is pain or stiffness."
           },
           "gait": {
             "label": "Ask how it feels",
-            "desc": "After long walks or exercise, do the feet hurt easily or do the legs feel sore? That may signal insufficient arch support."
+            "desc": "Notice whether your child complains of foot pain, stiffness, or leg discomfort during or after walking and active play, and bring these notes to a doctor for evaluation."
           }
         },
         "dataSource": {
@@ -1590,7 +1590,7 @@
       "care": {
         "title": "When to seek medical care",
         "signals": {
-          "heading": "Signals to watch",
+          "heading": "Signs to watch for",
           "shoulderOrWaist": {
             "label": "Abnormal forward bend test",
             "desc": "One side of the back clearly rises during forward bending. Even a mild finding is worth further examination."
@@ -1608,8 +1608,8 @@
             "desc": "An increase of more than 5° within six months suggests progression and needs active intervention."
           },
           "footArch": {
-            "label": "Obvious flat feet after age 6",
-            "desc": "Walking tires easily, frequent foot or leg soreness, or heavy inner-side sole wear should be assessed by orthopedics or a foot and ankle specialist."
+            "label": "Foot pain, stiffness, or discomfort when walking",
+            "desc": "Tiring easily when walking, frequent foot or leg soreness, or heavy inner-side sole wear should be assessed by an orthopedic or foot and ankle specialist."
           }
         },
         "department": {
@@ -1618,7 +1618,7 @@
         },
         "growthSpurt": {
           "title": "Pay special attention during rapid growth",
-          "body": "Around puberty (girls ages 10-14, boys ages 12-16) is when scoliosis can progress fastest. If scoliosis is found during this period, the review interval is often shortened to every 3 months."
+          "body": "Spinal curves are more likely to progress during periods of rapid growth when significant growth remains. If a curve is detected or suspected during a growth spurt, follow the checkup schedule recommended by your child's clinician."
         }
       }
     }
@@ -1640,8 +1640,8 @@
       "leftHigh": "Left side higher",
       "rightHigh": "Right side higher",
       "straightLegs": "Straight legs",
-      "oLeg": "O-leg",
-      "xLeg": "X-leg",
+      "oLeg": "Bow legs (O-shaped)",
+      "xLeg": "Knock knees (X-shaped)",
       "vertical": "Vertical",
       "valgus": "Valgus",
       "varus": "Varus",
@@ -1662,12 +1662,12 @@
     "error": {
       "missingDate": "Select an assessment date",
       "missingAssessment": "Select at least one posture assessment item or enter a Cobb angle",
-      "saveFailed": "Save failed. Try again"
+      "saveFailed": "Save failed. Try again."
     },
     "section": {
       "basic": "Basic information",
       "medical": "Medical data (scoliosis)",
-      "medicalDisabledHint": "Enable by selecting Checkup report or Doctor assessment"
+      "medicalDisabledHint": "Select \"Checkup report\" or \"Doctor assessment\" as the data source to enable this section"
     },
     "field": {
       "assessedAt": "Assessment date",
@@ -1728,16 +1728,16 @@
       "title": "Turn on the growth advisor for {{childName}}",
       "description": "Once you choose a Local or Cloud model in AI Settings, the advisor uses the profile and local records to answer everyday questions about your child's growth.",
       "hint": "Finish connecting in AI Settings, then come back here to ask",
-      "message": "Choose a model in AI Settings and the advisor can answer your questions",
+      "message": "Choose a model in AI Settings to start asking questions",
       "action": "Connect AI"
     },
     "journalContext": {
       "title": "What would you like to discuss about this journal entry?",
-      "recorder": "Recorder: {{recorderName}}",
+      "recorder": "Recorded by: {{recorderName}}",
       "voiceOrImageOnly": "This journal entry is mainly voice or image based",
       "starter": {
         "keyInfo": "Help me summarize the key information in this record",
-        "moreObservation": "What else is worth observing in this dimension?",
+        "moreObservation": "What else is worth observing in this area?",
         "signals": "Are there any signals worth noticing?"
       }
     },
@@ -1936,7 +1936,7 @@
       "uncovered": {
         "noAgeMatch": "the existing material only covers about {{startYears}}–{{endYears}} years and the child is {{ageYears}}",
         "noMaterial": "no general material is available yet",
-        "needsReview": "general knowledge in this area has not finished review",
+        "needsReview": "general knowledge in this area is still under review",
         "noRecordCategory": "the app has no records of this kind either"
       },
       "checklist": {
@@ -1966,17 +1966,17 @@
     "failure": {
       "ai-unavailable": "AI is not ready, so there is no answer this time. Check the model in AI Settings and ask again.",
       "history-read": "Could not read this conversation's history, so there is no answer this time.",
-      "intent": "Could not work out what the question covers. Try rephrasing it or answer again.",
+      "intent": "Could not determine what your question covers. Rephrase it or try again.",
       "facts-read": "Could not read the {{groups}} records, so no answer was generated. A failed read does not mean there are no records.",
       "runtime": "The AI did not finish the answer this time.",
-      "length": "The answer was cut off for length and was not shown. Try a narrower question or answer again.",
+      "length": "The answer was cut off for length, so it was not shown. Ask a narrower question or try again.",
       "content-filter": "The model's content filter stopped this answer.",
       "safety": "This answer did not pass the safety check and was discarded without being shown.",
       "citation": "This answer cited material that was not provided and was discarded without being shown.",
       "input-too-long": "The question is too long. Please shorten it and send again.",
       "user-persist": "The question could not be saved, so the AI was not called.",
       "assistant-persist": "The answer above could not be saved and will not be kept when you reopen this conversation.",
-      "retry": "Answer again",
+      "retry": "Try again",
       "verifiedFacts": "Records you can check",
       "factLine": "{{label}}: {{lines}}",
       "format": "This answer included internal data formatting and was discarded without being shown."
@@ -1988,10 +1988,10 @@
     },
     "error": {
       "deleteFailed": "Delete failed. Try again later.",
-      "saveFailed": "Save failed. Check the local runtime state and try again.",
+      "saveFailed": "Could not save this entry. Keep it open and try again.",
       "recordingStartFailed": "Could not start recording. Check microphone permission.",
       "recordingFailed": "Recording failed. Try again.",
-      "transcriptionFailed": "Transcription failed. You can still save the voice record."
+      "transcriptionFailed": "Transcription failed. You can still save the voice recording."
     },
     "focus": {
       "topic": "Observation focus",
@@ -2015,7 +2015,7 @@
       "PO-OBS-EMOT-001": {
         "0": "When your child is upset today, crouch down to eye level and wait 10 seconds before speaking.",
         "1": "Before bed, recall the day together: what was the happiest moment, and was anything upsetting?",
-        "2": "Next time your child cries, try saying only \"I am here\" and notice their response.",
+        "2": "Next time your child cries, try saying only \"I'm here\" and notice how they respond.",
         "3": "Name feelings together: \"Do you feel angry or hurt right now?\""
       },
       "PO-OBS-SOCL-001": {
@@ -2027,43 +2027,43 @@
       "PO-OBS-CHOI-001": {
         "0": "Offer your child two choices today instead of asking \"what do you want to do,\" and observe how they decide.",
         "1": "Let your child choose what to wear today without evaluating the choice.",
-        "2": "Next time your child says \"I do not want to,\" ask, \"What would you like instead?\"",
-        "3": "Prepare three books and let your child choose one for bedtime. Watch the choice process."
+        "2": "Next time your child says \"I don't want to,\" ask, \"What would you like to do instead?\"",
+        "3": "Prepare three books and let your child choose one for bedtime. Notice how they make their choice."
       },
       "PO-OBS-INDP-001": {
         "0": "Choose one thing your child is close to doing independently, such as putting on shoes. Wait nearby today without helping.",
-        "1": "Let your child pour water or serve food, even if some spills, and first watch how they handle it.",
+        "1": "Let your child pour water or serve food on their own. Even if some spills, wait and see how they handle it first.",
         "2": "Before going out, give your child 5 minutes to prepare independently and see what they remember to bring.",
-        "3": "If your child says \"I cannot do it,\" try saying \"Give it a try first. I am right here.\""
+        "3": "If your child says \"I can't do it,\" try saying, \"Give it a try first—I'm right here.\""
       },
       "PO-OBS-RELQ-001": {
         "0": "Try 10 minutes tonight of being together without looking at your phone. Let your child decide what you do.",
         "1": "Next time your child speaks, put down what you are holding, crouch down, listen fully, then respond.",
         "2": "Before bed, offer one specific affirmation: \"You put the toys away by yourself today. I appreciated that.\"",
-        "3": "After a conflict with your child, initiate repair: \"My tone was not good just now. I am sorry.\"",
-        "4": "Ask your child an open question today: \"What was something interesting at school today?\""
+        "3": "After a conflict with your child, initiate repair: \"My tone was a bit harsh just now. I am sorry.\"",
+        "4": "Ask your child an open-ended question today: \"What was something interesting at school today?\""
       },
       "PO-OBS-ATTC-001": {
-        "0": "Before leaving, use a consistent goodbye ritual such as a high five, hug, or special phrase, and watch the separation response.",
+        "0": "Before leaving, use a consistent goodbye ritual such as a high five, hug, or special phrase, and observe how they handle the separation.",
         "1": "When your child explores a new environment, sit somewhere visible without rushing them, and notice whether they look back to check you are there.",
-        "2": "Next time your child cries after feeling wronged, offer a hug first without rushing to ask \"what happened?\"",
+        "2": "Next time your child cries because their feelings are hurt, offer a hug first instead of rushing to ask, \"What happened?\"",
         "3": "Create a private \"safe signal\" together that your child can use when they feel uncomfortable."
       },
       "PO-OBS-EXEC-001": {
         "0": "Let your child plan tomorrow: what comes first and what comes next. Review the plan together in the evening.",
-        "1": "Next time your child delays homework, ask, \"How long do you think this will take?\"",
-        "2": "Give your child a task with more than one step, such as \"wash your hands, then bring bowls and chopsticks to the table,\" and observe the process.",
+        "1": "Next time your child puts off doing homework, ask, \"How long do you think this will take?\"",
+        "2": "Give your child a task with more than one step, such as \"wash your hands, then bring bowls and chopsticks to the table,\" and observe how they manage.",
         "3": "When your child forgets something, do not solve it for them immediately. Ask, \"What could help you remember next time?\""
       }
     },
     "guidedPrompt": {
       "PO-REM-REL-001": {
         "0": "When your child cried or called for you today, about how long did it take you to respond?",
-        "1": "How did your child's emotion change after you responded?"
+        "1": "How did your child's emotions shift after you responded?"
       },
       "PO-REM-REL-002": {
         "0": "Was there a moment today when your child explored or played independently while you stayed nearby without intervening?",
-        "1": "When your child met difficulty during exploration, what did you do?"
+        "1": "When your child ran into difficulty during exploration, what did you do?"
       },
       "PO-REM-REL-003": {
         "0": "What did your child want to do independently today?",
@@ -2075,14 +2075,14 @@
       },
       "PO-REM-REL-005": {
         "0": "Have you and your child had a conflict recently? How did you reconnect afterward?",
-        "1": "About how long did your child's emotion take to settle after the conflict?"
+        "1": "About how long did it take for your child to calm down after the conflict?"
       },
       "PO-REM-REL-006": {
         "0": "This week, how much of your conversation with your child was about schoolwork, and how much was about what interests them?",
         "1": "Was there a recent time when you only listened without evaluating or giving input? What did your child say?"
       },
       "PO-REM-REL-007": {
-        "0": "Has your child recently had moments of \"I do not want to talk\"? How did you respond?",
+        "0": "Has your child recently had \"I don't want to talk\" moments? How did you respond?",
         "1": "Do you think the silence was reflection, sadness, or a need for privacy?"
       },
       "PO-REM-REL-008": {
@@ -2095,15 +2095,15 @@
       },
       "PO-REM-REL-010": {
         "0": "The last time you criticized your child, did you say \"you did it wrong\" or ask \"what could work better\"?",
-        "1": "How did your child respond at the time? How long did the emotion take to settle?",
+        "1": "How did your child respond at the time? How long did it take for them to calm down?",
         "2": "Have you tried letting your child evaluate their own performance? What happened?"
       },
       "PO-REM-REL-011": {
-        "0": "Has your child closed their door recently? What did you feel and how did you respond?",
+        "0": "Has your child closed their door recently? How did you feel and how did you respond?",
         "1": "Do you think they were rejecting you or building their own space?"
       },
       "PO-REM-REL-012": {
-        "0": "Have you recently mentioned your child's performance in front of others, either praise or criticism?",
+        "0": "Have you recently mentioned your child's performance in front of others, either to praise or criticize them?",
         "1": "How did your child respond then? Did they bring it up afterward?"
       },
       "PO-REM-REL-013": {
@@ -2123,7 +2123,7 @@
         "1": "What were you doing at the time, and how did you respond?"
       },
       "PO-REM-EMO-001": {
-        "0": "What have you done to prepare for kindergarten entry, such as visiting in advance or telling stories?",
+        "0": "What have you done to prepare for starting kindergarten, such as visiting in advance or reading stories?",
         "1": "What emotions has your child shown about starting kindergarten?",
         "2": "How do you plan to say goodbye during separation?"
       },
@@ -2154,15 +2154,15 @@
       },
       "PO-REM-SEX-001": {
         "0": "Has your child asked questions about their body parts? How did you answer?",
-        "1": "Have you used picture books or daily moments for body-awareness education?"
+        "1": "Have you used picture books or daily moments to teach body awareness?"
       },
       "PO-REM-SEX-002": {
         "0": "When do you plan to talk with your child about upcoming body changes?",
-        "1": "How do you plan to explain them, such as conversation, picture books, or videos?"
+        "1": "How do you plan to explain them, such as through conversations, picture books, or videos?"
       },
       "PO-REM-DIG-001": {
         "0": "About how much screen time does your child have each day, and what do they mainly watch or play?",
-        "1": "Do you have screen-time rules, and how is your child following them?"
+        "1": "Do you have screen-time rules, and how well does your child follow them?"
       },
       "PO-REM-DIG-002": {
         "0": "Does your child use the internet independently?",
@@ -2174,7 +2174,7 @@
       },
       "PO-REM-SAF-002": {
         "0": "After your child started walking, what new safety concerns at home need attention?",
-        "1": "Are safety measures ready in areas such as the kitchen, bathroom, and balcony?"
+        "1": "Are safety measures in place in areas such as the kitchen, bathroom, and balcony?"
       },
       "PO-REM-NUT-001": {
         "0": "Are you preparing to introduce complementary foods, or have you already started? What did you add?",
@@ -2182,7 +2182,7 @@
       },
       "PO-REM-NUT-002": {
         "0": "Is your child taking vitamin D every day? What brand and dose are you using?",
-        "1": "Have you done any recent vitamin D related checks?"
+        "1": "Have you done any vitamin D checks recently?"
       },
       "PO-REM-SLP-001": {
         "0": "Is the baby's sleep environment safe, such as back sleeping, no pillow or loose bedding, and a firm surface?",
@@ -2198,7 +2198,7 @@
       },
       "PO-REM-IND-001": {
         "0": "What can your child currently do independently, such as dressing, brushing teeth, or putting toys away?",
-        "1": "What self-care ability have you been helping them build recently, and how is it going?"
+        "1": "What self-care skills have you been helping them build recently, and how is it going?"
       },
       "PO-REM-IND-002": {
         "0": "Have you given your child pocket money? How do you arrange it?",
@@ -2213,7 +2213,7 @@
         "1": "Which kind of music or instrument has your child shown special interest in?"
       },
       "PO-REM-INT-002": {
-        "0": "What is your child's favorite sport or physical activity recently?",
+        "0": "What has been your child's favorite sport or physical activity lately?",
         "1": "About how much time do they spend outdoors or being physically active each day?"
       },
       "PO-REM-INT-003": {
@@ -2237,7 +2237,7 @@
       "now": "Now",
       "oneHourAgo": "1 hour ago",
       "yesterdayEvening": "Yesterday 19:00",
-      "dayBeforeYesterdayEvening": "Day before yesterday 19:00"
+      "dayBeforeYesterdayEvening": "Two days ago 19:00"
     },
     "entryList": {
       "empty": "No journal entries yet. Pick a mode to start observing.",
@@ -2252,7 +2252,7 @@
     },
     "scene": {
       "quickLabel": "Quick note",
-      "quickSub": "Capture · Quick note · Flash thought",
+      "quickSub": "Capture · Quick note · Fleeting thought",
       "deepLabel": "Focused observation",
       "deepSub": "Deep · Timed · Structured",
       "reviewLabel": "Stage review",
@@ -2287,7 +2287,7 @@
       "ready": "Ready to transcribe",
       "transcribing": "Transcribing",
       "transcribed": "Ready to save",
-      "transcriptionFailed": "Transcription failed; voice-only save is still available"
+      "transcriptionFailed": "Transcription failed, but you can still save the voice recording"
     },
     "voiceCard": {
       "startAria": "Start voice recording",
@@ -2303,38 +2303,38 @@
       "deleteRecording": "Delete recording",
       "transcribing": "AI is transcribing...",
       "transcribe": "Convert to text",
-      "transcribeUnavailable": "Voice transcription is unavailable; you can still save the voice record.",
+      "transcribeUnavailable": "Voice transcription is unavailable, but you can still save the voice recording.",
       "transcriptLabel": "Transcript (editable)",
-      "transcriptPlaceholder": "You can continue editing the transcript here..."
+      "transcriptPlaceholder": "Edit the transcript here..."
     },
     "timeline": {
       "title": "Growth timeline",
       "filter": {
         "all": "All",
-        "keepsake": "Keepsake"
+        "keepsake": "Keepsakes"
       },
       "action": {
         "more": "More actions",
         "edit": "Edit",
         "delete": "Delete",
-        "askAi": "Discuss this record with AI",
-        "removeKeepsake": "Remove keepsake",
+        "askAi": "Discuss this entry with AI",
+        "removeKeepsake": "Remove from keepsakes",
         "markKeepsake": "Mark as keepsake",
         "viewImage": "View larger image"
       },
       "empty": {
-        "noEntries": "No journal entries yet. Start with one note.",
+        "noEntries": "No journal entries yet. Start with your first note.",
         "noKeepsakeTitle": "No keepsake moments yet",
-        "noKeepsakeBody": "When a first time, award, finished book, or another moment feels worth keeping, mark the journal entry as a keepsake."
+        "noKeepsakeBody": "Mark entries as keepsakes to save first milestones, awards, finished books, and other moments worth remembering."
       },
       "entryCount": "{{count}} entries",
-      "voiceSavedFallback": "Voice record saved",
+      "voiceSavedFallback": "Voice recording saved",
       "observationDimension": "Observation · {{dimension}}",
       "contentType": {
         "mixed": "Voice + text",
         "voice": "Voice"
       },
-      "keepsakeReason": "Keepsake reason · {{reason}}"
+      "keepsakeReason": "Why it's a keepsake · {{reason}}"
     },
     "tagging": {
       "title": "AI growth keywords",
@@ -2344,8 +2344,8 @@
       "analysisUnavailable": "AI analysis is unavailable",
       "retry": "Retry",
       "dimension": "Growth direction · {{dimension}}",
-      "noKeywords": "AI did not detect growth keywords",
-      "textTooShort": "Text is short, skipping AI analysis"
+      "noKeywords": "No growth keywords detected",
+      "textTooShort": "Text is too short; skipping AI analysis"
     },
     "photoBar": {
       "add": "Add"
@@ -2355,14 +2355,14 @@
       "emptyPreview": "(No text content)",
       "selectedCategory": "Selected category",
       "cancel": "Cancel",
-      "saveSkipAi": "Save (skip AI analysis)",
+      "saveSkipAi": "Save without AI analysis",
       "save": "Save"
     },
     "deleteModal": {
       "title": "Delete journal entry",
       "heading": "Delete this journal entry?",
-      "body": "After deletion, this journal entry will be removed from the list and related local voice or image files will also be cleaned up.",
-      "mediaOnlyPreview": "This is a voice or image record.",
+      "body": "This will remove the entry from your journal and delete any attached local voice or image files.",
+      "mediaOnlyPreview": "This is a voice or image entry.",
       "mediaCount": "Includes {{count}} local media attachments",
       "cancel": "Cancel",
       "deleting": "Deleting...",
@@ -2372,22 +2372,22 @@
       "saving": "Saving...",
       "close": "Close",
       "titleLabel": "Title (optional)",
-      "titlePlaceholder": "For example: first time presenting on stage alone",
-      "reasonLabel": "Why it is worth keeping (optional)",
-      "noReason": "Do not choose yet",
+      "titlePlaceholder": "e.g., First time speaking on stage alone",
+      "reasonLabel": "Why it's worth keeping (optional)",
+      "noReason": "No reason selected",
       "confirm": {
         "ariaLabel": "Suggest adding to keepsakes",
         "heading": "Add this entry to keepsakes?",
         "bannerTitle": "This looks like a moment worth keeping",
-        "bannerBody": "You can add a title or reason now so future review is clearer. Choose skip if you do not want to keep it.",
-        "skip": "No",
+        "bannerBody": "Add an optional keepsake title or reason, or skip if you don't want to mark this entry as a keepsake.",
+        "skip": "Not now",
         "save": "Add to keepsakes"
       },
       "enrich": {
         "ariaLabel": "Add keepsake details",
-        "heading": "This entry is already a keepsake",
+        "heading": "Saved as a keepsake",
         "bannerTitle": "Add keepsake details",
-        "bannerBody": "You can add a title or keepsake reason now so future review is clearer. Skipping now is also fine.",
+        "bannerBody": "Add a title or keepsake reason to make it easier to look back on later, or skip for now.",
         "skip": "Skip",
         "save": "Save details"
       }
@@ -2396,18 +2396,18 @@
       "heroLead": "Growth",
       "heroTail": "Journal",
       "subtitleLead": "Observe, don't judge.",
-      "subtitleTail": " Each entry is a small window for {{childPronoun}} to look back on later.",
+      "subtitleTail": " Each entry is a small window {{childPronoun}} can look back on later.",
       "stat": {
         "thisMonth": "This month",
         "total": "Total",
-        "keepsake": "Keepsake",
+        "keepsake": "Keepsakes",
         "unit": "entries"
       },
       "draft": {
         "badge": "D",
-        "title": "Unfinished quick note found",
-        "description": "The content is temporarily saved locally",
-        "descriptionWithTime": "The content is temporarily saved locally. Last saved at {{time}}",
+        "title": "Unfinished draft found",
+        "description": "Temporarily saved locally",
+        "descriptionWithTime": "Temporarily saved locally · Last saved at {{time}}",
         "discard": "Discard draft",
         "restore": "Continue editing",
         "status": {
@@ -2418,7 +2418,7 @@
       "editingEntry": "Editing the {{label}} entry",
       "cancelEdit": "Cancel edit",
       "guidedPlaceholder": "Use the guided questions above and record what you observed...",
-      "freePlaceholder": "What did {{childPronoun}} just do or say? If there was a challenge, how did {{childPronoun}} respond...",
+      "freePlaceholder": "What did {{childPronoun}} just do or say? If a challenge came up, how did {{childPronoun}} respond?",
       "voiceNote": "Voice note",
       "addPhoto": "Add photo",
       "emoji": "Emoji",
@@ -2430,7 +2430,7 @@
       "experiment": {
         "title": "Try this small experiment",
         "adding": "Adding...",
-        "addTodo": "Add to todos",
+        "addTodo": "Add to to-dos",
         "skip": "Skip"
       }
     },
@@ -2457,22 +2457,22 @@
     },
     "recordModal": {
       "adverseReaction": "Adverse reaction record",
-      "adverseReactionPlaceholder": "Record any adverse reaction...",
+      "adverseReactionPlaceholder": "Record any adverse reactions...",
       "cancel": "Cancel",
       "saving": "Saving...",
       "save": "Record vaccination"
     },
     "history": {
-      "pendingTitle": "{{count}} historical vaccines need backfill",
+      "pendingTitle": "{{count}} earlier vaccination records need review",
       "hint": "Click Backfill to enter the actual vaccination date and details such as batch number and provider.",
       "backfill": "Backfill"
     },
     "error": {
-      "missingDate": "Select vaccination date",
+      "missingDate": "Please select a vaccination date",
       "dateBeforeBirth": "Vaccination date cannot be earlier than the birth date",
       "dateInFuture": "Vaccination date cannot be later than today",
-      "saveFailed": "Save failed. Try again",
-      "deleteFailed": "Delete failed. Try again"
+      "saveFailed": "Failed to save. Please try again.",
+      "deleteFailed": "Failed to delete. Please try again."
     },
     "ageBucket": {
       "birth": "At birth",
@@ -2508,21 +2508,21 @@
       "allComplete": "All vaccines completed"
     },
     "page": {
-      "title": "Vaccine administration",
+      "title": "Vaccination management",
       "addRecord": "Add vaccine record",
       "progressTitle": "Vaccination progress",
       "classOneProgress": "Class I (free)",
       "classTwoProgress": "Class II (self-paid)",
       "upcomingTitle": "Vaccines due",
       "overdueWindow": "Past recommended window ({{start}}-{{end}})",
-      "recommendedWindow": "Recommended at {{start}}-{{end}}",
+      "recommendedWindow": "Recommended: {{start}}-{{end}}",
       "noUpperLimit": "no upper limit",
       "record": "Record",
       "currentStage": "Current stage",
       "stageComplete": "All complete",
       "vaccinatedRecord": "Vaccinated on {{date}}{{hospital}}",
       "reactionLabel": "Adverse reaction: {{text}}",
-      "change": "Change",
+      "change": "Edit",
       "delete": "Delete",
       "deletePrompt": "Delete this record?",
       "deleteConfirm": "Delete",
@@ -2536,11 +2536,11 @@
     },
     "capture": {
       "title": "Add vaccine record",
-      "subtitle": "Record an actual vaccination from the governed vaccine rule set",
+      "subtitle": "Select an available vaccine to record a vaccination your child has received.",
       "error": {
-        "missingRule": "Select a vaccine rule",
-        "missingDate": "Select vaccination date",
-        "saveFailed": "Save failed. Try again"
+        "missingRule": "Select a vaccine",
+        "missingDate": "Please select a vaccination date",
+        "saveFailed": "Failed to save. Please try again."
       },
       "section": {
         "vaccination": "Vaccination information"
@@ -2549,7 +2549,7 @@
         "name": "Vaccine name",
         "rulePlaceholder": "Select the vaccine given",
         "reaction": "Adverse reaction",
-        "reactionPlaceholder": "Record if any"
+        "reactionPlaceholder": "Describe any reactions (optional)"
       },
       "cancel": "Cancel",
       "saving": "Saving...",
@@ -2575,7 +2575,7 @@
       "schoolPe": "School PE",
       "sportsClub": "Sports club",
       "clinic": "Clinic",
-      "self": "Self test",
+      "self": "Self-test",
       "other": "Other"
     },
     "grade": {
@@ -2590,7 +2590,7 @@
     },
     "trend": {
       "title": "Fitness trend",
-      "empty": "Trends appear after at least two records",
+      "empty": "Add at least two records to see trends",
       "lineExcellent": "Excellent",
       "lineGood": "Good",
       "linePass": "Pass"
@@ -2625,9 +2625,9 @@
       "standardTopic": "National fitness test",
       "activityFallbackTopic": "Activity record",
       "date": "Date: {{date}}",
-      "duration": "Duration {{duration}} min",
-      "distance": "Distance {{distance}} m",
-      "intensity": "Intensity {{intensity}}"
+      "duration": "Duration: {{duration}} min",
+      "distance": "Distance: {{distance}} m",
+      "intensity": "Intensity: {{intensity}}"
     },
     "activity": {
       "running": "Running",
@@ -2680,7 +2680,7 @@
       "tierLabel": "School stage",
       "tierAuto": "Auto (by age)",
       "standardMinOne": "Fill in at least one fitness metric",
-      "saveFailed": "Save failed, please try again",
+      "saveFailed": "Failed to save. Please try again.",
       "footArchLabel": "Foot arch",
       "footArchUnset": "Not recorded",
       "valueOutOfRange": "Value out of plausible range"
@@ -2690,7 +2690,7 @@
       "addRecord": "Add record",
       "deleteConfirm": "Delete this fitness record? This cannot be undone.",
       "emptyTitle": "No fitness records yet",
-      "emptyDescription": "Choose an activity category and record results or activity volume.",
+      "emptyDescription": "Choose an activity category, then record the result or amount of activity.",
       "latest": "Latest",
       "askAi": "Discuss this record with AI"
     },
@@ -2732,32 +2732,32 @@
     },
     "capture": {
       "title": "Record milestone",
-      "noCandidatesTitle": "Outside milestone data range",
-      "noCandidatesHint": "The milestone library covers ages 0-6. This child's age has no new milestone items to record.",
+      "noCandidatesTitle": "No milestone data for this age range",
+      "noCandidatesHint": "The milestone library covers ages 0-6. No new library items are available for your child's current age.",
       "close": "Close",
       "domain": "Domain",
-      "selectMilestone": "Select milestone filtered by current age",
+      "selectMilestone": "Select a milestone for this age",
       "ageRangeMonths": "{{start}}-{{end}} months",
-      "achievedDate": "Achieved date",
+      "achievedDate": "Date achieved",
       "story": "Record a short story",
-      "storyPlaceholder": "Example: found the hidden ball for the first time and laughed happily...",
+      "storyPlaceholder": "Example: Found the hidden ball for the first time and laughed happily...",
       "photos": "Photos{{count}}",
-      "photoHint": "Click or drag to upload milestone photos, up to 9",
+      "photoHint": "Click or drag to upload up to 9 photos",
       "cancel": "Cancel",
       "saving": "Saving...",
-      "save": "Record achieved"
+      "save": "Mark as achieved"
     },
     "recordModal": {
-      "achievedDate": "Achieved date",
+      "achievedDate": "Date achieved",
       "storyWithIcon": "Record a short story ✏️",
-      "storyPlaceholder": "Example: found the hidden ball for the first time and laughed happily...",
+      "storyPlaceholder": "Example: Found the hidden ball for the first time and laughed happily...",
       "photo": "Add photo 📷",
       "cancel": "Cancel",
       "saving": "Saving...",
-      "save": "Record achieved"
+      "save": "Mark as achieved"
     },
     "page": {
-      "title": "Development milestones",
+      "title": "Developmental milestones",
       "archiveTitle": "Early development records",
       "achievedCount": "Achieved {{achieved}}/{{total}}",
       "upcomingTitle": "Upcoming milestones",
@@ -2768,14 +2768,14 @@
     "sources": {
       "title": "Reference sources",
       "coreDomains": "Gross motor · Fine motor · Language · Cognitive",
-      "cdc": "CDC Developmental Milestones (2022 updated).",
+      "cdc": "CDC Developmental Milestones (2022 update).",
       "cdcCitation": "Zubler JM, et al. Evidence-Informed Milestones for Developmental Surveillance. MMWR 2022;71(1):1-4",
       "socialSelfCare": "Social-emotional · Self-care",
       "asq": "Ages & Stages Questionnaires (ASQ-3), 3rd Edition.",
       "asqCitation": "Squires J, Bricker D. Paul H. Brookes Publishing, 2009",
       "chinaReference": "Chinese child development references",
       "chinaReferenceDetail": "National Health Commission, Technical Specifications for Health Management of Children Aged 0-6; Capital Institute of Pediatrics, Child Development and Behavior Assessment Scale for Ages 0-6",
-      "note": "Each item marks median age and normal range. If an item is not achieved past the alert age, consult a professional."
+      "note": "Each milestone shows the median age and typical range. If a milestone is not reached by the alert age, consider consulting a healthcare professional."
     },
     "summary": {
       "ageYearsMonths": "{{years}} years {{months}} months",
@@ -2783,8 +2783,8 @@
     },
     "record": {
       "recordedFallback": "Recorded",
-      "undoAchieved": "Undo achieved",
-      "markAchieved": "Mark achieved",
+      "undoAchieved": "Unmark as achieved",
+      "markAchieved": "Mark as achieved",
       "achievedOn": "Achieved on {{date}}",
       "typicalSummary": "Typical {{start}}-{{end}} · {{description}}...",
       "addStory": "Add story",
@@ -2799,14 +2799,14 @@
     "archive": {
       "eyebrow": "Growth archive",
       "title": "Completed stages",
-      "rangeFootprint": "{{start}} ~ {{end}} growth footprint, ready to review or backfill",
+      "rangeFootprint": "{{start}} ~ {{end}} growth journey, ready to review or fill in",
       "collapse": "Collapse archive",
       "expand": "Expand archive",
       "pastStages": "{{count}} past stages",
       "recordedCount": "{{achieved}}/{{total}} recorded",
       "pendingCount": "{{count}} can be backfilled",
       "bucketPending": "{{count}} pending",
-      "bucketHasPending": "Some items are not recorded yet and can be backfilled.",
+      "bucketHasPending": "Some milestones haven't been recorded yet and can be backfilled.",
       "bucketComplete": "All milestones are recorded"
     }
   },
@@ -2897,14 +2897,14 @@
       "allergen": "Allergen",
       "allergenPlaceholder": "Enter allergen name",
       "moreAllergens": "+ More",
-      "occurredAt": "Date occurred",
+      "occurredAt": "Date of reaction",
       "severity": "Severity",
       "symptoms": "Symptoms",
       "multiSelectHint": "(multiple allowed)",
       "moreSymptoms": "+ More symptoms",
       "customSymptomPlaceholder": "Custom symptom...",
-      "photo": "Scene photo",
-      "photoHint": "(rash or redness photos are very useful for medical visits)",
+      "photo": "Symptom photo",
+      "photoHint": "(Photos of rashes or redness are helpful during medical visits)",
       "photoUpload": "Take or choose photos",
       "hideMedicalDetails": "Hide medical and follow-up details",
       "showMedicalDetails": "Add medical and follow-up details",
@@ -2922,12 +2922,12 @@
       "hasPhoto": "Photo recorded",
       "symptoms": "Symptoms: {{symptoms}}",
       "treatments": "Treatment: {{treatments}}",
-      "markOutgrown": "Mark outgrown"
+      "markOutgrown": "Mark as outgrown"
     }
   },
   "MedicalEvents": {
     "ai": {
-      "filteredFallback": "The data is recorded. Keep updating medical information for more precise health analysis.",
+      "filteredFallback": "Your medical record has been saved. You can continue adding visit details for future reference and review.",
       "unavailable": "Analysis cannot be generated right now. Confirm that the AI runtime is running.",
       "retryLater": "AI analysis is temporarily unavailable. Try again later."
     },
@@ -3029,7 +3029,7 @@
       "high": "High"
     },
     "form": {
-      "ocrRuntimeUnavailable": "Smart recognition is unavailable: this version does not support image input. Fill in manually.",
+      "ocrRuntimeUnavailable": "Smart recognition is unavailable because this version does not support image input. Please enter the details manually.",
       "titleRequired": "Enter a diagnosis or symptom.",
       "dateRequired": "Select the event date.",
       "saveFailed": "Save failed: {{message}}",
@@ -3039,8 +3039,8 @@
       "editTitle": "Edit medical record",
       "smartInputTitle": "Smart intake",
       "ocrRecognizingFile": "Recognizing {{fileName}}...",
-      "ocrExtractedFile": "✓ Extracted information from {{fileName}}. Review and complete it.",
-      "ocrHint": "Upload a medical record or prescription image, and AI will fill key information into the form.",
+      "ocrExtractedFile": "✓ Extracted details from {{fileName}}. Please review and complete the form.",
+      "ocrHint": "Upload a photo of a medical record or prescription, and AI will fill in the key details for you.",
       "recognizing": "Recognizing...",
       "uploadRecognize": "Upload for recognition",
       "sectionBasic": "Visit basics",
@@ -3053,7 +3053,7 @@
       "hospitalPlaceholder": "Hospital or clinic name",
       "sectionDiagnosis": "Condition and diagnosis",
       "diagnosis": "Diagnosis / main symptom",
-      "diagnosisPlaceholder": "Example: hand-foot-mouth disease, acute upper respiratory infection",
+      "diagnosisPlaceholder": "e.g., hand, foot, and mouth disease; acute upper respiratory infection",
       "symptoms": "Associated symptoms (multi-select)",
       "severity": "Severity",
       "result": "Screening result",
@@ -3061,7 +3061,7 @@
       "labDescription": "Fill in only items with numeric values.",
       "sectionMedication": "Medication and care",
       "medicationCount": "{{count}} medications",
-      "drugPlaceholder": "Search drug name or pinyin initials",
+      "drugPlaceholder": "Search by medication name or pinyin initials",
       "dosePlaceholder": "Dose",
       "frequencyPlaceholder": "Frequency, e.g. 3 times daily",
       "daysPlaceholder": "Days",
@@ -3089,10 +3089,10 @@
       "collapse": "Collapse"
     },
     "analysis": {
-      "aiLoading": "AI analyzing",
+      "aiLoading": "Analyzing with AI...",
       "deepAnalyze": "Deep AI analysis",
       "countSuffix": "×{{count}}",
-      "aiInsightTitle": "AI overall analysis"
+      "aiInsightTitle": "Overall AI analysis"
     },
     "overview": {
       "title": "Care overview",
@@ -3198,7 +3198,7 @@
     "welcome": {
       "hero": {
         "withChildrenTitle": "Choose a child to begin",
-        "withChildrenDescription": "Choose a child to enter their growth timeline and stage reminders."
+        "withChildrenDescription": "Select a child to view their growth timeline and stage reminders."
       },
       "addChild": "Add new child",
       "stepsTitle": "Three steps to begin",
@@ -3231,7 +3231,7 @@
     "relativeDateFallback": "{{month}}/{{day}}",
     "customTodo": {
       "addPlaceholderCollapsed": "Add daily task...",
-      "titlePlaceholder": "For example: remind me to read picture books for 10 minutes every night",
+      "titlePlaceholder": "e.g., Read picture books together for 10 minutes every night",
       "add": "Add",
       "complete": "Mark complete",
       "delete": "Delete",
@@ -3249,33 +3249,33 @@
       "catalog": {
         "growthInfant": "Check this month's height change?",
         "growthChild": "Record height and weight",
-        "sleep": "How did last night sleep go?",
+        "sleep": "How did last night's sleep go?",
         "outdoor": "This week's outdoor goal progress",
         "vision": "Update vision record",
-        "growthJournal": "Any memorable moment today?"
+        "growthJournal": "Any memorable moments today?"
       },
       "action": {
         "record": "Record",
-        "writeJournal": "Write one",
+        "writeJournal": "Write a note",
         "recordDataTitle": "Record data",
         "writeJournalTitle": "Write a growth journal entry"
       },
       "priority": {
-        "p0Today": "P0 · important today",
+        "p0Today": "Important today",
         "today": "Today"
       },
       "downgradeIndicator": "{{count}} profile items can be updated"
     },
     "todoDrawer": {
-      "openAria": "Open task items",
-      "title": "Task items",
-      "pendingCount": "{{count}} unfinished",
+      "openAria": "Open tasks",
+      "title": "Tasks",
+      "pendingCount": "{{count}} remaining",
       "allDone": "All complete",
       "viewAll": "View all",
       "close": "Close"
     },
     "observationNudge": {
-      "fallback": "No recent records for {{displayName}}. Find a moment to observe it?",
+      "fallback": "No recent records for {{displayName}}. Take a moment to observe?",
       "copy": {
         "PO-OBS-CONC-001": {
           "a": "What has your child been absorbed in lately?",
@@ -3323,7 +3323,7 @@
         },
         "PO-OBS-CASL-001": {
           "a": "Any change in how your child understands others' feelings?",
-          "b": "What recent scene showed your child's empathy?"
+          "b": "What recent moment showed your child's empathy?"
         },
         "PO-OBS-GROW-001": {
           "a": "What is your child's first reaction when something is difficult?",
@@ -3334,11 +3334,11 @@
           "b": "Have you noticed a particular strength emerging?"
         },
         "PO-OBS-INDU-001": {
-          "a": "Any recent moment where your child felt I did it?",
+          "a": "Any recent moments where your child had that \"I did it!\" feeling?",
           "b": "Notice what gives your child a sense of accomplishment."
         },
         "PO-OBS-IDEN-001": {
-          "a": "How has your child been describing themself lately?",
+          "a": "How has your child been describing themselves lately?",
           "b": "Notice your child's exploration of who they are."
         },
         "PO-OBS-PYDC-001": {
@@ -3350,7 +3350,7 @@
           "b": "Has your child started reflecting on how they learn?"
         },
         "PO-OBS-MORL-001": {
-          "a": "Has your child met a right-or-wrong question lately?",
+          "a": "Has your child encountered a question of right and wrong lately?",
           "b": "Notice how your child thinks about fairness and rules."
         },
         "PO-OBS-ATTC-001": {
@@ -3372,28 +3372,28 @@
       "recentWindow": "Last 7 days",
       "recentChangesTitle": "Recent changes",
       "viewProfile": "View profile",
-      "recentNeedsMoreTitle": "A little more record would complete this",
-      "recentNeedsMoreBody": "After adding more sleep, measurement, or observation records, recent changes will connect into a clearer thread here.",
+      "recentNeedsMoreTitle": "A few more records would help complete this",
+      "recentNeedsMoreBody": "Add a few more sleep, measurement, or observation entries to see recent changes come together here.",
       "noRecentTitle": "No new changes in the last 7 days",
-      "noRecentBody": "Record one measurement, observation, or sleep entry first; the home timeline will summarize recent changes here.",
-      "recordOne": "Record one entry",
+      "noRecentBody": "Log a measurement, observation, or sleep entry to see a summary of recent changes here.",
+      "recordOne": "Record an entry",
       "stageFocusTitle": "Current development stage",
       "viewAllReminders": "View all reminders",
       "sensitivePeriodBadge": "Sensitive period",
-      "stageFocusFallback": "This stage is worth continuing to observe for recent changes.",
+      "stageFocusFallback": "Keep an eye on emerging changes during this stage.",
       "recordAction": "Record",
-      "stageStableTitle": "Current stage is relatively steady",
+      "stageStableTitle": "Currently in a steady phase",
       "stageStableBody": "When the next sensitive period is matched, this card will explain why it matters.",
-      "quickLinksTitle": "Common entries",
+      "quickLinksTitle": "Quick links",
       "growthSnapshotTitle": "Growth snapshot",
       "viewCurves": "View curves",
       "latestGrowthMeasurement": "Latest growth measurement",
       "noGrowthSnapshotTitle": "No growth snapshot yet",
-      "noGrowthSnapshotBody": "After the first height or weight record, trend curves will appear here automatically.",
+      "noGrowthSnapshotBody": "Add your first height or weight record to see growth curves here.",
       "recentLinesTitle": "Recent signals",
       "viewAllRecords": "View all records",
       "noRecentLinesTitle": "No recent signals yet",
-      "noRecentLinesBody": "After adding an observation, journal entry, or voice note, recent content will appear here automatically.",
+      "noRecentLinesBody": "Add an observation, journal entry, or voice note, and your latest notes will appear here.",
       "outdoorGoalTitle": "Weekly outdoor goal",
       "setGoal": "Set goal",
       "noOutdoorGoalTitle": "No outdoor goal set yet",
@@ -3405,11 +3405,11 @@
       "stageInsightOverflow": "{{count}} more →",
       "coldStartGuideTitle": "Start with these three — the home page grows from here",
       "coldStartStep1Title": "Log the first growth measurement",
-      "coldStartStep1Body": "Enter one height or weight and a WHO-referenced trend curve appears here.",
+      "coldStartStep1Body": "Log a height or weight measurement to see a WHO-referenced growth curve here.",
       "coldStartStep2Title": "Log one night of sleep",
-      "coldStartStep2Body": "Record bedtime and wake time; after two weeks, sleep trends appear here.",
+      "coldStartStep2Body": "Record bedtime and wake time to see the records in the past two-week window.",
       "coldStartStep3Title": "Write a growth journal entry",
-      "coldStartStep3Body": "Text or voice — observations become material for the monthly growth report.",
+      "coldStartStep3Body": "Use text or voice — your everyday observations feed into the monthly growth report.",
       "coldStartStepCta": "Record now"
     },
     "nurtureMode": {
@@ -3426,7 +3426,7 @@
     "sleep": {
       "recordedDuration": "Duration recorded",
       "scheduleTime": "Sleep schedule",
-      "headline": "Last night sleep",
+      "headline": "Last night's sleep",
       "headlineEnough": "Enough sleep last night",
       "headlineStable": "Stable sleep last night",
       "headlineShort": "Short sleep last night",
@@ -3486,29 +3486,29 @@
         "latestBedtime": "Latest bedtime",
         "latestWakeTime": "Latest wake time",
         "emptyTitle": "No sleep records yet",
-        "emptySubtitle": "After the first sleep record, this card will show the last two weeks of sleep trends."
+        "emptySubtitle": "Log your first sleep record to see sleep trends from the past two weeks."
       },
       "vision": {
         "title": "Vision",
         "leftEye": "Left eye",
         "rightEye": "Right eye",
         "emptyTitle": "No vision records yet",
-        "emptySubtitle": "After one vision exam, this card will show left and right eye data."
+        "emptySubtitle": "Add a vision exam to see left and right eye results here."
       },
       "milestone": {
         "title": "Milestones",
         "recentlyAchieved": "Recently achieved",
         "upcoming": "Upcoming focus",
         "typicalAge": "{{domain}} · typically {{age}}",
-        "emptyTitle": "No matched milestones for this stage",
+        "emptyTitle": "No matching milestones for this stage",
         "emptySubtitle": "As the child grows, new developmental milestones will appear here automatically."
       },
       "observation": {
-        "title": "Observation dimension distribution",
+        "title": "Observations by dimension",
         "last30Days": "Last 30 days · {{count}} records with dimension tags",
         "countRatio": "{{count}} records · {{ratio}}%",
         "emptyTitle": "No observation records with dimension tags yet",
-        "emptySubtitle": "Choose a dimension when recording an observation, and the distribution you care about will appear here."
+        "emptySubtitle": "Select a dimension when logging an observation to see its distribution here."
       },
       "monthlyReport": {
         "title": "This month's growth summary",
@@ -3519,14 +3519,14 @@
       "kind": {
         "guide": "Apply after reading the guide",
         "practice": "Ongoing practice",
-        "consult": "Can discuss with AI Advisor"
+        "consult": "Discuss with AI Advisor"
       },
       "progression": {
         "acknowledged": "Understood",
         "reflected": "Reflected",
         "practicing": "Practicing",
         "practicingWithCount": "Practicing · {{count}} times",
-        "habituated": "Became a habit",
+        "habituated": "Habit formed",
         "consulted": "Consulted"
       }
     },
@@ -3537,14 +3537,14 @@
     },
     "todoReminderBanner": {
       "title": "{{offset}} reminder",
-      "extraDismissAll": "{{count}} more reminders; mark all as read",
+      "extraDismissAll": "{{count}} more reminders · Mark all as read",
       "close": "Close"
     },
     "orthoCycle": {
       "trayProgress": "Aligner cycle · tray {{current}} / {{total}}",
       "dayProgress": "{{filled}}/{{total}} days",
       "status": {
-        "final": "Final tray · register completion in the profile after finishing",
+        "final": "Final tray · mark completion in the profile when finished",
         "overdue": "{{days}} days overdue for switching",
         "dueToday": "Switch to the next tray today",
         "dueTomorrow": "Switch to the next tray tomorrow",
@@ -3594,12 +3594,12 @@
     },
     "ring": {
       "noActiveAppliance": "No active appliance in this treatment yet.",
-      "unworn": "Unworn",
+      "unworn": "Not worn",
       "currentAlignerWornFooter": "Current tray worn {{hours}}h · {{percent}}%",
       "currentAlignerMet": "Current tray target met",
       "currentAlignerWorn": "Current tray worn",
       "currentAlignerRemainingFooter": "{{hours}}h remaining · {{percent}}%",
-      "unwornWithPrescription": "Unworn · prescribed {{hours}} h/day",
+      "unwornWithPrescription": "Not worn · prescribed {{hours}} h/day",
       "prescribedHours": "Prescribed {{hours}} h/day",
       "applianceInUse": "Appliance in use",
       "expanderComplete": "Expansion complete",
@@ -3635,13 +3635,13 @@
       "title": "Switch to next aligner",
       "currentWithTotal": "Current tray {{current}} / {{total}}",
       "current": "Current tray {{current}}",
-      "indexLabel": "Tray index after this switch",
-      "overCap": "The prescribed total of {{total}} trays has been reached. No further switch can be recorded.",
+      "indexLabel": "Tray number after this switch",
+      "overCap": "You've reached the prescribed total of {{total}} trays. No further switches can be recorded.",
       "timeLabel": "Tray switch time",
       "submit": "Confirm switch",
       "error": {
-        "invalidIndexWithTotal": "Tray index must be an integer from 1 to {{total}}",
-        "invalidIndex": "Tray index must be an integer greater than or equal to 1",
+        "invalidIndexWithTotal": "Tray number must be a whole number from 1 to {{total}}",
+        "invalidIndex": "Tray number must be a whole number (1 or higher)",
         "invalidTime": "Tray switch time is invalid"
       }
     },
@@ -3649,14 +3649,14 @@
       "title": "Record expander activation",
       "completedWithCap": "Completed {{completed}} / {{cap}} activations",
       "completed": "Completed {{completed}} activations",
-      "indexLabel": "Activation index",
-      "overCap": "The prescribed total of {{cap}} activations has been reached. No further activation can be recorded.",
+      "indexLabel": "Activation number",
+      "overCap": "You've reached the prescribed total of {{cap}} activations. No further activations can be recorded.",
       "timeLabel": "Activation time",
       "notesLabel": "Notes (optional, e.g. \"left 1 turn + right 1 turn\")",
       "notesPlaceholder": "Record details for this activation",
       "submit": "Save",
       "error": {
-        "invalidIndex": "Activation index must be an integer greater than or equal to 1",
+        "invalidIndex": "Activation number must be a whole number (1 or higher)",
         "invalidTime": "Activation time is invalid"
       }
     },
@@ -3664,8 +3664,8 @@
       "dialogTitle": "Confirm treatment phase advance",
       "initialTitle": "Set {{applianceType}} initial phase to {{phase}}?",
       "advanceTitle": "Advance to {{phase}}?",
-      "initialBody": "After setting it, phase-month counting starts from this phase. If this was accidental, you can adjust it manually again.",
-      "advanceBody": "Phases can only advance one step at a time. After advancing, phase-month counting restarts from today.",
+      "initialBody": "Once set, monthly progress for this phase starts counting from this phase. You can still adjust it manually if needed.",
+      "advanceBody": "Phases can only advance one step at a time. Once advanced, the monthly count for the new phase starts from today.",
       "noTargetTitle": "Already at the final phase",
       "noTargetBody": "This appliance is already in the final phase of its treatment sequence. There is no next phase to advance to.",
       "cancel": "Cancel",
@@ -3686,8 +3686,8 @@
       "setPhase": "Set treatment phase",
       "advancePhase": "Advance treatment phase",
       "phaseProgress": "{{phase}} · month {{months}} / {{expectedMonths}}",
-      "backfillUnwearInterval": "Backfill unworn interval",
-      "backfillUnwear": "Backfill unworn",
+      "backfillUnwearInterval": "Log past non-wear period",
+      "backfillUnwear": "Log past non-wear",
       "logIssue": "Record discomfort",
       "logIssueShort": "Record issue"
     },
@@ -3722,7 +3722,7 @@
         "splitTitle": "Show both photos side by side"
       },
       "compare": {
-        "incomplete": "The two photo sets are incomplete for this angle. Switch angle or capture another set.",
+        "incomplete": "One or both photo sets are missing this angle. Switch angles or capture a new set.",
         "roleLabel": "{{role}} · {{session}}",
         "role": {
           "before": "Before",
@@ -3745,7 +3745,7 @@
     "stageConfirm": {
       "ariaLabel": "Confirm stage advance",
       "title": "Advance to {{stage}}?",
-      "body": "After the stage advances, reminder rules and schedules will follow the new stage. If this was accidental, you can roll it back manually.",
+      "body": "Advancing updates your reminder rules and schedules to match the new stage. You can still roll this back manually if needed.",
       "cancel": "Cancel",
       "confirm": "Confirm advance"
     },
@@ -3763,21 +3763,21 @@
         "noActiveCaseTitle": "No active case",
         "noCaseTitle": "No orthodontic case yet",
         "noActiveCaseBody": "The previous case has ended. You can create a new case; past records will remain in dental history.",
-        "noCaseBody": "After creating a case, you can track tray rhythm, review plans, unworn intervals, and generate the timeline automatically.",
+        "noCaseBody": "Once you create a case, you can track tray rhythm, review plans, and non-wear periods, and generate the timeline automatically.",
         "createNextCase": "Create a new case",
         "createCase": "Create orthodontic case"
       }
     },
     "caseShell": {
-      "deleteConfirm": "Delete this case? Related appliances, check-ins, and unworn records will be cascaded. This cannot be undone.",
+      "deleteConfirm": "Delete this case? Related appliances, check-ins, and non-wear records will also be deleted. This cannot be undone.",
       "parallelAppliances": "{{count}} appliances running in parallel",
       "menuAria": "Case management menu",
       "editCase": "Edit current case",
       "advanceToStage": "Advance to {{stage}}",
-      "noAdvanceStage": "No next stage can be advanced",
+      "noAdvanceStage": "No next stage to advance to",
       "deleteCase": "Delete current case",
       "legacyTitle": "Historical case needs confirmation",
-      "legacyBody": "This case was backfilled from a historical ortho-start record. Delete the current case from the menu and create a formal case, or first reclassify it as a formal type before adding appliances (PO-ORTHO-002a).",
+      "legacyBody": "This case was backfilled from a historical ortho-start record. Delete it from the menu and create a formal case, or reclassify it as a formal type before adding appliances (PO-ORTHO-002a).",
       "noActiveAppliance": "This case has no active appliance yet. Add an appliance to start recording daily status."
     },
     "stageBlocked": {
@@ -3811,8 +3811,8 @@
         "description": "Breakage, detachment, pain, etc."
       },
       "end": {
-        "label": "End",
-        "description": "Orthodontic treatment end or retention start"
+        "label": "Treatment end",
+        "description": "End of active orthodontic treatment or transition to retention"
       }
     },
     "modal": {
@@ -3841,9 +3841,9 @@
         "daysPerAlignerLabel": "Days per aligner",
         "daysPerAlignerPlaceholder": "For example, 7",
         "daysPerAlignerInvalid": "Days per aligner must be an integer greater than 0.",
-        "plannedEndAt": "Estimated end date {{date}}",
+        "plannedEndAt": "Estimated end date: {{date}}",
         "errorMissingStartDate": "Enter the start date",
-        "errorAlignerPlanRequired": "Clear aligners require positive integer values for total aligners and days per aligner",
+        "errorAlignerPlanRequired": "For clear aligners, enter whole numbers greater than 0 for both total aligners and days per aligner.",
         "errorPrescribedHoursRange": "Prescribed wear hours must be between 1 and 24"
       },
       "clinical": {
@@ -3852,9 +3852,9 @@
         "eventType": "Event type",
         "date": "Date",
         "eventOption": "{{label}} ({{description}})",
-        "appliedAppliance": "Applied appliance",
+        "appliedAppliance": "Associated appliance",
         "applianceOption": "{{applianceType}} · Started {{startedAt}}",
-        "nextReviewNote": "After this event, the next review will automatically move to {{date}}; the protocol reminder will advance to that date.",
+        "nextReviewNote": "Recording this event automatically moves the next review and its reminder to {{date}}.",
         "noActiveAppliance": "This case has no active appliance. The event will be added to the timeline, but the review cycle will not advance.",
         "errorMissingEventDate": "Enter the event date",
         "errorMissingAppliance": "Select the appliance for this review"
@@ -3862,7 +3862,7 @@
       "appliance": {
         "createTitle": "Add appliance",
         "editTitle": "Edit appliance settings",
-        "noEligibleTypes": "The child's current age does not meet the minimum age threshold for any appliance.",
+        "noEligibleTypes": "The child is currently below the minimum age for all available appliances.",
         "typeLabel": "Appliance type",
         "enabledAt": "Start date",
         "startDate": "Start date",
@@ -3883,10 +3883,10 @@
         "daysPerAlignerLabel": "Days per aligner",
         "daysPerAlignerPlaceholder": "For example, 7",
         "daysPerAlignerInvalid": "Days per aligner must be an integer greater than 0.",
-        "alignerPlanRequired": "Clear aligners require positive integer values for total aligners and days per aligner",
+        "alignerPlanRequired": "For clear aligners, enter whole numbers greater than 0 for both total aligners and days per aligner.",
         "reviewIntervalDays": "Review interval (days)",
         "initialPhase": "Initial treatment phase (optional)",
-        "initialPhasePlaceholder": "Do not set yet",
+        "initialPhasePlaceholder": "Not set yet",
         "nextReviewDate": "Next review date",
         "nextReviewDatePlaceholder": "Leave blank to clear",
         "nextReviewDateInvalid": "Next review date must use YYYY-MM-DD format.",
@@ -3911,14 +3911,14 @@
         "missingStart": "Enter the start time",
         "endBeforeStart": "End time must be later than start time"
       },
-      "dialogLabel": "Record unworn interval",
+      "dialogLabel": "Record non-wear period",
       "title": {
         "open": "Record removal time",
-        "backfill": "Backfill an unworn interval"
+        "backfill": "Log a past non-wear period"
       },
       "close": "Close",
       "startAt": "Removal time",
-      "endAt": "Wear-resumed time",
+      "endAt": "Resumed wear time",
       "reasonLabel": "Reason (optional)",
       "notesLabel": "Notes (optional)",
       "notesPlaceholder": "For example: lip swelling, removed while eating",
@@ -3933,7 +3933,7 @@
         "side": "Side"
       },
       "sessionDate": "Capture date",
-      "trayIndex": "Related tray index (optional)",
+      "trayIndex": "Tray number (optional)",
       "note": "Notes (optional)",
       "notePlaceholder": "Review confirmation / treatment baseline / ...",
       "cancel": "Cancel",
@@ -3946,14 +3946,14 @@
       "clear": "Clear",
       "error": {
         "missingDate": "Enter the capture date",
-        "missingPhoto": "Choose at least one photo, front or side",
-        "invalidTrayIndex": "Tray index must be an integer greater than or equal to 1",
-        "trayIndexRequiresAligner": "Tray index is valid only for clear-aligner appliances",
+        "missingPhoto": "Select at least one front or side photo.",
+        "invalidTrayIndex": "Tray number must be a whole number (1 or higher)",
+        "trayIndexRequiresAligner": "Tray numbers only apply to clear aligners",
         "unsupportedType": "Unsupported image format: {{type}} (JPEG / PNG / WebP only)",
         "unknownType": "unknown",
         "photoTooLarge": "Photo is too large ({{actual}}). Compress it to {{max}} or smaller before uploading",
-        "angleAlreadyExists": "A photo already exists for this angle ({{angle}}). Delete the existing attachment before uploading again",
-        "fileReaderNonString": "FileReader returned a non-string result",
+        "angleAlreadyExists": "A {{angle}} photo already exists. Remove it before uploading a new one.",
+        "fileReaderNonString": "Could not read the selected image. Please choose it again.",
         "fileReadFailed": "Failed to read the file"
       }
     },
@@ -3964,7 +3964,7 @@
       "today": "Today",
       "askAi": "Discuss this record with AI",
       "futureBadge": "Planned",
-      "openInterval": "Open",
+      "openInterval": "Ongoing",
       "entry": {
         "caseStarted": "Case started",
         "applianceStarted": "Appliance started",
@@ -3972,11 +3972,11 @@
         "applianceCompleted": "Appliance completed",
         "alignerChange": "Aligner changed · tray {{alignerIndex}}",
         "expanderActivation": "Expander activation · #{{activationIndex}}",
-        "unwearClosed": "Unworn interval",
+        "unwearClosed": "Non-wear period",
         "unwearOpen": "Currently unworn",
         "nextClinicalReview": "Next review",
         "nextAlignerChange": "Planned tray change · tray {{alignerIndex}}",
-        "cyclePlannedSwitch": "Current-tray planned switch",
+        "cyclePlannedSwitch": "Scheduled switch for current tray",
         "casePlannedEnd": "Planned case end"
       }
     },
@@ -4167,11 +4167,11 @@
           "desc": "There is no pubic hair in the genital area, only fine vellus hair similar to the abdomen."
         },
         "2": {
-          "title": "PH2 · Sparse appearance",
+          "title": "PH2 · Sparse growth",
           "desc": "A small amount of longer, slightly darker hair appears, usually along the labia majora."
         },
         "3": {
-          "title": "PH3 · More and coarser",
+          "title": "PH3 · Thicker and coarser",
           "desc": "Hair becomes more numerous, coarser, curlier, darker, and starts spreading toward the pubic area."
         },
         "4": {
@@ -4189,11 +4189,11 @@
           "desc": "There is no pubic hair in the genital area, only fine vellus hair similar to the abdomen."
         },
         "2": {
-          "title": "PH2 · Sparse appearance",
+          "title": "PH2 · Sparse growth",
           "desc": "A small amount of longer, slightly darker hair appears, usually at the base of the penis."
         },
         "3": {
-          "title": "PH3 · More and coarser",
+          "title": "PH3 · Thicker and coarser",
           "desc": "Hair becomes more numerous, coarser, curlier, darker, and starts spreading toward the pubic area."
         },
         "4": {
@@ -4221,11 +4221,11 @@
       "unrecorded": "Not recorded",
       "assessorMissing": "Assessor not recorded",
       "measurements": "Related growth measurements",
-      "noMeasurements": "No related measurements yet. Recorded height, bone age and body fat will appear here.",
+      "noMeasurements": "No related measurements yet. Recorded height, bone age, and body fat will appear here.",
       "heightDelta": "{{delta}} cm since {{from}}",
       "guideIntro": "Learn about body changes during puberty and how to support your child. This general information does not determine your child’s stage.",
-      "recordStep1": "Choose the assessment date and assessor, distinguishing professional assessment, parent observation and self-assessment.",
-      "recordStep2": "Select each stage from an existing assessment. If unsure, ask a professional first. Do not use stage 1 for an unrecorded value.",
+      "recordStep1": "Choose the assessment date and assessor, distinguishing between a professional assessment, parent observation, and self-assessment.",
+      "recordStep2": "Select each stage from an existing assessment. If you're unsure, check with a professional first. Do not use Stage 1 as a placeholder for unrecorded values.",
       "recordStep3": "Optionally add menarche information, existing measurements and observation notes. Saved records are ordered by assessment date.",
       "stages": "Understanding Tanner stages",
       "stageReferenceOnly": "These definitions are for reference. Reading a stage does not change the child's record.",
@@ -4233,8 +4233,8 @@
       "communicationBody": "Listen to your child's questions and respond in plain language. Respect their privacy and wishes, explain why you are recording information, and avoid comparisons with other children. Leave room for uncertainty or not wanting to talk yet.",
       "professional": "When to ask a professional",
       "professionalBody": "If you are unsure about a stage, have questions about body changes, or your child reports physical discomfort, bring relevant dates, notes and existing records to a professional. A professional can decide whether an examination is needed.",
-      "formIntro": "Explicitly select both stages from an existing assessment. Ask a professional if unsure. Menarche information and related measurements are optional.",
-      "selectStages": "Please select both stages explicitly. Confirm uncertain values instead of substituting stage 1.",
+      "formIntro": "Select both stages based on an existing assessment. Check with a professional if you're unsure. Menarche details and related measurements are optional.",
+      "selectStages": "Please select both stages. If a value is uncertain, confirm it first rather than defaulting to Stage 1.",
       "invalidDate": "The assessment date must be between the birth date and today.",
       "invalidMenarcheDate": "Enter a menarche date between the birth date and the assessment date.",
       "invalidMeasurement": "Enter valid positive measurements. Body fat cannot exceed 100%.",
@@ -4308,7 +4308,7 @@
     },
     "readOnlyEvent": {
       "orthoStart": {
-        "label": "Orthodontic started (history)"
+        "label": "Orthodontics started (history)"
       },
       "orthoReview": {
         "label": "Orthodontic follow-up"
@@ -4320,7 +4320,7 @@
         "label": "Orthodontic issue"
       },
       "orthoEnd": {
-        "label": "Orthodontic ended"
+        "label": "Orthodontics ended"
       }
     },
     "orthoGroupLabel": "Orthodontics",
@@ -4437,7 +4437,7 @@
       "saveEdit": "Save changes",
       "save": "Save",
       "error": {
-        "saveFailed": "Save failed. Try again"
+        "saveFailed": "Failed to save. Please try again."
       }
     },
     "actionMenu": {
@@ -4478,7 +4478,7 @@
     },
     "scan": {
       "pickPhotoTitle": "Choose a dental photo for AI recognition",
-      "importedNote": "[AI recognition] Imported from dental photo or panoramic image AI recognition",
+      "importedNote": "[AI recognition] Imported from a dental photo or panoramic image",
       "attachmentCaption": "AI recognition source photo"
     },
     "insight": {
@@ -4487,14 +4487,14 @@
         "caries": "Watch tooth {{toothId}} · caries",
         "stable": "Overall status is stable",
         "nextCheckMonth": "Next check · around month {{month}}",
-        "keepCleaningHabit": "Keep the dental scanning habit",
-        "keepFluorideCadence": "Keep the fluoride cadence",
-        "buildCleaningHabit": "Build a dental scanning habit"
+        "keepCleaningHabit": "Keep up regular dental cleanings",
+        "keepFluorideCadence": "Keep up regular fluoride treatments",
+        "buildCleaningHabit": "Build a regular dental cleaning habit"
       },
       "emptyEruptionInfo": "No eruption information has been recorded yet. Add records to build a more complete oral development profile.",
       "eruptionSummary": "{{childName}} had {{eruptedCount}} erupted teeth at {{ageLabel}}, including {{permanentPresent}} permanent teeth and {{primaryPresent}} primary teeth present.",
-      "cariesSummary": "There are {{cariesCount}} caries records; follow up with dental care promptly.",
-      "noCariesSummary": "Caries count is 0, and overall oral development is within the expected range.",
+      "cariesSummary": "{{cariesCount}} caries recorded. Follow up with dental care promptly.",
+      "noCariesSummary": "No caries records have been added yet.",
       "aiObservation": "AI observation",
       "recordContext": "Based on {{totalRecords}} records · {{ageLabel}}"
     }
@@ -4508,7 +4508,7 @@
     "page": {
       "title": "Vision profile",
       "todayDivider": "Today",
-      "privacyNote": "All data is encrypted locally · Visible to family only"
+      "privacyNote": "Records are stored on this device · Keep local backups safe"
     },
     "guide": {
       "stepLabel": "Refraction sheet entry guide",
@@ -4552,7 +4552,7 @@
             },
             "subjective": {
               "label": "Subjective refraction",
-              "desc": "The clinician adjusts lenses step by step while the child identifies targets. Also called subjective refraction. Sphere may be marked DS and cylinder DC. This is more accurate for prescriptions.",
+              "desc": "Also called subjective refraction: the clinician adjusts trial lenses step by step and refines the power based on the child's visual feedback when reading targets. Sphere is often marked DS and cylinder DC.",
               "tag": "Prescription basis"
             }
           }
@@ -4564,12 +4564,12 @@
             "sph": {
               "field": "Sphere S / SPH / DS",
               "meaning": "Myopia or hyperopia power",
-              "note": "Negative means myopia; positive means hyperopia. For example, -1.25 means 125 degrees of myopia."
+              "note": "Measured in diopters (D). Copy the number and its + or − sign directly from the report without converting it—for example, -1.25 D indicates myopia and +1.25 D indicates hyperopia."
             },
             "cyl": {
               "field": "Cylinder C / CYL / DC",
               "meaning": "Astigmatism power",
-              "note": "Usually negative. For example, -0.75 means 75 degrees of astigmatism. If there is no astigmatism, it may be 0 or omitted."
+              "note": "Indicates astigmatism power in diopters (D), such as -0.75 D. Copy the exact value and + or − sign from the report without converting it. If there is no astigmatism, it may be 0 or left blank."
             },
             "axis": {
               "field": "Axis AX / AXIS",
@@ -4593,7 +4593,7 @@
           },
           "examples": {
             "heading": "Common format examples",
-            "odFull": "Right eye: 125 degrees myopia / 75 degrees astigmatism, axis 80°, corrected vision 1.0.",
+            "odFull": "Right eye (OD): sphere -1.25 D, cylinder -0.75 D, axis 80°, corrected visual acuity 1.0.",
             "shortNotation": "No DS/DC suffix is shown; the meaning is the same.",
             "plano": "Plano PL means both sphere and cylinder are 0; enter 0 for both.",
             "uncorrectedPrefix": "The first number, 0.6, is uncorrected visual acuity."
@@ -4603,14 +4603,14 @@
           "title": "Read an axial biometry sheet",
           "what": {
             "heading": "What is axial biometry?",
-            "body": "Axial length (AL) is the distance from cornea to retina and is a core indicator for predicting myopia progression. Each 1mm of axial growth is roughly equivalent to 300 degrees of myopia. It is more predictive than a visual-acuity chart alone."
+            "body": "Axial length (AL), measured in millimeters (mm) from the corneal surface to the retina, helps track eye growth over time. Clinicians interpret axial length alongside age, refraction (in diopters, D), and previous measurements rather than relying on visual acuity alone."
           },
           "fields": {
             "heading": "Fields on an axial biometry sheet",
             "al": {
               "field": "AL axial length",
               "meaning": "Length from cornea to retina",
-              "note": "Normal adults are about 24mm. Children should be below same-age averages. Values beyond the threshold need close attention."
+              "note": "Copy the axial length value in millimeters (mm) directly from the report. It should be interpreted by an eye-care professional together with age, refractive status, and changes across visits."
             },
             "k1": {
               "field": "K1 / R1",
@@ -4648,8 +4648,8 @@
     "chart": {
       "rightAxialLength": "Right axial length",
       "leftAxialLength": "Left axial length",
-      "rightNakedVision": "Right naked vision",
-      "leftNakedVision": "Left naked vision",
+      "rightNakedVision": "Right uncorrected vision",
+      "leftNakedVision": "Left uncorrected vision",
       "rightSphere": "Right sphere",
       "leftSphere": "Left sphere",
       "rightIop": "Right IOP",
@@ -4669,7 +4669,7 @@
       "biometrySheet": "Biometry sheet"
     },
     "metric": {
-      "nakedVision": "Naked vision",
+      "nakedVision": "Uncorrected vision",
       "correctedVision": "Corrected vision",
       "sphereShort": "Sphere S",
       "cylinderShort": "Cylinder C",
@@ -4713,7 +4713,7 @@
       "belowMedian": "Currently below the same-age median",
       "sameAgeMean": "Same-age mean",
       "sameAgeCritical": "Same-age threshold",
-      "sameAgeCriticalWithAge": "Age {{age}} same-age threshold",
+      "sameAgeCriticalWithAge": "Age {{age}} threshold",
       "surplus": "Surplus"
     },
     "behavior": {
@@ -4815,15 +4815,15 @@
     "generating": "Generating",
     "refresh": "Refresh",
     "unavailable": {
-      "notConfigured": "No AI model is configured yet. Configure one to view intelligent analysis.",
-      "hostAbsent": "Open ParentOS from Apps in the Nimi desktop app to view intelligent analysis.",
-      "runtimeFailed": "Intelligent analysis couldn't be generated right now. Retry or check AI Settings."
+      "notConfigured": "No AI model is configured yet. Set one up to view AI analysis.",
+      "hostAbsent": "Open ParentOS from Apps in Nimi Desktop to view AI analysis.",
+      "runtimeFailed": "Couldn't generate AI analysis right now. Try again or check AI Settings."
     },
     "configureAI": "Configure AI",
     "openAISettings": "AI Settings",
     "retry": "Retry",
     "safeFallback": "Data has been recorded. Update it regularly to get a more accurate analysis.",
-    "truncatedSuffix": " (The content is long; refresh to generate it again.)",
+    "truncatedSuffix": " (The response may be incomplete. Click the assistant avatar to regenerate.)",
     "domain": {
       "overview": "overall development",
       "growth": "growth and development",
@@ -4852,7 +4852,7 @@
       "dataLabel": "{{label}} data:",
       "noRecords": "No recorded data yet"
     },
-    "generateHint": "Select Update to generate an AI summary of these records."
+    "generateHint": "Click the assistant avatar to generate an AI summary of these records."
   },
   "Growth": {
     "standard": {
@@ -4893,12 +4893,12 @@
       },
       "overview": {
         "coverage": "{{childName}}'s {{reportType}} report covers {{start}} to {{end}}.",
-        "counts": "This window includes {{measurements}} growth measurements, {{journals}} journal entries, {{milestones}} milestone updates, and {{vaccines}} vaccine records.",
+        "counts": "This period includes {{measurements}} growth measurements, {{journals}} journal entries, {{milestones}} milestone updates, and {{vaccines}} vaccine records.",
         "openReminders": "{{count}} reminder items are still open on the timeline."
       },
       "engagement": {
-        "some": "Parent engagement this window: {{parts}}.",
-        "none": "No reminder engagement recorded this window.",
+        "some": "Parent activity during this period: {{parts}}.",
+        "none": "No reminder activity recorded during this period.",
         "tasksCompleted": "completed {{count}} tasks",
         "guidesAcknowledged": "acknowledged {{count}} guides",
         "guidesAcknowledgedReflected": "acknowledged {{count}} guides ({{reflected}} with reflection)",
@@ -4911,10 +4911,10 @@
         "milestone": "{{title}} recorded on {{date}}",
         "vaccine": "{{name}} on {{date}}",
         "dateNotRecorded": "date not recorded",
-        "journalCount": "{{count}} journal entries were saved in this report window.",
+        "journalCount": "{{count}} journal entries were saved during this period.",
         "journalKeepsake": "{{count}} entries were marked as keepsakes.",
         "journalVoiceMixed": "{{voice}} voice-only entries and {{mixed}} mixed voice/text entries were saved.",
-        "journalRecorders": "Recorder coverage: {{summary}}.",
+        "journalRecorders": "Recorded by: {{summary}}.",
         "reminder": "{{title}} ({{status}})"
       },
       "reminderStatus": {
@@ -4959,7 +4959,7 @@
     "sparseNarrative": {
       "noEvidence": "No specific growth data or daily observations were recorded for {{childName}} in this period, so this report does not infer an overall state or trend.",
       "oneEvidence": "One record was saved for {{childName}} in this period. This report keeps that fact without inferring an overall state or trend.",
-      "closing": "This report only summarizes recorded facts. It does not infer from missing information.",
+      "closing": "This report summarizes recorded facts only and makes no assumptions where data is missing.",
       "filteredFallback": "Recorded facts appear below. Missing information is not interpreted.",
       "evidenceLabel": "Period records",
       "localSources": "Local child profile and local records",
@@ -4970,11 +4970,11 @@
       "summary": "{{count}} recognized medical reports",
       "uploadNew": "+ Upload new report",
       "emptyTitle": "No reports uploaded yet",
-      "emptyBody": "Upload checkup or lab reports; AI extracts the data automatically",
+      "emptyBody": "Upload checkup or lab reports, and AI will extract the data automatically",
       "uploadFirst": "Upload first report",
       "defaultReportName": "AI-recognized report",
       "recognizedLine": "{{relative}} · {{count}} data items recognized",
-      "detailLine": "Data dates: {{start}} ~ {{end}} · Uploaded: {{uploadedAt}}",
+      "detailLine": "Data dates: {{start}}–{{end}} · Uploaded {{uploadedAt}}",
       "monthLabel": "{{month}}/{{year}}",
       "relative": {
         "today": "Today",
@@ -4986,11 +4986,11 @@
     "actionBar": {
       "family": {
         "heading": "Share this report with",
-        "subtitle": "Private observations are hidden; only growth data is kept",
+        "subtitle": "Private observations are hidden—only growth data is included",
         "empty": "No family members available to share with",
         "shareSelected": "Share selected",
-        "selectOne": "Select one family member first",
-        "prepared": "Prepared a concise version for {{names}}. Sharing will be connected soon.",
+        "selectOne": "Select at least one family member",
+        "prepared": "Selected {{names}}. Direct sharing is not supported from this entry.",
         "presets": {
           "dad": {
             "name": "Dad",
@@ -5023,13 +5023,13 @@
         "heading": "Save locally",
         "pdf": "Save as PDF",
         "image": "Save as image",
-        "pdfHelp": "Choose a save location in the system dialog · Good for archiving/printing",
-        "imageHelp": "Portrait PNG · Good for sharing with family",
+        "pdfHelp": "Choose where to save · Best for archiving and printing",
+        "imageHelp": "Portrait PNG · Easy to share with family",
         "pdfFailed": "PDF generation failed",
         "imageFailed": "Image generation failed",
         "pdfSuccess": "PDF saved",
         "imageSuccess": "Image saved",
-        "retryLater": "{{prefix}}, please try again later",
+        "retryLater": "{{prefix}}. Please try again later.",
         "failedWithDetail": "{{prefix}}: {{detail}}"
       },
       "professional": {
@@ -5038,7 +5038,7 @@
       },
       "note": {
         "title": "Add my note",
-        "subtitle": "Attach it to any {{childName}} observation this month",
+        "subtitle": "Attach a note to any of {{childName}}'s observations this month",
         "hint": "Use “Add my note” below any observation."
       }
     },
@@ -5071,12 +5071,12 @@
       "aiWritten": "AI written",
       "milestoneMoment": "Milestone moment",
       "highlights": "Monthly highlights",
-      "watchNext": "Watch next month",
+      "watchNext": "What to watch next month",
       "trendSignals": "Trend signals",
       "nextActions": "Next actions",
       "sourcesPrefix": "Data sources: ",
       "overview": "Overview",
-      "focusTitle": "Key this period",
+      "focusTitle": "Focus this period",
       "noChild": "Add a child profile first.",
       "invalidPeriod": "Select a valid report date range.",
       "periodSubtitle": "{{start}} to {{end}}",
@@ -5089,7 +5089,7 @@
       "heroReports": "Reports",
       "heroSubtitle": "Generated automatically from local data and updated monthly",
       "loading": "Loading growth reports…",
-      "loadError": "Growth reports could not be loaded because the local data did not satisfy the current report contract.",
+      "loadError": "Growth reports could not be loaded because the local data does not meet the report requirements.",
       "accumulating": {
         "issue": "LETTER № {{issueNo}}",
         "period": "{{start}} → {{end}} · {{days}} days collected",
@@ -5106,7 +5106,7 @@
         "todayMilestone": "Today",
         "endMilestone": "Auto-generate · {{date}}",
         "captureAction": "Record a moment",
-        "error": "This cycle is ready, but the report has not finished generating. Your local records are safe.",
+        "error": "This period's records are ready, but report generation didn't finish. Your local records are safe.",
         "retry": "Try again"
       },
       "emptyTitle": "No growth reports yet",
@@ -5128,12 +5128,12 @@
         "connectAction": "Connect AI",
         "readyTitle": "AI connected",
         "readyBody": "AI is connected. New reports will be written by AI from your local records.",
-        "pendingBody": "{{count}} reports were generated before AI was connected and are still local fact lists. AI can rewrite them from the same period of local records; your records stay unchanged.",
+        "pendingBody": "{{count}} reports were generated before AI was connected and currently only list local facts. AI can rewrite them into growth narratives using the local records from each period, without changing your original records.",
         "refreshAll": "Rewrite all with AI ({{count}})",
         "refreshing": "Rewriting with AI {{done}}/{{total}}…",
         "stop": "Stop",
         "localTitle": "This report was generated before AI was connected",
-        "localBody": "It is only a list of local facts. AI is now connected and can rewrite it as a growth narrative from the same period of local records.",
+        "localBody": "Right now, this report only lists local facts. Since AI is now connected, it can turn your local records from this period into a full growth narrative.",
         "refreshOne": "Rewrite this report with AI",
         "refreshingOne": "AI is writing…",
         "refreshSuccess": "Report rewritten by AI.",
@@ -5141,7 +5141,7 @@
         "refreshAllDone": "Rewrote {{count}} reports with AI.",
         "runtimeUnavailable": "AI is currently unavailable.",
         "latestTitle": "AI connected — this report can be rewritten",
-        "latestBody": "This report was generated before AI was connected and is only a list of local facts. AI can rewrite it as a growth narrative from the same period of local records; your records stay unchanged.",
+        "latestBody": "This report was generated before AI was connected and currently only lists local facts. AI can rewrite it as a growth narrative using your local records from this period, without changing your original records.",
         "refreshLatest": "Rewrite this report with AI"
       }
     },
@@ -5167,7 +5167,7 @@
         "range": "{{start}}-{{end}}",
         "monthRange": "{{start}}-{{end}} months"
       },
-      "legacyBanner": "This report was generated in an older format and may still address the caregiver. Regenerate the same period in Advanced options to make {{name}} the subject.",
+      "legacyBanner": "This report uses an older format and may still address the caregiver directly. Regenerate this period under Advanced options to center the report on {{name}}.",
       "issue": "LETTER № {{issueNo}}",
       "aiWritten": "AI written",
       "periodAgeSuffix": " · {{age}}",
@@ -5180,13 +5180,13 @@
       "pullQuoteMeta": "- About {{name}} · {{periodLabel}}",
       "timelineTitle": "{{name}} this month",
       "timelineSubtitle": "{{count}} observed changes",
-      "watchTitle": "Watch next month",
+      "watchTitle": "What to watch next month",
       "watchSubtitle": "Reminders for the next check-in",
       "actionsTitle": "If you want to go one step further",
-      "actionsSubtitle": "A few things about {{name}} can be decided later.",
+      "actionsSubtitle": "A few things about {{name}} you can take your time deciding on.",
       "discussInAdvisor": "Discuss in Advisor",
-      "caregiverTitle": "The recorder is seen too",
-      "caregiverCopy": "This letter exists because you kept {{name}}'s details in view this month. The moments you sat down to record are part of this monthly story.",
+      "caregiverTitle": "The person keeping the record is seen, too",
+      "caregiverCopy": "This letter exists because you paid close attention to {{name}}'s everyday moments this month. Every time you sat down to write something down, you became part of this monthly story.",
       "signoffCopy": "This is {{name}} this month.",
       "signoffSeeYou": "See you next month.",
       "signoffMeta": "- ParentOS · {{periodLabel}}",
@@ -5232,8 +5232,8 @@
       "eyebrow": "SHARE · for teachers / doctors",
       "titlePrefix": "Concise version ·",
       "close": "Close",
-      "introTitle": "Concise version notes:",
-      "introBody": "AI generates this in an objective medical/education record style. Parents can edit or hide sensitive content section by section; unchecked sections will not appear in exports or copied text.",
+      "introTitle": "About the concise version:",
+      "introBody": "AI writes this summary in an objective style suited for teachers and clinicians. You can edit or hide sensitive details section by section—unchecked sections won't appear in exports or copied text.",
       "emptyTitle": "This report does not have a concise version yet.",
       "emptyBody": "Return to the report page and regenerate from Advanced options. AI will create the concise version at the same time.",
       "copy": "Copy concise version",
@@ -5268,14 +5268,14 @@
     "page": {
       "title": "Sleep records",
       "addRecord": "Add record",
-      "summaryContext": "{{count}} recent sleep records; latest: {{date}}",
+      "summaryContext": "{{count}} recent sleep records · Latest: {{date}}",
       "stageTitle": "{{age}} · {{tier}}",
       "stageAdvice": "Recommended total sleep: {{low}}-{{high}} hours per day",
       "emptyTitle": "No sleep records yet",
       "emptyHint": "Use the button above to add the first record",
       "confirmDelete": "Confirm delete",
       "cancel": "Cancel",
-      "deleteMessage": "This sleep record cannot be restored after deletion. Delete it?"
+      "deleteMessage": "Delete this sleep record? This action cannot be undone."
     },
     "record": {
       "edit": "Edit",
@@ -5379,7 +5379,7 @@
       "heightCm": "Height (cm)",
       "weightKg": "Weight (kg)",
       "headCircumferenceCm": "Head circumference (cm)",
-      "bmiAuto": "BMI auto-calculation",
+      "bmiAuto": "Auto-calculated BMI",
       "notes": "Notes",
       "notesPlaceholder": "Record observations...",
       "photos": "Photos{{countSuffix}}",
@@ -5388,7 +5388,7 @@
       "saving": "Saving...",
       "save": "Save",
       "saveFailed": "Could not save: {{message}}",
-      "reminderStaysOpen": "Record saved. This reminder completes only with both height and weight (and head circumference for infants), so it stays open for now."
+      "reminderStaysOpen": "Record saved. This reminder stays open until both height and weight (plus head circumference for infants) are recorded."
     },
     "age": {
       "monthsShort": "{{months}}mo",
@@ -5401,7 +5401,7 @@
     },
     "controls": {
       "metricTabsAriaLabel": "Growth metrics",
-      "latestUpdated": "Latest update {{label}}"
+      "latestUpdated": "Last updated {{label}}"
     },
     "hero": {
       "trend": {
@@ -5414,14 +5414,14 @@
       "percentileUnknown": "Percentile unknown",
       "percentileAria": "Percentile P{{percentile}}",
       "emptyTitle": "No growth records yet",
-      "emptyDescription": "Add the first {{metric}} measurement to generate a trend description.",
+      "emptyDescription": "Add a {{metric}} measurement to view the record alongside the reference curve.",
       "sixMonthPercentile": "Past 6 months",
       "insufficientHistory": "More records needed"
     },
     "milestones": {
       "title": "Growth milestones",
       "viewMore": "View more",
-      "empty": "No important milestones identified",
+      "empty": "No key milestones identified yet",
       "nextCheckCta": "Change",
       "monthDay": "{{month}}/{{day}}",
       "overdueDays": "{{days}} days overdue",
@@ -5443,7 +5443,7 @@
       "preset": {
         "monthly": "Monthly",
         "everyThreeMonths": "Every 3 months",
-        "halfYear": "Every half year",
+        "halfYear": "Every 6 months",
         "yearly": "Yearly"
       },
       "title": "Adjust next recheck",
@@ -5459,7 +5459,7 @@
       "custom": "Custom",
       "monthCountPlaceholder": "Months",
       "monthUnit": "months",
-      "hint": "Recheck frequency follows WHO age-stage standards by default. This setting only overrides the reminder rhythm for the current child, and can be restored any time."
+      "hint": "Reminders follow the app's default age-based schedule. You can customize the reminder interval for the current child or restore the default at any time; always follow your clinician's advice for medical follow-ups."
     },
     "advisor": {
       "childLine": "{{name}}, {{age}}",
@@ -5483,7 +5483,7 @@
     "chart": {
       "referenceOutOfCoverage": "Current age is outside the {{standardLabel}} percentile reference range. Only recorded data is shown.",
       "emptyTitle": "No {{metric}} records yet",
-      "emptyHint": "Add the first record from the upper-right action",
+      "emptyHint": "Use the button in the top right to add the first record",
       "axisAge": "Age",
       "axisMonthAge": "Age in months",
       "sampleSpan": "{{count}} samples · {{years}} years covered"
@@ -5496,7 +5496,7 @@
       "actualAge": "(actual {{age}})",
       "growthTrendAttention": "- Track height growth trend",
       "evaluatedAt": "Evaluated: {{date}}",
-      "tannerLink": "Detailed record -> puberty development"
+      "tannerLink": "Detailed record → Puberty development"
     },
     "bmi": {
       "light": "🔵 Light",
@@ -5558,19 +5558,19 @@
     },
     "lede": {
       "heightSteadyAboveP50": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. It is slightly above the same-age median and appears to be growing steadily.",
-      "heightSteadyBelowP50": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. A steady growth rhythm is observed, around the same-age middle range.",
-      "heightAccelerating": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. Growth speed appears to have increased.",
-      "heightDecelerating": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. Growth speed appears to have slowed; keep recording.",
-      "heightPlateau": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. It appears to be in a plateau period; keep recording and consult a professional.",
+      "heightSteadyBelowP50": "Current height is {{currentValueDisplay}} ({{currentPercentileLabel}}), with a recorded change of {{recordedChangeDisplay}} from {{comparisonStartDate}} to {{comparisonEndDate}}. The recorded growth pace appears steady in this period.",
+      "heightAccelerating": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. Growth appears to have accelerated.",
+      "heightDecelerating": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. Growth appears to have slowed; continue tracking regularly.",
+      "heightPlateau": "Current height is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} growth from {{comparisonStartDate}} to {{comparisonEndDate}}. Growth appears to have plateaued; continue tracking and consult a healthcare professional.",
       "weightSteady": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} change from {{comparisonStartDate}} to {{comparisonEndDate}}. It appears stable.",
-      "weightAccelerating": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} change from {{comparisonStartDate}} to {{comparisonEndDate}}. Weight gain speed appears to have increased.",
-      "weightDecelerating": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} change from {{comparisonStartDate}} to {{comparisonEndDate}}. Weight gain speed appears to have slowed.",
+      "weightAccelerating": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} change from {{comparisonStartDate}} to {{comparisonEndDate}}. Weight gain appears to have accelerated.",
+      "weightDecelerating": "Current weight is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} change from {{comparisonStartDate}} to {{comparisonEndDate}}. Weight gain appears to have slowed.",
       "bmiInRange": "Current BMI is {{currentValueDisplay}}, {{currentPercentileLabel}}, within the common same-age range.",
       "bmiAboveRange": "Current BMI is {{currentValueDisplay}}, {{currentPercentileLabel}}, above the common same-age range. Consult a professional.",
       "bmiBelowRange": "Current BMI is {{currentValueDisplay}}, {{currentPercentileLabel}}, below the common same-age range. Consult a professional.",
       "headSteady": "Current head circumference is {{currentValueDisplay}}, {{currentPercentileLabel}}, with {{recordedChangeDisplay}} change from {{comparisonStartDate}} to {{comparisonEndDate}}. It appears to be growing steadily.",
-      "noData": "No data has been recorded for this metric yet. Add the first measurement to generate a description.",
-      "insufficientHistory": "Recorded {{currentValueDisplay}}. Add a measurement from another date before comparing change."
+      "noData": "No measurements recorded for this metric yet. Add a measurement to see the value plotted against the reference curve.",
+      "insufficientHistory": "Current record: {{currentValueDisplay}}. Add a measurement on another date to compare changes over time."
     },
     "trend": {
       "flat": "Flat"
@@ -5610,22 +5610,22 @@
   },
   "PrivacySettings": {
     "headline": "Your child’s records stay on your device",
-    "intro": "ParentOS stores profiles, journals and growth records on this device. Export this account’s records and media as a complete local backup.",
+    "intro": "ParentOS stores child profiles, journals, and growth records locally on this device, and does not automatically back them up to the cloud. You can export the current local profiles, records, and media as a complete local backup.",
     "storage": {
       "title": "Where records are stored",
       "body": "Child profiles, health records, reminder states, journals and advisor conversations are stored in a local database. Photos, audio and attachments are saved in the app’s data directory on this device.",
-      "access": "Local profiles work without a Nimi account. Switching Nimi accounts does not switch or erase the child profiles on this device. Use your device account and screen lock to protect access."
+      "access": "Local child profiles do not require a Nimi account. Signing in, signing out, or switching Nimi accounts does not isolate, switch, or clear the current local profiles. Use your operating system user account and screen lock to protect access."
     },
     "ai": {
       "title": "What AI uses",
-      "body": "The advisor, reports and summaries use the local records and input each feature needs; voice transcription processes the audio you record. Each AI capability runs through Nimi on the model you choose in AI settings: with a Local model, this input is processed on this device; with a Cloud model, the input a request needs is sent through Nimi to the cloud service you chose, which handles it under its own terms and may charge for it. ParentOS never syncs or backs up your records to the cloud.",
-      "account": "Nimi Desktop manages the account and access authorization needed for AI. You can still view and manage local records when AI is unavailable. AI settings show model configuration and feature availability.",
+      "body": "The advisor, reports, and summaries use only the local records and input needed for each request, and voice transcription processes the audio you record. AI features run through Nimi using the model selected in AI settings. With a Local model, requests are processed on this device. With a Cloud model, the required context is sent through Nimi to your chosen cloud provider under its own terms and pricing. ParentOS never syncs or backs up your records to the cloud.",
+      "account": "Nimi Desktop manages sign-in and authorization for Nimi capabilities, including AI. Local profiles remain in the same device-local store when Nimi accounts change. When AI is unavailable, you can still view and manage these local records.",
       "action": "View AI settings"
     },
     "backup": {
       "title": "What a backup includes",
-      "body": "A complete backup includes this account’s profiles, growth records, journals, conversations, saved photos, avatars, voice recordings, attachments and orthodontic photos. Login credentials, AI configuration, other accounts and caches are excluded.",
-      "restore": "Restoring replaces this account’s records and restores its media. Damaged backups, missing media and incompatible versions are rejected, preserving current data. Older JSON-only backups are not supported.",
+      "body": "A complete backup exports the currently open local database and its referenced media, including local child profiles, growth records, journals, conversations, saved photos, avatars, voice recordings, attachments, and orthodontic photos. Login credentials, AI configuration, and temporary caches are not included.",
+      "restore": "Restoring replaces the current local profiles, records, and media with the backup. If a backup is corrupted, missing media, or from an incompatible version, the restore is rejected and your current local data is kept intact. Legacy JSON-only backups are not supported.",
       "care": "Backup archives are unencrypted and contain children’s personal information and media. Keep them in a location you trust.",
       "action": "Go to backup and restore"
     },

@@ -62,7 +62,7 @@ describe('sparse monthly report narration', () => {
 
     expect(runParentosTextGenerateMock).not.toHaveBeenCalled();
     expect(report.content).toMatchObject({ version: 2, format: 'narrative', reportType: 'monthly' });
-    expect(JSON.stringify(report.content)).toContain('不推断整体状态或变化趋势');
+    expect(JSON.stringify(report.content)).toContain('不对整体状态或变化趋势作推断');
     expect(JSON.stringify(report.content)).not.toContain('平稳');
   });
 

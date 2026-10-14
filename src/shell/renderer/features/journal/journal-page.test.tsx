@@ -272,7 +272,7 @@ describe('JournalPage', () => {
 
     // Modal opens with text preview
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: /保存随手记/i })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: /保存随记/i })).toBeTruthy();
     });
 
     // Confirm save inside the modal
@@ -318,7 +318,7 @@ describe('JournalPage', () => {
 
     // Confirm the save-confirmation modal first
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: /保存随手记/i })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: /保存随记/i })).toBeTruthy();
     });
 
     await act(async () => {
@@ -375,7 +375,7 @@ describe('JournalPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: /保存随手记/i })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: /保存随记/i })).toBeTruthy();
     });
     await act(async () => {
       const modalSaveButtons = screen.getAllByRole('button', { name: /^保存/ });
@@ -406,7 +406,7 @@ describe('JournalPage', () => {
 
     // Confirm in modal
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: /保存随手记/i })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: /保存随记/i })).toBeTruthy();
     });
     await act(async () => {
       const modalSaveButtons = screen.getAllByRole('button', { name: /^保存/ });
@@ -441,7 +441,7 @@ describe('JournalPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: /保存随手记/i })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: /保存随记/i })).toBeTruthy();
     });
 
     // AI analysis is triggered inside the modal
@@ -548,7 +548,7 @@ describe('JournalPage', () => {
 
     // Confirm in modal
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: /保存随手记/i })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: /保存随记/i })).toBeTruthy();
     });
     await act(async () => {
       const modalSaveButtons = screen.getAllByRole('button', { name: /^保存/ });
@@ -671,7 +671,7 @@ describe('JournalPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: /保存随手记/i })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: /保存随记/i })).toBeTruthy();
     });
     await act(async () => {
       const modalSaveButtons = screen.getAllByRole('button', { name: /^保存/ });
@@ -706,7 +706,7 @@ describe('JournalPage', () => {
     fireEvent.click(screen.getByText('删除'));
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: /删除随手记/i })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: /删除随记/i })).toBeTruthy();
     });
 
     await act(async () => {

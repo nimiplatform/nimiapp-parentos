@@ -201,7 +201,7 @@ describe('ReportsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('正在积累Mimi的成长报告')).toBeTruthy();
+      expect(screen.getByText('正在为Mimi积累本期成长报告')).toBeTruthy();
       expect(screen.getByText('记录满一个月后，将自动生成第一份成长报告')).toBeTruthy();
     });
 
@@ -217,13 +217,13 @@ describe('ReportsPage', () => {
   it('generates an independent report during accumulation without suppressing the monthly cycle', async () => {
     renderPage();
 
-    await waitFor(() => expect(screen.getByText('正在积累Mimi的成长报告')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('正在为Mimi积累本期成长报告')).toBeTruthy());
     fireEvent.click(screen.getByRole('button', { name: /高级选项/i }));
     fireEvent.click(screen.getByRole('button', { name: /生成综合报告/i }));
 
     await waitFor(() => expect(insertGrowthReportMock).toHaveBeenCalledTimes(1));
     expect(insertGrowthReportMock.mock.calls[0]?.[0]?.reportType).toBe('quarterly-letter');
-    expect(screen.getByText('正在积累Mimi的成长报告')).toBeTruthy();
+    expect(screen.getByText('正在为Mimi积累本期成长报告')).toBeTruthy();
     expect(reportStore.some((report) => report.reportType === 'monthly')).toBe(false);
   });
 
@@ -264,7 +264,7 @@ describe('ReportsPage', () => {
     const firstCall = insertGrowthReportMock.mock.calls[0]?.[0];
     expect(firstCall?.periodStart).toBe(firstCycle.periodStart);
     expect(JSON.parse(firstCall?.content ?? '{}')).toMatchObject({ format: 'structured-local', reportType: 'monthly' });
-    await waitFor(() => expect(screen.queryByText('正在积累Mimi的成长报告')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('正在为Mimi积累本期成长报告')).toBeNull());
   });
 
   it('generates and persists a structured local report', async () => {
@@ -431,7 +431,7 @@ describe('ReportsPage', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
-    expect(screen.getByText('本地数据不符合当前报告合同，成长报告未加载。')).toBeTruthy();
+    expect(screen.getByText('本地数据不符合当前报告要求，成长报告未能加载。')).toBeTruthy();
     expect(screen.queryByText('不应展示的半月报告')).toBeNull();
     expect(insertGrowthReportMock).not.toHaveBeenCalled();
   });
@@ -454,7 +454,7 @@ describe('ReportsPage', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
-    expect(screen.getByText('本地数据不符合当前报告合同，成长报告未加载。')).toBeTruthy();
+    expect(screen.getByText('本地数据不符合当前报告要求，成长报告未能加载。')).toBeTruthy();
     expect(insertGrowthReportMock).not.toHaveBeenCalled();
   });
 });

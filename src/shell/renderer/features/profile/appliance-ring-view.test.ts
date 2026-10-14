@@ -122,7 +122,7 @@ describe('computeApplianceRingView', () => {
     if (view.kind === 'metric') {
       expect(view.caption).toBe('今日佩戴');
       expect(view.unit).toBe(' / 16 h');
-      expect(view.footer).toBe('今日净戴近似');
+      expect(view.footer).toBe('今日净佩戴（约）');
     }
   });
 
@@ -164,14 +164,14 @@ describe('computeApplianceRingView', () => {
 });
 
 describe('computeApplianceNextAction', () => {
-  it('clear-aligner → 下次换套 / switch-aligner', () => {
+  it('clear-aligner → 下次换牙套 / switch-aligner', () => {
     const action = computeApplianceNextAction({
       appliance: makeAppliance(),
       intervals: [],
       checkins: [],
       nowIso: NOW,
     });
-    expect(action.label).toBe('下次换套');
+    expect(action.label).toBe('下次换牙套');
     expect(action.actionKind).toBe('switch-aligner');
     expect(action.actionLabel).toBe('换下一副');
   });

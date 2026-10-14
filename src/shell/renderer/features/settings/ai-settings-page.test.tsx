@@ -215,7 +215,7 @@ describe('AiSettingsPage', () => {
       expect(container.textContent).toContain('可用');
       expect(container.textContent).toContain('需在 Nimi 中配置');
       expect(container.textContent).toContain('当前版本暂不支持');
-      expect(container.textContent).toContain('暂时无法手动开启');
+      expect(container.textContent).toContain('无法手动开启');
     });
     const advisor = await screen.findByText('成长顾问');
     expect(advisor.parentElement?.textContent).toContain('本地模型');
@@ -284,8 +284,8 @@ describe('AiSettingsPage', () => {
     });
     await clickInAct(Array.from(document.body.querySelectorAll('[data-nimi-model-picker-source="cloud"]'))
       .find((entry) => entry.textContent?.includes('Cloud text model')));
-    await clickInAct(sourceButton('使用此选择'));
-    expect(document.body.textContent).toContain('会把每次请求所需的内容发送给该服务商');
+    await clickInAct(sourceButton('确认选择'));
+    expect(document.body.textContent).toContain('把处理所需的内容发送给对应服务商');
     await clickInAct(container.querySelector('[data-testid="model-config-save:text.generate"]'));
 
     await waitFor(() => expect(parentosAIConfigManagerMock.overwrite).toHaveBeenCalledTimes(1));
@@ -332,7 +332,7 @@ describe('AiSettingsPage', () => {
     await clickInAct(Array.from(document.body.querySelectorAll('[data-nimi-model-picker-source="cloud"]'))
       .find((entry) => entry.textContent?.includes('Cloud text model')));
     await clickInAct(Array.from(document.body.querySelectorAll('button'))
-      .find((button) => button.textContent?.trim() === '使用此选择'));
+      .find((button) => button.textContent?.trim() === '确认选择'));
     await clickInAct(container.querySelector('[data-testid="model-config-save:text.generate"]'));
     await waitFor(() => expect(parentosAIConfigManagerMock.overwrite).toHaveBeenCalledTimes(2));
     expect(parentosAIConfigManagerMock.overwrite.mock.calls[1]?.[0].expectedRevision).toBe('2');

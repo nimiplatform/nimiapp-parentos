@@ -28,10 +28,10 @@
       },
       "personalized": {
         "title": "个性化定制",
-        "description": "根据宝贝信息，智能定制专属成长计划"
+        "description": "根据孩子情况，智能定制专属成长计划"
       }
     },
-    "cta": "建立宝贝档案",
+    "cta": "建立孩子档案",
     "milestone": {
       "vaccine": "疫苗接种",
       "checkup": "定期体检",
@@ -43,7 +43,7 @@
   "Bootstrap": {
     "failure": {
       "eyebrow": "ParentOS 本地数据",
-      "localDataLocked": "应用自有的本地数据库无法打开",
+      "localDataLocked": "无法打开应用的本地数据库",
       "reasonCode": "原因代码",
       "technicalDetails": "技术详情",
       "nextStep": "下一步",
@@ -52,13 +52,13 @@
       "states": {
         "app-data-unavailable": {
           "title": "ParentOS 本地数据暂不可用",
-          "description": "ParentOS 原生宿主无法打开固定的系统应用数据目录。这是应用宿主故障，与 Nimi App Access 姿态无关。",
-          "action": "请重启 ParentOS；开发环境中，请先构建 ParentOS host sidecar 后再试。"
+          "description": "ParentOS 无法打开系统应用数据目录。这是本地宿主故障，与 Nimi App Access 状态无关。",
+          "action": "请重启 ParentOS。若在开发环境中运行，请先构建 ParentOS host sidecar 后再试。"
         },
         "app-data-repair-required": {
           "title": "ParentOS 本地数据需要修复",
-          "description": "应用自有的 SQLite 数据库或其 schema 未能安全初始化。",
-          "action": "继续保持数据库关闭，修复 ParentOS 安装或本地数据后再试。"
+          "description": "应用的本地 SQLite 数据库或其 schema 未能安全初始化。",
+          "action": "数据库已保持关闭；请先修复 ParentOS 安装或本地数据后再试。"
         }
       }
     }
@@ -103,13 +103,13 @@
     },
     "language": {
       "title": "界面语言",
-      "desc": "切换 ParentOS 的全局界面文案。",
+      "desc": "切换 ParentOS 的界面显示语言。",
       "ariaLabel": "选择界面语言",
       "saveFailed": "语言设置保存失败"
     },
     "dataTransfer": {
       "title": "数据备份",
-      "desc": "备份当前账号的记录、照片、语音和附件，恢复会替换当前记录。",
+      "desc": "备份当前本地档案的记录、照片、语音和附件；恢复会替换当前本机资料。",
       "export": "导出备份",
       "import": "恢复备份",
       "exporting": "导出中...",
@@ -117,7 +117,7 @@
       "workingWithProgress": "处理中... {{progress}}",
       "exportDone": "已导出到 {{fileName}}",
       "exportSummary": "已备份 {{rows}} 条记录和 {{media}} 个媒体文件",
-      "restoreConfirm": "恢复将用备份中的档案、记录、照片、语音和附件替换当前账号的数据。请先导出当前备份，保留需要的资料。是否继续选择完整备份文件？",
+      "restoreConfirm": "恢复将用备份中的档案、记录、照片、语音和附件替换当前本机资料。请先导出当前备份以保留所需资料。是否继续选择完整备份文件？",
       "importDone": "记录和媒体恢复完成",
       "keepOpen": "正在处理本地备份，请保持应用打开。照片和录音较多时可能需要几分钟。",
       "cleanupPending": "恢复已完成，但部分旧媒体文件未能清理，仍占用本机空间。",
@@ -135,16 +135,16 @@
       },
       "reminders": {
         "label": "提醒管理",
-        "desc": "查看和管理已自定义频率的提醒"
+        "desc": "查看和管理已调整频率的提醒"
       },
       "ai": {
         "label": "AI 设置",
-        "desc": "Nimi 访问状态，并为每项 AI 能力选择本地或云端模型。"
+        "desc": "查看 Nimi 访问状态，并为每项 AI 能力选择本地或云端模型。"
       }
     },
     "nurtureMode": {
       "childTitle": "{{name}} 的养育模式",
-      "subtitle": "控制提醒频率和内容深度，底线安全规则在任何模式下均不降级",
+      "subtitle": "调节提醒频率和内容深度；底线安全规则在任何模式下都不会降级",
       "globalMode": "全局模式",
       "domainOverrides": "按领域自定义",
       "domainOverridesDesc": "可为不同领域设置不同的养育模式",
@@ -193,7 +193,7 @@
     },
     "reminders": {
       "title": "提醒管理",
-      "desc": "查看和管理已自定义频率的提醒规则",
+      "desc": "查看和管理已调整频率的提醒规则",
       "emptyTitle": "所有提醒使用默认频率",
       "emptyDesc": "在首页或提醒页点击“调整频率”可自定义",
       "defaultInterval": "默认：每 {{months}} 个月 →",
@@ -286,7 +286,7 @@
     },
     "group": {
       "metricSeparator": "、",
-      "emptyHint": "还没有任何记录，点击右侧记录按钮开始记录。",
+      "emptyHint": "还没有记录，点击右侧“记录”按钮开始添加。",
       "viewAll": "查看全部",
       "notRecordedDash": "—",
       "notRecorded": "未记录",
@@ -371,7 +371,7 @@
         "vitalCapacity": "肺活量",
         "run800m": "800米跑",
         "run1000m": "1000米跑",
-        "run50x8": "50米x8往返跑",
+        "run50x8": "50米×8往返跑",
         "sitAndReach": "坐位体前屈",
         "standingLongJump": "立定跳远",
         "sitUps": "仰卧起坐",
@@ -476,17 +476,17 @@
         "title": "生长曲线",
         "smartRecognize": "智能识别",
         "closeRecognize": "关闭识别",
-        "ocrHint": "拍照/上传体检单，自动识别数据",
+        "ocrHint": "暂不支持从图片提取数据，请手动录入测量结果。",
         "otherMetrics": "其他指标...",
         "noData": "暂无数据",
         "staleHint": "距离上次测量已过去 {{days}} 天，建议更新数据",
         "dataAnalysisTopic": "{{metric}}数据分析",
-        "latestHeight": "最新身高: {{value}} cm",
-        "latestWeight": "最新体重: {{value}} kg",
+        "latestHeight": "最新身高：{{value}} cm",
+        "latestWeight": "最新体重：{{value}} kg",
         "importReadFailed": "无法读取体检单图片，请重新选择。",
         "importSelectAtLeastOne": "请至少选择一条要导入的测量记录。",
-        "importInvalidCandidate": "所选 OCR 候选必须包含有效的日期和值。",
-        "importFailed": "导入失败，请确认 OCR 候选并重试。",
+        "importInvalidCandidate": "所选识别结果必须包含有效的日期和数值。",
+        "importFailed": "导入失败，请核对识别结果后重试。",
         "percentile": "百分位"
       },
       "vision": {
@@ -516,7 +516,7 @@
         "followupFrequency": "提醒频率",
         "monthsShort": "个月",
         "customNextDate": "指定下次复查日期",
-        "customNextDateHint": "仅覆盖下一次",
+        "customNextDateHint": "仅对下次复查生效",
         "clear": "清除",
         "resetToSystem": "恢复系统推荐",
         "cadenceSuggestion": "按 {{months}} 个月节奏，建议 {{date}}",
@@ -537,7 +537,7 @@
         "curveTitle": "{{metric}}曲线",
         "curveFallback": "趋势",
         "emptyMetric": "暂无{{metric}}记录",
-        "noAnchor": "暂无检查记录可用作锚点，请直接指定日期",
+        "noAnchor": "暂无检查记录可供推算，请直接选择日期",
         "saveFailed": "保存失败，请重试",
         "screeningTypes": {
           "redReflex": "红光反射",
@@ -551,7 +551,7 @@
       "visionBatch": {
         "editTitle": "编辑检查记录 · {{date}}",
         "createTitle": "录入检查数据",
-        "ocrHint": "拍照或上传验光单自动填入",
+        "ocrHint": "暂不支持从图片提取数据，请手动录入测量结果。",
         "examDate": "检查日期",
         "pupilStatus": "瞳孔状态",
         "hospital": "医院/机构",
@@ -570,7 +570,7 @@
         "saveRecord": "保存记录",
         "manualInputPlaceholder": "或手动输入...",
         "confirm": "确定",
-        "saveAria": "vision-record-save"
+        "saveAria": "保存视力记录"
       },
       "dental": {
         "aiRecognizeTeeth": "AI 识别牙齿",
@@ -578,13 +578,13 @@
         "history": "历史记录",
         "empty": "还没有口腔记录",
         "emptyHint": "建议每半年进行一次口腔检查",
-        "emptyFiltered": "该筛选下暂无记录",
+        "emptyFiltered": "当前筛选条件下暂无记录",
         "deleteConfirm": "删除这条口腔记录后，相关照片也会一起删除，确定继续吗？",
         "deleteFailed": "删除失败：{{message}}",
         "saveFailed": "保存失败：{{message}}",
         "saved": "记录已保存。",
         "deleted": "记录已删除。",
-        "scanSaved": "已通过 AI 识别写入 {{count}} 条萌出记录，可在历史记录中查看。",
+        "scanSaved": "AI 已识别并保存 {{count}} 条萌出记录，可在历史记录中查看。",
         "recordTopic": "口腔记录 · {{event}}{{tooth}}",
         "severity": "程度：{{severity}}"
       }
@@ -667,12 +667,12 @@
     },
     "access": {
       "title": "Nimi 访问",
-      "description": "AI 能力通过 Nimi 运行时提供；访问丢失不会影响本地数据。",
+      "description": "AI 能力由 Nimi 运行时提供；即使无法访问，本地数据也不受影响。",
       "technicalDetails": "技术详情",
       "recovery": {
         "title": "让 AI 功能恢复可用",
         "bridgeAbsent": "请从 Nimi 桌面端的「应用」中打开 ParentOS。连接成功后，支持的 AI 功能会自动恢复。",
-        "actionRequired": "请前往 Nimi 桌面端「应用 > ParentOS > AI 能力」完成访问或模型配置，返回后刷新状态。",
+        "actionRequired": "请在 Nimi Desktop 查看 ParentOS 的访问状态与 AI 模型设置，完成提示的操作后回到这里重试。",
         "unavailable": "请确认 Nimi 桌面端正在运行，再前往「应用 > ParentOS > AI 能力」检查配置；返回后刷新状态。"
       }
     },
@@ -696,7 +696,7 @@
     },
     "modelConfig": {
       "back": "返回",
-      "detailTitle": "{{capability}}设置",
+      "detailTitle": "{{capability}} 设置",
       "activeModel": "当前模型",
       "activeModelHint": "选择其他模型",
       "activeModelConfigured": "已设置",
@@ -715,7 +715,7 @@
       "clear": "清除配置",
       "clearing": "正在清除…",
       "conflict": "配置已在其他位置更改",
-      "conflictDescription": "你的草稿已保留。请查看当前配置，然后再次保存以替换它。",
+      "conflictDescription": "你的草稿已保留。请核对当前的最新配置，确认无误后可再次保存以覆盖。",
       "conflictCurrent": "当前版本 {{revision}}：{{summary}}",
       "advanced": "高级设置",
       "advancedHint": "所需模型能力和默认参数会随成长底稿的模型设置一起保存。",
@@ -749,12 +749,12 @@
       "cloudTargetDialogTitle": "选择云端模型",
       "cloudTargetDialogDescription": "确认服务商和模型信息后继续。",
       "cloudNotice": "云端执行",
-      "cloudNoticeDescription": "请求使用所选连接器的现有凭据，会把每次请求所需的内容发送给该服务商，可能产生服务商费用。记录本身仍保存在本机。",
+      "cloudNoticeDescription": "请求将使用所选连接器的现有凭据，把处理所需的内容发送给对应服务商，可能产生服务商费用。你的记录仍保存在本机。",
       "cloudConnector": "已配置的连接器",
-      "cloudConnectorPlaceholder": "选择此提供商的连接器",
+      "cloudConnectorPlaceholder": "选择此服务商的连接器",
       "cloudLoadFailed": "无法加载云端服务、模型或连接器选项。",
-      "cloudBlocked": "此云端配置当前无法运行。请重新选择模型或改选其他模型。",
-      "cloudCatalogStale": "选定此模型后云端模型列表已更新。请从当前列表重新选择模型。",
+      "cloudBlocked": "此云端配置当前无法运行。请重新选择或更换其他模型。",
+      "cloudCatalogStale": "自上次选择后，云端模型列表已更新，请从当前列表中重新选择。",
       "retry": "重试",
       "saveFailed": "Runtime 无法保存成长底稿的 AI 配置。",
       "unsupportedCapability": "此能力暂不可用。",
@@ -765,7 +765,7 @@
       "unavailable": "暂不可用",
       "mismatch": "功能不匹配",
       "cancel": "取消",
-      "confirmSelection": "使用此选择",
+      "confirmSelection": "确认选择",
       "capabilityDescription": {
         "textGenerate": "用于成长顾问、成长报告、日记标记和智能摘要。",
         "audioTranscribe": "把日记语音转成文字。"
@@ -774,14 +774,14 @@
     "features": {
       "title": "功能可用性",
       "description": "基于当前平台契约的功能状态。",
-      "configurationHint": "显示“需在 Nimi 中配置”的功能，请前往 Nimi 桌面端「应用 > ParentOS > AI 能力」完成配置。",
+      "configurationHint": "标为“在 Nimi 配置”的功能，请在 Nimi Desktop 中打开 ParentOS 的 AI 模型设置。",
       "checking": "检测中…",
       "available": "可用",
       "unavailable": "暂不可用",
       "needsAccess": "连接 Nimi 后可用",
       "needsConfiguration": "需在 Nimi 中配置",
       "notSupported": "当前版本暂不支持",
-      "notSupportedHint": "目前没有可配置的图片理解能力，暂时无法手动开启。",
+      "notSupportedHint": "当前版本暂未开放图片理解能力配置，无法手动开启。",
       "routeLocal": "本地模型",
       "routeCloud": "云端模型",
       "advisor": "成长顾问",
@@ -808,13 +808,13 @@
       "tanner": "青春期评估"
     },
     "comingSoon": {
-      "title": "该分组录入即将上线",
+      "title": "此项录入暂不可用",
       "description": "该分类正在迁移到统一录入界面。"
     }
   },
   "AvatarCrop": {
     "title": "调整头像",
-    "instruction": "拖动图片调整位置，滑块缩放大小",
+    "instruction": "拖动图片调整位置，使用滑块缩放大小",
     "confirm": "确认",
     "cancel": "取消"
   },
@@ -846,10 +846,10 @@
       "emptyTitle": "还没有添加孩子",
       "emptyDescription": "点击上方按钮添加第一个孩子",
       "activeBadge": "当前",
-      "deleteConfirmation": "删除 {{childName}} 会级联删除所有关联数据（生长记录、疫苗、日记、AI 对话等），此操作不可撤销。",
+      "deleteConfirmation": "删除 {{childName}} 会同时删除所有关联数据（生长记录、疫苗、日记、AI 对话等），此操作不可撤销。",
       "action": {
         "addChild": "添加孩子",
-        "setActive": "设为活跃",
+        "setActive": "设为当前",
         "edit": "编辑",
         "delete": "删除",
         "confirmDelete": "确认删除",
@@ -858,7 +858,7 @@
         "add": "添加"
       },
       "form": {
-        "editTitle": "编辑孩子"
+        "editTitle": "编辑孩子信息"
       },
       "avatar": {
         "change": "点击更换头像",
@@ -921,7 +921,7 @@
       "readImageFailed": "无法读取图片，请重新选择",
       "noSupportedMeasurements": "未识别到支持的数据指标，请确认图片清晰且为医疗报告",
       "selectAtLeastOne": "请至少选择一条数据",
-      "partialImportFailed": "导入部分失败，已成功导入 {{count}} 条",
+      "partialImportFailed": "部分数据导入失败，已成功导入 {{count}} 条",
       "ocrRuntimeUnavailable": "AI 运行时不可用，无法进行识别"
     },
     "upload": {
@@ -942,7 +942,7 @@
     },
     "review": {
       "title": "识别到 {{count}} 项数据",
-      "hint": "请确认以下数据，取消不需要的项目",
+      "hint": "请核对以下数据，取消勾选不需要导入的项目",
       "selectedCount": "已选 {{selected}}/{{total}}"
     },
     "importing": "正在导入数据...",
@@ -974,7 +974,7 @@
     "tooth": {
       "title": "{{id}} {{name}}{{confidenceHint}}{{historyHint}}",
       "confidenceHint": " · AI 置信度 {{confidence}}%",
-      "historyHint": " · 已在历史中"
+      "historyHint": " · 已在历史记录中"
     },
     "upload": {
       "title": "口腔照片",
@@ -990,7 +990,7 @@
     },
     "review": {
       "detectedSummary": "AI 识别出 {{permanentCount}} 颗恒牙、{{primaryCount}} 颗乳牙已萌出。",
-      "confirmHint": "请确认或取消选择后点击下方“确认并写入”。"
+      "confirmHint": "请核对并调整勾选结果，确认无误后点击下方“确认并写入”。"
     },
     "toothSet": {
       "primary": "乳牙",
@@ -1002,8 +1002,8 @@
       "retake": "换一张照片",
       "reanalyze": "重新分析",
       "selectAllVisible": "全选当前视图",
-      "deselectAllVisible": "全不选当前视图",
-      "flipHint": "如果 AI 把左右搞反了，点此镜像翻转",
+      "deselectAllVisible": "取消全选当前视图",
+      "flipHint": "如果左右方向识别反了，点此镜像翻转",
       "flip": "左右镜像",
       "resetAiSelection": "恢复 AI 默认选择",
       "cancel": "取消",
@@ -1062,9 +1062,9 @@
       "snoozed": "已推迟",
       "snoozedUntil": "已推迟至 {{date}}",
       "overdue": "已逾期",
-      "overdueDays": "逾期{{days}}天",
+      "overdueDays": "逾期 {{days}} 天",
       "dueToday": "今天到期",
-      "startsInDays": "{{days}}天后开始",
+      "startsInDays": "{{days}} 天后开始",
       "thisWeek": "本周",
       "notApplicable": "不适用"
     },
@@ -1123,7 +1123,7 @@
       "noChildDescription": "选择孩子后即可查看对应的提醒中心。",
       "unknownRuleTitle": "提醒目录不完整",
       "unknownRuleIds": "发现数据库中存在未登记的 ruleId：{{ruleIds}}",
-      "unknownRuleFailClose": "为保护数据不被误读，提醒页面已按 PO-TIME-007 fail-close。ParentOS 不会静默删除这些记录；请先让持久化 ruleId 与编译后的提醒目录重新一致，再重试。",
+      "unknownRuleFailClose": "为防止数据被误读，提醒页面已按 PO-TIME-007 执行 fail-close 保护。ParentOS 不会静默删除这些记录；请先使持久化的 ruleId 与编译后的提醒目录保持一致，再重试。",
       "restoreTodoFailed": "恢复待办失败：{{message}}",
       "deleteTodoFailed": "删除待办失败：{{message}}",
       "actionFailed": "操作失败：{{message}}",
@@ -1148,7 +1148,7 @@
         },
         "history": {
           "title": "历史记录",
-          "hint": "已完成、已安排、已推迟、不适用的提醒和已完成的日常待办都在这里。"
+          "hint": "已完成、已安排、已推迟或标为不适用的提醒，以及已完成的日常待办都会归档在这里。"
         },
         "customTodos": {
           "title": "日常待办记录"
@@ -1171,11 +1171,11 @@
         "howTo": "怎么做",
         "doneWhen": "做到什么算到位",
         "pitfalls": "常见陷阱",
-        "ifNotNow": "现在不方便",
+        "ifNotNow": "如果现在不方便",
         "sources": "依据"
       },
       "incompleteTitle": "指南正在完善",
-      "incompleteDescription": "这条{{kind}}提醒的结构化指南尚未完整填写。为了不误导家长，抽屉暂时隐藏引导段并禁用主操作。可以到 /reminders 列表查看原始提醒描述，或联系规则作者补齐内容。"
+      "incompleteDescription": "这条 {{kind}} 提醒的指南内容尚不完整。为避免造成误导，当前已隐藏引导内容并停用主操作。你可以前往提醒列表查看原始描述，或联系规则作者补齐内容。"
     },
     "frequency": {
       "preset": {
@@ -1212,7 +1212,7 @@
   "DrugCombobox": {
     "placeholder": "搜索药品名称或拼音首字母",
     "noMatch": "未找到匹配药品",
-    "addCustom": "+ 添加自定义药品: \"{{value}}\"",
+    "addCustom": "+ 添加自定义药品“{{value}}”",
     "defaultUnit": "次"
   },
   "Outdoor": {
@@ -1387,10 +1387,10 @@
   },
   "Posture": {
     "cobbLevel": {
-      "normal": "正常",
-      "monitor": "需定期监测",
-      "brace": "建议支具治疗",
-      "surgicalAssessment": "建议手术评估"
+      "normal": "Cobb ≤ 10°",
+      "monitor": "10° < Cobb ≤ 25°",
+      "brace": "25° < Cobb ≤ 40°",
+      "surgicalAssessment": "Cobb > 40°"
     },
     "age": {
       "yearsMonths": "{{years}}岁{{months}}个月",
@@ -1424,8 +1424,8 @@
       "timelineShoulder": "肩部"
     },
     "summary": {
-      "cobbAngle": "Cobb角: {{angle}}° ({{date}})",
-      "footArch": "足弓: {{label}}"
+      "cobbAngle": "Cobb 角：{{angle}}°（{{date}}）",
+      "footArch": "足弓：{{label}}"
     },
     "card": {
       "assessmentCount": "{{count}} 次评估",
@@ -1449,7 +1449,7 @@
     },
     "table": {
       "angle": "角度",
-      "grade": "分级",
+      "grade": "记录分组",
       "suggestion": "建议"
     },
     "ui": {
@@ -1464,13 +1464,13 @@
         "title": "为什么要关注体态",
         "early": {
           "heading": "体态问题越早发现越好",
-          "body": "脊柱侧弯、高低肩、驼背等体态问题在儿童快速生长期（6-14 岁）最容易出现和加重。早期发现时，通过运动干预和姿势纠正就能改善；如果发现太晚，可能需要支具甚至手术。"
+          "body": "脊柱侧弯、高低肩等体态变化在快速生长期可能变得明显或出现进展。由于处理方式取决于弯曲角度、年龄和剩余生长潜力，日常记录有助于留心变化；如有担忧，可整理记录咨询医生，由临床根据个体情况评估随访或治疗方案。"
         },
         "parentActions": {
           "heading": "家长可以做什么",
           "regularObservation": {
             "label": "定期观察",
-            "desc": "每 3-6 个月在家做一次简单的体态筛查，记录下来对比变化。"
+            "desc": "日常留心孩子的体态，在相近条件下拍照或记录，便于前后对比变化。"
           },
           "signalWatch": {
             "label": "留意信号",
@@ -1478,7 +1478,7 @@
           },
           "checkupData": {
             "label": "配合体检",
-            "desc": "学校脊柱筛查结果及时录入，如果有 Cobb 角数据一定要记录。"
+            "desc": "及时整理学校脊柱筛查或医院就诊记录；如有医生依据 X 光片测量的 Cobb 角，可一并录入。"
           }
         }
       },
@@ -1492,65 +1492,65 @@
           "heading": "四步观察法",
           "shoulder": {
             "label": "① 看肩膀",
-            "desc": "站在孩子正后方，观察左右肩最高点是否等高。如果一侧明显偏高，记录为\"左高\"或\"右高\"。基本齐平就选\"对称\"。"
+            "desc": "站在孩子正后方，观察左右肩最高点是否等高。如果一侧明显偏高，记录为“左肩偏高”或“右肩偏高”；基本齐平就选“对称”。"
           },
           "scapula": {
             "label": "② 看肩胛骨",
-            "desc": "观察两侧肩胛骨是否对称。一侧突出或翼状隆起，可能提示脊柱旋转。用手机拍照记录。"
+            "desc": "观察两侧肩胛骨高低与隆起程度是否对称。单一外观体征或照片不能作为诊断依据，可拍照留存，便于对比变化并在就诊时供医生参考。"
           },
           "adam": {
             "label": "③ 前屈试验（Adam 试验）",
-            "desc": "让孩子双脚并拢，缓慢弯腰前屈，双手自然下垂。从后方观察背部两侧是否等高。如果一侧明显隆起（\"剃刀背\"），提示可能有脊柱旋转或侧弯。这是学校筛查最常用的方法。"
+            "desc": "让孩子双脚并拢，缓慢弯腰前屈，双手自然下垂。从后方观察背部两侧是否等高。如果一侧明显隆起（“剃刀背”），提示可能有脊柱旋转或侧弯。这是学校筛查最常用的方法。"
           },
           "symmetry": {
             "label": "④ 看整体对称",
-            "desc": "观察头部是否居中、腰线两侧是否对称、骨盆是否等高。从正面看腋窝三角是否对称。"
+            "desc": "观察头部是否居中、两侧腰线是否对称、骨盆是否等高；双臂自然下垂时，对比手臂与腰部之间的“腰际三角”空隙是否对称。"
           }
         },
         "photo": {
           "heading": "拍照建议",
-          "body": "每次观察时从正后方、左侧、右侧各拍一张站立照片，以及一张前屈试验的照片。保持相同距离和角度，方便日后对比。照片可以在\"备注\"里附上说明。"
+          "body": "每次观察时从正后方、左侧、右侧各拍一张站立照片，以及一张前屈试验的照片。保持相同距离和角度，方便日后对比。照片可以在“备注”里附上说明。"
         }
       },
       "cobb": {
         "title": "看懂 Cobb 角",
         "definition": {
           "heading": "什么是 Cobb 角",
-          "body": "Cobb 角是脊柱侧弯最重要的量化指标，由脊柱 X 光片测量得出，表示弯曲的角度大小。数值越大说明侧弯越严重。它不是靠肉眼估计的，必须由医生根据 X 光片测量。"
+          "body": "Cobb 角是衡量脊柱侧弯程度的核心指标，代表脊柱弯曲的角度，数值越大说明侧弯越重。这个角度无法凭肉眼估算，必须由医生在脊柱 X 光片上测量得出。"
         },
         "grading": {
-          "heading": "Cobb 角分级",
+          "heading": "Cobb 角记录区间",
           "normal": {
-            "field": "< 10°",
-            "meaning": "正常范围",
-            "note": "脊柱有轻微不对称是正常的，不需要干预"
+            "field": "≤ 10°",
+            "meaning": "App 记录分组（≤ 10°）",
+            "note": "App 将该角度范围归为此组；实际临床意义仍需由医生结合 X 光片与生长发育情况评估。"
           },
           "mild": {
-            "field": "10° - 20°",
-            "meaning": "轻度侧弯",
-            "note": "定期观察，每 6 个月复查一次。加强核心肌群锻炼"
+            "field": "10° < Cobb ≤ 25°",
+            "meaning": "App 记录分组（10° < Cobb ≤ 25°）",
+            "note": "App 将该角度范围归为此组；是否需要随访观察及复查间隔，应由医生结合弯曲形态、年龄和剩余生长潜力评估。"
           },
           "moderate": {
-            "field": "20° - 40°",
-            "meaning": "中度侧弯",
-            "note": "需要佩戴矫形支具（特别是骨骼未发育完成的儿童），每 3-6 个月复查"
+            "field": "25° < Cobb ≤ 40°",
+            "meaning": "App 记录分组（25° < Cobb ≤ 40°）",
+            "note": "App 将该角度范围归为此组；是否需要佩戴支具及具体随访周期，需由专科医生结合骨骼成熟度与生长潜力评估。"
           },
           "severe": {
             "field": "> 40°",
-            "meaning": "重度侧弯",
-            "note": "可能需要手术干预。需要在专科医院持续随访"
+            "meaning": "App 记录分组（> 40°）",
+            "note": "App 将该角度范围归为此组；具体治疗方案与随访安排需由专科医生结合生长发育情况进行个体化评估。"
           }
         },
         "source": {
           "heading": "数据从哪来",
-          "body": "优先填写学校脊柱筛查单、医院体检报告或骨科评估里的 Cobb 角数值。如果没有做过 X 光检查，这里留空就好——肩部对称性的记录同样有价值。"
+          "body": "请仅填写医生依据 X 光片测量的 Cobb 角数值，不要将普通学校筛查测得的躯干旋转角（ATR）填作 Cobb 角。如未拍过 X 光片，此处留空即可，仍可记录肩部对称等日常观察。"
         }
       },
       "footArch": {
         "title": "在家看足弓",
         "why": {
           "heading": "为什么要关注足弓",
-          "body": "足弓是脚底的天然\"弹簧\"，负责缓冲和支撑。儿童的足弓在 3-6 岁逐渐成型，6 岁前一定程度的扁平足是正常的。但如果 6 岁以后仍然明显扁平、走路容易累、或者出现 X 型腿/内八字，就需要关注了。"
+          "body": "足弓起着缓冲与支撑作用。每个孩子的足弓发育进程存在差异，无痛、柔韧的扁平足通常无需特殊治疗。如果孩子伴随足部疼痛、僵硬或活动不适，建议咨询医生进行评估。"
         },
         "wetFootprint": {
           "heading": "湿脚印测试法",
@@ -1560,31 +1560,31 @@
           },
           "observe": {
             "label": "② 踩印",
-            "desc": "让孩子正常站立在纸板上，自然承重，然后抬脚查看脚印。"
+            "desc": "让孩子双脚自然踩在上面正常承重，随后抬脚观察留下的脚印。"
           },
           "compare": {
             "label": "③ 判读",
-            "desc": "正常足弓：脚印中间部分有明显的弧形缺口（约占脚宽的 1/3 到 1/2）。扁平足：脚印几乎是完整的脚掌形状，中间没有缺口。高弓足：中间缺口过大，只有脚跟和前脚掌有印。"
+            "desc": "湿足印仅用于记录足底接触面的形状（如足底中部有弧形空隙、中部接触较满，或仅留脚跟与前掌印记），不能据此诊断扁平足或高弓足。若伴随疼痛、僵硬或行走不适，请交由医生评估。"
           }
         },
         "daily": {
           "heading": "日常观察要点",
           "wear": {
             "label": "看鞋底磨损",
-            "desc": "正常磨损在脚后跟外侧偏多。如果内侧磨损严重，可能提示扁平足或足外翻。"
+            "desc": "留意两侧鞋底磨损是否对称、是否集中在一侧边缘。单凭鞋底磨损不能诊断扁平足或足外翻；若孩子同时有足部不适，可将磨损情况提供给医生参考。"
           },
           "fatigue": {
             "label": "看站姿",
-            "desc": "从后方观察孩子站立时，跟腱（脚踝后面的筋）是否垂直。如果明显向内倾斜，提示足外翻。"
+            "desc": "孩子自然站立时，从后方观察后跟与跟腱的走势是否对称。单一外观观察或照片不能作为足外翻等诊断依据；可拍照留存，若伴随疼痛或僵硬请咨询医生。"
           },
           "gait": {
             "label": "问感受",
-            "desc": "长时间走路或运动后是否容易脚疼、腿酸？这可能是足弓支撑不足的信号。"
+            "desc": "留意孩子在行走或运动后是否常出现脚痛、足部僵硬或腿部不适，记录具体情况以便就诊时由医生评估。"
           }
         },
         "dataSource": {
           "heading": "数据来源",
-          "body": "体态档案中的足弓状态会自动读取体能评估里的记录，不需要在这里重复录入。如果体能评估里还没有足弓数据，可以先去体能评估页面补录。"
+          "body": "体态档案中的足弓状态会自动同步「体能评估」里的记录，无需重复填写。如果还没有相关数据，可以先去「体能评估」页面补录。"
         }
       },
       "care": {
@@ -1593,7 +1593,7 @@
           "heading": "需要关注的信号",
           "shoulderOrWaist": {
             "label": "前屈试验异常",
-            "desc": "弯腰后背部一侧明显隆起，即使很轻微也建议做进一步检查。"
+            "desc": "弯腰后背部两侧高低不一、单侧隆起，哪怕程度较轻，也建议做进一步检查。"
           },
           "adamProminence": {
             "label": "肩膀持续不对称",
@@ -1608,7 +1608,7 @@
             "desc": "半年内 Cobb 角增加 5° 以上，提示侧弯在进展，需要积极干预。"
           },
           "footArch": {
-            "label": "6 岁后仍明显扁平足",
+            "label": "足部伴随疼痛、僵硬或行走不适",
             "desc": "走路容易累、经常脚疼腿酸、鞋底内侧严重磨损，建议去骨科或足踝外科评估。"
           }
         },
@@ -1618,7 +1618,7 @@
         },
         "growthSpurt": {
           "title": "快速生长期要特别注意",
-          "body": "青春期前后（女孩 10-14 岁、男孩 12-16 岁）是脊柱侧弯进展最快的时期。如果这个阶段发现侧弯，建议缩短复查间隔到每 3 个月一次。"
+          "body": "在身高快速增长、剩余生长潜力较大的阶段，脊柱弯曲更容易发生进展。若在此期间发现或怀疑脊柱侧弯，请按医生根据孩子个体情况制定的周期随访复查。"
         }
       }
     }
@@ -1640,8 +1640,8 @@
       "leftHigh": "左侧高",
       "rightHigh": "右侧高",
       "straightLegs": "直腿",
-      "oLeg": "O型腿",
-      "xLeg": "X型腿",
+      "oLeg": "O 型腿",
+      "xLeg": "X 型腿",
       "vertical": "垂直",
       "valgus": "外翻",
       "varus": "内翻",
@@ -1661,13 +1661,13 @@
     },
     "error": {
       "missingDate": "请选择评估日期",
-      "missingAssessment": "请至少选择一项体态评估或填写 Cobb 角",
+      "missingAssessment": "请至少记录一项体态观察结果，或填写 Cobb 角",
       "saveFailed": "保存失败，请重试"
     },
     "section": {
       "basic": "基础信息",
       "medical": "医疗数据（脊柱侧弯）",
-      "medicalDisabledHint": "选择\"体检报告\"或\"医生评估\"后激活"
+      "medicalDisabledHint": "选择“体检报告”或“医生评估”后即可填写"
     },
     "field": {
       "assessedAt": "评估日期",
@@ -1680,7 +1680,7 @@
       "neckHead": "颈部与头部",
       "pelvis": "骨盆",
       "knee": "膝盖",
-      "adamTest": "前屈试验（Adam's test）",
+      "adamTest": "前屈试验（Adam 试验）",
       "cobbAngle": "Cobb 角（°）",
       "cobbAngleHint": "来自 X 光报告",
       "notes": "备注",
@@ -1701,7 +1701,7 @@
   "Advisor": {
     "page": {
       "noActiveChild": "请先添加孩子",
-      "referenceUnavailable": "这条记录或对话已不可用。请从列表选择仍可访问的内容。"
+      "referenceUnavailable": "这条记录或对话不可用。请从列表中选择可用的内容。"
     },
     "transcript": {
       "user": "你",
@@ -1726,9 +1726,9 @@
     },
     "runtimeGate": {
       "title": "为{{childName}}开启成长顾问",
-      "description": "在 AI 设置中选好本地或云端模型后，成长顾问会结合档案和本地记录，回答你关于孩子成长的日常问题。",
+      "description": "在「AI 设置」中选好本地或云端模型后，成长顾问会结合档案和本地记录，回答你关于孩子成长的日常问题。",
       "hint": "在「AI 设置」完成连接后，回到这里就能开始提问",
-      "message": "在 AI 设置中选好模型后，成长顾问就能回答你的问题了",
+      "message": "在「AI 设置」中选好模型后，成长顾问就能回答你的问题了",
       "action": "去连接 AI"
     },
     "journalContext": {
@@ -1737,7 +1737,7 @@
       "voiceOrImageOnly": "这条随记以语音或图片为主",
       "starter": {
         "keyInfo": "请帮我整理这条记录的关键信息",
-        "moreObservation": "这个维度还有哪些值得观察的方面",
+        "moreObservation": "在这方面，还有哪些值得观察的地方？",
         "signals": "有什么需要关注的信号吗"
       }
     },
@@ -1988,7 +1988,7 @@
     },
     "error": {
       "deleteFailed": "删除失败，请稍后重试。",
-      "saveFailed": "保存失败，请检查本地运行时状态后重试。",
+      "saveFailed": "未能保存这条随记，请保留当前内容并重试。",
       "recordingStartFailed": "无法启动录音，请确认麦克风权限。",
       "recordingFailed": "录音失败，请重试。",
       "transcriptionFailed": "转写失败，仍可保存语音记录。"
@@ -2008,52 +2008,52 @@
     "experimentTemplate": {
       "PO-OBS-CONC-001": {
         "0": "今天选一段孩子自己玩的时间，试着在旁边安静坐 10 分钟，不打断、不引导，只观察",
-        "1": "准备两三样材料放在桌上，让孩子自己选，看看 ta 会沉浸多久",
+        "1": "准备两三样材料放在桌上，让孩子自己挑选，看看能沉浸多久",
         "2": "下次孩子专注时，注意自己有没有想要打断的冲动，试着忍住",
-        "3": "如果孩子正在重复做一件事，不叫停，等 ta 自己结束后记录 ta 的表情"
+        "3": "如果孩子正在重复做一件事，先不叫停，等孩子自己停下后记下当时的表情"
       },
       "PO-OBS-EMOT-001": {
-        "0": "今天孩子闹情绪时，先蹲下来和 ta 平视，等 10 秒再说话",
+        "0": "今天孩子闹情绪时，先蹲下来平视孩子，等 10 秒再说话",
         "1": "睡前和孩子一起回忆：今天最开心的事是什么？有没有不开心的事？",
-        "2": "下次孩子哭的时候，试着只说一句\"我在这里\"，看 ta 的反应",
-        "3": "和孩子一起给情绪起名字：\"你现在觉得是生气还是委屈？\""
+        "2": "下次孩子哭的时候，试着只说一句“我在这里”，看看孩子的反应",
+        "3": "和孩子一起给情绪起名字：“你现在觉得是生气还是委屈？”"
       },
       "PO-OBS-SOCL-001": {
-        "0": "带孩子去有同龄人的场合，在旁边观察 ta 怎么加入或回避互动",
+        "0": "带孩子去有同龄人的场合，在旁边观察孩子怎样加入或回避互动",
         "1": "下次孩子和小朋友起冲突，试着等 30 秒看 ta 们能不能自己解决",
         "2": "在家模拟一个需要轮流的游戏，观察孩子等待时的反应",
-        "3": "问孩子：\"今天和谁玩了？你们做了什么？\"看 ta 怎么描述"
+        "3": "问问孩子：“今天和谁玩了？你们做了什么？”看看孩子怎么描述"
       },
       "PO-OBS-CHOI-001": {
-        "0": "今天给孩子两个选择（不是问\"你想干嘛\"），观察 ta 怎么决定",
-        "1": "让孩子自己决定今天穿什么，不评价 ta 的选择",
-        "2": "下次孩子说\"我不要\"时，问一句\"那你想要什么？\"",
-        "3": "准备三本书让孩子自己挑一本睡前读，看 ta 选择的过程"
+        "0": "今天给孩子两个具体选项（而不是问“你想干嘛”），观察孩子怎么决定",
+        "1": "让孩子自己决定今天穿什么，不评价穿得好不好",
+        "2": "下次孩子说“我不要”时，试着问一句：“那你想要什么？”",
+        "3": "睡前准备三本书让孩子自己挑一本，观察挑选的过程"
       },
       "PO-OBS-INDP-001": {
         "0": "选一件孩子即将能独立完成的事（如穿鞋），今天只在旁边等，不动手帮",
-        "1": "让孩子自己倒水/盛饭，即使会洒，先看 ta 怎么做",
-        "2": "出门前给孩子 5 分钟自己准备，看 ta 能记住带哪些东西",
-        "3": "如果孩子说\"我不会\"，试着回答\"你先试试看，我在旁边\""
+        "1": "让孩子自己倒水或盛饭，哪怕会洒出来，也先看看孩子怎么做",
+        "2": "出门前给孩子 5 分钟自己准备，看看能记住带哪些东西",
+        "3": "如果孩子说“我不会”，试着回应“你先试试看，我在旁边”"
       },
       "PO-OBS-RELQ-001": {
-        "0": "今晚试一次 10 分钟的\"不看手机陪伴\"——让孩子决定你们一起做什么",
+        "0": "今晚试一次 10 分钟“不看手机的陪伴”——让孩子决定你们一起做什么",
         "1": "下次孩子说话时，放下手里的事，蹲下来认真听完再回应",
-        "2": "睡前和孩子说一句具体的肯定：\"今天你自己收拾了玩具，我很欣赏\"",
-        "3": "和孩子发生冲突后，主动找 ta 修复：\"刚才妈妈/爸爸态度不好，对不起\"",
-        "4": "今天试着问孩子一个开放问题：\"今天学校里有什么有意思的事吗？\""
+        "2": "睡前对孩子说一句具体的肯定：“今天你自己收拾了玩具，我很欣赏”",
+        "3": "和孩子发生冲突后，主动找孩子修复关系：“刚才妈妈/爸爸态度不好，对不起”",
+        "4": "今天试着问孩子一个开放式问题：“今天学校里有什么有意思的事吗？”"
       },
       "PO-OBS-ATTC-001": {
-        "0": "出门前和孩子做一个固定的告别仪式（击掌、拥抱、特殊口号），看 ta 的分离反应",
-        "1": "孩子在新环境探索时，坐在可见的位置，不催促，看 ta 会不会回头确认你在",
-        "2": "下次孩子受委屈哭了，先抱一抱，不急着问\"怎么了\"",
-        "3": "和孩子一起建立一个专属的\"安全信号\"——当 ta 觉得不舒服时可以用的暗号"
+        "0": "出门前和孩子做一个固定的告别仪式（击掌、拥抱或专属口号），观察分离时的反应",
+        "1": "孩子在新环境探索时，坐在孩子看得见的地方，不催促，看看会不会回头确认你在",
+        "2": "下次孩子受委屈哭了，先抱一抱，不急着追问“怎么了”",
+        "3": "和孩子一起约定一个专属“安全信号”，作为感到不舒服时的暗号"
       },
       "PO-OBS-EXEC-001": {
-        "0": "让孩子自己规划明天的安排：先做什么、后做什么，晚上一起看 ta 的计划执行得怎样",
-        "1": "下次孩子做作业拖延时，问一句：\"你觉得这个需要多长时间？\"",
-        "2": "给孩子一个需要两步以上才能完成的任务（如\"先洗手再拿碗筷到桌上\"），观察执行过程",
-        "3": "当孩子忘带东西时，不替 ta 解决，问\"你觉得下次怎么才能记住？\""
+        "0": "让孩子自己规划明天的安排：先做什么、后做什么，晚上再一起回顾执行得怎样",
+        "1": "下次孩子做作业拖延时，先问一句：“你觉得这项要花多长时间？”",
+        "2": "给孩子一个两步以上的小任务（比如“先洗手，再把碗筷拿到桌上”），观察执行过程",
+        "3": "当孩子忘带东西时，先不替孩子补救，问问：“你觉得下次怎样才能记住？”"
       }
     },
     "guidedPrompt": {
@@ -2062,12 +2062,12 @@
         "1": "你回应后孩子的情绪变化是怎样的？"
       },
       "PO-REM-REL-002": {
-        "0": "今天有没有孩子自己探索/玩耍时你在旁边但没有干预的时刻？",
+        "0": "今天孩子自己探索或玩耍时，有没有你在旁陪伴但没有干预的时刻？",
         "1": "孩子在探索中遇到困难时，你做了什么？"
       },
       "PO-REM-REL-003": {
         "0": "今天孩子有哪些事想要自己做？",
-        "1": "你是怎么回应他\"我自己来\"的？结果怎样？"
+        "1": "当孩子说“我自己来”时，你是怎么回应的？结果怎样？"
       },
       "PO-REM-REL-004": {
         "0": "最近一次孩子犯错时，你说的第一句话是什么？",
@@ -2078,29 +2078,29 @@
         "1": "孩子在冲突后的情绪恢复大概需要多久？"
       },
       "PO-REM-REL-006": {
-        "0": "这周你和孩子的对话中，有多少是关于学习/作业的？有多少是关于他感兴趣的事？",
-        "1": "最近有没有一次你只是听孩子说，没有评价或建议？他说了什么？"
+        "0": "这周你和孩子的对话里，有多少围绕学习和作业，又有多少是聊孩子感兴趣的事？",
+        "1": "最近有没有哪次你只是安静听孩子说，没有急着评价或给建议？当时聊了什么？"
       },
       "PO-REM-REL-007": {
-        "0": "最近孩子有没有\"不想说\"的时候？你是怎么应对的？",
-        "1": "你觉得他的沉默是在思考、难过、还是保护隐私？"
+        "0": "最近孩子有没有“不想说”的时候？你是怎么回应的？",
+        "1": "你觉得孩子的沉默是在思考、难过，还是想保留一点自己的空间？"
       },
       "PO-REM-REL-008": {
         "0": "你和孩子之间有没有一个纯粹的、没有教育目的的共同活动？",
-        "1": "最近一次\"无目的共处\"是什么时候？做了什么？"
+        "1": "最近一次“无目的共处”是什么时候？你们一起做了什么？"
       },
       "PO-REM-REL-009": {
         "0": "最近孩子跟你说一件事时，你有没有忍住不马上评价？",
-        "1": "让他把话说完后，你最后回应了什么？他的反应如何？"
+        "1": "等孩子把话说完后，你最后回应了什么？孩子的反应如何？"
       },
       "PO-REM-REL-010": {
-        "0": "最近一次批评孩子时，你用的是\"你做错了\"还是\"你觉得怎样会更好\"？",
+        "0": "最近一次指出孩子的问题时，你说的是“你做错了”，还是“你觉得怎样会更好”？",
         "1": "孩子当时的反应是什么？情绪恢复需要多长时间？",
         "2": "有没有尝试过让孩子自己评价自己的表现？效果如何？"
       },
       "PO-REM-REL-011": {
         "0": "孩子最近有没有关上房门的时候？你当时的感受和反应是什么？",
-        "1": "你觉得他是在拒绝你还是在建立自己的空间？"
+        "1": "你觉得孩子是在抗拒你，还是在建立自己的空间？"
       },
       "PO-REM-REL-012": {
         "0": "最近有没有在外人面前提到孩子的表现（表扬或批评）？",
@@ -2111,8 +2111,8 @@
         "1": "孩子有没有模仿过你的某个行为或习惯？是什么？"
       },
       "PO-REM-REL-014": {
-        "0": "最近孩子做决定时，你是直接告诉他答案还是问他怎么想？",
-        "1": "有没有一次你忍住不给建议、让他自己决定的经历？结果如何？"
+        "0": "最近孩子做决定时，你是直接给答案，还是先问问孩子的想法？",
+        "1": "有没有哪次你忍住没给建议，让孩子自己做决定？结果如何？"
       },
       "PO-REM-REL-015": {
         "0": "你有没有跟孩子分享过你自己的困惑或不确定？",
@@ -2128,17 +2128,17 @@
         "2": "你打算在分离时用什么方式告别？"
       },
       "PO-REM-EMO-002": {
-        "0": "你感受到孩子沟通方式的变化了吗？比如不愿意直接服从了？",
+        "0": "你留意到孩子沟通方式的变化了吗？比如不再像以前那样直接顺从了？",
         "1": "你是怎么调整自己的沟通方式的？从指令式到对话协商式，有什么具体尝试？",
         "2": "效果如何？孩子的回应有什么不同？"
       },
       "PO-REM-SEN-001": {
         "0": "孩子最近有没有特别爱把东西放进嘴里？",
-        "1": "你给他提供了哪些可以安全啃咬/探索的物品？"
+        "1": "你为孩子准备了哪些可以安全啃咬或探索的物品？"
       },
       "PO-REM-SEN-002": {
         "0": "孩子最近对物品的位置、顺序有没有特别执着？",
-        "1": "当秩序被打乱时他的反应是什么？你怎么应对的？"
+        "1": "当熟悉的秩序被打乱时，孩子有什么反应？你是怎么应对的？"
       },
       "PO-REM-SEN-003": {
         "0": "孩子最近学会了哪些新词或新的表达方式？",
@@ -2146,11 +2146,11 @@
       },
       "PO-REM-SEN-004": {
         "0": "孩子最近对哪些精细操作特别感兴趣？（如扣纽扣、画画、搭积木等）",
-        "1": "他能专注在这类活动上多长时间？"
+        "1": "这类活动孩子一般能专注多久？"
       },
       "PO-REM-SEN-005": {
         "0": "孩子和同龄人在一起时表现怎样？主动社交还是观望为主？",
-        "1": "有没有发生社交冲突？他是怎么处理的？"
+        "1": "相处时有没有起冲突？孩子是怎么处理的？"
       },
       "PO-REM-SEX-001": {
         "0": "孩子对自己的身体部位有过提问吗？你是怎么回答的？",
@@ -2161,7 +2161,7 @@
         "1": "你准备用什么方式解释？（对话、绘本、视频等）"
       },
       "PO-REM-DIG-001": {
-        "0": "孩子每天的屏幕时间大概多久？主要看/玩什么？",
+        "0": "孩子每天的屏幕时间大概多久？主要看什么或玩什么？",
         "1": "有没有设置屏幕时间规则？孩子执行得怎样？"
       },
       "PO-REM-DIG-002": {
@@ -2170,7 +2170,7 @@
       },
       "PO-REM-SAF-001": {
         "0": "家里有没有做过安全排查？（插座保护、桌角防护、柜子固定等）",
-        "1": "孩子最近会爬到了哪些新地方？有没有新的安全隐患？"
+        "1": "孩子最近爬到了哪些新地方？有没有新的安全隐患？"
       },
       "PO-REM-SAF-002": {
         "0": "孩子会走后，家里有什么新的安全隐患需要处理？",
@@ -2181,7 +2181,7 @@
         "1": "孩子对新食物的反应怎样？有没有过敏迹象？"
       },
       "PO-REM-NUT-002": {
-        "0": "孩子每天有在补充维生素 D 吗？用的什么品牌/剂量？",
+        "0": "孩子每天都在补充维生素 D 吗？用的是什么品牌和剂量？",
         "1": "最近有没有做过维生素 D 相关的检查？"
       },
       "PO-REM-SLP-001": {
@@ -2198,30 +2198,30 @@
       },
       "PO-REM-IND-001": {
         "0": "孩子目前能自己做哪些事？（穿衣、刷牙、收拾玩具等）",
-        "1": "你最近在培养他哪方面的自理能力？进展如何？"
+        "1": "你最近在培养孩子哪方面的自理能力？进展如何？"
       },
       "PO-REM-IND-002": {
         "0": "你给孩子零花钱了吗？怎么安排的？",
-        "1": "孩子对\"存钱\"和\"花钱\"有什么理解？"
+        "1": "孩子对“存钱”和“花钱”是怎么理解的？"
       },
       "PO-REM-VAL-001": {
         "0": "孩子最近有没有表现出对别人情绪的关注？（如看到别人哭会问为什么）",
-        "1": "你怎么引导他理解别人的感受？"
+        "1": "你会怎么引导孩子理解别人的感受？"
       },
       "PO-REM-INT-001": {
         "0": "你给孩子创造了什么接触音乐的机会？（听歌、乐器、节奏游戏等）",
-        "1": "孩子对哪种音乐/乐器表现出特别的兴趣？"
+        "1": "孩子对哪种音乐或乐器更有兴趣？"
       },
       "PO-REM-INT-002": {
         "0": "孩子最近最喜欢的运动或身体活动是什么？",
-        "1": "他每天大约有多少时间在做户外/运动活动？"
+        "1": "孩子每天大约有多少户外活动或运动时间？"
       },
       "PO-REM-INT-003": {
         "0": "孩子持续表现出兴趣的领域是什么？持续多久了？",
         "1": "你有没有考虑为这个兴趣提供更系统的学习机会？"
       },
       "fallback": {
-        "observedChange": "关于\"{{title}}\"，你最近观察到孩子有什么相关的表现或变化？",
+        "observedChange": "关于“{{title}}”，你最近观察到孩子有哪些表现或变化？",
         "responseEffect": "你做了什么回应或调整？效果怎样？"
       }
     },
@@ -2351,7 +2351,7 @@
       "add": "添加"
     },
     "saveConfirm": {
-      "title": "保存随手记",
+      "title": "保存随记",
       "emptyPreview": "（无文字内容）",
       "selectedCategory": "已选分类",
       "cancel": "取消",
@@ -2359,9 +2359,9 @@
       "save": "保存"
     },
     "deleteModal": {
-      "title": "删除随手记",
-      "heading": "删除这条随手记？",
-      "body": "删除后会从列表中移除这条随手记，关联的本地语音和图片也会一起清理。",
+      "title": "删除随记",
+      "heading": "删除这条随记？",
+      "body": "删除后会从列表中移除这条随记，关联的本地语音和图片也会一并清理。",
       "mediaOnlyPreview": "这是一条语音或图片记录。",
       "mediaCount": "包含 {{count}} 个本地媒体附件",
       "cancel": "取消",
@@ -2374,12 +2374,12 @@
       "titleLabel": "标题（可选）",
       "titlePlaceholder": "比如：第一次独自上台分享",
       "reasonLabel": "为什么值得珍藏（可选）",
-      "noReason": "暂不选择",
+      "noReason": "暂不选择原因",
       "confirm": {
         "ariaLabel": "建议加入珍藏",
         "heading": "要不要把这条加入珍藏？",
         "bannerTitle": "看起来像一个值得珍藏的时刻",
-        "bannerBody": "可以顺手补充标题或原因，之后回顾会更清楚。不想收藏点\"跳过\"就好。",
+        "bannerBody": "可以顺手补充标题或原因，方便日后回顾。暂不珍藏点“不用”即可。",
         "skip": "不用",
         "save": "加入珍藏"
       },
@@ -2387,7 +2387,7 @@
         "ariaLabel": "补充珍藏信息",
         "heading": "这条已经加入珍藏",
         "bannerTitle": "补充珍藏信息",
-        "bannerBody": "可以顺手补充一个标题或珍藏原因，之后在回顾时会更清楚。现在跳过也没关系。",
+        "bannerBody": "可以顺手补充标题或珍藏原因，方便日后回顾。现在跳过也没关系。",
         "skip": "跳过",
         "save": "保存补充信息"
       }
@@ -2405,7 +2405,7 @@
       },
       "draft": {
         "badge": "草",
-        "title": "发现一条未完成的随手记",
+        "title": "发现一条未完成的随记",
         "description": "内容已帮你暂存在本地",
         "descriptionWithTime": "内容已帮你暂存在本地，上次保存于 {{time}}",
         "discard": "放弃草稿",
@@ -2418,11 +2418,11 @@
       "editingEntry": "正在编辑 {{label}} 的记录",
       "cancelEdit": "取消编辑",
       "guidedPlaceholder": "参考上面的引导问题，记录你观察到的情况...",
-      "freePlaceholder": "{{childPronoun}}刚刚做了什么？说了什么？如果遇到了困难，{{childPronoun}}是如何解决的...",
+      "freePlaceholder": "{{childPronoun}}刚刚做了什么、说了什么？如果遇到了困难，{{childPronoun}}是怎么应对的……",
       "voiceNote": "语音记事",
       "addPhoto": "添加图片",
       "emoji": "表情",
-      "keepsakeOff": "取消标记为珍藏",
+      "keepsakeOff": "取消珍藏",
       "keepsakeOn": "标记为珍藏",
       "saving": "保存中...",
       "saveChanges": "保存修改",
@@ -2463,8 +2463,8 @@
       "save": "记录接种"
     },
     "history": {
-      "pendingTitle": "有 {{count}} 项历史疫苗待补录",
-      "hint": "点击\"补录\"填写实际接种日期与详细信息（批号、机构等）。",
+      "pendingTitle": "有 {{count}} 项历史接种情况待核对",
+      "hint": "点击“补录”填写实际接种日期与详细信息（批号、机构等）。",
       "backfill": "补录"
     },
     "error": {
@@ -2498,13 +2498,13 @@
       "nonProgramJournal": "中华流行病学杂志 2023;44(10):1521-1570 · 含流感、HPV、水痘、轮状病毒等推荐接种方案",
       "who": "WHO 全球免疫立场文件",
       "whoDetail": "WHO Position Papers on Vaccines. Weekly Epidemiological Record (WER).",
-      "whoCoverage": "覆盖: BCG · 乙肝 · 百白破 · 脊灰 · 麻腮风 · 流脑 · 乙脑 · 甲肝等",
+      "whoCoverage": "覆盖：BCG · 乙肝 · 百白破 · 脊灰 · 麻腮风 · 流脑 · 乙脑 · 甲肝等",
       "note": "接种窗口和时间表以国家免疫规划为准 · 自费疫苗仅供参考 · 具体请遵医嘱"
     },
     "summary": {
       "ageYearsMonths": "{{years}}岁{{months}}个月",
       "context": "已接种 {{completed}}/{{total}} 项疫苗 ({{pct}}%)。{{pending}}",
-      "pending": "待接种: {{items}}",
+      "pending": "待接种：{{items}}",
       "allComplete": "所有疫苗已完成"
     },
     "page": {
@@ -2515,7 +2515,7 @@
       "classTwoProgress": "二类（自费）",
       "upcomingTitle": "待接种疫苗",
       "overdueWindow": "已过建议接种窗口 ({{start}}-{{end}})",
-      "recommendedWindow": "建议 {{start}}-{{end}}接种",
+      "recommendedWindow": "建议 {{start}}-{{end}} 接种",
       "noUpperLimit": "无上限",
       "record": "记录",
       "currentStage": "当前阶段",
@@ -2536,9 +2536,9 @@
     },
     "capture": {
       "title": "添加疫苗记录",
-      "subtitle": "从权威疫苗提醒规则补录实际接种",
+      "subtitle": "从推荐接种清单中选择疫苗，补录实际接种信息",
       "error": {
-        "missingRule": "请选择疫苗规则",
+        "missingRule": "请选择疫苗",
         "missingDate": "请选择接种日期",
         "saveFailed": "保存失败，请重试"
       },
@@ -2654,13 +2654,13 @@
       "editTitle": "编辑体能记录",
       "date": "日期",
       "source": "来源",
-      "eventTitle": "事件 {{index}}",
-      "eventTitleWithCategory": "事件 {{index}} · {{category}}",
+      "eventTitle": "项目 {{index}}",
+      "eventTitleWithCategory": "项目 {{index}} · {{category}}",
       "deleteEvent": "删除",
       "type": "类型",
       "tabStandard": "📋 体测",
       "tabActivity": "🏃 日常运动",
-      "addAnotherEvent": "添加另一个事件",
+      "addAnotherEvent": "继续添加项目",
       "notes": "备注",
       "notesPlaceholder": "选填，如孩子的状态、表现或感受",
       "cancel": "取消",
@@ -2668,10 +2668,10 @@
       "save": "保存",
       "saveChanges": "保存修改",
       "standardBanner": "📋 {{tier}} · 依据《国家学生体质健康标准》测试项目，测过的才填，其余留空即可",
-      "durationLabel": "时长 (分钟)",
+      "durationLabel": "时长（分钟）",
       "durationPlaceholder": "例如 30",
-      "distanceLabel": "距离 (米)",
-      "distanceHint": "可选 — 适用于跑步、游泳、骑行等",
+      "distanceLabel": "距离（米）",
+      "distanceHint": "选填，适用于跑步、游泳、骑行等",
       "distancePlaceholder": "例如 800",
       "intensityLabel": "强度",
       "labelWithUnit": "{{label}}（{{unit}}）",
@@ -2679,7 +2679,7 @@
       "runSecondsHint": "可填 4:05 或 245 秒",
       "tierLabel": "学段",
       "tierAuto": "自动（按年龄）",
-      "standardMinOne": "体测记录至少填写一项指标",
+      "standardMinOne": "请至少填写一项体测指标",
       "saveFailed": "保存失败，请重试",
       "footArchLabel": "足弓",
       "footArchUnset": "未记录",
@@ -2688,7 +2688,7 @@
     "page": {
       "title": "体能评估",
       "addRecord": "添加记录",
-      "deleteConfirm": "确定删除这条体能记录？操作不可撤销。",
+      "deleteConfirm": "确定删除这条体能记录吗？删除后无法恢复。",
       "emptyTitle": "还没有体能记录",
       "emptyDescription": "选择运动类目，记录成绩与运动量",
       "latest": "最新",
@@ -2732,12 +2732,12 @@
     },
     "capture": {
       "title": "记录里程碑",
-      "noCandidatesTitle": "已超出里程碑数据范围",
-      "noCandidatesHint": "里程碑库只覆盖 0–6 岁。该孩子的年龄段已无新可记录条目。",
+      "noCandidatesTitle": "当前年龄段暂无预设里程碑",
+      "noCandidatesHint": "里程碑库仅覆盖 0–6 岁，孩子当前年龄段暂无可记录的新条目。",
       "close": "关闭",
       "domain": "领域",
-      "selectMilestone": "选择里程碑（按当前月龄过滤）",
-      "ageRangeMonths": "{{start}}-{{end}} 月",
+      "selectMilestone": "选择里程碑（按当前月龄筛选）",
+      "ageRangeMonths": "{{start}}-{{end}} 个月",
       "achievedDate": "达成日期",
       "story": "记录小故事",
       "storyPlaceholder": "例如：第一次找到藏起来的球，开心地咯咯笑...",
@@ -2786,7 +2786,7 @@
       "undoAchieved": "撤销达成",
       "markAchieved": "标记已达成",
       "achievedOn": "{{date}} 达成",
-      "typicalSummary": "典型 {{start}}-{{end}} · {{description}}...",
+      "typicalSummary": "常见于 {{start}}-{{end}} · {{description}}...",
       "addStory": "补个故事",
       "record": "记录",
       "notRecorded": "未记录",
@@ -2806,7 +2806,7 @@
       "recordedCount": "已记录 {{achieved}}/{{total}} 项",
       "pendingCount": "{{count}} 项可补记",
       "bucketPending": "待补记 {{count}} 项",
-      "bucketHasPending": "还有未记录的项目，可以补上哦",
+      "bucketHasPending": "还有未记录的里程碑，随时可以补记",
       "bucketComplete": "所有里程碑都已记录"
     }
   },
@@ -2853,7 +2853,7 @@
       "cephalosporin": "头孢",
       "amoxicillin": "阿莫西林",
       "latex": "乳胶",
-      "nickel": "金属(镍)"
+      "nickel": "金属（镍）"
     },
     "symptom": {
       "rash": "起皮疹",
@@ -2872,7 +2872,7 @@
     },
     "treatment": {
       "stopExposure": "停止接触过敏原",
-      "oralAntihistamine": "口服抗组胺药(如西替利嗪)",
+      "oralAntihistamine": "口服抗组胺药（如西替利嗪）",
       "topicalSteroid": "外用激素药膏",
       "oralSteroid": "口服激素",
       "epinephrinePen": "肾上腺素笔",
@@ -2882,12 +2882,12 @@
       "observeNoMedication": "观察未用药"
     },
     "context": {
-      "activeAllergens": "活跃过敏原: {{items}}"
+      "activeAllergens": "当前记录的过敏原：{{items}}"
     },
     "page": {
       "title": "过敏记录",
       "recordAllergy": "记录过敏",
-      "activeAllergensHeading": "活跃过敏原（{{count}}）",
+      "activeAllergensHeading": "当前过敏原（{{count}}）",
       "otherAllergensHeading": "已脱敏 / 不确定（{{count}}）",
       "emptyTitle": "还没有过敏记录",
       "emptyHint": "记录已知的过敏原，方便就医时快速参考"
@@ -2927,7 +2927,7 @@
   },
   "MedicalEvents": {
     "ai": {
-      "filteredFallback": "数据已记录，建议持续更新就医信息以获取更精准的健康分析。",
+      "filteredFallback": "就医记录已保存，可继续补充就诊信息以便日后回顾与整理。",
       "unavailable": "暂无法生成分析，请确认 AI 运行时已启动。",
       "retryLater": "AI 分析暂不可用，请稍后重试。"
     },
@@ -3043,7 +3043,7 @@
       "ocrHint": "上传病历/处方单图片，AI 自动提取关键信息填入表单",
       "recognizing": "识别中...",
       "uploadRecognize": "上传识别",
-      "sectionBasic": "就诊基础",
+      "sectionBasic": "基本信息",
       "visitType": "就诊类型",
       "visitDate": "就诊日期",
       "addEndDate": "持续治疗/住院",
@@ -3166,7 +3166,7 @@
       "noRepeat": "不重复",
       "customTitle": "自定义重复",
       "everyPrefix": "每",
-      "weekdaysLabel": "在这些日子重复",
+      "weekdaysLabel": "选择重复的星期",
       "cancel": "取消",
       "confirm": "确定"
     }
@@ -3176,7 +3176,7 @@
     "error": {
       "unknownRuleTitle": "提醒目录不完整",
       "unknownRuleIds": "发现未登记的 ruleId：{{ruleIds}}",
-      "unknownRuleBody": "提醒流已按 PO-TIME-007 fail-close，且不会静默删除这些记录。请先让持久化 ruleId 与 data/structured/parentos/reminder-rules.yaml 或 data/structured/parentos/orthodontic-protocols.yaml 重新一致，再重试。",
+      "unknownRuleBody": "提醒流已按 PO-TIME-007 触发 fail-close 保护，不会静默删除这些记录。请先将持久化的 ruleId 与 data/structured/parentos/reminder-rules.yaml 或 data/structured/parentos/orthodontic-protocols.yaml 对齐后再重试。",
       "unknownCaptureProtocol": "未识别的 captureProtocolId: {{captureProtocolId}}",
       "missingBoundAppliance": "找不到提醒绑定的矫治器（applianceId={{applianceId}}）"
     },
@@ -3198,9 +3198,9 @@
     "welcome": {
       "hero": {
         "withChildrenTitle": "选择一个孩子开始",
-        "withChildrenDescription": "请选择一个孩子，进入他的成长时间线与阶段提醒。"
+        "withChildrenDescription": "选择孩子后，即可查看对应的成长时间线与阶段提醒。"
       },
-      "addChild": "添加新孩子",
+      "addChild": "添加孩子",
       "stepsTitle": "三步开始",
       "step": {
         "createProfile": {
@@ -3217,7 +3217,7 @@
         }
       },
       "trust": {
-        "standards": "中国与 WHO 参考标准并行"
+        "standards": "同时支持中国与 WHO 参考标准"
       }
     },
     "domain": {
@@ -3252,7 +3252,7 @@
         "sleep": "昨晚睡得怎么样？",
         "outdoor": "本周户外目标进展",
         "vision": "更新一下视力记录",
-        "growthJournal": "今天有让你印象深的瞬间吗？"
+        "growthJournal": "今天有让你印象深刻的瞬间吗？"
       },
       "action": {
         "record": "记录",
@@ -3261,7 +3261,7 @@
         "writeJournalTitle": "写一条成长随记"
       },
       "priority": {
-        "p0Today": "P0 · 今日重要",
+        "p0Today": "今日重要",
         "today": "今日"
       },
       "downgradeIndicator": "档案有 {{count}} 项可更新"
@@ -3283,7 +3283,7 @@
         },
         "PO-OBS-REPT-001": {
           "a": "孩子最近有没有反复做某件事？",
-          "b": "留意一下孩子重复做的那些\"小仪式\""
+          "b": "留意一下孩子重复做的那些“小仪式”"
         },
         "PO-OBS-CHOI-001": {
           "a": "今天让孩子自己做个小决定试试",
@@ -3291,7 +3291,7 @@
         },
         "PO-OBS-INDP-001": {
           "a": "有什么事孩子快要能自己搞定了？",
-          "b": "试着退后一步，看孩子自己怎么来"
+          "b": "试着退后一步，看孩子自己怎么做"
         },
         "PO-OBS-SOCL-001": {
           "a": "孩子跟小伙伴在一起时是什么状态？",
@@ -3310,7 +3310,7 @@
           "b": "留意一下孩子怎么表达自己想要的东西"
         },
         "PO-OBS-ORDR-001": {
-          "a": "孩子对\"东西放哪里\"在意吗？",
+          "a": "孩子对“东西放哪里”在意吗？",
           "b": "有没有注意到孩子对顺序的小执念？"
         },
         "PO-OBS-EXPL-001": {
@@ -3334,12 +3334,12 @@
           "b": "有没有发现孩子在某件事上特别有天赋？"
         },
         "PO-OBS-INDU-001": {
-          "a": "孩子最近有什么\"我做到了\"的时刻吗？",
+          "a": "孩子最近有什么「我做到了」的时刻吗？",
           "b": "留意一下让孩子有成就感的事情"
         },
         "PO-OBS-IDEN-001": {
           "a": "孩子最近怎么形容自己？",
-          "b": "留意孩子对\"我是谁\"这个问题的探索"
+          "b": "留意孩子对「我是谁」这个问题的探索"
         },
         "PO-OBS-PYDC-001": {
           "a": "孩子在哪些方面表现出了责任感？",
@@ -3350,7 +3350,7 @@
           "b": "孩子有没有开始反思自己的学习方式？"
         },
         "PO-OBS-MORL-001": {
-          "a": "孩子最近遇到\"对与错\"的问题了吗？",
+          "a": "孩子最近遇到「对与错」的问题了吗？",
           "b": "留意一下孩子在公平和规则方面的判断"
         },
         "PO-OBS-ATTC-001": {
@@ -3407,7 +3407,7 @@
       "coldStartStep1Title": "记录第一次成长测量",
       "coldStartStep1Body": "输入一次身高或体重，这里会自动生成对照 WHO 标准的趋势曲线。",
       "coldStartStep2Title": "记录一次睡眠",
-      "coldStartStep2Body": "记录入睡和起床时间，两周后这里会显示睡眠趋势和规律。",
+      "coldStartStep2Body": "记下入睡与起床时间，即可查看近两周内的睡眠记录。",
       "coldStartStep3Title": "写一篇成长随记",
       "coldStartStep3Body": "文字或语音都可以，观察线索会沉淀为月度成长报告的材料。",
       "coldStartStepCta": "去记录"
@@ -3452,7 +3452,7 @@
     },
     "dataGap": {
       "missingBaselineTitle": "尚未建立生长基线",
-      "missingBaselineDetail": "首页还没有本地身高或体重记录。补充一次测量数据即可解锁更实用的趋势分析。",
+      "missingBaselineDetail": "首页还没有身高或体重记录。补充一次测量数据即可解锁更实用的趋势分析。",
       "staleTitle": "生长数据需要更新",
       "stalePart": "{{metric}}上次更新在 {{days}} 天前",
       "staleDetail": "{{parts}}。及时更新可以让首页摘要更准确。"
@@ -3576,11 +3576,11 @@
     },
     "reminderPanel": {
       "overdueSummary": "逾期汇总",
-      "viewAllWithCount": "查看全部 {{count}}",
+      "viewAllWithCount": "查看全部 {{count}} 项",
       "observationNudges": "观察建议",
       "title": "待办事项",
       "todayTab": "今天",
-      "upcomingTab": "近期 7 天",
+      "upcomingTab": "未来 7 天",
       "empty": "暂无事项",
       "moreImportant": "更多重要事项",
       "onboardingCatchup": "历史补录",
@@ -3588,18 +3588,18 @@
     }
   },
   "Orthodontic": {
-    "alignerContext": "第{{alignerIndex}}副牙套·第{{day}}天",
+    "alignerContext": "第 {{alignerIndex}} 副牙套 · 第 {{day}} 天",
     "common": {
       "defaultValue": "默认 {{value}}"
     },
     "ring": {
-      "noActiveAppliance": "当前疗程还没有进行中的装置。",
-      "unworn": "未戴中",
+      "noActiveAppliance": "当前疗程还没有使用中的装置。",
+      "unworn": "未佩戴",
       "currentAlignerWornFooter": "本副已戴 {{hours}}h · {{percent}}%",
       "currentAlignerMet": "本副已达标",
       "currentAlignerWorn": "本副已戴",
       "currentAlignerRemainingFooter": "还差 {{hours}}h · {{percent}}%",
-      "unwornWithPrescription": "未戴中 · 医嘱每日佩戴 {{hours}} 小时",
+      "unwornWithPrescription": "未佩戴 · 医嘱每日佩戴 {{hours}} 小时",
       "prescribedHours": "医嘱每日佩戴 {{hours}} 小时",
       "applianceInUse": "装置使用中",
       "expanderComplete": "扩弓已完成",
@@ -3608,13 +3608,13 @@
       "activationCompleteFooter": "已完成加力",
       "activationRemainingFooter": "还差 {{count}} 圈",
       "todayWear": "今日佩戴",
-      "todayNetWearApprox": "今日净戴近似",
+      "todayNetWearApprox": "今日净佩戴（约）",
       "phaseNotSet": "尚未设置治疗阶段",
       "phaseMonthUnit": " / {{months}} 个月",
       "phaseFooter": "第 {{current}} / {{total}} 阶段"
     },
     "nextAction": {
-      "switchAligner": "下次换套",
+      "switchAligner": "下次换牙套",
       "switchAlignerAction": "换下一副",
       "shiftDelayed": "预计推后 {{days}} 天",
       "shiftEarly": "预计提前 {{days}} 天",
@@ -3640,9 +3640,9 @@
       "timeLabel": "换牙套的时间",
       "submit": "确认更换",
       "error": {
-        "invalidIndexWithTotal": "牙套序号必须是 1..{{total}} 的整数",
+        "invalidIndexWithTotal": "牙套序号必须是 1 到 {{total}} 之间的整数",
         "invalidIndex": "牙套序号必须为大于等于 1 的整数",
-        "invalidTime": "换套时间无效"
+        "invalidTime": "换牙套时间无效"
       }
     },
     "expanderActivation": {
@@ -3662,12 +3662,12 @@
     },
     "phaseAdvance": {
       "dialogTitle": "确认推进治疗阶段",
-      "initialTitle": "设置「{{applianceType}}」初始阶段为「{{phase}}」?",
-      "advanceTitle": "推进到「{{phase}}」?",
-      "initialBody": "设置后会开始按该阶段计算阶段月数。如果是误操作，可以再次手动调整。",
-      "advanceBody": "阶段只能逐级推进。推进后会从今天开始重新计算阶段月数。",
+      "initialTitle": "将「{{applianceType}}」的初始阶段设为「{{phase}}」？",
+      "advanceTitle": "推进到「{{phase}}」？",
+      "initialBody": "设置后将按该阶段计算月数。如果选错，后续仍可手动调整。",
+      "advanceBody": "治疗阶段需逐级推进。确认后，新阶段的月数将从今天开始计算。",
       "noTargetTitle": "已是最后阶段",
-      "noTargetBody": "该矫治器已处于其治疗阶段序列的最后一个阶段，没有可推进的下一阶段。",
+      "noTargetBody": "该矫治器已处于最后一个治疗阶段，没有可推进的下一阶段。",
       "cancel": "取消",
       "close": "关闭",
       "confirmInitial": "确认设置",
@@ -3675,9 +3675,9 @@
     },
     "applianceCard": {
       "monthDay": "{{month}} 月 {{day}} 日",
-      "ageYearsMonths": "{{years}} 岁 {{months}} 月",
+      "ageYearsMonths": "{{years}} 岁 {{months}} 个月",
       "ageYears": "{{years}} 岁",
-      "daysOverdue": "已过期 {{days}} 天",
+      "daysOverdue": "已逾期 {{days}} 天",
       "daysAway": "还有 {{days}} 天",
       "settings": "矫治器设置",
       "startMeta": "起始 {{date}} · {{age}}",
@@ -3695,7 +3695,7 @@
       "nextReview": "下次复诊",
       "notScheduled": "未安排",
       "logVisit": "记录就诊",
-      "visitAgenda": "当次议程"
+      "visitAgenda": "本次就诊事项"
     },
     "selfies": {
       "loading": "加载中…",
@@ -3718,7 +3718,7 @@
       "mode": {
         "slide": "叠加",
         "slideTitle": "拖动分割线对比",
-        "split": "平铺",
+        "split": "并排",
         "splitTitle": "左右并排"
       },
       "compare": {
@@ -3744,7 +3744,7 @@
     },
     "stageConfirm": {
       "ariaLabel": "确认推进阶段",
-      "title": "推进到「{{stage}}」?",
+      "title": "推进到「{{stage}}」？",
       "body": "阶段一旦推进，提醒规则与日程会按新阶段调整。如果是误操作，可以再次手动回滚。",
       "cancel": "取消",
       "confirm": "确认推进"
@@ -3762,27 +3762,27 @@
       "empty": {
         "noActiveCaseTitle": "当前没有进行中的疗程",
         "noCaseTitle": "还没有正畸疗程",
-        "noActiveCaseBody": "上一段疗程已结束。可以新建一段新的疗程，过往记录会保留在口腔记录里。",
+        "noActiveCaseBody": "上一段疗程已结束。可以新建一段疗程，过往记录会保留在口腔记录中。",
         "noCaseBody": "新建疗程后，可以记录每副牙套节奏、复诊安排、未戴时段，并自动生成时间轴。",
-        "createNextCase": "新建一段新的疗程",
+        "createNextCase": "新建疗程",
         "createCase": "新建正畸疗程"
       }
     },
     "caseShell": {
-      "deleteConfirm": "确定删除该疗程？相关矫治器、打卡、未戴记录都会级联删除，操作不可撤销。",
-      "parallelAppliances": "正在并行 {{count}} 件矫治器",
+      "deleteConfirm": "确定删除该疗程？相关矫治器、打卡及未戴记录都会一并删除，操作不可撤销。",
+      "parallelAppliances": "正在同时使用 {{count}} 件矫治器",
       "menuAria": "疗程管理菜单",
       "editCase": "编辑当前疗程",
       "advanceToStage": "推进到「{{stage}}」",
       "noAdvanceStage": "没有可推进的下一阶段",
       "deleteCase": "删除当前疗程",
       "legacyTitle": "待确认历史疗程",
-      "legacyBody": "该疗程由历史 ortho-start 记录回补生成。请在「⋯ 菜单 → 删除当前疗程」后新建一个正式疗程，或先把它改归类为正式类型再加矫治器（PO-ORTHO-002a）。",
+      "legacyBody": "该疗程由历史 ortho-start 记录回补生成。请在「⋯ 菜单 → 删除当前疗程」后新建正式疗程，或先将其改为正式类型后再添加矫治器（PO-ORTHO-002a）。",
       "noActiveAppliance": "当前疗程还没有进行中的矫治器。添加矫治器后可以开始记录每日状态。"
     },
     "stageBlocked": {
       "adjacentOnly": "只能依次推进相邻阶段",
-      "completedNeedsEndDate": "完成阶段需要先填写实际结束日期"
+      "completedNeedsEndDate": "推进到「已完成」阶段前，请先填写实际结束日期"
     },
     "caseType": {
       "earlyIntervention": "早期矫治",
@@ -3832,9 +3832,9 @@
         "createTitle": "新建正畸疗程",
         "editTitle": "编辑当前疗程",
         "applianceSection": "装置：{{applianceType}}",
-        "prescribedHoursLabel": "医嘱每日佩戴小时",
+        "prescribedHoursLabel": "医嘱每日佩戴时长（小时）",
         "prescribedHoursPlaceholder": "例如 22",
-        "prescribedHoursInvalid": "医嘱每日佩戴小时数必须在 1..24 之间。",
+        "prescribedHoursInvalid": "医嘱每日佩戴时长需在 1 到 24 小时之间",
         "totalAlignersLabel": "牙套总副数",
         "totalAlignersPlaceholder": "例如 30",
         "totalAlignersInvalid": "总副数必须是大于 0 的整数。",
@@ -3843,8 +3843,8 @@
         "daysPerAlignerInvalid": "每副佩戴天数必须是大于 0 的整数。",
         "plannedEndAt": "预计结束日期 {{date}}",
         "errorMissingStartDate": "请填写开始日期",
-        "errorAlignerPlanRequired": "隐形牙套需要正整数的总副数和每副佩戴天数",
-        "errorPrescribedHoursRange": "医嘱每日佩戴小时数必须在 1..24 之间"
+        "errorAlignerPlanRequired": "请填写隐形牙套的总副数和每副佩戴天数（须为正整数）",
+        "errorPrescribedHoursRange": "医嘱每日佩戴时长需在 1 到 24 小时之间"
       },
       "clinical": {
         "editTitle": "编辑正畸临床事件",
@@ -3853,7 +3853,7 @@
         "date": "日期",
         "eventOption": "{{label}}（{{description}}）",
         "appliedAppliance": "对应装置",
-        "applianceOption": "{{applianceType}} · 开始 {{startedAt}}",
+        "applianceOption": "{{applianceType}} · 开始于 {{startedAt}}",
         "nextReviewNote": "本次完成后，下次复诊自动设为 {{date}}；对应协议提醒会推进到该日。",
         "noActiveAppliance": "当前疗程没有进行中的装置。事件会写入时间线，但不会推进复诊周期。",
         "errorMissingEventDate": "请填写事件日期",
@@ -3866,13 +3866,13 @@
         "typeLabel": "矫治器类型",
         "enabledAt": "启用日期",
         "startDate": "开始日期",
-        "startDateBeforeBirth": "开始日期不能早于孩子出生日。",
-        "startedAge": "开始时孩子 {{years}} 岁 {{months}} 月",
-        "prescribedHoursLabel": "医嘱每日佩戴小时",
-        "prescribedHoursPerDayLabel": "医嘱佩戴小时/天",
+        "startDateBeforeBirth": "开始日期不能早于孩子的出生日期。",
+        "startedAge": "开始时孩子 {{years}} 岁 {{months}} 个月",
+        "prescribedHoursLabel": "医嘱每日佩戴时长（小时）",
+        "prescribedHoursPerDayLabel": "医嘱佩戴时长（小时/天）",
         "prescribedHoursPlaceholder": "例如 22",
         "prescribedHoursRequired": "请填写矫治器的医嘱每日佩戴小时数",
-        "prescribedHoursInvalid": "医嘱每日佩戴小时数必须在 1..24 之间。",
+        "prescribedHoursInvalid": "医嘱每日佩戴时长需在 1 到 24 小时之间",
         "prescribedActivationsLabel": "扩弓总激活次数",
         "activationIntervalLabel": "扩弓转动周期（天，可选）",
         "activationIntervalPlaceholder": "例如 3",
@@ -3883,14 +3883,14 @@
         "daysPerAlignerLabel": "每副佩戴天数",
         "daysPerAlignerPlaceholder": "例如 7",
         "daysPerAlignerInvalid": "每副佩戴天数必须是大于 0 的整数。",
-        "alignerPlanRequired": "隐形牙套需要正整数的总副数和每副佩戴天数",
+        "alignerPlanRequired": "请填写隐形牙套的总副数和每副佩戴天数（须为正整数）",
         "reviewIntervalDays": "复诊间隔（天）",
         "initialPhase": "初始治疗阶段（可选）",
         "initialPhasePlaceholder": "暂不设置",
         "nextReviewDate": "下次复诊日期",
         "nextReviewDatePlaceholder": "留空清除",
         "nextReviewDateInvalid": "下次复诊日期格式应为 YYYY-MM-DD。",
-        "nextReviewAgenda": "下次复诊议程（可选）",
+        "nextReviewAgenda": "下次复诊事项（可选）",
         "nextReviewAgendaPlaceholder": "例如 评估扩弓量 / 换主弓丝",
         "confirmDelete": "确定删除该矫治器？相关打卡、未戴时段、复诊提醒都会一并删除，操作不可撤销。",
         "deleting": "删除中…",
@@ -3948,12 +3948,12 @@
         "missingDate": "请填写拍摄日期",
         "missingPhoto": "至少选择一张照片（正面或侧面）",
         "invalidTrayIndex": "牙套序号必须为大于等于 1 的整数",
-        "trayIndexRequiresAligner": "牙套序号只在「隐形牙套」装置上有效",
+        "trayIndexRequiresAligner": "牙套序号仅适用于「隐形牙套」",
         "unsupportedType": "不支持的图片格式: {{type}}（仅支持 JPEG / PNG / WebP）",
         "unknownType": "未知",
         "photoTooLarge": "照片太大（{{actual}}），请压缩到 {{max}} 以内再上传",
-        "angleAlreadyExists": "该角度（{{angle}}）已存在照片，请先删除现有附件再重新上传",
-        "fileReaderNonString": "FileReader 返回非字符串结果",
+        "angleAlreadyExists": "该角度（{{angle}}）已存在照片，请先删除现有照片再重新上传",
+        "fileReaderNonString": "未能读取所选图片，请重新选择。",
         "fileReadFailed": "读取文件失败"
       }
     },
@@ -3964,7 +3964,7 @@
       "today": "今天",
       "askAi": "和 AI 聊这条记录",
       "futureBadge": "预计",
-      "openInterval": "未关闭",
+      "openInterval": "进行中",
       "entry": {
         "caseStarted": "疗程开始",
         "applianceStarted": "装置启用",
@@ -3972,8 +3972,8 @@
         "applianceCompleted": "装置结束",
         "alignerChange": "换牙套 · 第 {{alignerIndex}} 副",
         "expanderActivation": "扩弓加力 · 第 {{activationIndex}} 次",
-        "unwearClosed": "一段未戴时段",
-        "unwearOpen": "正在未戴中",
+        "unwearClosed": "未戴时段",
+        "unwearOpen": "当前未佩戴",
         "nextClinicalReview": "下次复诊",
         "nextAlignerChange": "预计换套 · 第 {{alignerIndex}} 副",
         "cyclePlannedSwitch": "本副计划换套",
@@ -4095,7 +4095,7 @@
       "notesPlaceholder": "记录观察到的变化、孩子感受等...",
       "cancel": "取消",
       "save": "保存",
-      "saving": "保存中..."
+      "saving": "保存中…"
     },
     "assessedBy": {
       "self": "自评",
@@ -4132,7 +4132,7 @@
         },
         "4": {
           "title": "B4 · 乳晕突出",
-          "desc": "乳晕和乳头形成第二个小丘，像\"小山上的小山\"一样突出于乳房。"
+          "desc": "乳晕和乳头形成第二个小丘，像“小山上的小山”一样突出于乳房。"
         },
         "5": {
           "title": "B5 · 成熟期",
@@ -4239,9 +4239,9 @@
       "invalidMenarcheDate": "请填写初潮日期，日期应在出生日期至本次评估日期之间。",
       "invalidMeasurement": "请填写有效的正数测量值，体脂率不能超过 100%。",
       "saveError": "保存失败，填写内容已保留，请重试。",
-      "partialSaveError": "部分记录已保存，后续步骤未完成。已保存内容已锁定；点击保存继续，不会重复提交已成功的记录。",
+      "partialSaveError": "部分记录已保存并锁定，其余步骤尚未完成。再次点击“保存”即可继续，不会重复提交已成功的记录。",
       "trendTitle": "记录中观察到的变化",
-      "trendWatch": "{{axis}}：{{from}} 至 {{to}}，记录从第 {{previous}} 期变为第 {{latest}} 期。该变化达到 12 个月内增加至少 2 期的关注条件，建议携带记录咨询专业人士。",
+      "trendWatch": "{{axis}}：{{from}} 至 {{to}}，记录从第 {{previous}} 期变为第 {{latest}} 期。12 个月内增加达 2 期及以上，建议携带记录咨询专业人士。",
       "explainRecords": "请 AI 整理记录",
       "hideAI": "收起 AI 整理",
       "recordGuideIntro": "将已有评估结果保存为记录，方便日后按日期回看。填写时请注意以下三点。"
@@ -4360,55 +4360,55 @@
       "11": "右上中切牙",
       "12": "右上侧切牙",
       "13": "右上尖牙",
-      "14": "右上第一前磨",
-      "15": "右上第二前磨",
-      "16": "右上第一磨",
-      "17": "右上第二磨",
+      "14": "右上第一前磨牙",
+      "15": "右上第二前磨牙",
+      "16": "右上第一磨牙",
+      "17": "右上第二磨牙",
       "18": "右上智齿",
       "21": "左上中切牙",
       "22": "左上侧切牙",
       "23": "左上尖牙",
-      "24": "左上第一前磨",
-      "25": "左上第二前磨",
-      "26": "左上第一磨",
-      "27": "左上第二磨",
+      "24": "左上第一前磨牙",
+      "25": "左上第二前磨牙",
+      "26": "左上第一磨牙",
+      "27": "左上第二磨牙",
       "28": "左上智齿",
       "31": "左下中切牙",
       "32": "左下侧切牙",
       "33": "左下尖牙",
-      "34": "左下第一前磨",
-      "35": "左下第二前磨",
-      "36": "左下第一磨",
-      "37": "左下第二磨",
+      "34": "左下第一前磨牙",
+      "35": "左下第二前磨牙",
+      "36": "左下第一磨牙",
+      "37": "左下第二磨牙",
       "38": "左下智齿",
       "41": "右下中切牙",
       "42": "右下侧切牙",
       "43": "右下尖牙",
-      "44": "右下第一前磨",
-      "45": "右下第二前磨",
-      "46": "右下第一磨",
-      "47": "右下第二磨",
+      "44": "右下第一前磨牙",
+      "45": "右下第二前磨牙",
+      "46": "右下第一磨牙",
+      "47": "右下第二磨牙",
       "48": "右下智齿",
       "51": "右上乳中切牙",
       "52": "右上乳侧切牙",
       "53": "右上乳尖牙",
-      "54": "右上乳第一磨",
-      "55": "右上乳第二磨",
+      "54": "右上第一乳磨牙",
+      "55": "右上第二乳磨牙",
       "61": "左上乳中切牙",
       "62": "左上乳侧切牙",
       "63": "左上乳尖牙",
-      "64": "左上乳第一磨",
-      "65": "左上乳第二磨",
+      "64": "左上第一乳磨牙",
+      "65": "左上第二乳磨牙",
       "71": "左下乳中切牙",
       "72": "左下乳侧切牙",
       "73": "左下乳尖牙",
-      "74": "左下乳第一磨",
-      "75": "左下乳第二磨",
+      "74": "左下第一乳磨牙",
+      "75": "左下第二乳磨牙",
       "81": "右下乳中切牙",
       "82": "右下乳侧切牙",
       "83": "右下乳尖牙",
-      "84": "右下乳第一磨",
-      "85": "右下乳第二磨"
+      "84": "右下第一乳磨牙",
+      "85": "右下第二乳磨牙"
     },
     "form": {
       "title": {
@@ -4451,9 +4451,9 @@
       "close": "关闭"
     },
     "toothChart": {
-      "primaryTitle": "乳牙 (20颗) · 点击选择牙位（可多选）",
-      "permanentTitle": "恒牙 (32颗) · 点击选择牙位（可多选）",
-      "selectedSummary": "已选 {{count}} 颗: {{teeth}}"
+      "primaryTitle": "乳牙（20 颗）· 点击选择牙位（可多选）",
+      "permanentTitle": "恒牙（32 颗）· 点击选择牙位（可多选）",
+      "selectedSummary": "已选 {{count}} 颗：{{teeth}}"
     },
     "kpi": {
       "erupted": "已萌出",
@@ -4483,32 +4483,32 @@
     },
     "insight": {
       "chip": {
-        "lostWaiting": "关注 {{toothId}} 号牙 · 已脱落待恒牙",
+        "lostWaiting": "关注 {{toothId}} 号牙 · 已脱落，等待恒牙萌出",
         "caries": "关注 {{toothId}} 号牙 · 龋齿",
         "stable": "整体状态平稳",
         "nextCheckMonth": "下次检查 · 建议 {{month}} 月",
-        "keepCleaningHabit": "维持扫牙习惯",
+        "keepCleaningHabit": "保持洁牙习惯",
         "keepFluorideCadence": "保持涂氟节奏",
-        "buildCleaningHabit": "建议养成扫牙习惯"
+        "buildCleaningHabit": "建议养成洁牙习惯"
       },
       "emptyEruptionInfo": "尚未记录萌出信息，补充记录后可生成更完整的口腔发育画像。",
       "eruptionSummary": "{{childName}} 在 {{ageLabel}} 时已萌出 {{eruptedCount}} 颗牙，其中恒牙 {{permanentPresent}} 颗、乳牙 {{primaryPresent}} 颗在位。",
       "cariesSummary": "当前龋齿 {{cariesCount}} 处，建议及时随访治疗。",
-      "noCariesSummary": "龋齿情况为 0，口腔整体发育处于正常范围。",
+      "noCariesSummary": "当前暂无龋齿记录。",
       "aiObservation": "AI 观察",
       "recordContext": "基于 {{totalRecords}} 条记录 · {{ageLabel}}"
     }
   },
   "Vision": {
     "age": {
-      "monthsShort": "{{months}}月",
+      "monthsShort": "{{months}}个月",
       "yearsShort": "{{years}}岁",
       "yearsMonthsShort": "{{years}}岁{{months}}月"
     },
     "page": {
       "title": "视力档案",
       "todayDivider": "今天",
-      "privacyNote": "所有数据加密存储 · 仅家庭可见"
+      "privacyNote": "记录保存在本机 · 请妥善保管本地备份"
     },
     "guide": {
       "stepLabel": "验光单录入指引",
@@ -4552,7 +4552,7 @@
             },
             "subjective": {
               "label": "综合验光",
-              "desc": "医生通过综合验光仪（插片法）逐步调整镜片，依赖受检者识别视标。也叫主觉验光。球镜标注 DS，柱镜标注 DC。结果更准确，用于配镜处方。",
+              "desc": "又称主觉验光：验光师通过综合验光仪或试镜架逐步调整镜片，根据孩子辨认视标的反馈来确定度数。报告中球镜常标为 DS，柱镜常标为 DC。",
               "tag": "配镜依据"
             }
           }
@@ -4564,17 +4564,17 @@
             "sph": {
               "field": "球镜 S / SPH / DS",
               "meaning": "近视或远视度数",
-              "note": "负值 = 近视，正值 = 远视。如 -1.25 表示近视 125 度"
+              "note": "单位为屈光度（D）。请保留报告原有的正负号直接填写，勿自行换算；负值（-）表示近视，正值（+）表示远视，如 -1.25 D。"
             },
             "cyl": {
               "field": "柱镜 C / CYL / DC",
               "meaning": "散光度数",
-              "note": "通常为负值。如 -0.75 表示散光 75 度。无散光时为 0 或不写"
+              "note": "表示散光度数，单位为屈光度（D），如 -0.75 D。请保留原报告的正负号直接填写，勿自行换算；无散光时通常为 0 或留空。"
             },
             "axis": {
               "field": "轴位 AX / AXIS",
               "meaning": "散光方向",
-              "note": "0-180° 之间的角度。只有有散光时才有意义"
+              "note": "0-180° 之间的角度，仅在有散光时适用"
             },
             "va": {
               "field": "矫正视力 VA",
@@ -4584,17 +4584,17 @@
             "pd": {
               "field": "瞳距 PD",
               "meaning": "两眼瞳孔间距",
-              "note": "配镜时需要，本 APP 暂不记录"
+              "note": "配镜时使用，此处无需录入"
             }
           },
           "eyeNames": {
             "heading": "OD 和 OS 是什么？",
-            "body": "OD = 右眼 (拉丁文 Oculus Dexter)，OS = 左眼 (Oculus Sinister)。有些单子用 R (Right) 和 L (Left)。录入时请注意区分左右眼。"
+            "body": "OD 代表右眼（拉丁文 Oculus Dexter），OS 代表左眼（Oculus Sinister）；部分验光单会标注 R（Right）和 L（Left）。录入时请注意区分左右眼。"
           },
           "examples": {
             "heading": "常见格式示例",
             "odFull": "右眼 近视125度 / 散光75度 轴位80° 矫正视力1.0",
-            "shortNotation": "无DS DC标注，同上含义",
+            "shortNotation": "省略了 DS、DC 标注，含义同上",
             "plano": "平光 PL = 球镜和柱镜都为 0，录入时都填 0",
             "uncorrectedPrefix": "第一个数 0.6 是裸眼视力"
           }
@@ -4603,14 +4603,14 @@
           "title": "看懂眼轴单",
           "what": {
             "heading": "什么是眼轴检查？",
-            "body": "眼轴长度 (AL) 是从角膜到眼底的距离，是预测近视进展的核心指标。每增长 1mm 眼轴，约等于增加 300 度近视。比视力表检查更有预测价值。"
+            "body": "眼轴长度（AL）以毫米（mm）记录眼球前后方向的长度，可用于观察眼球生长变化。请由专业人员结合年龄、屈光状态及历次检查结果解读，不宜仅凭视力表或单次数值判断。"
           },
           "fields": {
             "heading": "眼轴单上的字段",
             "al": {
               "field": "AL 眼轴长",
               "meaning": "角膜到眼底的长度",
-              "note": "正常成人约 24mm。儿童应低于同龄均值。超过临界值需高度关注"
+              "note": "请直接照抄报告上的毫米（mm）数值。眼轴长度需由专业人员结合年龄、屈光状态及历次检查变化综合解读。"
             },
             "k1": {
               "field": "K1 / R1",
@@ -4823,7 +4823,7 @@
     "openAISettings": "AI 设置",
     "retry": "重试",
     "safeFallback": "数据已记录，建议定期更新以获取更准确的分析。",
-    "truncatedSuffix": "（内容较长，建议点击刷新重新生成）",
+    "truncatedSuffix": "（内容可能不完整，可点击小助手头像重新生成）",
     "domain": {
       "overview": "综合发育",
       "growth": "生长发育",
@@ -4852,7 +4852,7 @@
       "dataLabel": "{{label}}数据：",
       "noRecords": "暂无记录数据"
     },
-    "generateHint": "点击更新，查看当前记录的 AI 解读。"
+    "generateHint": "点击小助手头像，生成当前记录的 AI 解读。"
   },
   "Growth": {
     "standard": {
@@ -4878,13 +4878,13 @@
         "growth": "生长记录",
         "milestones": "里程碑",
         "vaccines": "疫苗",
-        "journal": "日志覆盖",
+        "journal": "日志概览",
         "timeline": "当前跟进"
       },
       "action": {
         "overdueSuffix": "（逾期）"
       },
-      "subtitle": "仅含本地结构化事实 · 生成于 {{date}} · 年龄 {{ageStart}} – {{ageEnd}}",
+      "subtitle": "仅基于本地结构化记录 · 生成于 {{date}} · 年龄 {{ageStart}} – {{ageEnd}}",
       "reportType": {
         "monthly": "月度",
         "quarterly": "季度",
@@ -4893,12 +4893,12 @@
       },
       "overview": {
         "coverage": "{{childName}}的{{reportType}}报告，覆盖 {{start}} 至 {{end}}。",
-        "counts": "本窗口共 {{measurements}} 次生长测量、{{journals}} 条日志、{{milestones}} 个里程碑、{{vaccines}} 条疫苗记录。",
+        "counts": "本期共 {{measurements}} 次生长测量、{{journals}} 条日志、{{milestones}} 个里程碑、{{vaccines}} 条疫苗记录。",
         "openReminders": "时间线上仍有 {{count}} 条提醒待处理。"
       },
       "engagement": {
         "some": "本期家长参与：{{parts}}。",
-        "none": "本期无提醒互动记录。",
+        "none": "本期暂无提醒处理记录。",
         "tasksCompleted": "完成 {{count}} 项任务",
         "guidesAcknowledged": "确认 {{count}} 条指南",
         "guidesAcknowledgedReflected": "确认 {{count}} 条指南（{{reflected}} 条附反思）",
@@ -4911,7 +4911,7 @@
         "milestone": "{{title}}（{{date}}）",
         "vaccine": "{{name}}（{{date}}）",
         "dateNotRecorded": "未记录日期",
-        "journalCount": "本窗口保存 {{count}} 条日志。",
+        "journalCount": "本期保存 {{count}} 条日志。",
         "journalKeepsake": "其中 {{count}} 条标记为珍藏。",
         "journalVoiceMixed": "纯语音 {{voice}} 条，语音+文字 {{mixed}} 条。",
         "journalRecorders": "记录人分布：{{summary}}。",
@@ -4932,7 +4932,7 @@
         "vaccines": "本地疫苗记录",
         "reminders": "本地提醒状态 + 提醒规则"
       },
-      "safetyNote": "生长、里程碑、疫苗与观察域当前标记为待评审，仅呈现结构化事实。本报告不提供诊断、排名或治疗建议。"
+      "safetyNote": "生长、里程碑、疫苗与日常观察目前处于待评审状态，仅呈现结构化事实。本报告不提供诊断、排名或治疗建议。"
     },
     "professionalSummary": {
       "sections": {
@@ -4942,7 +4942,7 @@
         "sleep": "睡眠与作息",
         "milestones": "发育里程碑",
         "fitness": "体能评估",
-        "observation": "一般观察"
+        "observation": "日常观察"
       },
       "dentalRecord": "口腔记录",
       "disclaimer": "本概要由家长基于本地记录整理，仅供老师/医生参考，不含诊断意见。"
@@ -4957,8 +4957,8 @@
       }
     },
     "sparseNarrative": {
-      "noEvidence": "{{childName}}本周期暂未记录具体的成长数据或日常观察，因此本报告不推断整体状态或变化趋势。",
-      "oneEvidence": "{{childName}}本周期留下了 1 条记录。本报告仅保留这条已记录事实，不据此推断整体状态或变化趋势。",
+      "noEvidence": "本周期暂未记录{{childName}}的成长数据或日常观察，因此本报告不对整体状态或变化趋势作推断。",
+      "oneEvidence": "本周期共有 1 条关于{{childName}}的记录。本报告仅呈现这条已记录的事实，不据此推断整体状态或变化趋势。",
       "closing": "本期报告仅汇总已记录事实，未记录的部分不作推断。",
       "filteredFallback": "本期已记录的数据见下方明细，未记录的部分不作推断。",
       "evidenceLabel": "本期记录",
@@ -4974,7 +4974,7 @@
       "uploadFirst": "上传第一份报告",
       "defaultReportName": "智能识别报告",
       "recognizedLine": "{{relative}} · 识别到 {{count}} 项数据",
-      "detailLine": "数据日期: {{start}} ~ {{end}} · 上传时间: {{uploadedAt}}",
+      "detailLine": "数据日期：{{start}} ~ {{end}} · 上传时间：{{uploadedAt}}",
       "monthLabel": "{{year}}年{{month}}月",
       "relative": {
         "today": "今天",
@@ -4990,7 +4990,7 @@
         "empty": "暂无可分享的家人",
         "shareSelected": "分享所选",
         "selectOne": "先勾选一位家人",
-        "prepared": "已为「{{names}}」准备精简版（分享通道即将接入）",
+        "prepared": "已选择{{names}}，此入口暂不支持直接分享。",
         "presets": {
           "dad": {
             "name": "爸爸",
@@ -5023,18 +5023,18 @@
         "heading": "保存到本地",
         "pdf": "另存为 PDF",
         "image": "另存为图片",
-        "pdfHelp": "系统对话框选择保存位置 · 适合存档/打印",
+        "pdfHelp": "自选保存位置 · 适合存档或打印",
         "imageHelp": "竖版 PNG · 适合发朋友圈/家人群",
         "pdfFailed": "PDF 生成失败",
         "imageFailed": "图片生成失败",
         "pdfSuccess": "PDF 已保存",
         "imageSuccess": "图片已保存",
         "retryLater": "{{prefix}}，请稍后重试",
-        "failedWithDetail": "{{prefix}}:{{detail}}"
+        "failedWithDetail": "{{prefix}}：{{detail}}"
       },
       "professional": {
         "title": "给老师/医生看的精简版",
-        "subtitle": "AI 客观版本，可逐条编辑/隐去"
+        "subtitle": "AI 提炼客观记录，可逐条编辑或隐藏"
       },
       "note": {
         "title": "追加我的备注",
@@ -5080,8 +5080,8 @@
       "noChild": "请先添加孩子档案。",
       "invalidPeriod": "请选择有效的报告时间范围。",
       "periodSubtitle": "{{start}} 至 {{end}}",
-      "aiFallback": "AI 综合报告暂时不可用，已回退为本地结构化报告。",
-      "localFallback": "当前未连通 AI，已生成本地结构化报告。",
+      "aiFallback": "AI 综合报告暂时不可用，已为你生成本地结构化报告。",
+      "localFallback": "当前未连接 AI，已为你生成本地结构化报告。",
       "generateFailed": "报告生成失败，请重试。",
       "generateSuccess": "综合报告已生成，并保存在本地。",
       "contentSaveFailed": "保存报告内容失败：{{message}}",
@@ -5089,11 +5089,11 @@
       "heroReports": "报告",
       "heroSubtitle": "基于本地数据自动生成，每月更新",
       "loading": "正在读取成长报告…",
-      "loadError": "本地数据不符合当前报告合同，成长报告未加载。",
+      "loadError": "本地数据不符合当前报告要求，成长报告未能加载。",
       "accumulating": {
         "issue": "LETTER № {{issueNo}}",
         "period": "{{start}} → {{end}} · 已积累 {{days}} 天",
-        "title": "正在积累{{childName}}的成长报告",
+        "title": "正在为{{childName}}积累本期成长报告",
         "subtitle": "记录满一个月后，将自动生成第一份成长报告",
         "generatingSubtitle": "一个月的记录周期已经完成，正在整理本地记录…",
         "summaryLabel": "首份报告生成进度",
@@ -5119,7 +5119,7 @@
       "periodField": "时间范围",
       "startDate": "开始日期",
       "endDate": "结束日期",
-      "generating": "正在生成报告...",
+      "generating": "正在生成报告…",
       "generate": "生成综合报告",
       "ai": {
         "sourceLocal": "本地整理",
@@ -5128,12 +5128,12 @@
         "connectAction": "去连接 AI",
         "readyTitle": "AI 已连接",
         "readyBody": "AI 已连接，新的报告会由 AI 基于本地记录撰写。",
-        "pendingBody": "有 {{count}} 份报告生成于 AI 连接之前，仍是本地事实清单。可以基于同一时间段的本地记录用 AI 重写，原始记录不会改变。",
+        "pendingBody": "有 {{count}} 份报告是在连接 AI 前生成的，目前仅包含本地事实清单。你可以基于同一时段的本地记录用 AI 重写，原始记录不会改变。",
         "refreshAll": "全部用 AI 重写（{{count}}）",
         "refreshing": "正在用 AI 重写 {{done}}/{{total}}…",
         "stop": "停止",
         "localTitle": "这份报告生成时 AI 尚未连接",
-        "localBody": "当前内容只是本地事实清单。AI 已连接，可以基于同一时间段的本地记录重写为成长叙事。",
+        "localBody": "当前报告仅包含本地事实清单。现在 AI 已连接，你可以基于同一时段的本地记录将它重写为成长叙事。",
         "refreshOne": "用 AI 重写这份报告",
         "refreshingOne": "AI 正在撰写…",
         "refreshSuccess": "报告已由 AI 重写。",
@@ -5141,7 +5141,7 @@
         "refreshAllDone": "已用 AI 重写 {{count}} 份报告。",
         "runtimeUnavailable": "AI 当前不可用。",
         "latestTitle": "AI 已连接，本期报告可以重写",
-        "latestBody": "本期报告生成于 AI 连接之前，目前只是本地事实清单。可以基于同一时间段的本地记录用 AI 重写为成长叙事，原始记录不会改变。",
+        "latestBody": "本期报告是在连接 AI 前生成的，目前仅包含本地事实清单。你可以基于同一时段的本地记录用 AI 重写为成长叙事，原始记录不会改变。",
         "refreshLatest": "用 AI 重写本期报告"
       }
     },
@@ -5167,7 +5167,7 @@
         "range": "{{start}}-{{end}}",
         "monthRange": "{{start}}-{{end}} 月龄"
       },
-      "legacyBanner": "这份报告是旧格式生成的（内容还在对妈妈/记录者说话）。在下方「高级选项」重新生成同一时段，就会变成以 {{name}} 为主角的新版。",
+      "legacyBanner": "这份报告由旧版格式生成（行文仍是对妈妈/记录者说话的口吻）。在下方「高级选项」中重新生成同一时段，即可切换为以 {{name}} 为主角的新版。",
       "issue": "LETTER № {{issueNo}}",
       "aiWritten": "AI 撰写",
       "periodAgeSuffix": " · {{age}}",
@@ -5176,7 +5176,7 @@
       "keywordKicker": "本 月 关 键 词",
       "introStatsWithAge": "{{name}} 这个月在 {{age}} 的节奏里，被记录下了 {{moments}} 个瞬间，分布在 {{sections}} 个观察里。",
       "introStats": "{{name}} 这个月被记录下了 {{moments}} 个瞬间，分布在 {{sections}} 个观察里。",
-      "introSubtitle": "以下是关于 {{name}} 这个月，值得被留下来的几件事。",
+      "introSubtitle": "以下是 {{name}} 这个月值得珍藏的几件事。",
       "pullQuoteMeta": "— 关于 {{name}} · {{periodLabel}}",
       "timelineTitle": "{{name}} 这个月的样子",
       "timelineSubtitle": "{{count}} 个被看见的变化",
@@ -5184,7 +5184,7 @@
       "watchSubtitle": "给下一次见面的提醒",
       "actionsTitle": "如果想再往前一步",
       "actionsSubtitle": "关于 {{name}} 的几件事，都可以稍后决定。",
-      "discussInAdvisor": "去 Advisor 讨论",
+      "discussInAdvisor": "与 AI 顾问讨论",
       "caregiverTitle": "也看见记录的你",
       "caregiverCopy": "这封信能写出来，是因为你这个月把 {{name}} 的细节都放在了心上。坐下来记录的那些时刻，也是这份月度故事的一部分。",
       "signoffCopy": "这就是 {{name}} 本月的样子。",
@@ -5204,7 +5204,7 @@
       },
       "journalVolume": {
         "title": "观察记录频次",
-        "summary": "当前周期日志记录 {{currentCount}} 条，上一同等周期 {{previousCount}} 条。",
+        "summary": "本周期共记录日志 {{currentCount}} 条，上一同等周期为 {{previousCount}} 条。",
         "voiceMixedEvidence": "当前周期内 {{voiceCount}} 条纯语音记录，{{mixedCount}} 条语音+文字记录。",
         "keepsakeEvidence": "当前周期内 {{keepsakeCount}} 条标记为珍藏。",
         "source": "本地观察日志"
@@ -5222,7 +5222,7 @@
       "edited": "· 已编辑",
       "included": "包含",
       "hidden": "隐藏",
-      "includeAria": "是否包含 {{title}} 到分享版本",
+      "includeAria": "是否在分享版本中包含 {{title}}",
       "save": "保存",
       "cancel": "取消",
       "edit": "编辑",
@@ -5233,7 +5233,7 @@
       "titlePrefix": "精简版 ·",
       "close": "关闭",
       "introTitle": "精简版说明：",
-      "introBody": "AI 按客观医学/教育记录语气生成，家长可逐条编辑或隐去敏感内容；未勾选的 section 不会出现在导出或复制内容里。",
+      "introBody": "内容由 AI 按客观的医学/教育记录口吻生成，可逐条编辑或隐去敏感信息；未勾选的板块不会被导出或复制。",
       "emptyTitle": "此报告还没有精简版内容。",
       "emptyBody": "请回到报告页「高级选项 · 生成综合报告」重新生成一次，AI 会同时产出精简版。",
       "copy": "复制精简版",
@@ -5246,7 +5246,7 @@
       "edit": "编辑",
       "delete": "删除",
       "add": "追加我的备注",
-      "placeholder": "写一段备注，比如你对这一段观察的补充、疑问、或想让医生看到的细节……",
+      "placeholder": "记录你的补充观察、疑问，或希望医生留意的细节……",
       "saveNote": "保存备注"
     }
   },
@@ -5268,7 +5268,7 @@
     "page": {
       "title": "睡眠记录",
       "addRecord": "添加记录",
-      "summaryContext": "近期 {{count}} 条睡眠记录，最近一次: {{date}}",
+      "summaryContext": "近期 {{count}} 条睡眠记录，最近一次：{{date}}",
       "stageTitle": "{{age}} · {{tier}}",
       "stageAdvice": "建议每日总睡眠 {{low}}-{{high}} 小时",
       "emptyTitle": "还没有睡眠记录",
@@ -5288,11 +5288,11 @@
       "nightWakings": "夜醒 {{count}} 次",
       "afternoonNapMinutes": "午睡 {{minutes}}分钟",
       "totalHours": "总计 {{hours}}h",
-      "napNotes": "小睡: {{notes}}"
+      "napNotes": "小睡：{{notes}}"
     },
     "form": {
       "unknownError": "未知错误",
-      "saveFailed": "保存失败: {{message}}",
+      "saveFailed": "保存失败：{{message}}",
       "editTitle": "编辑睡眠记录",
       "createTitle": "新增睡眠记录",
       "date": "日期",
@@ -5414,7 +5414,7 @@
       "percentileUnknown": "百分位未知",
       "percentileAria": "百分位 P{{percentile}}",
       "emptyTitle": "暂无生长记录",
-      "emptyDescription": "添加首次{{metric}}测量后即可生成趋势描述。",
+      "emptyDescription": "添加{{metric}}测量数据后，即可查看该次记录及参考曲线位置。",
       "sixMonthPercentile": "近 6 个月",
       "insufficientHistory": "记录不足"
     },
@@ -5459,7 +5459,7 @@
       "custom": "自定义",
       "monthCountPlaceholder": "月数",
       "monthUnit": "个月",
-      "hint": "复测频率会按 WHO 标准随年龄段调整；这里的设置仅覆盖当前孩子的提醒节奏，可随时恢复默认。"
+      "hint": "测量提醒默认按应用设定的年龄段周期生成。此设置仅调整当前孩子的提醒周期，可随时恢复默认；若有医嘱随访安排，请以医生建议为准。"
     },
     "advisor": {
       "childLine": "{{name}}，{{age}}",
@@ -5517,8 +5517,8 @@
     "history": {
       "rangeAll": "全部时间",
       "rangeOneYear": "近 1 年",
-      "rangeSixMonths": "近 6 月",
-      "rangeThreeMonths": "近 3 月",
+      "rangeSixMonths": "近 6 个月",
+      "rangeThreeMonths": "近 3 个月",
       "exportTitle": "导出历史记录",
       "rowCount": "{{count}} 条",
       "timeRangeFilter": "时间范围筛选",
@@ -5558,19 +5558,19 @@
     },
     "lede": {
       "heightSteadyAboveP50": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）增长 {{recordedChangeDisplay}}，处于同龄中等偏上水平，倾向于稳定增长。",
-      "heightSteadyBelowP50": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）增长 {{recordedChangeDisplay}}，观察到稳定增长节奏，处于同龄中等水平。",
-      "heightAccelerating": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）增长 {{recordedChangeDisplay}}，观察到增长速度有所加快。",
-      "heightDecelerating": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）增长 {{recordedChangeDisplay}}，观察到增长速度有所放缓，建议持续记录。",
+      "heightSteadyBelowP50": "当前身高 {{currentValueDisplay}}（{{currentPercentileLabel}}），记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）变化 {{recordedChangeDisplay}}，该时间段内增长节奏较平稳。",
+      "heightAccelerating": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}。{{comparisonStartDate}} 至 {{comparisonEndDate}} 期间增长 {{recordedChangeDisplay}}，近期增长速度有所加快。",
+      "heightDecelerating": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}。{{comparisonStartDate}} 至 {{comparisonEndDate}} 期间增长 {{recordedChangeDisplay}}，近期增长速度有所放缓，建议持续记录。",
       "heightPlateau": "当前身高 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）增长 {{recordedChangeDisplay}}，倾向于平台期，建议持续记录并咨询专业人士。",
       "weightSteady": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）变化 {{recordedChangeDisplay}}，倾向于稳定。",
-      "weightAccelerating": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）变化 {{recordedChangeDisplay}}，观察到增重速度有所加快。",
-      "weightDecelerating": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）变化 {{recordedChangeDisplay}}，观察到增重速度有所放缓。",
+      "weightAccelerating": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}。{{comparisonStartDate}} 至 {{comparisonEndDate}} 期间变化 {{recordedChangeDisplay}}，近期增重速度有所加快。",
+      "weightDecelerating": "当前体重 {{currentValueDisplay}}，{{currentPercentileLabel}}。{{comparisonStartDate}} 至 {{comparisonEndDate}} 期间变化 {{recordedChangeDisplay}}，近期增重速度有所放缓。",
       "bmiInRange": "当前 BMI {{currentValueDisplay}}，{{currentPercentileLabel}}，处于同龄常见范围。",
       "bmiAboveRange": "当前 BMI {{currentValueDisplay}}，{{currentPercentileLabel}}，超出同龄常见范围，建议咨询专业人士。",
       "bmiBelowRange": "当前 BMI {{currentValueDisplay}}，{{currentPercentileLabel}}，低于同龄常见范围，建议咨询专业人士。",
       "headSteady": "当前头围 {{currentValueDisplay}}，{{currentPercentileLabel}}，记录区间（{{comparisonStartDate}} 至 {{comparisonEndDate}}）变化 {{recordedChangeDisplay}}，倾向于稳定增长。",
-      "noData": "尚未记录该指标的数据，添加首次测量后即可生成描述。",
-      "insufficientHistory": "已记录 {{currentValueDisplay}}，继续添加不同日期的测量后再比较变化。"
+      "noData": "尚未记录该指标的测量数据，添加一次记录后即可查看对应参考曲线位置。",
+      "insufficientHistory": "已记录 {{currentValueDisplay}}，继续添加不同日期的测量记录后即可对比变化趋势。"
     },
     "trend": {
       "flat": "持平"
@@ -5601,8 +5601,8 @@
       "decreased": "降低了 {{percent}}%",
       "flat": "基本持平",
       "yearOverYearCaption": "{{from}} 至 {{to}}：较起始记录 {{value}}{{unit}}，{{direction}}",
-      "percentileChange6mPrefix": "近 6 月 ",
-      "percentileChange6m": "近 6 月 {{change}}"
+      "percentileChange6mPrefix": "近 6 个月 ",
+      "percentileChange6m": "近 6 个月 {{change}}"
     }
   },
   "SettingsDetails": {
@@ -5610,28 +5610,28 @@
   },
   "PrivacySettings": {
     "headline": "孩子的成长记录，保存在你的设备上",
-    "intro": "成长底稿将档案、日记和成长记录保存在本机。你可以将当前账号的记录和媒体导出为完整的本地备份包。",
+    "intro": "成长底稿将孩子档案、日记和成长记录保存在当前本地环境，不会自动上传云端备份。你可以将当前本地档案的记录和媒体导出为完整的本地备份包。",
     "storage": {
       "title": "数据保存在哪里",
       "body": "孩子档案、健康记录、提醒状态、日记和顾问对话保存在本地数据库；照片、语音与附件保存在本机的应用数据目录。",
-      "access": "本地档案无需登录 Nimi 账号即可使用。切换 Nimi 账号不会切换或清除这台设备上的孩子档案；请通过设备账号和锁屏保护访问。"
+      "access": "本地儿童档案无需登录 Nimi 账号即可使用。登录、退出或切换 Nimi 账号不会隔离、切换或清除当前本地档案；请通过系统的用户账户和锁屏功能保护本机访问。"
     },
     "ai": {
       "title": "使用 AI 时会用到什么",
-      "body": "成长顾问、报告和摘要会使用对应功能所需的本地记录与输入内容；语音转写会处理你录制的音频。每项 AI 能力都通过 Nimi 使用你在 AI 设置中选择的模型：选择本地模型时，这些内容在本机处理；选择云端模型时，完成该次请求所需的内容会经 Nimi 发送到你选择的云端服务，由服务商按其条款处理，并可能产生费用。ParentOS 不会把成长记录同步或备份到云端。",
-      "account": "Nimi Desktop 管理 AI 所需的账号与访问授权。AI 不可用时，仍可查看和管理本地记录。你可以在 AI 设置中查看模型配置与各项能力的可用状态。",
+      "body": "使用成长顾问、报告和摘要时，应用会读取该功能所需的本地记录与你输入的内容；语音转写则会处理你录制的音频。各项 AI 能力均由 Nimi 驱动，并按你在「AI 设置」中选定的模型运行：使用本地模型时，数据仅在本机处理；使用云端模型时，完成本次请求所需的相关上下文会经由 Nimi 发送至所选的云端服务，由服务商按其条款处理（可能产生相应费用）。成长底稿不会将你的成长记录同步或备份到云端。",
+      "account": "Nimi Desktop 管理 AI 等 Nimi 能力所需的登录与授权。切换 Nimi 账号不会切换本机档案；即使 AI 不可用，你仍可查看和管理这些本地记录。",
       "action": "查看 AI 设置"
     },
     "backup": {
       "title": "备份包含什么",
-      "body": "完整备份包含当前账号的档案、成长记录、日记、对话及已保存的照片、头像、语音、附件和正畸照片。账号登录凭据、AI 配置、其他账号的数据和缓存不包含在内。",
-      "restore": "恢复会整体替换当前账号的记录，并恢复媒体文件。备份损坏、媒体缺失或版本不匹配时会拒绝恢复，保留当前数据。旧版纯 JSON 备份不受支持。",
-      "care": "备份包未加密，包含孩子的个人信息和媒体文件。请保存在你信任的位置，由你自行保管。",
+      "body": "完整备份会导出当前打开的本地数据库及所引用的媒体文件，包含当前本地档案、成长记录、日记、对话，以及已保存的照片、头像、语音、附件和正畸照片。登录凭据、AI 配置和临时缓存不包含在内。",
+      "restore": "恢复会整体替换当前本机资料并恢复对应媒体文件。若备份损坏、媒体缺失或版本不兼容，系统将拒绝恢复并保留当前本机资料。旧版纯 JSON 备份不受支持。",
+      "care": "导出的备份包未经加密，内含孩子的个人信息与媒体文件，请保存在你信任的安全位置并妥善保管。",
       "action": "前往备份与恢复"
     },
     "delete": {
       "title": "如何删除孩子的数据",
-      "body": "在「孩子管理」中删除孩子，会同时删除该孩子关联的健康记录、日记、顾问对话、报告和提醒状态，并清理应用管理的相关媒体文件。删除前请确认要保留的资料已保存。",
+      "body": "在「孩子管理」中删除孩子档案，会一并清除关联的健康记录、日记、顾问对话、报告和提醒状态，并删除应用内保存的相关媒体文件。操作前请确认需要保留的资料已妥善导出。",
       "exports": "已导出到应用之外的备份、报告和文件副本不会随之删除，需要你自行处理。",
       "action": "前往孩子管理"
     }
@@ -5646,7 +5646,7 @@
       "title": "陪你记录，也帮你看见",
       "reminders": {
         "title": "知道这个阶段该关注什么",
-        "body": "根据年龄与规则整理阶段提醒，用养育模式调整信息的呈现方式。"
+        "body": "结合孩子年龄梳理各阶段的关注重点，并根据你选择的养育模式调整提醒方式。"
       },
       "records": {
         "title": "把零散记录留在一处",
@@ -5659,8 +5659,8 @@
     },
     "boundary": {
       "title": "帮助观察与记录，尊重专业判断",
-      "body": "成长底稿提供标准化提醒、记录趋势和知识解释。AI 内容供家长参考，不作个体诊断、治疗建议、心理健康评估或孩子之间的比较排名。",
-      "professional": "如对记录或孩子的情况有疑问，请咨询专业人士。当前版本仍在开发，图像识别和报告 OCR 尚未开放。"
+      "body": "成长底稿提供阶段提醒、趋势参考和科普解释。AI 生成的内容仅供日常育儿参考，不构成个体医疗诊断、治疗建议或心理健康评估，也不对孩子进行横向比较与排名。",
+      "professional": "如对孩子的健康或发育情况存有疑问，请及时咨询医生等专业人士。当前版本仍在持续开发中，图像识别与报告 OCR 功能尚未开放。"
     },
     "nimi": {
       "title": "与 Nimi 一起工作",

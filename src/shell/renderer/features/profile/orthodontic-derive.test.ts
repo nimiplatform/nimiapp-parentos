@@ -790,13 +790,13 @@ describe('deriveAlignerContextForDate (PO-ORTHO-006a)', () => {
 describe('formatAlignerContext (PO-ORTHO-006a)', () => {
   it('renders index, day, and cycle length', () => {
     expect(formatAlignerContext({ alignerIndex: 2, dayInTray: 5, daysPerAligner: 7 })).toBe(
-      '第2副牙套·第5/7天',
+      '第 2 副牙套 · 第 5/7 天',
     );
   });
 
   it('omits the cycle length when daysPerAligner is null', () => {
     expect(formatAlignerContext({ alignerIndex: 1, dayInTray: 3, daysPerAligner: null })).toBe(
-      '第1副牙套·第3天',
+      '第 1 副牙套 · 第 3 天',
     );
   });
 });

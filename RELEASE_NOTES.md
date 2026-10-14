@@ -1,4 +1,8 @@
-## 0.1.9 · Published platform dependencies
+## Current source — public platform packages
+
+The current source uses the published SDK 0.21.0, Kit/native 0.21.0, App Tools 0.13.0, and Nimi Coding 0.6.5. Dependencies resolve directly from public registries without local archive overrides. Run `pnpm install --frozen-lockfile` to install the locked versions. Earlier release checks below apply only to their recorded dependency combinations.
+
+## 0.1.9 · Recorded published platform dependencies
 
 Uses public npm SDK 0.21.0, Kit/native 0.19.3, App Tools 0.12.1 and nimi-coding 0.6.5 with frozen registry lockfiles. Local Nimi tarball overrides are removed; Desktop-supervised development and installed Apps use the same published carrier.
 

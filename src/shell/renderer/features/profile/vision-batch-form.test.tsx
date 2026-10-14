@@ -74,7 +74,7 @@ describe('BatchForm editing', () => {
       />,
     );
 
-    fireEvent.click(screen.getByLabelText('vision-record-save'));
+    fireEvent.click(screen.getByLabelText('保存视力记录'));
 
     await waitFor(() => {
       expect(updateMeasurementMock).toHaveBeenCalledTimes(2);
