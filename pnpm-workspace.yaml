@@ -7,6 +7,7 @@ allowBuilds:
   protobufjs: true
 supportedArchitectures:
   os:
+    - current
     - win32
     - darwin
   cpu:

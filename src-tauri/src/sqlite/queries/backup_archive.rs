@@ -151,7 +151,7 @@ fn restore_archive(
             "Duplicate entries or inconsistent archive directory",
         ));
     }
-    if archive.len() == 0 || archive.len() > MAX_ENTRIES {
+    if archive.is_empty() || archive.len() > MAX_ENTRIES {
         return Err(io_error("Invalid archive entry count"));
     }
     let mut names = BTreeSet::new();
