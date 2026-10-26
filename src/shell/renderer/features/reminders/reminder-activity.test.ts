@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChildProfile } from '../../app-shell/app-store.js';
+import { createParentOSNavigationOwner } from '../../app-shell/navigation-owner.js';
 import type { ActiveReminder, ReminderState } from '../../engine/reminder-engine.js';
 import { REMINDER_RULES } from '../../knowledge-base/index.js';
 
@@ -28,9 +29,10 @@ const runtime = vi.hoisted(() => {
     heldContent: new Map<string, string>(),
     seed(record: Partial<HeldRecord> & { key: string; revision: number; sourceRef: string; available?: boolean }) {
       const { sourceRef, available, ...rest } = record;
+      const [, childId, ruleId, round] = String(record.objectRef).split(':');
       const held = {
         activityId: `act_${records.size + 1}`, kind: 'todo', todoState: 'open', attention: true, title: 'Seed',
-        summary: null, objectRef: null, type: 'nimi.parentos.growth-record-reminder.v1', data: null,
+        summary: null, objectRef: null, type: 'nimi.parentos.growth-record-reminder.v1', data: { childId, childName: 'Mia', ruleId, repeatIndex: Number(round), windowStart: '2026-06-01', windowEnd: '2026-08-31' },
         occurredAt: '2026-09-01T00:00:00.000Z',
         ...rest,
         source: { kind: 'app', sourceRef, appId: 'nimi.parentos', displayName: 'ParentOS', available: available ?? true },
@@ -87,7 +89,7 @@ const runtime = vi.hoisted(() => {
 });
 
 const { bridge, nimi } = vi.hoisted(() => ({
-  bridge: { getReminderStates: vi.fn(async () => [] as unknown[]) },
+  bridge: { getReminderStates: vi.fn(async () => [] as unknown[]), getChild: vi.fn() },
   nimi: {
     client: {
       activity: {
@@ -100,7 +102,7 @@ const { bridge, nimi } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../../bridge/sqlite-bridge.js', () => ({ getReminderStates: bridge.getReminderStates }));
+vi.mock('../../bridge/sqlite-bridge.js', () => ({ getReminderStates: bridge.getReminderStates, getChild: bridge.getChild }));
 vi.mock('../../engine/reminder-freq-overrides.js', () => ({ loadAllFreqOverrides: vi.fn(async () => new Map()) }));
 vi.mock('../../infra/parentos-nimi-client.js', () => ({
   hasParentOSNimiClient: () => true,
@@ -121,6 +123,7 @@ import {
   retryReminderActivity,
   subscribeReminderActivitySync,
   syncReminderActivity,
+  reconcileRemovedChildReminders,
 } from './reminder-activity.js';
 
 const GRO_002 = REMINDER_RULES.find((rule) => rule.ruleId === 'PO-REM-GRO-002')!;
@@ -159,30 +162,30 @@ function state(overrides: Partial<ReminderState>): ReminderState {
 
 describe('growth record reminder projection', () => {
   it('projects a due round as one open todo whose identity is the child, rule, and round', () => {
-    const publication = reminderActivityPublication(CHILD_ID, reminder({}))!;
+    const publication = reminderActivityPublication(child, reminder({}))!;
     expect(publication).toMatchObject({
       key: ROUND_2, kind: 'todo', todoState: 'open', attention: true,
       objectRef: `reminder:${CHILD_ID}:PO-REM-GRO-002:2`, type: GROWTH_REMINDER_ACTIVITY_TYPE, title: GRO_002.title,
       data: { ruleId: 'PO-REM-GRO-002', repeatIndex: 2, windowStart: '2026-09-01', windowEnd: '2026-11-30' },
     });
     expect(publication).not.toHaveProperty('revision');
-    expect(reminderActivityPublication(CHILD_ID, reminder({}))).toEqual(publication);
-    expect(reminderActivityPublication(CHILD_ID, reminder({ repeatIndex: 3 }))!.key).not.toBe(publication.key);
-    expect(JSON.stringify(publication)).not.toContain('Mia');
+    expect(reminderActivityPublication(child, reminder({}))).toEqual(publication);
+    expect(reminderActivityPublication(child, reminder({ repeatIndex: 3 }))!.key).not.toBe(publication.key);
+    expect(publication.data).toMatchObject({ childId: CHILD_ID, childName: 'Mia' });
   });
 
   it('completes, cancels, or keeps private according to the source lifecycle', () => {
-    expect(reminderActivityPublication(CHILD_ID, reminder({ lifecycle: 'completed', state: state({ completedAt: '2026-09-23T06:00:00.000Z' }) })))
+    expect(reminderActivityPublication(child, reminder({ lifecycle: 'completed', state: state({ completedAt: '2026-09-23T06:00:00.000Z' }) })))
       .toMatchObject({ todoState: 'completed', attention: false, occurredAt: '2026-09-23T06:00:00.000Z' });
-    expect(reminderActivityPublication(CHILD_ID, reminder({ lifecycle: 'not_applicable', state: state({ notApplicable: 1 }) })))
+    expect(reminderActivityPublication(child, reminder({ lifecycle: 'not_applicable', state: state({ notApplicable: 1 }) })))
       .toMatchObject({ todoState: 'cancelled' });
     for (const lifecycle of ['upcoming', 'scheduled', 'snoozed'] as const) {
-      expect(reminderActivityPublication(CHILD_ID, reminder({ lifecycle }))).toBeNull();
+      expect(reminderActivityPublication(child, reminder({ lifecycle }))).toBeNull();
     }
-    expect(reminderActivityPublication(CHILD_ID, reminder({ visibility: 'silent' }))).toBeNull();
-    expect(reminderActivityPublication(CHILD_ID, reminder({ deliveryDisposition: 'cold_start' }))).toBeNull();
+    expect(reminderActivityPublication(child, reminder({ visibility: 'silent' }))).toBeNull();
+    expect(reminderActivityPublication(child, reminder({ deliveryDisposition: 'cold_start' }))).toBeNull();
     const vaccine = REMINDER_RULES.find((rule) => rule.domain !== 'growth')!;
-    expect(reminderActivityPublication(CHILD_ID, reminder({ rule: vaccine }))).toMatchObject({ type: CARE_REMINDER_ACTIVITY_TYPE, todoState: 'open' });
+    expect(reminderActivityPublication(child, reminder({ rule: vaccine }))).toMatchObject({ type: CARE_REMINDER_ACTIVITY_TYPE, todoState: 'open' });
     expect(isPublishedReminderRule({ ...vaccine, category: 'personalized' })).toBe(false);
     expect(isPublishedReminderRule({ ...vaccine, kind: 'guide' })).toBe(false);
   });
@@ -194,14 +197,20 @@ describe('growth record reminder projection', () => {
     expect(parseReminderActivityObjectRef(`reminder:${CHILD_ID}:PO-REM-GRO-002:01`)).toBeNull();
     expect(parseReminderActivityObjectRef('/etc/passwd')).toBeNull();
   });
+
+  it('rejects missing child identity and a reminder state belonging to another child', () => {
+    expect(() => reminderActivityPublication({ ...child, displayName: ' ' }, reminder({}))).toThrow('identity');
+    expect(() => reminderActivityPublication({ ...child, childId: '' }, reminder({}))).toThrow('identity');
+    expect(() => reminderActivityPublication(child, reminder({ state: state({ childId: 'other' }) }))).toThrow('ownership');
+  });
 });
 
-it.each(['vaccine', 'checkup', 'vision', 'dental'])('publishes the existing %s task without child or measurement detail', domain => {
+it.each(['vaccine', 'checkup', 'vision', 'dental'])('publishes the existing %s task with child identity and without measurement detail', domain => {
   const rule = REMINDER_RULES.find(r => r.domain === domain && isPublishedReminderRule(r))!;
-  const result = reminderActivityPublication(CHILD_ID, reminder({ rule }))!;
+  const result = reminderActivityPublication(child, reminder({ rule }))!;
   expect(result).toMatchObject({ type: CARE_REMINDER_ACTIVITY_TYPE, kind: 'todo', todoState: 'open', title: rule.title });
-  expect(result.data).toEqual({ ruleId: rule.ruleId, repeatIndex: 2, windowStart: '2026-09-01', windowEnd: '2026-11-30' });
-  expect(JSON.stringify(result)).not.toContain('Mia');
+  expect(result.data).toEqual({ childId: CHILD_ID, childName: 'Mia', ruleId: rule.ruleId, repeatIndex: 2, windowStart: '2026-09-01', windowEnd: '2026-11-30' });
+  expect(result.data).not.toHaveProperty('birthDate');
   expect(parseReminderActivityObjectRef(result.objectRef!)).toEqual({ childId: CHILD_ID, ruleId: rule.ruleId, repeatIndex: 2 });
 });
 
@@ -215,6 +224,7 @@ describe('admitted reminder publication', () => {
     vi.clearAllMocks();
     runtime.reset();
     bridge.getReminderStates.mockResolvedValue([completedRound]);
+    bridge.getChild.mockReset().mockImplementation(async (childId: string) => ({ ...child, childId }));
     nimi.client.activity.put.mockImplementation(runtime.put);
     nimi.client.activity.list.mockImplementation(runtime.list);
     nimi.client.activity.onOpenRequest.mockImplementation((handler) => {
@@ -230,6 +240,130 @@ describe('admitted reminder publication', () => {
   });
 
   const putKeys = () => runtime.putCalls.map((input) => input.key);
+
+  it('does not reopen withdrawn reminders from a stale child directory after deletion', async () => {
+    await syncReminderActivity(CHILD_ID);
+    bridge.getChild.mockResolvedValue(null);
+    await reconcileRemovedChildReminders(runtime.selfSourceRef, () => true);
+    const withdrawn = runtime.held(ROUND_2)!;
+    const writes = runtime.putCalls.length;
+    // The database deletion has committed, but the UI still holds the child.
+    bridge.getReminderStates.mockResolvedValue([]);
+    await expect(syncReminderActivity(CHILD_ID)).resolves.toBe(0);
+    expect(runtime.putCalls).toHaveLength(writes);
+    expect(runtime.held(ROUND_2)).toEqual(withdrawn);
+    expect(withdrawn.todoState).toBe('cancelled');
+  });
+
+  it('keeps a failed child existence read unsynced without publishing from cached data', async () => {
+    bridge.getChild.mockRejectedValueOnce(new Error('child read failed'));
+    await expect(syncReminderActivity(CHILD_ID)).resolves.toBe(1);
+    expect(runtime.putCalls).toHaveLength(0);
+  });
+
+  it('withdraws only own open reminders for a database-confirmed removed child, including after reopen', async () => {
+    await syncReminderActivity(CHILD_ID);
+    const original = runtime.held(ROUND_2)!;
+    runtime.seed({ ...original, sourceRef: 'another-registration' });
+    endReminderActivitySession();
+    beginReminderActivitySession(() => undefined);
+    bridge.getChild.mockResolvedValue(null);
+    await reconcileRemovedChildReminders(runtime.selfSourceRef, () => true);
+    expect(runtime.held(ROUND_2)).toMatchObject({ todoState: 'cancelled', attention: false, data: { childId: CHILD_ID } });
+    expect(runtime.held(ROUND_2)!.revision).toBeGreaterThan(original.revision);
+    expect(runtime.held(ROUND_1)).toMatchObject({ todoState: 'completed' });
+    expect(runtime.held(ROUND_2, 'another-registration')).toMatchObject({ todoState: 'open' });
+  });
+
+  it('does not infer deletion from the active-child lookup or a failed database read', async () => {
+    await syncReminderActivity(CHILD_ID);
+    bridge.getChild.mockResolvedValue(child);
+    await reconcileRemovedChildReminders(runtime.selfSourceRef, () => true);
+    expect(runtime.held(ROUND_2)).toMatchObject({ todoState: 'open' });
+    bridge.getChild.mockRejectedValueOnce(new Error('database unavailable'));
+    await expect(reconcileRemovedChildReminders(runtime.selfSourceRef, () => true)).rejects.toThrow('database unavailable');
+    expect(runtime.held(ROUND_2)).toMatchObject({ todoState: 'open' });
+  });
+
+  it('surfaces failed cancellation and retries from held state without reopening completed records', async () => {
+    await syncReminderActivity(CHILD_ID);
+    bridge.getChild.mockResolvedValue(null);
+    runtime.failPuts = true;
+    await expect(reconcileRemovedChildReminders(runtime.selfSourceRef, () => true)).rejects.toThrow('runtime down');
+    const attempted = runtime.putCalls.at(-1)!;
+    runtime.failPuts = false;
+    vi.setSystemTime(new Date(TODAY.getTime() + 10_000));
+    await reconcileRemovedChildReminders(runtime.selfSourceRef, () => true);
+    expect(runtime.putCalls.filter(call => call.key === attempted.key).at(-1)).toEqual(attempted);
+    expect(runtime.held(ROUND_2)).toMatchObject({ todoState: 'cancelled' });
+    expect(runtime.held(ROUND_1)).toMatchObject({ todoState: 'completed' });
+  });
+
+  it('does not cancel after the directory publisher session stops during a read', async () => {
+    await syncReminderActivity(CHILD_ID);
+    let active = true;
+    bridge.getChild.mockImplementationOnce(async () => { active = false; return null; });
+    await reconcileRemovedChildReminders(runtime.selfSourceRef, () => active);
+    expect(runtime.held(ROUND_2)).toMatchObject({ todoState: 'open' });
+  });
+
+  it('keeps Snow and Zane rounds separate across equal names, renames, completion and opening', async () => {
+    const snow = { ...child, displayName: 'Snow' };
+    let zane = { ...child, childId: '01K0OTHER0000000000000000', displayName: 'Zane' };
+    beginReminderActivitySession(id => id === snow.childId ? snow : id === zane.childId ? zane : undefined);
+    bridge.getReminderStates.mockImplementation(async (id?: unknown) => id === snow.childId
+      ? [state({ status: 'completed', completedAt: TODAY.toISOString() })]
+      : []);
+    await syncReminderActivity(snow.childId);
+    await syncReminderActivity(zane.childId);
+    const zaneKey = ROUND_2.replace(CHILD_ID, zane.childId);
+    expect(runtime.held(ROUND_2)).toMatchObject({ todoState: 'completed', data: { childId: snow.childId, childName: 'Snow' } });
+    expect(runtime.held(zaneKey)).toMatchObject({ todoState: 'open', data: { childId: zane.childId, childName: 'Zane' } });
+    for (const prefix of ['PO-REM-CHK-', 'PO-REM-VIS-']) {
+      const snowCare = runtime.putCalls.find(p => String(p.objectRef).startsWith(`reminder:${snow.childId}:${prefix}`))!;
+      const zaneCare = runtime.putCalls.find(p => String(p.objectRef).startsWith(`reminder:${zane.childId}:${prefix}`))!;
+      expect(snowCare.data).toMatchObject({ childId: snow.childId, childName: 'Snow' });
+      expect(zaneCare.data).toMatchObject({ childId: zane.childId, childName: 'Zane' });
+      expect(zaneCare.key).not.toBe(snowCare.key);
+    }
+    const original = runtime.held(zaneKey)!;
+    zane = { ...zane, displayName: 'Snow' };
+    await syncReminderActivity(zane.childId);
+    const renamed = runtime.held(zaneKey)!;
+    expect(renamed).toMatchObject({
+      activityId: original.activityId, key: original.key, objectRef: original.objectRef,
+      data: { childId: zane.childId, childName: 'Snow', groupRef: (original.data as Record<string, unknown>).groupRef },
+    });
+    expect(renamed.revision).toBeGreaterThan(original.revision);
+    let selectedChild = zane.childId;
+    const owner = createParentOSNavigationOwner({
+      getChild: () => selectedChild,
+      hasChild: id => id === snow.childId || id === zane.childId,
+      commitChild: (id, _destination, commit) => { commit(); selectedChild = id!; },
+    });
+    const openReminder = vi.fn((childId: string, focus: { ruleId: string; repeatIndex: number }) => (
+      owner.switchChild(childId, { id: '/reminders', focus })
+    ));
+    registerReminderOpenHandler({ openReminder });
+    for (const person of [snow, zane]) {
+      await expect(nimi.handler!({
+        activityId: 'act_test', objectRef: reminderActivityObjectRef(person.childId, 'PO-REM-GRO-002', 2),
+        type: GROWTH_REMINDER_ACTIVITY_TYPE,
+      })).resolves.toBe('opened');
+      expect(openReminder).toHaveBeenLastCalledWith(person.childId, { ruleId: 'PO-REM-GRO-002', repeatIndex: 2 });
+      expect(selectedChild).toBe(person.childId);
+      expect(owner.navigation.getSnapshot().current.destination).toEqual({
+        id: '/reminders', focus: { ruleId: 'PO-REM-GRO-002', repeatIndex: 2 },
+      });
+    }
+    owner.dispose();
+  });
+
+  it('reports mismatched persisted ownership as unsynced and never publishes it', async () => {
+    bridge.getReminderStates.mockResolvedValue([state({ childId: 'other' })]);
+    await expect(syncReminderActivity(CHILD_ID)).resolves.toBe(1);
+    expect(runtime.putCalls).toHaveLength(0);
+  });
 
   it('publishes the evaluated rounds once and leaves an unchanged projection alone', async () => {
     await expect(syncReminderActivity(CHILD_ID)).resolves.toBe(0);
@@ -309,6 +443,7 @@ describe('admitted reminder publication', () => {
     runtime.seed({ key: otherRound, revision: 3, sourceRef: 'src_other_active_registration', objectRef: `reminder:${CHILD_ID}:PO-REM-GRO-001:5`, title: 'Other' });
     await expect(syncReminderActivity(CHILD_ID)).resolves.toBe(0);
     expect(runtime.held(roundZero)).toMatchObject({ todoState: 'cancelled', attention: false, title: 'Round 1' });
+    expect(runtime.held(roundZero)!.data).toMatchObject({ childId: CHILD_ID, childName: 'Mia', ruleId: 'PO-REM-GRO-002', repeatIndex: 0 });
     expect(runtime.held(roundZero)!.revision).toBeGreaterThan(7);
     expect(runtime.held(otherRound, 'src_other_active_registration')).toMatchObject({ todoState: 'open', revision: 3 });
     expect(runtime.held(otherRound)).toBeUndefined();

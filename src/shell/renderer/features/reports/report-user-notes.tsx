@@ -37,12 +37,13 @@ export function deleteUserNote(content: NarrativeReportContent, id: string): Nar
 interface NoteCardProps {
   note: UserNote;
   canEdit: boolean;
-  onSave: (text: string) => void;
+  onSave: (text: string) => Promise<boolean> | undefined;
   onDelete: () => void;
 }
 
 function NoteCard({ note, canEdit, onSave, onDelete }: NoteCardProps) {
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState(note.text);
   const ref = useRef<HTMLTextAreaElement>(null);
   const start = () => { setDraft(note.text); setEditing(true); setTimeout(() => ref.current?.focus(), 0); };
@@ -59,10 +60,14 @@ function NoteCard({ note, canEdit, onSave, onDelete }: NoteCardProps) {
           textareaClassName="report-note-textarea"
         />
         <div className="mt-2 flex gap-2">
-          <Button size="sm" tone="primary" onClick={() => { const t = draft.trim(); if (!t) return; onSave(t); setEditing(false); }}>
+          <Button size="sm" tone="primary" loading={saving} disabled={saving || !draft.trim()} onClick={async () => {
+            if (saving || !draft.trim()) return;
+            setSaving(true);
+            try { if (await onSave(draft.trim())) setEditing(false); } finally { setSaving(false); }
+          }}>
             {i18nText('Reports.notes.save')}
           </Button>
-          <Button size="sm" tone="ghost" onClick={() => setEditing(false)}>
+          <Button size="sm" tone="ghost" disabled={saving} onClick={() => setEditing(false)}>
             {i18nText('Reports.notes.cancel')}
           </Button>
         </div>
@@ -99,11 +104,12 @@ function NoteCard({ note, canEdit, onSave, onDelete }: NoteCardProps) {
 }
 
 interface NoteComposerProps {
-  onAdd: (text: string) => void;
+  onAdd: (text: string) => Promise<boolean> | undefined;
 }
 
 function NoteComposer({ onAdd }: NoteComposerProps) {
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState('');
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -111,11 +117,13 @@ function NoteComposer({ onAdd }: NoteComposerProps) {
     setDraft(''); setOpen(true);
     setTimeout(() => ref.current?.focus(), 0);
   };
-  const submit = () => {
+  const submit = async () => {
     const t = draft.trim();
-    if (!t) { setOpen(false); return; }
-    onAdd(t);
-    setDraft(''); setOpen(false);
+    if (!t || saving) return;
+    setSaving(true);
+    try {
+      if (await onAdd(t)) { setDraft(''); setOpen(false); }
+    } finally { setSaving(false); }
   };
 
   if (!open) {
@@ -138,15 +146,16 @@ function NoteComposer({ onAdd }: NoteComposerProps) {
         ref={ref}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
+        aria-label={i18nText('Reports.notes.add')}
         placeholder={i18nText('Reports.notes.placeholder')}
         className="report-radius-sm"
         textareaClassName="report-note-textarea"
       />
       <div className="mt-2 flex gap-2">
-        <Button size="sm" tone="primary" onClick={submit}>
+        <Button size="sm" tone="primary" onClick={submit} loading={saving} disabled={saving || !draft.trim()}>
           {i18nText('Reports.notes.saveNote')}
         </Button>
-        <Button size="sm" tone="ghost" onClick={() => setOpen(false)}>
+        <Button size="sm" tone="ghost" disabled={saving} onClick={() => setOpen(false)}>
           {i18nText('Reports.notes.cancel')}
         </Button>
       </div>
@@ -158,10 +167,11 @@ interface NoteAnchorProps {
   anchor: string;
   content: NarrativeReportContent;
   canEdit: boolean;
-  onChange: (next: NarrativeReportContent) => void;
+  allowCompose?: boolean;
+  onChange: (next: NarrativeReportContent) => Promise<boolean> | undefined;
 }
 
-export function NoteAnchor({ anchor, content, canEdit, onChange }: NoteAnchorProps) {
+export function NoteAnchor({ anchor, content, canEdit, allowCompose = true, onChange }: NoteAnchorProps) {
   const notes = getNotesForAnchor(content, anchor);
   const handleAdd = (text: string) => onChange(addUserNote(content, anchor, text));
   const handleUpdate = (id: string, text: string) => onChange(updateUserNote(content, id, text));
@@ -174,7 +184,7 @@ export function NoteAnchor({ anchor, content, canEdit, onChange }: NoteAnchorPro
           onSave={(t) => handleUpdate(n.id, t)}
           onDelete={() => handleDelete(n.id)} />
       ))}
-      {canEdit ? <NoteComposer onAdd={handleAdd} /> : null}
+      {canEdit && allowCompose ? <NoteComposer onAdd={handleAdd} /> : null}
     </div>
   );
 }

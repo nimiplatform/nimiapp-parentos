@@ -5,6 +5,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { resetElectronViewport } from './lib/reset-electron-viewport.mjs';
 
 /**
  * acceptance-mock-data.mjs — CDP acceptance for the ParentOS demo dataset.
@@ -207,6 +208,7 @@ async function main() {
     }, null, 2), 'utf8');
     throw error;
   } finally {
+    await resetElectronViewport(page).catch(error => console.error('Viewport cleanup failed:', error));
     await browser?.close().catch(() => undefined);
     await terminateProcessTree(appProcess);
     if (rendererProcess) await terminateProcessTree(rendererProcess);

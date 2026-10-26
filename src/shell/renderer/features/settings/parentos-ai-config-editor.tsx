@@ -54,6 +54,7 @@ function useParentosModelConfigCopy(): ModelConfigCopy {
     saveLocalLabel: t('AISettings.modelConfig.save'),
     saveCloudLabel: t('AISettings.modelConfig.save'),
     savingLabel: t('AISettings.modelConfig.saving'),
+    savedLabel: t('AISettings.modelConfig.saved'),
     clearLabel: t('AISettings.modelConfig.clear'),
     clearingLabel: t('AISettings.modelConfig.clearing'),
     conflictLabel: t('AISettings.modelConfig.conflict'),

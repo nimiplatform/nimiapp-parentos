@@ -670,29 +670,38 @@
       "description": "AI capabilities are provided through the Nimi runtime; losing access never affects local data.",
       "technicalDetails": "Technical details",
       "recovery": {
-        "title": "Restore AI features",
-        "bridgeAbsent": "Open ParentOS from Apps in the Nimi desktop app. Supported AI features will recover after the connection is restored.",
-        "actionRequired": "Check ParentOS access and AI model settings in Nimi Desktop, complete any requested action, then retry here.",
-        "unavailable": "Make sure Nimi desktop is running, then check Apps > ParentOS > AI Capabilities. Return here and refresh afterward."
+        "title": "Nimi connection is not ready",
+        "bridgeAbsent": "Open ParentOS from Apps in Nimi. Once connected, choose models and check their readiness on this page.",
+        "actionRequired": "Check ParentOS access status in Nimi, complete the indicated action, then retry here. You can configure models on this page once connected.",
+        "unavailable": "Cannot connect to Nimi right now. Make sure Nimi is running, then retry. If it still fails, reopen ParentOS from Nimi.",
+        "untrustedTitle": "Nimi Runtime verification failed",
+        "untrusted": "Nimi Runtime identity verification failed, so model settings cannot be read or saved. Reopen ParentOS from Nimi first; if it still fails, restart Nimi and retry. You do not need to clear your model settings.",
+        "account": "Check your account status in Nimi, then reopen ParentOS and retry the connection.",
+        "session": "This App connection is no longer valid. Reopen ParentOS from Nimi, then check the connection and model status.",
+        "retry": "Retry connection",
+        "untrustedTechnical": "Development: check that the App SDK, Kit and Nimi native carrier are matching builds. An interface mismatch can also cause this verification error; changing models or restarting alone will not fix it."
       }
     },
     "declared": {
       "title": "AI models",
       "description": "Choose a Local or Cloud model for each AI capability. Your records stay on this device either way. With a Cloud model, the data needed for each request is sent through Nimi to your chosen cloud service.",
-      "platformManaged": "This page and Nimi desktop > Apps > ParentOS > AI Capabilities edit the same configuration, managed by Nimi Runtime. Cloud models need a Cloud Connector set up in Nimi desktop first.",
-      "openOwnerConfiguration": "Configure in Nimi",
+      "platformManaged": "Choose or change models here. Apps > ParentOS > AI Models in Nimi edits the same settings. Use Nimi to add cloud connectors or prepare local models.",
+      "openOwnerConfiguration": "Manage in Nimi",
       "openingOwnerConfiguration": "Opening…",
       "loadFailed": "AI configuration could not be read",
-      "loadFailedGuidance": "Restore the Nimi connection or confirm the setup under Nimi > Apps > ParentOS > AI Capabilities, then return and refresh.",
-      "ownerHandoffFailed": "Nimi configuration could not be opened",
-      "ownerHandoffFallback": "Open Nimi desktop manually, then go to Apps > ParentOS > AI Capabilities.",
-      "configuredCount": "Configured capabilities: {{count}}",
+      "loadFailedGuidance": "Connected to Nimi, but the latest model settings could not be read. Retry loading them. Feature readiness cannot be confirmed and changes cannot be saved until the read succeeds.",
+      "ownerHandoffFailed": "Could not open Nimi management",
+      "ownerHandoffFallback": "Open Nimi manually and go to Apps > ParentOS > AI Models. Once connected, you can also configure models on this page.",
+      "configuredCount": "{{count}} saved configurations",
       "capabilities": {
         "textGenerate": "Text generation",
         "audioTranscribe": "Speech-to-text",
         "audioSynthesize": "Speech synthesis",
         "imageGenerate": "Image generation"
-      }
+      },
+      "waitingForAccess": "Model settings can be read once the connection recovers. Your existing settings have not been cleared. You can then choose Local or Cloud models here.",
+      "stale": "Retained model information is from the previous read and is temporarily read-only.",
+      "retry": "Reload configuration"
     },
     "modelConfig": {
       "back": "Back",
@@ -705,7 +714,7 @@
       "pickerSearch": "Search models",
       "pickerLoading": "Loading models…",
       "pickerEmpty": "No models are available for this capability.",
-      "configuredSummary": "Model settings complete",
+      "configuredSummary": "Models are ready",
       "emptySummary": "No model selected",
       "route": "Run mode",
       "local": "Local",
@@ -759,7 +768,7 @@
       "saveFailed": "Runtime could not save ParentOS's AI configuration.",
       "unsupportedCapability": "This capability is unavailable.",
       "notConfigured": "Not configured",
-      "configured": "Configured",
+      "configured": "Ready",
       "selectionRequired": "Selection required",
       "blocked": "Blocked",
       "unavailable": "Unavailable",
@@ -769,17 +778,18 @@
       "capabilityDescription": {
         "textGenerate": "Powers the growth advisor, reports, journal tags, and smart summaries.",
         "audioTranscribe": "Turns journal voice notes into text."
-      }
+      },
+      "saved": "Saved"
     },
     "features": {
       "title": "Feature Availability",
-      "description": "Feature status under the current platform contract.",
-      "configurationHint": "For features marked “Configure in Nimi,” open ParentOS AI model settings in Nimi Desktop.",
+      "description": "Status reflects the current connection, model settings and runtime readiness.",
+      "configurationHint": "For features marked “No model selected”, choose a model in AI Models above. A connection alone does not mean the model is ready.",
       "checking": "Checking…",
       "available": "Available",
       "unavailable": "Unavailable",
-      "needsAccess": "Available after connecting Nimi",
-      "needsConfiguration": "Configure in Nimi",
+      "needsAccess": "Connection not ready; unconfirmed",
+      "needsConfiguration": "No model selected",
       "notSupported": "Not supported in this version",
       "notSupportedHint": "Configurable image understanding is not available yet, so this feature cannot be enabled manually.",
       "routeLocal": "Local model",
@@ -790,7 +800,8 @@
       "profileSummary": "Profile smart summary",
       "medicalInsights": "Medical event insights",
       "ocrIntake": "Report image recognition",
-      "voiceTranscribe": "Voice transcription"
+      "voiceTranscribe": "Voice transcription",
+      "unknown": "Configuration unread; unconfirmed"
     },
     "runtime": {
       "imageInputUnsupported": "Image or attachment input is not supported in this version."
@@ -1204,7 +1215,7 @@
       "summary": "Round {{round}} · {{start}} to {{end}}",
       "unsynced": "Reminders haven't finished syncing with Nimi. Please try again.",
       "retryNow": "Retry now",
-      "sessionChanged": "Your Nimi session changed, so reminder sync stopped. You can keep using ParentOS; reopen it to resume sync.",
+      "sessionChanged": "The Nimi session changed and sharing stopped. ParentOS remains usable locally. Stop and start ParentOS in Nimi Home to resume syncing.",
       "reopen": "Reopen",
       "focusUnavailable": "This reminder is no longer available."
     }
@@ -4884,7 +4895,7 @@
       "action": {
         "overdueSuffix": " (overdue)"
       },
-      "subtitle": "Structured local facts only · Generated {{date}} · Ages {{ageStart}} – {{ageEnd}}",
+      "subtitle": "Based on saved records · Generated {{date}} · Ages {{ageStart}} – {{ageEnd}}",
       "reportType": {
         "monthly": "monthly",
         "quarterly": "quarterly",
@@ -4915,7 +4926,8 @@
         "journalKeepsake": "{{count}} entries were marked as keepsakes.",
         "journalVoiceMixed": "{{voice}} voice-only entries and {{mixed}} mixed voice/text entries were saved.",
         "journalRecorders": "Recorded by: {{summary}}.",
-        "reminder": "{{title}} ({{status}})"
+        "reminder": "{{title}} ({{status}})",
+        "unnamedRecorder": "Unnamed recorder"
       },
       "reminderStatus": {
         "overdue": "overdue",
@@ -4932,7 +4944,7 @@
         "vaccines": "Local vaccine records",
         "reminders": "Local reminder states + reminder rules"
       },
-      "safetyNote": "Growth, milestone, vaccine, and observation domains remain structured facts only while they are marked needs-review. This report does not provide diagnosis, ranking, or treatment guidance."
+      "safetyNote": "This report summarizes recorded growth, milestones, vaccinations, and daily observations. It does not provide diagnosis, ranking, or treatment advice."
     },
     "professionalSummary": {
       "sections": {
@@ -5212,9 +5224,9 @@
       "journalDimension": {
         "title": "Observation dimension distribution",
         "summary": "{{label}} is the most recorded observation dimension in the current period, with {{count}} records.",
-        "dimensionIdEvidence": "Dimension ID: {{dimensionId}}.",
         "countEvidence": "Current period record count: {{count}}.",
-        "frameworkSource": "Observation framework"
+        "frameworkSource": "Observation framework",
+        "dimensionEvidence": "Observation: {{label}}."
       }
     },
     "professional": {
@@ -5248,6 +5260,38 @@
       "add": "Add my note",
       "placeholder": "Write a note, such as added context, a question, or details you want a clinician to see...",
       "saveNote": "Save note"
+    },
+    "units": {
+      "years": "years"
+    },
+    "workspace": {
+      "library": "Report library",
+      "choosePeriod": "Choose a reporting period",
+      "accumulating": "Collecting this month",
+      "latest": "Latest monthly",
+      "retry": "Try again",
+      "readingPeriod": "{{start}} — {{end}}",
+      "save": "Save report",
+      "saveHelp": "Records and notes are saved in full. Additional explanations and reminders are included only when expanded. You can send the saved file to family.",
+      "summary": "At a glance",
+      "details": "Records and changes",
+      "replay": "Moments to remember",
+      "closing": "Closing notes",
+      "notes": "My notes",
+      "professional": "Professional summary",
+      "addNote": "Add a note",
+      "recordSummary": "View this period’s recorded facts",
+      "professionalLocalIntro": "This summary comes from local records. Edit each section or choose what to share; excluded sections are not exported or copied.",
+      "recordedFacts": "Recorded this period",
+      "noRecords": "No growth records this period",
+      "recordUnavailable": "There is one record this period, but its details are not included in this saved report.",
+      "sparseContext": "One record is not enough to describe a trend.",
+      "emptyContext": "Not recorded does not mean it did not happen. This report only includes saved facts.",
+      "pendingActions": "Pending reminders ({{count}})",
+      "pendingContext": "From existing reminders, not recommendations inferred from this report.",
+      "recordCoverage": "Record coverage and report notes",
+      "unrecordedDomains": "Items without new records ({{count}})",
+      "reminders": "Reminders and follow-ups"
     }
   },
   "Sleep": {
@@ -5666,5 +5710,15 @@
       "title": "Working with Nimi",
       "body": "ParentOS manages local growth records and the app experience. Nimi provides AI capabilities, model configuration and access authorization. Settings show current capability status and explain how data is used."
     }
+  },
+  "ChildDirectory": {
+    "title": "ParentOS children",
+    "disclosure": "Share the complete child list for this family with your current Nimi account for selection in apps such as NimiDay. Only child identifiers and names are shared, without birth dates or health information.",
+    "idle": "Preparing the child list.",
+    "syncing": "Syncing the child list…",
+    "synced": "Child list synced to Nimi.",
+    "failed": "The child list or reminder removal is not fully synced. Check the Nimi connection and retry. If syncing still fails, stop and start ParentOS in Nimi Home.",
+    "disconnected": "Disconnected from Nimi. Stop and start ParentOS in Nimi Home to resume syncing.",
+    "retry": "Sync child list"
   }
 }

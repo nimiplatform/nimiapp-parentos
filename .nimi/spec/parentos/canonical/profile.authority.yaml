@@ -266,3 +266,13 @@ units:
     relations:
       - type: applies_to
         target: definition.parentos.profile.contract
+  - id: rule.parentos.prof.child-directory
+    kind: rule
+    title: Share the complete family child directory independently of reminders
+    modality: must
+    statement: While bound to an authorized Nimi session, ParentOS publishes one current complete snapshot of its persisted current family children through public App Activity, using stable key child-directory, kind activity, attention false, type nimi.parentos.child-directory.v1 and data.children entries containing only childId and childName. The snapshot includes children without reminders and is independent of active-child selection. Startup, child creation, rename, deletion and explicit retry refresh the snapshot with a revision above the held key. An empty children array explicitly represents an empty family. Runtime owns account and registration source identity; the directory is a public projection, not the private profile authority. ParentOS explains the shared fields and synchronization status. Failed reads or publication never become an empty or partial success, and session invalidation stops further publication. Removing a child replaces the full snapshot and does not delete another App's care objects or arrangements.
+    condition: Whenever ParentOS shares its child directory with Nimi.
+    failure: Show an actionable unsynced or disconnected state and allow retry under a valid session; never infer directory completeness from reminders.
+    relations:
+      - type: applies_to
+        target: definition.parentos.profile.contract

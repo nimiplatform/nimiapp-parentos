@@ -1,3 +1,4 @@
+import { ChildDirectoryStatus, requestChildDirectorySync } from './child-directory-bridge.js';
 import { useEffect, useRef, useState } from 'react';
 import { useParentOSNavigation, DestinationLink } from '../../app-shell/app-navigation.js';
 import { useParentOSPosition, useParentOSIntent } from '../../app-shell/app-navigation.js';
@@ -139,6 +140,7 @@ export default function ChildrenSettingsPage() {
 
   const refreshChildren = async (fid: string | null) => {
     if (!fid) return;
+    void requestChildDirectorySync();
     try { const rows = await getChildren(fid); setChildren(rows.map(mapChildRow)); } catch { /* bridge */ }
   };
 
@@ -313,6 +315,8 @@ export default function ChildrenSettingsPage() {
             </Button>
           )}
         </div>
+
+        <ChildDirectoryStatus />
 
         {/* Empty state */}
         {children.length === 0 && !showForm && (

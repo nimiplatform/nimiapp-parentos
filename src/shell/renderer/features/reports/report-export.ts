@@ -19,34 +19,7 @@
 
 import { invoke } from '../../bridge/shell-command.js';
 import { i18nText } from '../../i18n/index.js';
-
-export type PrintMode = 'letter' | 'professional';
-
-/**
- * Legacy print path kept for the professional summary modal, which
- * still relies on body[data-print-mode] + CSS scoping to print a
- * subtree. Migrating that flow is tracked separately.
- */
-export function printReport(mode: PrintMode = 'letter'): void {
-  if (typeof document === 'undefined' || typeof window === 'undefined') return;
-  const prev = document.body.getAttribute('data-print-mode');
-  document.body.setAttribute('data-print-mode', mode);
-
-  const cleanup = () => {
-    if (prev) document.body.setAttribute('data-print-mode', prev);
-    else document.body.removeAttribute('data-print-mode');
-    window.removeEventListener('afterprint', cleanup);
-  };
-  window.addEventListener('afterprint', cleanup);
-
-  requestAnimationFrame(() => {
-    try {
-      window.print();
-    } catch {
-      cleanup();
-    }
-  });
-}
+import { measureReportBreakRanges, paginateReport, type ReportVerticalRange } from './report-pagination.js';
 
 interface ExportOptions {
   filename?: string;
@@ -145,7 +118,9 @@ const EXPORT_CAPTURE_CSS = `
 [data-report-exporting] .edit-pencil,
 [data-report-exporting] .report-monthly-edit-pencil,
 [data-report-exporting] .report-note-actions,
-[data-report-exporting] .report-note-composer {
+[data-report-exporting] .report-note-composer,
+[data-report-exporting] .report-sparse-notes:not(:has(.report-note-card:not(.report-note-composer))),
+[data-report-exporting] [data-report-export-omit] {
   display: none !important;
 }
 `;
@@ -161,6 +136,7 @@ function installCaptureStyles(): () => void {
 
 function shouldKeepNode(node: Node): boolean {
   if (!(node instanceof Element)) return true;
+  if (node.hasAttribute('data-report-export-omit')) return false;
   const cls = node.classList;
   if (!cls) return true;
   for (const dropped of EXPORT_DROP_CLASSES) {
@@ -172,45 +148,53 @@ function shouldKeepNode(node: Node): boolean {
 async function renderTargetToCanvas(
   target: HTMLElement,
   options: ExportOptions,
-): Promise<HTMLCanvasElement> {
+  measurePages = false,
+): Promise<{ canvas: HTMLCanvasElement; breakRanges: ReportVerticalRange[] }> {
   const { toCanvas } = await import('html-to-image');
+  // @nimi-authority: rule.parentos.advs.r009
+  // Evidence is complete in exports; auxiliary disclosures follow the parent's
+  // explicit reading selection instead of reopening all the empty boilerplate.
+  const disclosures = Array.from(target.querySelectorAll('details'));
+  const openStates = disclosures.map((detail) => detail.open);
+  const omitted = disclosures.filter((detail) => detail.dataset.reportExport === 'when-open' && !detail.open);
+  omitted.forEach((detail) => detail.setAttribute('data-report-export-omit', ''));
+  disclosures.filter((detail) => !detail.closest('[data-report-export-omit]')).forEach((detail) => { detail.open = true; });
   // Bump to 3x for export so the resulting bitmap survives both a 2x
   // HiDPI PDF viewer and the rescaling jsPDF does when fitting the
   // image into A4. Lower than this and Chinese text gets noticeably
   // soft at typical viewing zooms.
   const pixelRatio = options.scale ?? Math.max(2, Math.min(window.devicePixelRatio || 2, 3));
-  // Lock the capture region to the element's own bounding rect — the
-  // article uses `max-width: 640px; margin: 0 auto`, so without this
-  // html-to-image can capture a wider area and leave blank gutters.
-  const rect = target.getBoundingClientRect();
-  const width = Math.max(1, Math.ceil(rect.width));
-  const height = Math.max(1, Math.ceil(rect.height));
-
   target.setAttribute('data-report-exporting', '');
   const uninstallStyles = installCaptureStyles();
-  // Wait for web fonts (Noto Sans SC / Inter, loaded from Google Fonts
-  // CDN) to finish loading before snapshot. If a font is still loading,
-  // html-to-image's foreignObject path falls back to system fonts with
-  // different metrics — Chinese text re-wraps at different break points
-  // than what's on screen.
-  if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
-    try { await document.fonts.ready; } catch { /* fonts.ready can reject on some browsers — fall through */ }
-  }
-  // Wait one paint so the injected style takes effect before snapshot.
-  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   try {
+    // Wait for fonts and the export-only styles before measuring the document.
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch { /* use the available system fonts */ }
+    }
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    // Measure only after the export-only omissions and font metrics settle.
+    const rect = target.getBoundingClientRect();
+    const width = Math.max(1, Math.ceil(rect.width));
+    const height = Math.max(1, Math.ceil(rect.height));
+    const breakRanges = measurePages ? measureReportBreakRanges(target) : [];
     const canvas = await toCanvas(target, {
-      backgroundColor: options.backgroundColor ?? '#fffdf5',
+      backgroundColor: resolveCanvasBackground(target, options.backgroundColor ?? '#fffdf5'),
       pixelRatio,
       width,
       height,
       cacheBust: true,
       filter: shouldKeepNode,
     });
-    return normalizeExportCanvas(canvas, target, options.backgroundColor ?? '#fffdf5');
+    const scale = canvas.width / width;
+    return {
+      canvas: normalizeExportCanvas(canvas, target, options.backgroundColor ?? '#fffdf5'),
+      breakRanges: breakRanges.map((range) => ({ top: Math.ceil(range.top * scale), bottom: Math.floor(range.bottom * scale) })),
+    };
   } finally {
     uninstallStyles();
     target.removeAttribute('data-report-exporting');
+    omitted.forEach((detail) => detail.removeAttribute('data-report-export-omit'));
+    disclosures.forEach((detail, index) => { detail.open = openStates[index] ?? false; });
   }
 }
 
@@ -409,9 +393,9 @@ function fillRectFromNeighbor(
 
 function resolveCanvasBackground(target: HTMLElement, fallback: string): string {
   if (fallback && !fallback.includes('var(')) return fallback;
-  const computed = window.getComputedStyle(target).backgroundColor;
-  if (computed && computed !== 'rgba(0, 0, 0, 0)' && computed !== 'transparent') {
-    return computed;
+  for (let element: HTMLElement | null = target; element; element = element.parentElement) {
+    const computed = window.getComputedStyle(element).backgroundColor;
+    if (computed && computed !== 'rgba(0, 0, 0, 0)' && computed !== 'transparent') return computed;
   }
   return '#fffdf5';
 }
@@ -457,8 +441,18 @@ export async function exportReportAsImage(
   const grant = await createReportSaveTarget(filename, 'png', i18nText('Reports.export.saveImageTitle'));
   if (!grant) return { savedPath: null, filename };
 
-  const canvas = await renderTargetToCanvas(target, options);
-  const base64Data = canvasToPngBase64(canvas);
+  const { canvas } = await renderTargetToCanvas(target, options);
+  // Unlike PDF, a standalone image has no page margins of its own.
+  const padding = Math.round(32 * canvas.width / Math.max(1, target.getBoundingClientRect().width));
+  const framed = document.createElement('canvas');
+  framed.width = canvas.width + padding * 2;
+  framed.height = canvas.height + padding * 2;
+  const context = framed.getContext('2d');
+  if (!context) throw new Error('PNG export requires a canvas context.');
+  context.fillStyle = resolveCanvasBackground(target, options.backgroundColor ?? '#fffdf5');
+  context.fillRect(0, 0, framed.width, framed.height);
+  context.drawImage(canvas, padding, padding);
+  const base64Data = canvasToPngBase64(framed);
   const saved = await writeReportSaveTarget(grant.saveTargetId, base64Data);
   return { savedPath: saved.displayPath, filename };
 }
@@ -481,25 +475,39 @@ export async function exportReportAsPdf(
   const grant = await createReportSaveTarget(filename, 'pdf', i18nText('Reports.export.savePdfTitle'));
   if (!grant) return { savedPath: null, filename };
 
-  const canvas = await renderTargetToCanvas(target, options);
+  const { canvas, breakRanges } = await renderTargetToCanvas(target, options, true);
   const { jsPDF } = await import('jspdf');
 
-  // Use a single tall PDF page instead of splitting the report into A4
-  // pages. This preserves the exported long-image reading experience
-  // and avoids page-cut artefacts through text.
+  // @nimi-authority: rule.parentos.advs.r009
+  // Keep the paper's actual typography and width, and cut only at safe
+  // measured boundaries. PNG remains a continuous image; PDF is printable A4.
   const pageWidth = 210;
   const marginX = 10;
   const marginY = 10;
   const imgWidth = pageWidth - 2 * marginX;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-  const pageHeight = Math.max(297, imgHeight + 2 * marginY);
+  const pageHeight = 297;
+  const pixelsPerMm = canvas.width / imgWidth;
+  const pages = paginateReport(canvas.height, Math.floor((pageHeight - 2 * marginY) * pixelsPerMm), breakRanges);
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: [pageWidth, pageHeight],
+    format: 'a4',
   });
-  const dataUrl = canvas.toDataURL('image/png', 0.95);
-  pdf.addImage(dataUrl, 'PNG', marginX, marginY, imgWidth, imgHeight, undefined, 'FAST');
+  pages.forEach((page, index) => {
+    if (index > 0) pdf.addPage();
+    const slice = document.createElement('canvas');
+    slice.width = canvas.width;
+    slice.height = page.height;
+    const context = slice.getContext('2d');
+    if (!context) throw new Error('PDF export requires a canvas context.');
+    context.drawImage(canvas, 0, page.top, canvas.width, page.height, 0, 0, canvas.width, page.height);
+    pdf.addImage(slice.toDataURL('image/png'), 'PNG', marginX, marginY, imgWidth, page.height / pixelsPerMm, undefined, 'FAST');
+    if (pages.length > 1) {
+      pdf.setFontSize(9);
+      pdf.setTextColor(110, 117, 130);
+      pdf.text(`${index + 1} / ${pages.length}`, pageWidth / 2, pageHeight - 4, { align: 'center' });
+    }
+  });
 
   const pdfBlob = pdf.output('blob');
   const base64Data = await blobToBase64(pdfBlob);

@@ -43,7 +43,7 @@ function postureFromError(error: unknown): ParentosNimiAccessPosture {
     state: 'unavailable',
     reasonCode,
     actionHint,
-    retryable: true,
+    retryable: typeof record.retryable === 'boolean' ? record.retryable : false,
   };
 }
 

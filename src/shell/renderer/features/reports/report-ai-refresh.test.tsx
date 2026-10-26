@@ -189,8 +189,27 @@ describe('report AI refresh', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByRole('button', { name: '全部用 AI 重写（2）' })).toBeTruthy());
-    // v1 history titles are re-localized instead of showing the frozen English title.
-    expect(screen.getByText('Mimi的综合成长报告')).toBeTruthy();
+    // Selection happens in the period library; only one report body is mounted.
+    const custom = screen.getByRole('button', { name: /自定义/ });
+    fireEvent.click(custom);
+    expect(custom.getAttribute('aria-current')).toBe('true');
+    expect(screen.getAllByText("Mimi's monthly report")).toHaveLength(1);
     expect(screen.getByText('本地整理')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /最新月报/ }));
+    expect(custom.getAttribute('aria-current')).toBeNull();
+    expect(screen.getAllByText("Mimi's monthly report")).toHaveLength(1);
+  });
+
+  it('rewrites the selected historical report instead of the latest monthly report', async () => {
+    reportStore.push({
+      ...reportStore[0]!, reportId: 'report-custom', reportType: 'custom', content: structuredContent('custom'),
+    });
+    generateNarrativeMock.mockImplementation(async () => ({ content: { ...narrativeContent(), reportType: 'custom' } }));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /自定义/ }));
+    fireEvent.click(screen.getByRole('button', { name: '用 AI 重写本期报告' }));
+    await waitFor(() => expect(updateGrowthReportContentMock).toHaveBeenCalledOnce());
+    expect(updateGrowthReportContentMock.mock.calls[0]?.[0]?.reportId).toBe('report-custom');
+    expect(JSON.parse(reportStore.find((row) => row.reportId === 'report-1')!.content).version).toBe(1);
   });
 });

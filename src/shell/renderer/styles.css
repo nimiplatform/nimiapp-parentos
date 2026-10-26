@@ -931,7 +931,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  * Advisor persona — 顾问右侧面板以 AI 小精灵（parentos-ai-mascot-*）为形象。
- * 大尺寸：更高的漂浮 + 身后三色光晕 + 与漂浮同步呼吸的地面投影。
+ * 大尺寸：保留球内高光，用轻微漂浮与紧凑的地面投影表现立体感。
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 .advisor-hero-mascot {
   position: relative;
@@ -940,48 +940,22 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   flex-shrink: 0;
 }
 
-.advisor-hero-mascot::before {
-  content: "";
-  position: absolute;
-  inset: -58%;
-  z-index: -1;
-  pointer-events: none;
-  /* 球体边缘约在 closest-side 的 46% 处：从那里起色最浓，按缓出曲线逐级淡到透明，形成由重到轻的扩散 */
-  background:
-    radial-gradient(closest-side at 44% 46%,
-      color-mix(in srgb, var(--advisor-ai-mint) 48%, transparent) 40%,
-      color-mix(in srgb, var(--advisor-ai-mint) 26%, transparent) 55%,
-      color-mix(in srgb, var(--advisor-ai-mint) 10%, transparent) 72%,
-      color-mix(in srgb, var(--advisor-ai-mint) 3%, transparent) 86%,
-      transparent 100%),
-    radial-gradient(closest-side at 56% 55%,
-      color-mix(in srgb, var(--advisor-ai-violet) 40%, transparent) 40%,
-      color-mix(in srgb, var(--advisor-ai-violet) 20%, transparent) 56%,
-      color-mix(in srgb, var(--advisor-ai-violet) 7%, transparent) 74%,
-      transparent 100%),
-    radial-gradient(closest-side,
-      color-mix(in srgb, var(--advisor-ai-sky) 22%, transparent) 45%,
-      color-mix(in srgb, var(--advisor-ai-sky) 8%, transparent) 70%,
-      transparent 100%);
-  animation: advisorAuraBreathe 7.2s ease-in-out infinite;
-}
-
 .advisor-hero-mascot::after {
   content: "";
   position: absolute;
-  left: 18%;
-  right: 18%;
-  top: calc(100% + 12px);
-  height: 11%;
+  left: 24%;
+  right: 24%;
+  top: calc(100% + 6px);
+  height: 8%;
   z-index: -1;
   border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--advisor-ai-violet) 34%, transparent), transparent);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--nimi-text-primary) 14%, transparent), transparent);
   animation: advisorHeroShadow 3.6s ease-in-out infinite;
 }
 
-/* 大尺寸悬浮在光晕上时，轮廓描边会显出一圈生硬的线，去掉让球体边缘自然融进光晕 */
+/* 大尺寸保留柔和轮廓，避免描边显成生硬的线。 */
 .advisor-hero-mascot .parentos-ai-mascot-rim {
-  display: none;
+  opacity: 0.35;
 }
 
 /* 与 parentosAiMascotBob 同周期，幅度按尺寸放大 */
@@ -1010,19 +984,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   50% {
     opacity: 0.55;
     transform: scaleX(0.8);
-  }
-}
-
-@keyframes advisorAuraBreathe {
-  0%,
-  100% {
-    opacity: 0.85;
-    transform: scale(0.95) rotate(0deg);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.05) rotate(10deg);
   }
 }
 
@@ -1111,7 +1072,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .advisor-hero-mascot::before,
   .advisor-hero-mascot::after,
   .advisor-hero-mascot .parentos-ai-mascot-float,
   .advisor-suggestion-skeleton {
@@ -1826,7 +1786,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .report-monthly-actionbar-wrap {
-  max-width: 640px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -2831,9 +2791,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .report-note-date {
   color: var(--nimi-text-subtle);
+  flex-shrink: 0;
   font-family: var(--nimi-font-mono, ui-monospace, monospace);
   font-size: 10px;
   margin-left: auto;
+  white-space: nowrap;
 }
 
 .report-note-body {

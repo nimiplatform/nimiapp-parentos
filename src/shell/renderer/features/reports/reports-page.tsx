@@ -1,18 +1,18 @@
-import { reportActionIntent } from './structured-report.js';
+import './reports-workspace.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DestinationLink, useParentOSPageWorkAllowed } from '../../app-shell/app-navigation.js';
-import { Button, DatePicker, NimiText, nimiToast, StatusBadge, Surface, TextareaField } from '@nimiplatform/kit/ui';
-import { ArrowRight, ChevronDown, Eye, Pencil, Star } from 'lucide-react';
+import { useParentOSPageWorkAllowed } from '../../app-shell/app-navigation.js';
+import { Button, DatePicker, NimiText, nimiToast, Surface } from '@nimiplatform/kit/ui';
+import { ChevronDown } from 'lucide-react';
 import { computeAgeMonthsAt, formatAge, useAppStore, type ChildProfile } from '../../app-shell/app-store.js';
 import { getGrowthReports, insertGrowthReport, updateGrowthReportContent } from '../../bridge/sqlite-bridge.js';
 import { isoNow, ulid } from '../../bridge/ulid.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 import { generateNarrativeReportForPeriod } from './narrative-prompt.js';
+import { StructuredReportViewer } from './reports-structured-viewer.js';
 import { MonthlyLetterViewer } from './reports-monthly-letter.js';
 import {
   buildStructuredGrowthReport, parseReportContent,
   type GrowthReportType, type NarrativeReportContent, type ParsedReportContent,
-  type StructuredGrowthReportContent,
 } from './structured-report.js';
 import { i18nText } from '../../i18n/index.js';
 import { autoGenerateMonthlyReport } from './auto-report.js';
@@ -21,7 +21,7 @@ import { getFirstReportAccumulation, requireValidGrowthReports } from './report-
 import {
   buildNarrativeTitle, hasReportTextRuntime, isAiRefreshableContent, loadReportDomainData, refreshReportWithAi,
 } from './report-ai-refresh.js';
-import { LocalReportNotice, ReportAiStatusCard, type ReportAiState } from './report-ai-status.js';
+import { ReportAiStatusCard, type ReportAiState } from './report-ai-status.js';
 
 
 type PersistedReport = Awaited<ReturnType<typeof getGrowthReports>>[number];
@@ -95,11 +95,6 @@ function resolvePeriodBounds(start: string, end: string) {
   };
 }
 
-function reportSourceLabel(c: ParsedReportContent): string {
-  if (c.version === 1) return i18nText('Reports.page.ai.sourceLocal');
-  return c.format === 'narrative-ai' ? i18nText('Reports.page.badge.aiNarrative') : i18nText('Reports.page.badge.narrative');
-}
-
 function reportBadgeLabel(c: ParsedReportContent): string {
   const l: Record<string, string> = {
     monthly: i18nText('Reports.page.badge.monthly'),
@@ -110,156 +105,16 @@ function reportBadgeLabel(c: ParsedReportContent): string {
   return l[c.reportType] ?? i18nText('Reports.page.badge.comprehensive');
 }
 
-/* ── Editable Text ── */
-
-function EditableText({ text, onSave }: { text: string; onSave: (v: string) => void }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(text);
-  const ref = useRef<HTMLTextAreaElement>(null);
-  const start = () => { setDraft(text); setEditing(true); setTimeout(() => ref.current?.focus(), 0); };
-  if (editing) return (<div>
-    <TextareaField
-      ref={ref}
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      className="report-radius-sm"
-      textareaClassName="report-editable-textarea"
-    />
-    <div className="flex gap-2 mt-2">
-      <Button size="sm" tone="primary" onClick={() => { onSave(draft); setEditing(false); }}>{i18nText('Reports.page.save')}</Button>
-      <Button size="sm" tone="ghost" onClick={() => setEditing(false)}>{i18nText('Reports.page.cancel')}</Button>
-    </div>
-  </div>);
-  return (<div className="group relative">
-    <p className="report-editable-text">{text}</p>
-    <Button onClick={start} tone="ghost" size="sm" className="report-editable-button opacity-0 transition-opacity group-hover:opacity-100" title={i18nText('Reports.page.edit')}>
-      <Pencil size={12} />
-    </Button>
-  </div>);
-}
-
-/* ── Narrative Viewer ── */
-
-function NarrativeViewer({ content, reportId, onContentUpdate }: { content: NarrativeReportContent; reportId?: string; onContentUpdate?: (u: NarrativeReportContent) => void }) {
-  const canEdit = Boolean(reportId && onContentUpdate);
-  const editSection = (sid: string, narrative: string) => onContentUpdate?.({ ...content, narrativeSections: content.narrativeSections.map((s) => s.id === sid ? { ...s, narrative } : s) });
-  const editField = (f: 'opening' | 'milestoneReplay' | 'closingMessage', v: string) => onContentUpdate?.({ ...content, [f]: v });
-
-  return (<div className="space-y-4">
-    <div className="report-glass-card report-card-pad">
-      <h2 className="report-card-title-lg">{content.title}</h2>
-      <p className="report-card-subtitle">{content.subtitle}</p>
-      {content.format === 'narrative-ai' && <StatusBadge tone="success" className="mt-2">{i18nText('Reports.page.aiWritten')}</StatusBadge>}
-    </div>
-
-    {content.opening && (<div className="report-soft-panel report-soft-panel--warning-light">
-      {canEdit ? <EditableText text={content.opening} onSave={(v) => editField('opening', v)} /> : <p className="report-body-text report-body-text--italic">{content.opening}</p>}
-    </div>)}
-
-    {content.narrativeSections.map((section) => (<div key={section.id} className="report-glass-card report-card-pad">
-      <h3 className="report-card-title">{section.title}</h3>
-      {canEdit ? <EditableText text={section.narrative} onSave={(v) => editSection(section.id, v)} /> : <p className="report-body-text">{section.narrative}</p>}
-      {section.dataPoints && section.dataPoints.length > 0 && (<div className="mt-3 flex flex-wrap gap-3">
-        {section.dataPoints.map((dp) => (<div key={dp.label} className="report-data-pill">
-          <span className="report-data-label">{dp.label}</span>
-          <span className="report-data-value">{dp.value}</span>
-          {dp.detail && <span className="report-data-detail">{dp.detail}</span>}
-        </div>))}
-      </div>)}
-    </div>))}
-
-    {content.milestoneReplay && (<div className="report-soft-panel report-soft-panel--warning">
-      <div className="report-section-heading-row"><Star size={16} className="report-icon-warning" /><h3 className="report-card-title">{i18nText('Reports.page.milestoneMoment')}</h3></div>
-      {canEdit ? <EditableText text={content.milestoneReplay} onSave={(v) => editField('milestoneReplay', v)} /> : <p className="report-body-text">{content.milestoneReplay}</p>}
-    </div>)}
-
-    {((content.highlights?.length ?? 0) > 0 || (content.watchNext?.length ?? 0) > 0) && (<div className="grid gap-3 sm:grid-cols-2">
-      {content.highlights && content.highlights.length > 0 && (<div className="report-glass-card report-card-pad">
-        <h3 className="report-section-heading-row report-card-title"><Star size={16} className="report-icon-warning" />{i18nText('Reports.page.highlights')}</h3>
-        <ul className="space-y-2">{content.highlights.map((h, i) => <li key={i} className="report-list-item report-list-item--accent">{h}</li>)}</ul>
-      </div>)}
-      {content.watchNext && content.watchNext.length > 0 && (<div className="report-glass-card report-card-pad">
-        <h3 className="report-section-heading-row report-card-title"><Eye size={16} className="report-icon-info" />{i18nText('Reports.page.watchNext')}</h3>
-        <ul className="space-y-2">{content.watchNext.map((w, i) => <li key={i} className="report-list-item report-list-item--warning">{w}</li>)}</ul>
-      </div>)}
-    </div>)}
-
-    {content.trendSignals.length > 0 && (<div className="report-glass-card report-card-pad">
-      <h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.trendSignals')}</h3>
-      <div className="grid gap-3 sm:grid-cols-2">{content.trendSignals.map((sig) => (<div key={sig.id} className="report-trend-card">
-        <h4 className="report-trend-title">{sig.title}</h4>
-        <p className="report-trend-summary">{sig.summary}</p>
-      </div>))}</div>
-    </div>)}
-
-    {content.actionItems.length > 0 && (<div className="report-glass-card report-card-pad">
-      <h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.nextActions')}</h3>
-      <div className="space-y-2">{content.actionItems.map((a) => (<DestinationLink key={a.id} destination={{ id: '/advisor' }} intent={reportActionIntent(a)} className="report-action-link">
-        <ArrowRight size={16} className="report-icon-accent" strokeWidth={2} />
-        <span className="report-action-link-text">{a.text}</span>
-      </DestinationLink>))}</div>
-    </div>)}
-
-    {content.closingMessage && (<div className="report-soft-panel report-soft-panel--success">
-      {canEdit ? <EditableText text={content.closingMessage} onSave={(v) => editField('closingMessage', v)} /> : <p className="report-body-text">{content.closingMessage}</p>}
-    </div>)}
-
-    <div className="report-glass-card report-card-pad-sm">
-      <p className="report-footnote">{i18nText('Reports.page.sourcesPrefix')}{content.sources.join(i18nText('Common.list.separator'))}</p>
-      <p className="report-footnote report-footnote--warning">{content.safetyNote}</p>
-    </div>
-  </div>);
-}
-
-/* ── V1 Structured Viewer ── */
-
-function StructuredViewer({ content }: { content: StructuredGrowthReportContent }) {
-  const actionItems = content.actionItems ?? [];
-  const sectionsWithData = content.sections.filter((sec) => sec.items.length > 0);
-  const emptySectionTitles = content.sections.filter((sec) => sec.items.length === 0).map((sec) => sec.title);
-  return (<div className="space-y-4">
-    <div className="report-glass-card report-card-pad">
-      <h2 className="report-card-title-lg">{content.title}</h2>
-      <p className="report-card-subtitle">{content.subtitle}</p>
-      <p className="report-footnote report-footnote--warning report-footnote--spaced">{content.safetyNote}</p>
-    </div>
-    {actionItems.length > 0 && <div className="report-glass-card report-card-pad">
-      <h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.focusTitle')}</h3>
-      <div className="space-y-2">{actionItems.map((a) => (<DestinationLink key={a.id} destination={{ id: '/advisor' }} intent={reportActionIntent(a)} className="report-action-link">
-        <ArrowRight size={16} className="report-icon-accent" strokeWidth={2} />
-        <span className="report-action-link-text">{a.text}</span>
-      </DestinationLink>))}</div>
-    </div>}
-    {content.metrics.length > 0 && <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{content.metrics.map((m) => (<div key={m.id} className="report-glass-card report-metric-card"><div className="report-data-label">{m.label}</div><div className="report-metric-value">{m.value}</div>{m.detail && <div className="report-data-detail">{m.detail}</div>}</div>))}</div>}
-    {content.overview.length > 0 && <div className="report-glass-card report-card-pad"><h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.overview')}</h3><ul className="space-y-2">{content.overview.map((item) => <li key={item} className="report-list-item report-list-item--panel">{item}</li>)}</ul></div>}
-    {content.trendSignals.length > 0 && <div className="report-glass-card report-card-pad">
-      <h3 className="report-card-title report-title-spaced">{i18nText('Reports.page.trendSignals')}</h3>
-      <div className="grid gap-3 sm:grid-cols-2">{content.trendSignals.map((sig) => (<div key={sig.id} className="report-trend-card">
-        <h4 className="report-trend-title">{sig.title}</h4>
-        <p className="report-trend-summary">{sig.summary}</p>
-      </div>))}</div>
-    </div>}
-    {sectionsWithData.length > 0 && <div className="grid gap-3 sm:grid-cols-2">{sectionsWithData.map((sec) => (<div key={sec.id} className="report-glass-card report-card-pad"><h3 className="report-card-title report-title-spaced">{sec.title}{i18nText('Reports.structured.sectionCountSuffix', { count: sec.items.length })}</h3><ul className="space-y-2">{sec.items.map((item) => <li key={item} className="report-list-item report-list-item--panel">{item}</li>)}</ul></div>))}</div>}
-    {emptySectionTitles.length > 0 && <div className="report-glass-card report-card-pad-sm"><p className="report-footnote">{i18nText('Reports.structured.emptySectionsNote', { list: emptySectionTitles.join(i18nText('Common.list.separator')) })}</p></div>}
-    <div className="report-glass-card report-card-pad-sm"><p className="report-footnote">{i18nText('Reports.page.sourcesPrefix')}{content.sources.join(i18nText('Common.list.separator'))}</p></div>
-  </div>);
-}
-
-function isLetterContent(content: ParsedReportContent): boolean {
-  return content.version === 2 && content.reportType === 'monthly';
-}
-
 function ReportViewer({
-  content, reportId, onContentUpdate, persisted, childName, selfRoleName,
+  content, reportId, onContentUpdate, persisted, childName,
 }: {
   content: ParsedReportContent;
   reportId?: string;
-  onContentUpdate?: (u: NarrativeReportContent) => void;
+  onContentUpdate?: (u: NarrativeReportContent) => Promise<boolean>;
   persisted?: PersistedReport;
   childName?: string;
-  selfRoleName?: string;
 }) {
-  if (content.version === 2 && isLetterContent(content)) {
+  if (content.version === 2) {
     return (
       <MonthlyLetterViewer
         content={content}
@@ -270,12 +125,10 @@ function ReportViewer({
         ageMonthsStart={persisted?.ageMonthsStart}
         ageMonthsEnd={persisted?.ageMonthsEnd}
         childName={childName}
-        selfRoleName={selfRoleName}
       />
     );
   }
-  if (content.version === 2) return <NarrativeViewer content={content} reportId={reportId} onContentUpdate={onContentUpdate} />;
-  return <StructuredViewer content={content} />;
+  return <StructuredReportViewer content={content} periodStart={persisted?.periodStart} periodEnd={persisted?.periodEnd} />;
 }
 
 /* ── Main Page ── */
@@ -291,7 +144,7 @@ export default function ReportsPage() {
 function ReportsChildPage({ child }: { child: ChildProfile }) {
   const pageWorkAllowed = useParentOSPageWorkAllowed();
   const [reports, setReports] = useState<PersistedReport[]>([]);
-  const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('this-quarter');
   const [periodStart, setPeriodStart] = useState('');
@@ -333,14 +186,14 @@ function ReportsChildPage({ child }: { child: ChildProfile }) {
   useEffect(() => {
     if (!child) {
       setReports([]);
-      setExpandedReportId(null);
+      setSelectedReportId(null);
       setReportLoadState('ready');
       return;
     }
 
     let cancelled = false;
     setReports([]);
-    setExpandedReportId(null);
+    setSelectedReportId(null);
     setReportLoadState('loading');
     setAutoGenerationState('idle');
 
@@ -391,12 +244,10 @@ function ReportsChildPage({ child }: { child: ChildProfile }) {
   const activeChild = child;
   const firstAccumulation = getFirstReportAccumulation(activeChild.createdAt);
   const latestReport = reports.find((report) => report.reportType === 'monthly') ?? null;
-  const latestContent = latestReport ? parseReportContent(latestReport.content) : null;
-  const historyReports = latestReport
-    ? reports.filter((report) => report.reportId !== latestReport.reportId)
-    : reports;
+  const selectedReport = reports.find((report) => report.reportId === selectedReportId) ?? latestReport;
+  const selectedContent = selectedReport ? parseReportContent(selectedReport.content) : null;
   const localReports = reports.filter((report) => isAiRefreshableContent(parseReportContent(report.content)));
-  const latestIsLocal = Boolean(latestContent && isAiRefreshableContent(latestContent));
+  const selectedIsLocal = Boolean(selectedContent && isAiRefreshableContent(selectedContent));
 
   const markRefreshing = (reportId: string, active: boolean) => setRefreshingIds((prev) => {
     const next = new Set(prev);
@@ -457,10 +308,12 @@ function ReportsChildPage({ child }: { child: ChildProfile }) {
     try {
       await updateGrowthReportContent({ reportId, content: JSON.stringify(updated), now: isoNow() });
       setReports(requireValidPersistedReports(activeChild.createdAt, await getGrowthReports(activeChild.childId)));
+      return true;
     } catch (error) {
       nimiToast.danger(i18nText('Reports.page.contentSaveFailed', {
         message: error instanceof Error ? error.message : String(error),
       }));
+      return false;
     }
   };
 
@@ -520,7 +373,7 @@ function ReportsChildPage({ child }: { child: ChildProfile }) {
       }
       const reportId = ulid();
       await insertGrowthReport({ reportId, childId: activeChild.childId, reportType: report.reportType, periodStart: report.periodStart, periodEnd: report.periodEnd, ageMonthsStart: report.ageMonthsStart, ageMonthsEnd: report.ageMonthsEnd, content: JSON.stringify(report.content), generatedAt: now, now });
-      setReports(requireValidPersistedReports(activeChild.createdAt, await getGrowthReports(activeChild.childId))); setExpandedReportId(reportId); setGenerateState('idle');
+      setReports(requireValidPersistedReports(activeChild.createdAt, await getGrowthReports(activeChild.childId))); setSelectedReportId(reportId); setShowAdvanced(false); setGenerateState('idle');
       nimiToast.success(i18nText('Reports.page.generateSuccess'));
       setTimeout(() => { if (typeof viewerRef.current?.scrollIntoView === 'function') viewerRef.current.scrollIntoView({ behavior: 'smooth' }); }, 100);
     } catch (error) {
@@ -532,7 +385,7 @@ function ReportsChildPage({ child }: { child: ChildProfile }) {
 
   // @nimi-authority: rule.parentos.advs.r009
   return (
-    <div className="report-page-shell hide-scrollbar overflow-y-auto">
+    <div className="report-page-shell">
       <div className="report-page-container">
         <header className="mb-6">
           <h1 className="parentos-journal-hero-title parentos-journal-hero-title__bold text-[44px] leading-[1.05] tracking-tight text-[var(--nimi-text-primary)]">
@@ -551,11 +404,11 @@ function ReportsChildPage({ child }: { child: ChildProfile }) {
           <ReportAiStatusCard
             aiState={aiState}
             localCount={localReports.length}
-            latestIsLocal={latestIsLocal}
-            latestRefreshing={Boolean(latestReport && refreshingIds.has(latestReport.reportId))}
+            latestIsLocal={selectedIsLocal}
+            latestRefreshing={Boolean(selectedReport && refreshingIds.has(selectedReport.reportId))}
             batchProgress={batchProgress}
             busy={refreshingIds.size > 0}
-            onRefreshLatest={() => { if (latestReport) void handleRefreshOne(latestReport); }}
+            onRefreshLatest={() => { if (selectedReport) void handleRefreshOne(selectedReport); }}
             onRefreshAll={() => void handleRefreshAll()}
             onStop={() => { batchStopRef.current = true; }}
           />
@@ -563,67 +416,7 @@ function ReportsChildPage({ child }: { child: ChildProfile }) {
 
         {refreshError && <p role="alert" className="mb-4 text-sm text-[var(--nimi-status-danger)]">{refreshError}</p>}
 
-        {latestContent && latestReport ? (
-          <div className="mb-6">
-            <ReportViewer content={latestContent} reportId={latestReport.reportId} persisted={latestReport} childName={activeChild.displayName} selfRoleName={activeChild.recorderProfiles?.[0]?.name} onContentUpdate={latestContent.version === 2 ? (u) => void handleContentUpdate(latestReport.reportId, u) : undefined} />
-          </div>
-        ) : reportLoadState === 'error' ? (
-          <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="report-empty-state" role="alert">
-            <p className="report-empty-title">{i18nText('Reports.page.loadError')}</p>
-          </Surface>
-        ) : reportLoadState === 'loading' && autoGenerationState !== 'generating' ? (
-          <Surface tone="card" material="glass-regular" elevation="raised" padding="none" className="report-empty-state">
-            <p className="report-empty-title">{i18nText('Reports.page.loading')}</p>
-          </Surface>
-        ) : (
-          <div className="mb-6">
-            <ReportAccumulatingState
-              childName={activeChild.displayName}
-              badgeLabel={formatAge(computeAgeMonthsAt(activeChild.birthDate, firstAccumulation.periodStart))}
-              accumulation={firstAccumulation}
-              autoGenerationState={autoGenerationState}
-              onRetry={() => setReloadKey((value) => value + 1)}
-            />
-          </div>
-        )}
-
-        {historyReports.length > 0 && (<div className="mb-6">
-          <p className="report-section-label">{i18nText('Reports.page.historyTitle')}</p>
-          <div className="space-y-2">{historyReports.map((report) => {
-            const isExpanded = expandedReportId === report.reportId;
-            const parsed = parseReportContent(report.content);
-            const isLocal = isAiRefreshableContent(parsed);
-            // v1 titles were frozen in the UI language active at generation time.
-            const title = isLocal ? buildNarrativeTitle(activeChild.displayName, parsed.reportType) : parsed.title;
-            const teaser = parsed.version === 2 ? parsed.teaser : (parsed.overview[1] ?? parsed.overview[0] ?? '');
-            return (<div key={report.reportId}>
-              <button onClick={() => setExpandedReportId((prev) => prev === report.reportId ? null : report.reportId)}
-                className={`report-history-button ${isExpanded ? 'report-history-button--active' : ''}`}>
-                <div className="flex items-center gap-2">
-                  <span className="report-history-title">{title}</span>
-                  <StatusBadge tone={isLocal ? 'neutral' : 'info'} className="shrink-0">{reportSourceLabel(parsed)}</StatusBadge>
-                  <StatusBadge tone="neutral" className="shrink-0">{reportBadgeLabel(parsed)}</StatusBadge>
-                  <ChevronDown size={12} className={`report-icon-muted shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} strokeWidth={2} />
-                </div>
-                <p className="report-history-date">{i18nText('Reports.page.periodRange', { start: report.periodStart.slice(0, 10), end: report.periodEnd.slice(0, 10) })}</p>
-                {teaser ? <p className="report-history-date">{teaser}</p> : null}
-              </button>
-              {isExpanded && (<div ref={viewerRef} className="mt-2 pb-4">
-                {isLocal && (
-                  <LocalReportNotice
-                    aiState={aiState}
-                    refreshing={refreshingIds.has(report.reportId)}
-                    disabled={batchProgress !== null}
-                    onRefresh={() => void handleRefreshOne(report)}
-                  />
-                )}
-                <ReportViewer content={parsed} reportId={report.reportId} persisted={report} childName={activeChild.displayName} selfRoleName={activeChild.recorderProfiles?.[0]?.name} onContentUpdate={parsed.version === 2 ? (u) => void handleContentUpdate(report.reportId, u) : undefined} />
-              </div>)}
-            </div>);
-          })}</div>
-        </div>)}
-
-        {reportLoadState === 'ready' && <div className="mb-8">
+        {reportLoadState === 'ready' && <div className="report-generator hide-on-print">
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
@@ -661,6 +454,64 @@ function ReportsChildPage({ child }: { child: ChildProfile }) {
             </Button>
           </Surface>)}
         </div>}
+        <div className="report-workspace">
+          {reports.length > 0 && <aside className="report-library hide-on-print" aria-label={i18nText('Reports.workspace.library')}>
+            <div className="report-library-heading">
+              <h2>{i18nText('Reports.workspace.library')}</h2>
+              <span>{reports.length}</span>
+            </div>
+            <label className="report-mobile-picker">
+              <span>{i18nText('Reports.workspace.choosePeriod')}</span>
+              <select value={selectedReport?.reportId ?? ''} onChange={(event) => setSelectedReportId(event.target.value)}>
+                {!latestReport && <option value="">{i18nText('Reports.workspace.accumulating')}</option>}
+                {reports.map((report) => <option key={report.reportId} value={report.reportId}>
+                  {report.periodStart.slice(0, 10)} — {report.periodEnd.slice(0, 10)} · {reportBadgeLabel(parseReportContent(report.content))}
+                </option>)}
+              </select>
+            </label>
+            <nav className="report-library-list" aria-label={i18nText('Reports.workspace.choosePeriod')}>
+              {reports.map((report, index) => {
+                const parsed = parseReportContent(report.content);
+                const year = report.periodStart.slice(0, 4);
+                return <div key={report.reportId}>
+                  {(index === 0 || year !== reports[index - 1]?.periodStart.slice(0, 4)) && <h3 className="report-library-year">{year}</h3>}
+                  <button type="button" aria-label={`${report.periodStart.slice(0, 10)} — ${report.periodEnd.slice(0, 10)} · ${reportBadgeLabel(parsed)}${report.reportId === latestReport?.reportId ? ` · ${i18nText('Reports.workspace.latest')}` : ''}`} aria-current={selectedReport?.reportId === report.reportId ? 'true' : undefined}
+                    className="report-library-item" onClick={() => {
+                      setSelectedReportId(report.reportId);
+                      viewerRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+                    }}>
+                    <span className="report-library-period">{report.periodStart.slice(5, 10)} — {report.periodEnd.slice(5, 10)}</span>
+                    <span className="report-library-kind">{reportBadgeLabel(parsed)}{report.reportId === latestReport?.reportId ? ` · ${i18nText('Reports.workspace.latest')}` : ''}</span>
+                  </button>
+                </div>;
+              })}
+            </nav>
+          </aside>}
+          <div className="report-reading-pane" ref={viewerRef}>
+            {reportLoadState === 'error' ? (
+              <div className="report-empty-state" role="alert">
+                <p>{i18nText('Reports.page.loadError')}</p>
+                <Button tone="secondary" onClick={() => setReloadKey((value) => value + 1)}>{i18nText('Reports.workspace.retry')}</Button>
+              </div>
+            ) : reportLoadState === 'loading' && !selectedReport && autoGenerationState !== 'generating' ? (
+              <div className="report-empty-state" role="status">{i18nText('Reports.page.loading')}</div>
+            ) : <>
+              {!latestReport && <ReportAccumulatingState
+                childName={activeChild.displayName}
+                badgeLabel={formatAge(computeAgeMonthsAt(activeChild.birthDate, firstAccumulation.periodStart))}
+                accumulation={firstAccumulation} autoGenerationState={autoGenerationState}
+                onRetry={() => setReloadKey((value) => value + 1)}
+              />}
+              {selectedContent && selectedReport && <div key={selectedReport.reportId} className="report-selected">
+                <ReportViewer content={selectedContent} reportId={selectedReport.reportId} persisted={selectedReport}
+                  childName={activeChild.displayName}
+                  onContentUpdate={selectedContent.version === 2 ? (u) => handleContentUpdate(selectedReport.reportId, u) : undefined} />
+              </div>}
+            </>}
+          </div>
+        </div>
+
+
       </div>
     </div>
   );

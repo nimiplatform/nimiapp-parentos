@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { i18nText } from '../../i18n/index.js';
+import { afterEach, describe, expect, it } from 'vitest';
+import { i18n, i18nText } from '../../i18n/index.js';
 import { buildStructuredGrowthReport, parseReportContent, parseStructuredGrowthReportContent } from './structured-report.js';
 
 describe('structured-report', () => {
+  const originalLanguage = i18n.language;
+  afterEach(async () => { await i18n.changeLanguage(originalLanguage); });
   const child = {
     childId: 'child-1',
     familyId: 'family-1',
@@ -134,6 +136,42 @@ describe('structured-report', () => {
 
   it('rejects malformed stored payloads', () => {
     expect(() => parseStructuredGrowthReportContent('{"format":"invalid"}')).toThrow(/invalid structured growth report/i);
+  });
+
+  it('persists Chinese report copy without notation tokens or internal observation IDs', async () => {
+    await i18n.changeLanguage('zh');
+    const measurements = ['bone-age', 'vision-left'].flatMap((typeId) => [
+      ['2026-03-01T00:00:00.000Z', typeId === 'bone-age' ? 3 : 0.8],
+      ['2026-04-01T00:00:00.000Z', typeId === 'bone-age' ? 3.1 : 0.9],
+    ].map(([date, value], index) => ({
+      measurementId: `${typeId}-${index}`, childId: child.childId, typeId,
+      measuredAt: String(date), value: Number(value), ageMonths: 26,
+      percentile: null, source: 'manual', notes: null, createdAt: String(date),
+    })));
+    const built = buildStructuredGrowthReport({
+      child, reportType: 'monthly', now: '2026-05-01T00:00:00.000Z',
+      periodStart: '2026-04-01T00:00:00.000Z', periodEnd: '2026-04-30T23:59:59.999Z',
+      measurements, milestones: [], vaccines: [], reminderStates: [],
+      journalEntries: [{
+        entryId: 'journal-zh', childId: child.childId, contentType: 'text',
+        textContent: '一起读绘本', voicePath: null, photoPaths: null,
+        recordedAt: '2026-04-02T00:00:00.000Z', ageMonths: 26,
+        observationMode: 'quick-capture', dimensionId: 'PO-OBS-LANG-001',
+        selectedTags: null, guidedAnswers: null, observationDuration: null,
+        keepsake: 0, moodTag: null, recorderId: 'deleted-recorder-id',
+        createdAt: '2026-04-02T00:00:00.000Z', updatedAt: '2026-04-02T00:00:00.000Z',
+      }],
+    });
+    const saved = parseStructuredGrowthReportContent(JSON.stringify(built.content));
+    expect(saved.overview[1]).toBe('本期共 2 次生长测量、1 条日志、0 个里程碑、0 条疫苗记录。');
+    const visibleText = JSON.stringify([saved.title, saved.subtitle, saved.overview,
+      saved.sections, saved.trendSignals, saved.sources, saved.safetyNote]);
+    expect(visibleText).toContain('骨龄：3.1 岁');
+    expect(visibleText).toContain('左眼视力：0.9（2026-04-01）');
+    expect(visibleText).toContain('观察内容：');
+    expect(visibleText).toContain('未命名记录人');
+    expect(visibleText).not.toMatch(/decimal|years|needs-review|PO-OBS-|deleted-recorder-id|This window/);
+    expect(saved.trendSignals.find((signal) => signal.id === 'measurement-bone-age')?.summary).toContain('+0.1 岁');
   });
 
   it('rejects unsupported reportType values', () => {

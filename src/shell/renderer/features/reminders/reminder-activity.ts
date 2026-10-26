@@ -3,7 +3,7 @@ import type {
   NimiAppActivityPutInput,
   NimiAppActivityRecord,
 } from '@nimiplatform/sdk/app';
-import { getReminderStates } from '../../bridge/sqlite-bridge.js';
+import { getChild, getReminderStates } from '../../bridge/sqlite-bridge.js';
 import { computeAgeMonths, type ChildProfile } from '../../app-shell/app-store.js';
 import {
   computeEligibleReminders,
@@ -97,11 +97,14 @@ function localMidnightIso(dateKey: string): string {
  * Scheduled and snoozed rounds keep an already-published todo open.
  */
 export function reminderActivityPublication(
-  childId: string,
+  child: Pick<ChildProfile, 'childId' | 'displayName'>,
   reminder: ActiveReminder,
   previouslyPublished = false,
 ): ReminderPublication | null {
   if (!isPublishedReminderRule(reminder.rule)) return null;
+  const { childId } = child;
+  assertReminderChild(child, reminder.rule.ruleId, reminder.repeatIndex);
+  if (reminder.state && reminder.state.childId !== childId) throw new Error('Reminder child ownership mismatch.');
   let outcome: 'open' | 'completed' | 'cancelled';
   let occurredAt: string;
   if (reminder.lifecycle === 'completed' && reminder.state?.completedAt) {
@@ -136,6 +139,8 @@ export function reminderActivityPublication(
     objectRef: reminderActivityObjectRef(childId, reminder.rule.ruleId, reminder.repeatIndex),
     type: activityTypeForRuleId(reminder.rule.ruleId),
     data: {
+      childId,
+      childName: child.displayName,
       ruleId: reminder.rule.ruleId,
       repeatIndex: reminder.repeatIndex,
       windowStart: reminder.effectiveStartDate,
@@ -145,12 +150,29 @@ export function reminderActivityPublication(
   };
 }
 
+function assertReminderChild(child: Pick<ChildProfile, 'childId' | 'displayName'>, ruleId: string, repeatIndex: number): void {
+  if (!child.displayName.trim() || !parseReminderActivityObjectRef(reminderActivityObjectRef(child.childId, ruleId, repeatIndex))) {
+    throw new Error('Reminder child identity is unavailable.');
+  }
+}
+
 /**
  * The cancellation of an open todo whose round the engine no longer carries:
  * a newer round of the same rule superseded it, a newer round was completed,
  * or the rule was disabled. ParentOS no longer asks for that round.
  */
-export function supersededReminderPublication(record: NimiAppActivityRecord, now: string): ReminderPublication {
+export function supersededReminderPublication(record: NimiAppActivityRecord, child: Pick<ChildProfile, 'childId' | 'displayName'>, groupRef: string, now: string): ReminderPublication {
+  const target = parseReminderActivityObjectRef(record.objectRef ?? '');
+  const data = record.data;
+  if (!target || target.childId !== child.childId
+    || record.key !== reminderActivityKey(target.childId, target.ruleId, target.repeatIndex)
+    || record.type !== activityTypeForRuleId(target.ruleId)
+    || !data || data.ruleId !== target.ruleId || data.repeatIndex !== target.repeatIndex
+    || typeof data.windowStart !== 'string' || typeof data.windowEnd !== 'string'
+    || (data.childId !== undefined && data.childId !== child.childId)) {
+    throw new Error('Held reminder ownership or round is unavailable.');
+  }
+  assertReminderChild(child, target.ruleId, target.repeatIndex);
   return {
     key: record.key,
     kind: 'todo',
@@ -160,7 +182,15 @@ export function supersededReminderPublication(record: NimiAppActivityRecord, now
     ...(record.summary ? { summary: record.summary } : {}),
     ...(record.objectRef ? { objectRef: record.objectRef } : {}),
     type: record.type,
-    ...(record.data ? { data: record.data } : {}),
+    data: {
+      childId: child.childId,
+      childName: child.displayName,
+      ruleId: target.ruleId,
+      repeatIndex: target.repeatIndex,
+      windowStart: data.windowStart,
+      windowEnd: data.windowEnd,
+      groupRef,
+    },
     occurredAt: now,
   };
 }
@@ -171,6 +201,7 @@ export async function evaluatePublishedReminders(child: ChildProfile): Promise<A
     getReminderStates(child.childId),
     loadAllFreqOverrides(child.childId, REPEATING_PUBLISHED_RULE_IDS),
   ]);
+  if (rows.some(row => row.childId !== child.childId)) throw new Error('Reminder state child ownership mismatch.');
   return computeEligibleReminders(
     PUBLISHED_RULES,
     {
@@ -206,6 +237,7 @@ let findChild: ChildLookup = () => undefined;
 let ownSourceRef: string | null = null;
 const issuedRevisions = new Map<string, number>();
 const pending = new Map<string, PendingPublication>();
+const removedChildPublications = new Map<string, IssuedPublication>();
 const failedProjections = new Set<string>();
 const syncListeners = new Set<(unsynced: number) => void>();
 const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -214,6 +246,71 @@ function serialized<T>(work: () => Promise<T>): Promise<T> {
   const run = queue.then(work, work);
   queue = run.then(() => undefined, () => undefined);
   return run;
+}
+
+// @nimi-authority: rule.parentos.remi.r016
+/** The source comes from this session's successful directory publication.
+ * Reconcile after persisted deletion, including on reopen and an empty family.
+ * Share the reminder queue so an older projection cannot reopen a removed child.
+ */
+export function reconcileRemovedChildReminders(sourceRef: string, isCurrent: () => boolean): Promise<void> {
+  const current = isCurrent;
+  return serialized(async () => {
+    const client = getParentOSNimiClient();
+    const records: NimiAppActivityRecord[] = [];
+    const tokens = new Set<string>();
+    let pageToken: string | undefined;
+    do {
+      if (!current()) return;
+      const result = await client.activity.list({
+        filter: { kind: 'todo', sourceRef, todoStates: ['open'] }, pageSize: RECORD_PAGE_SIZE,
+        ...(pageToken ? { pageToken } : {}),
+      });
+      records.push(...result.records.filter(record => record.source.kind === 'app'
+        && record.source.appId === PARENTOS_APP_ID && record.source.sourceRef === sourceRef
+        && record.todoState === 'open'
+        && (record.type === GROWTH_REMINDER_ACTIVITY_TYPE || record.type === CARE_REMINDER_ACTIVITY_TYPE)));
+      pageToken = result.nextPageToken || undefined;
+      if (pageToken && tokens.has(pageToken)) throw new Error('Incomplete reminder listing.');
+      if (pageToken) tokens.add(pageToken);
+    } while (pageToken);
+    for (const record of records) {
+      if (!current()) return;
+      const target = parseReminderActivityObjectRef(record.objectRef ?? '');
+      if (!target) throw new Error('Held reminder child identity is unavailable.');
+      // Absence from a UI selection or family snapshot does not prove deletion.
+      const child = await getChild(target.childId);
+      if (!current()) return;
+      if (child) {
+        if (child.childId !== target.childId) throw new Error('Reminder child lookup mismatch.');
+        continue;
+      }
+      const name = record.data?.childName;
+      if (record.data?.childId !== target.childId || typeof name !== 'string') {
+        throw new Error('Held reminder child ownership is unavailable.');
+      }
+      const groupRef = await reminderActivityGroupRef(target.childId);
+      const publication = supersededReminderPublication(record,
+        { childId: target.childId, displayName: name }, groupRef, new Date().toISOString());
+      if (!current()) return;
+      const retryKey = `${sourceRef}|${record.key}`;
+      const previous = removedChildPublications.get(retryKey);
+      const issued = previous && contentOf(previous) === contentOf(publication)
+        ? previous : { ...publication, revision: nextRevision(record.key, [record]) };
+      removedChildPublications.set(retryKey, issued);
+      try {
+        await client.activity.put(issued);
+      } catch (error) {
+        if (revisionConflict(error)) removedChildPublications.delete(retryKey);
+        throw error;
+      }
+      if (!current()) return;
+      removedChildPublications.delete(retryKey);
+      pending.delete(record.key);
+      failedProjections.delete(target.childId);
+    }
+    if (current()) reportUnsynced();
+  });
 }
 
 function reasonCodeOf(error: unknown): string {
@@ -297,6 +394,7 @@ export function endReminderActivitySession(): void {
   ownSourceRef = null;
   issuedRevisions.clear();
   pending.clear();
+  removedChildPublications.clear();
   failedProjections.clear();
   for (const timer of debounceTimers.values()) clearTimeout(timer);
   debounceTimers.clear();
@@ -397,14 +495,21 @@ async function flush(childId: string, epoch: number): Promise<number> {
   return unsyncedCount();
 }
 
+// @nimi-authority: rule.parentos.remi.r016
 async function projectChild(childId: string, epoch: number): Promise<void> {
   const child = findChild(childId);
-  if (!child) {
+  if (child && child.childId !== childId) throw new Error('Reminder child lookup mismatch.');
+  // A deletion can commit before the UI directory refreshes. Check persistence
+  // within the publication queue so stale UI data cannot reopen withdrawn todos.
+  const persistedChild = child ? await getChild(childId) : null;
+  if (epoch !== sessionEpoch) return;
+  if (!child || !persistedChild) {
     for (const [key, queued] of pending) {
       if (queued.childId === childId) pending.delete(key);
     }
     return;
   }
+  if (persistedChild.childId !== childId) throw new Error('Reminder child lookup mismatch.');
   const reminders = await evaluatePublishedReminders(child);
   if (epoch !== sessionEpoch) return;
   // A failed read leaves the whole projection retryable. Without the held
@@ -419,7 +524,7 @@ async function projectChild(childId: string, epoch: number): Promise<void> {
     const key = reminderActivityKey(child.childId, reminder.rule.ruleId, reminder.repeatIndex);
     carried.add(key);
     const previouslyPublished = (held.get(key) ?? []).some((record) => record.source.sourceRef === ownSourceRef);
-    const publication = reminderActivityPublication(child.childId, reminder, previouslyPublished);
+    const publication = reminderActivityPublication(child, reminder, previouslyPublished);
     if (publication) publications.set(publication.key, { ...publication, data: { ...publication.data, groupRef } });
   }
   // A round the engine no longer carries is no longer pending in ParentOS.
@@ -429,8 +534,8 @@ async function projectChild(childId: string, epoch: number): Promise<void> {
     for (const [key, records] of held) {
       if (carried.has(key)) continue;
       for (const record of records) {
-        if (record.source.sourceRef !== ownSourceRef || record.todoState !== 'open') continue;
-        publications.set(key, supersededReminderPublication(record, now));
+        if (record.source.sourceRef !== ownSourceRef || record.todoState === 'completed') continue;
+        publications.set(key, supersededReminderPublication(record, child, groupRef, now));
       }
     }
   }
@@ -509,7 +614,7 @@ export function registerReminderOpenHandler(input: {
     const target = parseReminderActivityObjectRef(request.objectRef);
     if (!target || request.type !== activityTypeForRuleId(target.ruleId)) return 'object-unavailable';
     const child = findChild(target.childId);
-    if (!child) return 'object-unavailable';
+    if (!child || child.childId !== target.childId) return 'object-unavailable';
     const reminders = await evaluatePublishedReminders(child);
     const instance = reminders.find((reminder) => (
       reminder.rule.ruleId === target.ruleId && reminder.repeatIndex === target.repeatIndex

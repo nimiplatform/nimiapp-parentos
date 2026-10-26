@@ -4,6 +4,8 @@ import { Button, IconButton, nimiToast, Surface, TextareaField, Toggle as KitTog
 import { Pencil, X } from 'lucide-react';
 import type { NarrativeReportContent, ProfessionalSummary, ProfessionalSummarySection } from './structured-report.js';
 import { i18nText } from '../../i18n/index.js';
+import { exportReportAsPdf } from './report-export.js';
+import { isUnrecordedSection } from './report-reading-model.js';
 
 
 interface SectionDraftChange {
@@ -63,7 +65,7 @@ function Toggle({ checked, onChange, ariaLabel }: ToggleProps) {
 
 interface ProfessionalSectionEditorProps {
   section: ProfessionalSummarySection;
-  onBodyChange: (body: string) => void;
+  onBodyChange: (body: string) => Promise<boolean> | undefined;
   onToggle: (enabled: boolean) => void;
   onRestore: () => void;
 }
@@ -81,9 +83,8 @@ function ProfessionalSectionEditor({
     setDraft(section.body); setEditing(true);
     setTimeout(() => ref.current?.focus(), 0);
   };
-  const save = () => {
-    onBodyChange(draft);
-    setEditing(false);
+  const save = async () => {
+    if (await onBodyChange(draft)) setEditing(false);
   };
 
   return (
@@ -154,29 +155,68 @@ interface ProfessionalViewProps {
   open: boolean;
   onClose: () => void;
   content: NarrativeReportContent;
-  onContentUpdate?: (next: NarrativeReportContent) => void;
+  onContentUpdate?: (next: NarrativeReportContent) => Promise<boolean>;
   title: string;
-  onPrint?: () => void;
   onCopy?: (text: string) => void;
 }
 
 export function ProfessionalSummaryModal({
-  open, onClose, content, onContentUpdate, title, onPrint, onCopy,
+  open, onClose, content, onContentUpdate, title, onCopy,
 }: ProfessionalViewProps) {
+  const previewRef = useRef<HTMLElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const previousFocus = document.activeElement;
+    const focusable = () => {
+      const controls = dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), textarea, input, summary, [tabindex="0"]');
+      return Array.from(controls ?? []).filter((control) => control.getClientRects().length > 0);
+    };
+    focusable()[0]?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !savingRef.current) closeRef.current();
+      if (e.key !== 'Tab') return;
+      const elements = focusable();
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+    };
+  }, [open]);
 
   if (!open) return null;
 
   const summary = content.professionalSummary;
 
+  const savePdf = async () => {
+    if (!summary || savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const result = await exportReportAsPdf(previewRef.current, { filename: `${title}.pdf`, backgroundColor: 'var(--nimi-surface-card)' });
+      if (result.savedPath) nimiToast.success(i18nText('Reports.actionBar.save.pdfSuccess'));
+    } catch (error) {
+      nimiToast.danger(i18nText('Reports.actionBar.save.failedWithDetail', {
+        prefix: i18nText('Reports.actionBar.save.pdfFailed'), detail: error instanceof Error ? error.message : String(error),
+      }));
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
   const applySummary = (nextSummary: ProfessionalSummary) => {
     if (!onContentUpdate) return;
-    onContentUpdate({ ...content, professionalSummary: nextSummary });
+    return onContentUpdate({ ...content, professionalSummary: nextSummary });
   };
 
   const handleCopy = () => {
@@ -191,13 +231,20 @@ export function ProfessionalSummaryModal({
     }
   };
 
+  const renderSection = (section: ProfessionalSummarySection) => summary && <ProfessionalSectionEditor key={section.id} section={section}
+    onBodyChange={(body) => applySummary(updateSection(summary, section.id, { body }))}
+    onToggle={(enabled) => applySummary(updateSection(summary, section.id, { enabled }))}
+    onRestore={() => applySummary(restoreSectionToAi(summary, section.id))} />;
+  const unrecorded = summary?.sections.filter((section) => isUnrecordedSection(summary, section)) ?? [];
+
   const content_node = (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="pro-summary-title"
       className="report-professional-backdrop"
-      onClick={onClose}
+      onClick={() => { if (!saving) onClose(); }}
     >
       <Surface
         tone="overlay"
@@ -218,7 +265,7 @@ export function ProfessionalSummaryModal({
               <div className="report-professional-child-summary">{summary.childSummary}</div>
             ) : null}
           </div>
-          <IconButton onClick={onClose} aria-label={i18nText('Reports.professional.close')} icon={<X size={18} />} size="sm" tone="ghost" />
+          <IconButton onClick={onClose} disabled={saving} aria-label={i18nText('Reports.professional.close')} icon={<X size={18} />} size="sm" tone="ghost" />
         </header>
 
         <div className="report-professional-modal-body">
@@ -226,15 +273,14 @@ export function ProfessionalSummaryModal({
             <>
               <div className="report-professional-intro">
                 <span className="report-strong">{i18nText('Reports.professional.introTitle')}</span>
-                {i18nText('Reports.professional.introBody')}
+                {i18nText(summary.format === 'ai' ? 'Reports.professional.introBody' : 'Reports.workspace.professionalLocalIntro')}
               </div>
               <div className="report-professional-section-list">
-                {summary.sections.map((s) => (
-                  <ProfessionalSectionEditor key={s.id} section={s}
-                    onBodyChange={(body) => applySummary(updateSection(summary, s.id, { body }))}
-                    onToggle={(enabled) => applySummary(updateSection(summary, s.id, { enabled }))}
-                    onRestore={() => applySummary(restoreSectionToAi(summary, s.id))} />
-                ))}
+                {summary.sections.filter((section) => !isUnrecordedSection(summary, section)).map(renderSection)}
+                {unrecorded.length > 0 && <details className="report-record-details">
+                  <summary>{i18nText('Reports.workspace.unrecordedDomains', { count: unrecorded.length })}</summary>
+                  {unrecorded.map(renderSection)}
+                </details>}
               </div>
             </>
           ) : (
@@ -255,11 +301,21 @@ export function ProfessionalSummaryModal({
           <Button onClick={handleCopy} disabled={!summary} size="sm" tone="secondary">
             {i18nText('Reports.professional.copy')}
           </Button>
-          <Button onClick={onPrint} disabled={!summary || !onPrint} size="sm" tone="primary">
+          <Button onClick={() => void savePdf()} loading={saving} disabled={!summary || !summary.sections.some((section) => section.enabled) || saving} size="sm" tone="primary">
             {i18nText('Reports.professional.savePdf')}
           </Button>
         </footer>
       </Surface>
+      {summary && <div className="report-export-staging" aria-hidden="true">
+        <article ref={previewRef} className="report-professional-export">
+          <h1>{title}</h1>
+          <p>{summary.childSummary}</p>
+          {summary.sections.filter((section) => section.enabled).map((section) => <section key={section.id}>
+            <h2>{section.title}</h2><p>{section.body || i18nText('Reports.professional.notRecorded')}</p>
+          </section>)}
+          <footer>{summary.disclaimer}</footer>
+        </article>
+      </div>}
     </div>
   );
 

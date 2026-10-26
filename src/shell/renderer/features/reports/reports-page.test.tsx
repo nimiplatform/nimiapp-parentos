@@ -207,7 +207,7 @@ describe('ReportsPage', () => {
 
     fireEvent.click(screen.getByRole('link', { name: /记录一个瞬间/i }));
     await waitFor(() => expect(screen.getByTestId('navigation-probe').textContent).toContain('/journal'));
-    const advancedToggle = screen.getByRole('button', { name: /高级选项/i });
+    const advancedToggle = await screen.findByRole('button', { name: /高级选项/i });
     expect(advancedToggle.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(advancedToggle);
     expect(screen.getByText('按所选时间范围生成一份独立报告，不影响月度报告的积累与自动生成。')).toBeTruthy();

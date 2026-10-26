@@ -8,6 +8,7 @@ import { i18n } from './i18n/index.js';
 import { AppRoutes } from './app-shell/routes.js';
 import { ShellLayout } from './app-shell/shell-layout.js';
 import { AppBootstrapBoundary } from './app-shell/app-bootstrap-boundary.js';
+import { ChildDirectoryBridge } from './features/settings/child-directory-bridge.js';
 import { ReminderActivityBridge } from './features/reminders/reminder-activity-bridge.js';
 import { ParentOSNavigationProvider, useParentOSNavigation } from './app-shell/app-navigation.js';
 import { useAppStore } from './app-shell/app-store.js';
@@ -29,7 +30,7 @@ function ParentOSFrame() {
       navigation={owner.navigation} navigationEnabled={ready}
       sidebar={ready && hasChild ? { visible: sidebarVisible, onVisibleChange: setSidebarVisible } : undefined} />
     <div className="relative min-h-0 flex-1 overflow-hidden [contain:layout]">
-      <AppBootstrapBoundary><ReminderActivityBridge /><ShellLayout sidebarVisible={sidebarVisible}>
+      <AppBootstrapBoundary><ReminderActivityBridge /><ChildDirectoryBridge /><ShellLayout sidebarVisible={sidebarVisible}>
         <div data-testid="parentos-app-routed-surface" className="h-full"><AppRoutes /></div>
       </ShellLayout></AppBootstrapBoundary>
     </div>

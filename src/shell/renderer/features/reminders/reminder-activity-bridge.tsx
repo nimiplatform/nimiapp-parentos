@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { nimiToast } from '@nimiplatform/kit/ui';
 import { useAppStore } from '../../app-shell/app-store.js';
-import { hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import { getParentOSNimiClient, hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import { i18nText } from '../../i18n/index.js';
 import {
   beginReminderActivitySession,
@@ -39,22 +39,35 @@ export function ReminderActivityBridge() {
 
   useEffect(() => {
     if (!hasParentOSNimiClient()) return undefined;
-    beginReminderActivitySession((childId) => useAppStore.getState().children.find((child) => child.childId === childId));
-    const registration = registerReminderOpenHandler({
-      openReminder: (childId, focus) => ownerRef.current.switchChild(childId, { id: '/reminders', focus }),
+    let stopped = false;
+    let registration: ReturnType<typeof registerReminderOpenHandler> | null = null;
+    // Client construction does not bind a session. Establish it through the
+    // public Host surface before reminder publication or open registration.
+    void getParentOSNimiClient().auth.status().then(access => {
+      if (stopped) return;
+      if (!access.sessionBound) throw new Error(access.reasonCode);
+      beginReminderActivitySession((childId) => useAppStore.getState().children.find((child) => child.childId === childId));
+      registration = registerReminderOpenHandler({
+        openReminder: (childId, focus) => ownerRef.current.switchChild(childId, { id: '/reminders', focus }),
+      });
+      const childId = useAppStore.getState().activeChildId;
+      if (childId) requestReminderActivitySync(childId);
+    }).catch(() => {
+      if (!stopped) nimiToast.warning(i18nText('Reminders.activity.sessionChanged'), { sticky: true });
     });
     const stopWatching = window.parentOSHost?.onSessionInvalidated(() => {
+      stopped = true;
       ownerRef.current.reset();
       endReminderActivitySession();
-      void registration.stop();
+      void registration?.stop();
       nimiToast.warning(i18nText('Reminders.activity.sessionChanged'), {
         sticky: true,
-        action: { label: i18nText('Reminders.activity.reopen'), onClick: () => window.location.reload() },
       });
     });
     return () => {
+      stopped = true;
       stopWatching?.();
-      void registration.stop();
+      void registration?.stop();
       endReminderActivitySession();
     };
   }, []);

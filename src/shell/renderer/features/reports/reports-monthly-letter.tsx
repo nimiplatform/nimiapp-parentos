@@ -1,14 +1,15 @@
 import { reportActionIntent } from './structured-report.js';
 import { useRef, useState } from 'react';
 import { DestinationLink } from '../../app-shell/app-navigation.js';
-import { Button, IconButton, StatusBadge, TextareaField } from '@nimiplatform/kit/ui';
-import { AlertCircle, ArrowRight, Heart, Pencil, Quote } from 'lucide-react';
+import { Button, IconButton, TextareaField } from '@nimiplatform/kit/ui';
+import { ArrowRight, Pencil } from 'lucide-react';
 import { NoteAnchor } from './report-user-notes.js';
-import { exportReportAsImage, exportReportAsPdf, printReport } from './report-export.js';
+import { exportReportAsImage, exportReportAsPdf } from './report-export.js';
 import { ReportActionBar } from './reports-action-bar.js';
 import { ProfessionalSummaryModal } from './reports-professional-view.js';
 import { isPlaceholderKeyword, type NarrativeReportContent, type NarrativeSection } from './structured-report.js';
 import { i18nText } from '../../i18n/index.js';
+import { isSparseReport, isUnrecordedSection } from './report-reading-model.js';
 
 
 const KIND_META: Record<string, { labelKey: string; className: string }> = {
@@ -30,62 +31,6 @@ function kindOf(section: NarrativeSection) {
   return KIND_META.default!;
 }
 
-// Old reports generated before the child-centric prompt change may contain
-// caregiver-addressed openers. Detect those and fall back to safer text so
-// the hero does not foreground the wrong subject.
-const CAREGIVER_PATTERNS: RegExp[] = [
-  new RegExp('^\\u4eb2\\u7231\\u7684(\\u5988\\u5988|\\u7238\\u7238|\\u5bb6\\u957f|\\u7236\\u6bcd|\\u7239\\u5a18|\\u7237\\u7237|\\u5976\\u5976|\\u5916\\u516c|\\u5916\\u5a46|\\u59e5\\u59e5|\\u59e5\\u7237|\\u4f60)'),
-  new RegExp('^(\\u611f\\u8c22|\\u8c22\\u8c22)(\\u4f60|\\u4f60\\u4eec|\\u5927\\u5bb6|\\u5bb6\\u4eba|\\u7238\\u7238?|\\u5988\\u5988?|\\u7237\\u7237|\\u5976\\u5976|\\u5916\\u516c|\\u5916\\u5a46|\\u59e5\\u59e5|\\u59e5\\u7237)'),
-  new RegExp('^\\u4f60\\u8fd9\\u4e2a\\u6708'),
-  new RegExp('^\\u4f60\\u8f9b\\u82e6\\u4e86'),
-  new RegExp('^\\u81f4\\s*(\\u5988\\u5988|\\u7238\\u7238|\\u5bb6\\u957f|\\u7236\\u6bcd)'),
-];
-
-const CHILD_NAME_TITLE_SUFFIX = new RegExp('\\u7684?(\\u6708\\u5ea6|\\u672c\\u6708|\\u8fd9\\u4e2a\\u6708|\\u56db\\u6708|\\u4e09\\u6708|\\u4e94\\u6708).*$');
-
-function looksCaregiverAddressed(text: string | null | undefined): boolean {
-  if (!text) return false;
-  const head = text.trim().slice(0, 24);
-  return CAREGIVER_PATTERNS.some((re) => re.test(head));
-}
-
-function sanitizeForChildFocus(text: string | null | undefined): string | null {
-  if (!text) return null;
-  const trimmed = text.trim();
-  if (!trimmed) return null;
-  if (looksCaregiverAddressed(trimmed)) return null;
-  return trimmed;
-}
-
-function splitTeaser(source: string): { keyword: string; sub: string } {
-  const trimmed = source.trim();
-  if (!trimmed) return { keyword: '', sub: '' };
-  const match = trimmed.match(/^([\u4e00-\u9fa5]{2,4}|\S{2,6})[、；;：:，,。.\s·—-]+(.+)$/);
-  if (match) return { keyword: match[1]!, sub: match[2]!.trim() };
-  if (trimmed.length <= 6) return { keyword: trimmed, sub: '' };
-  // No clean punctuation boundary. Do not chop mid-token; let the caller try
-  // the next source.
-  return { keyword: '', sub: trimmed };
-}
-
-function firstSentence(text: string) {
-  if (!text) return '';
-  const m = text.trim().match(/^[^。.!?！？]+[。.!?！？]?/);
-  return m ? m[0]!.trim() : text.trim();
-}
-
-function monthFromIso(iso: string | undefined) {
-  const d = iso ? new Date(iso) : new Date();
-  return { year: d.getFullYear(), month: d.getMonth() + 1 };
-}
-
-function badgeNameSizeClass(name: string) {
-  if (name.length <= 2) return 'report-monthly-badge-name-lg';
-  if (name.length <= 4) return 'report-monthly-badge-name-md';
-  if (name.length <= 6) return 'report-monthly-badge-name-sm';
-  return 'report-monthly-badge-name-xs';
-}
-
 /* ── Editable helpers ── */
 
 function EditPencil({ onClick }: { onClick: () => void }) {
@@ -103,8 +48,9 @@ function EditPencil({ onClick }: { onClick: () => void }) {
 
 function HoverEditable({
   text, canEdit, onSave, children,
-}: { text: string; canEdit: boolean; onSave: (v: string) => void; children: (text: string) => React.ReactNode }) {
+}: { text: string; canEdit: boolean; onSave: (v: string) => Promise<boolean> | undefined; children: (text: string) => React.ReactNode }) {
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState(text);
   const ref = useRef<HTMLTextAreaElement>(null);
   const start = () => { setDraft(text); setEditing(true); setTimeout(() => ref.current?.focus(), 0); };
@@ -119,8 +65,12 @@ function HoverEditable({
           textareaClassName="report-monthly-edit-textarea"
         />
         <div className="mt-2 flex gap-2">
-          <Button size="sm" tone="primary" onClick={() => { onSave(draft); setEditing(false); }}>{i18nText('Reports.monthly.save')}</Button>
-          <Button size="sm" tone="ghost" onClick={() => setEditing(false)}>{i18nText('Reports.monthly.cancel')}</Button>
+          <Button size="sm" tone="primary" loading={saving} disabled={saving} onClick={async () => {
+            if (saving) return;
+            setSaving(true);
+            try { if (await onSave(draft)) setEditing(false); } finally { setSaving(false); }
+          }}>{i18nText('Reports.monthly.save')}</Button>
+          <Button size="sm" tone="ghost" disabled={saving} onClick={() => setEditing(false)}>{i18nText('Reports.monthly.cancel')}</Button>
         </div>
       </div>
     );
@@ -133,30 +83,23 @@ function HoverEditable({
   );
 }
 
-/* ── Icons ── */
-
-function QuoteIcon({ size = 26 }: { size?: number }) {
-  return <Quote size={size} strokeWidth={1.5} />;
-}
-
 /* ── Main viewer ── */
 
 interface Props {
   content: NarrativeReportContent;
   reportId?: string;
-  onContentUpdate?: (u: NarrativeReportContent) => void;
+  onContentUpdate?: (u: NarrativeReportContent) => Promise<boolean>;
   periodStart?: string;
   periodEnd?: string;
   ageMonthsStart?: number;
   ageMonthsEnd?: number;
   childName?: string;
-  /** Current user's family role, taken from child.recorderProfiles[0].name. */
-  selfRoleName?: string;
 }
 
+// @nimi-authority: rule.parentos.advs.r009
 export function MonthlyLetterViewer({
   content, reportId, onContentUpdate,
-  periodStart, periodEnd, ageMonthsStart, ageMonthsEnd, childName, selfRoleName,
+  periodStart, periodEnd, ageMonthsStart, ageMonthsEnd, childName,
 }: Props) {
   const canEdit = Boolean(reportId && onContentUpdate);
   const editField = (field: 'opening' | 'closingMessage' | 'milestoneReplay', value: string) =>
@@ -170,7 +113,6 @@ export function MonthlyLetterViewer({
 
   const articleRef = useRef<HTMLElement>(null);
   const [professionalOpen, setProfessionalOpen] = useState(false);
-  const [professionalPrintPending, setProfessionalPrintPending] = useState(false);
 
   const reportFileStem = `${(childName && childName.trim()) || i18nText('Reports.monthly.defaultFileStem')}-${periodStart?.slice(0, 7) ?? ''}`;
   const handleSavePdf = async () => {
@@ -187,87 +129,17 @@ export function MonthlyLetterViewer({
     });
     return Boolean(result.savedPath);
   };
-  const handlePrintProfessional = () => {
-    // Close the modal so only the professional printable subtree remains
-    // visible; styles.css hides the letter article by scope.
-    setProfessionalOpen(false);
-    setProfessionalPrintPending(true);
-    setTimeout(() => {
-      printReport('professional');
-      setProfessionalPrintPending(false);
-    }, 50);
-  };
   const focusNoteComposer = () => {
     const composer = articleRef.current?.querySelector<HTMLElement>('.report-note-composer');
     if (composer) {
       composer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      (composer.querySelector('button, textarea') as HTMLElement | null)?.focus();
+      if (composer instanceof HTMLButtonElement) composer.click();
+      else composer.querySelector<HTMLTextAreaElement>('textarea')?.focus();
     }
   };
 
-  const { month } = monthFromIso(periodStart ?? content.generatedAt);
-  const issueNo = String(month).padStart(2, '0');
-  const name = (childName && childName.trim()) || content.title.replace(CHILD_NAME_TITLE_SUFFIX, '').trim() || 'Ta';
-
-  const cleanTeaser = sanitizeForChildFocus(content.teaser);
-  const cleanOpening = sanitizeForChildFocus(content.opening);
-  const cleanClosing = sanitizeForChildFocus(content.closingMessage);
-
-  // Hero keyword — prefer the AI-distilled `keyword` field. Fall back to
-  // deriving from teaser/opening (with name-guard) for legacy reports.
-  let heroKeyword = '';
-  let heroSub = '';
-  const nameLower = name.trim().toLowerCase();
-  const keywordIsName = (k: string) => {
-    const t = k.trim().toLowerCase();
-    return !t || t === nameLower || t.startsWith(nameLower) || nameLower.startsWith(t);
-  };
-  if (content.keyword && content.keyword.trim() && !keywordIsName(content.keyword) && !isPlaceholderKeyword(content.keyword)) {
-    heroKeyword = content.keyword.trim();
-    heroSub = (content.keywordSub && content.keywordSub.trim()) || '';
-  } else {
-    const sources = [
-      cleanTeaser,
-      cleanOpening ? firstSentence(cleanOpening) : null,
-      content.narrativeSections[0]?.title ?? null,
-    ].filter((s): s is string => Boolean(s));
-    for (const src of sources) {
-      const split = splitTeaser(src);
-      if (split.keyword && !keywordIsName(split.keyword) && !isPlaceholderKeyword(split.keyword)) {
-        heroKeyword = split.keyword;
-        heroSub = split.sub;
-        break;
-      }
-    }
-  }
-
-  const heroLine = cleanOpening ?? cleanTeaser ?? '';
-
-  const isLegacyCaregiverAddressed =
-    looksCaregiverAddressed(content.opening) ||
-    looksCaregiverAddressed(content.teaser) ||
-    looksCaregiverAddressed(content.closingMessage);
-
-  const momentsCount = content.narrativeSections.length
-    + (content.highlights?.length ?? 0)
-    + (content.milestoneReplay ? 1 : 0);
-
-  const highlights = (content.highlights?.length ?? 0) > 0
-    ? content.highlights!.slice(0, 3).map((body, i) => ({
-        title: firstSentence(body) || i18nText('Reports.monthly.highlightTitle', { index: i + 1 }),
-        body,
-      }))
-    : [];
-
-  const pullQuoteRaw = cleanClosing
-    || content.milestoneReplay
-    || cleanTeaser
-    || (cleanOpening ? firstSentence(cleanOpening) : null)
-    || '';
-  const pullQuoteField: 'closingMessage' | 'milestoneReplay' | 'opening' | null =
-    cleanClosing ? 'closingMessage'
-      : content.milestoneReplay ? 'milestoneReplay'
-        : cleanOpening ? 'opening' : null;
+  const heroKeyword = content.keyword?.trim() && !isPlaceholderKeyword(content.keyword) ? content.keyword.trim() : '';
+  const highlights = [...new Set(content.highlights ?? [])].filter((text) => text.trim() && text !== content.opening);
 
   const periodLabel = periodStart && periodEnd
     ? `${periodStart.slice(0, 10)} → ${periodEnd.slice(0, 10)}`
@@ -285,160 +157,79 @@ export function MonthlyLetterViewer({
         ? i18nText('Reports.monthly.age.range', { start: formatAgeMonths(ageMonthsStart), end: formatAgeMonths(ageMonthsEnd) })
         : i18nText('Reports.monthly.age.monthRange', { start: ageMonthsStart, end: ageMonthsEnd }))
     : null;
-  const badgeNameClass = badgeNameSizeClass(name);
 
   const showDataPoints = (dp: NarrativeSection['dataPoints']) => dp && dp.length > 0;
+  const sparse = isSparseReport(content);
 
   return (
     <div>
+    <div className="report-monthly-actionbar-wrap">
+      <ReportActionBar
+        onSavePdf={handleSavePdf}
+        onSaveImage={handleSaveImage}
+        onOpenProfessional={content.professionalSummary ? () => setProfessionalOpen(true) : undefined}
+        onRequestFocusNoteComposer={canEdit ? focusNoteComposer : undefined}
+      />
+    </div>
+
     <article
       ref={articleRef}
       className="report-printable-page report-monthly-page"
     >
-      {/* paper grain */}
-      <div aria-hidden className="report-monthly-grain" />
-
-      {/* Legacy-format banner — shown only when stored AI text still addresses the caregiver */}
-      {isLegacyCaregiverAddressed ? (
-        <div className="report-legacy-banner hide-on-print report-monthly-legacy-banner">
-          <AlertCircle size={16} strokeWidth={2} className="report-monthly-legacy-icon" />
-          <div className="report-monthly-legacy-copy">
-            {i18nText('Reports.monthly.legacyBanner', { name })}
-          </div>
-        </div>
-      ) : null}
-
-      {/* dateline + round badge */}
       <header className="report-monthly-header">
         <div>
           <div className="report-monthly-issue">
-            {i18nText('Reports.monthly.issue', { issueNo })}
-            {content.format === 'narrative-ai' ? (
-              <StatusBadge tone="success" className="ml-2 px-2 py-px text-[11px]">{i18nText('Reports.monthly.aiWritten')}</StatusBadge>
-            ) : null}
+            {content.format === 'narrative-ai' ? i18nText('Reports.monthly.aiWritten') : i18nText('Reports.page.ai.sourceLocal')}
           </div>
-          <div className="report-monthly-period">
-            {periodLabel}
-            {ageLabel ? i18nText('Reports.monthly.periodAgeSuffix', { age: ageLabel }) : ''}
-            {momentsCount ? i18nText('Reports.monthly.periodMomentsSuffix', { count: momentsCount }) : ''}
-          </div>
+          <p className="report-monthly-period">{periodLabel}{ageLabel ? i18nText('Reports.monthly.periodAgeSuffix', { age: ageLabel }) : ''}</p>
         </div>
-        <div className="report-monthly-badge">
+        {childName && periodStart && <div className="report-monthly-badge" aria-hidden="true">
           <div className="report-monthly-badge-inner">
-            <div className="report-monthly-badge-month">{i18nText('Reports.monthly.monthBadge', { month })}</div>
-            <div className={`report-monthly-badge-name ${badgeNameClass}`}>
-              {name}
-            </div>
+            <div className="report-monthly-badge-month">{i18nText('Reports.monthly.monthBadge', { month: Number(periodStart.slice(5, 7)) })}</div>
+            <div className={`report-monthly-badge-name ${childName.length <= 2 ? 'report-monthly-badge-name-lg' : childName.length <= 4 ? 'report-monthly-badge-name-md' : childName.length <= 6 ? 'report-monthly-badge-name-sm' : 'report-monthly-badge-name-xs'}`}>{childName}</div>
           </div>
-        </div>
+        </div>}
       </header>
+      <h2 className="report-monthly-title">{content.title}</h2>
 
-      {/* Title */}
-      <h1 className="report-monthly-title">
-        {content.title}
-      </h1>
-
-      {/* Hero keyword + line */}
-      <section className="report-hero-block report-monthly-hero">
-        <div className="report-monthly-kicker">
-          {i18nText('Reports.monthly.keywordKicker')}
-        </div>
-        {heroKeyword ? (
-          <h2 className="report-monthly-keyword">
-            {heroKeyword}
-            {heroSub ? (
-              <span className="report-monthly-keyword-sub">
-                · {heroSub}
-              </span>
-            ) : null}
-          </h2>
-        ) : null}
-        {heroLine ? (
-          <HoverEditable text={heroLine} canEdit={canEdit} onSave={(v) => editField('opening', v)}>
-            {(t) => (
-              <div className="report-monthly-hero-line">
-                {t}
-              </div>
-            )}
-          </HoverEditable>
-        ) : null}
+      {sparse ? <SparseReportBody content={content} canEdit={canEdit} onContentUpdate={onContentUpdate} /> : <>
+      <section className="report-monthly-hero">
+        <h3 className="report-monthly-kicker">{i18nText('Reports.workspace.summary')}</h3>
+        {heroKeyword && <p className="report-monthly-keyword">{heroKeyword}{content.keywordSub && <span className="report-monthly-keyword-sub">{content.keywordSub}</span>}</p>}
+        {content.opening && <HoverEditable text={content.opening} canEdit={canEdit} onSave={(value) => editField('opening', value)}>
+          {(text) => <p className="report-monthly-hero-line">{text}</p>}
+        </HoverEditable>}
         <NoteAnchor anchor="opening" content={content} canEdit={canEdit} onChange={handleNoteChange} />
       </section>
 
-      {/* Letter body — child-centric opening stats */}
-      <section className="report-monthly-intro">
-        <p className="report-monthly-paragraph-spaced">
-          {ageLabel
-            ? i18nText('Reports.monthly.introStatsWithAge', { name, age: ageLabel, moments: momentsCount, sections: content.narrativeSections.length })
-            : i18nText('Reports.monthly.introStats', { name, moments: momentsCount, sections: content.narrativeSections.length })}
-        </p>
-        <p className="report-monthly-paragraph-muted">
-          {i18nText('Reports.monthly.introSubtitle', { name })}
-        </p>
-      </section>
+      {content.metrics.length > 0 && <dl className="report-facts">
+        {content.metrics.filter((metric) => !ageLabel || (metric.id !== 'age-range' && metric.id !== 'age')).map((metric) => <div key={metric.id}>
+          <dt>{metric.label}</dt><dd>{metric.value}</dd>
+          {metric.detail && <dd className="report-fact-detail">{metric.detail}</dd>}
+        </div>)}
+      </dl>}
 
-      {/* Three highlights — numbered */}
-      {highlights.length > 0 ? (
-        <section className="report-monthly-highlights">
-          {highlights.map((h, i) => (
-            <div key={i} className={`report-monthly-highlight ${i === 0 ? 'report-monthly-highlight-first' : ''}`}>
-              <div className="report-monthly-highlight-index">
-                {String(i + 1).padStart(2, '0')}
-              </div>
-              <div>
-                <h3 className="report-monthly-highlight-title">
-                  {h.title}
-                </h3>
-                <p className="report-monthly-highlight-body">
-                  {h.body}
-                </p>
-              </div>
-            </div>
-          ))}
-        </section>
-      ) : null}
+      {content.narrativeSections.length === 0 && content.professionalSummary && <details className="report-record-details report-reading-section">
+        <summary>{i18nText('Reports.workspace.recordSummary')}</summary>
+        <dl className="report-trend-lines">{content.professionalSummary.sections.map((section) => <div key={section.id}>
+          <dt>{section.title}</dt><dd>{section.body}</dd>
+        </div>)}</dl>
+      </details>}
 
-      {/* Pulled quote — kraft box */}
-      {pullQuoteRaw ? (
-        <section className="report-pullquote-box report-avoid-break report-monthly-pullquote">
-          <div className="report-monthly-pullquote-icon">
-            <QuoteIcon size={26} />
-          </div>
-          {pullQuoteField ? (
-            <HoverEditable
-              text={pullQuoteRaw}
-              canEdit={canEdit}
-              onSave={(v) => editField(pullQuoteField, v)}
-            >
-              {(t) => (
-                <div className="report-monthly-pullquote-text">
-                  “{t}”
-                </div>
-              )}
-            </HoverEditable>
-          ) : (
-            <div className="report-monthly-pullquote-text">
-              “{pullQuoteRaw}”
-            </div>
-          )}
-          <div className="report-monthly-pullquote-meta">
-            {i18nText('Reports.monthly.pullQuoteMeta', { name, periodLabel })}
-          </div>
-          <NoteAnchor anchor="closingMessage" content={content} canEdit={canEdit} onChange={handleNoteChange} />
-        </section>
-      ) : null}
+      {highlights.length > 0 && <section className="report-monthly-highlights">
+        <ul>{highlights.map((text) => <li key={text} className="report-monthly-highlight-body">{text}</li>)}</ul>
+      </section>}
 
       {/* Narrative timeline */}
       {content.narrativeSections.length > 0 ? (
         <section className="report-monthly-timeline">
           <h3 className="report-monthly-section-title">
-            {i18nText('Reports.monthly.timelineTitle', { name })}
+            {i18nText('Reports.workspace.details')}
           </h3>
           <div className="report-monthly-section-subtitle">
             {i18nText('Reports.monthly.timelineSubtitle', { count: content.narrativeSections.length })}
           </div>
           <ol className="report-monthly-timeline-list">
-            <div className="report-monthly-timeline-rule" />
             {content.narrativeSections.map((sec) => {
               const k = kindOf(sec);
               return (
@@ -483,6 +274,13 @@ export function MonthlyLetterViewer({
         </section>
       ) : null}
 
+      {content.trendSignals.length > 0 && <section className="report-reading-section">
+        <h3>{i18nText('Reports.page.trendSignals')}</h3>
+        <dl className="report-trend-lines">{content.trendSignals.map((signal) => <div key={signal.id}>
+          <dt>{signal.title}</dt><dd>{signal.summary}</dd>
+        </div>)}</dl>
+      </section>}
+
       {/* Watch next — inline in letter flow */}
       {content.watchNext && content.watchNext.length > 0 ? (
         <section className="report-monthly-watch">
@@ -510,10 +308,10 @@ export function MonthlyLetterViewer({
             {i18nText('Reports.monthly.actionsTitle')}
           </h3>
           <div className="report-monthly-section-subtitle">
-            {i18nText('Reports.monthly.actionsSubtitle', { name })}
+            {i18nText('Reports.monthly.actionsSubtitle', { name: childName ?? content.title })}
           </div>
           <div className="report-monthly-action-list">
-            {content.actionItems.slice(0, 3).map((a) => (
+            {content.actionItems.map((a) => (
               <article key={a.id} className="report-monthly-action-item">
                 <div className="report-monthly-action-icon"><ArrowRight size={15} strokeWidth={2} /></div>
                 <div className="report-monthly-action-copy">
@@ -531,36 +329,28 @@ export function MonthlyLetterViewer({
         </section>
       ) : null}
 
-      {/* Caregiver acknowledgment — small, late in flow */}
-      <section className="report-monthly-caregiver">
-        <div className="report-monthly-caregiver-heading">
-          <Heart size={14} strokeWidth={1.5} className="report-monthly-caregiver-icon" />
-          <span className="report-monthly-caregiver-label">
-            {i18nText('Reports.monthly.caregiverTitle')}
-          </span>
-        </div>
-        <p className="report-monthly-caregiver-copy">
-          {i18nText('Reports.monthly.caregiverCopy', { name })}
-        </p>
+      {content.milestoneReplay && content.milestoneReplay !== content.opening && <section className="report-monthly-closing">
+        <h3 className="report-monthly-section-title">{i18nText('Reports.workspace.replay')}</h3>
+        <HoverEditable text={content.milestoneReplay} canEdit={canEdit} onSave={(value) => editField('milestoneReplay', value)}>
+          {(text) => <p className="report-monthly-timeline-body">{text}</p>}
+        </HoverEditable>
+      </section>}
+      <section className="report-monthly-closing">
+        {content.closingMessage && content.closingMessage !== content.opening && <>
+          <h3 className="report-monthly-section-title">{i18nText('Reports.workspace.closing')}</h3>
+          <HoverEditable text={content.closingMessage} canEdit={canEdit} onSave={(value) => editField('closingMessage', value)}>
+            {(text) => <p className="report-monthly-timeline-body">{text}</p>}
+          </HoverEditable>
+        </>}
+        <NoteAnchor anchor="closingMessage" content={content} canEdit={canEdit} onChange={handleNoteChange} />
       </section>
-
-      {/* Sign-off — child-centric, no caregiver address */}
-      <section className="report-monthly-signoff">
-        <p className="report-monthly-signoff-copy">
-          {i18nText('Reports.monthly.signoffCopy', { name })}
-          <br />{i18nText('Reports.monthly.signoffSeeYou')}
-        </p>
-        <div className="report-monthly-signoff-meta">
-          {i18nText('Reports.monthly.signoffMeta', { periodLabel })}
-        </div>
-      </section>
+      </>}
 
       {/* Sources footer */}
       <footer className="report-monthly-footer">
         <div>
           {i18nText('Reports.monthly.sourcesPrefix')}
-          {content.sources.slice(0, 6).join(i18nText('Reports.monthly.sourcesSeparator'))}
-          {content.sources.length > 6 ? i18nText('Reports.monthly.sourcesEtc') : ''}
+          {content.sources.join(i18nText('Reports.monthly.sourcesSeparator'))}
         </div>
         {content.safetyNote ? (
           <div className="report-monthly-safety-note">{content.safetyNote}</div>
@@ -568,25 +358,61 @@ export function MonthlyLetterViewer({
       </footer>
     </article>
 
-    <div className="report-monthly-actionbar-wrap">
-      <ReportActionBar
-        childName={name}
-        selfRoleName={selfRoleName}
-        onSavePdf={handleSavePdf}
-        onSaveImage={handleSaveImage}
-        onOpenProfessional={() => setProfessionalOpen(true)}
-        onRequestFocusNoteComposer={focusNoteComposer}
-      />
-    </div>
-
     <ProfessionalSummaryModal
-      open={professionalOpen && !professionalPrintPending}
+      open={professionalOpen}
       onClose={() => setProfessionalOpen(false)}
       content={content}
       onContentUpdate={onContentUpdate}
       title={content.title}
-      onPrint={handlePrintProfessional}
     />
     </div>
   );
+}
+
+function SparseReportBody({ content, canEdit, onContentUpdate }: {
+  content: NarrativeReportContent;
+  canEdit: boolean;
+  onContentUpdate?: (next: NarrativeReportContent) => Promise<boolean>;
+}) {
+  const summary = content.professionalSummary;
+  const recorded = summary?.sections.filter((section) => !isUnrecordedSection(summary, section)) ?? [];
+  const absent = summary?.sections.filter((section) => isUnrecordedSection(summary, section)) ?? [];
+  const hasRecords = content.metrics.some((metric) => metric.id === 'evidence' && metric.value === '1');
+  const noteAnchors = [...new Set((content.userNotes ?? []).map((note) => note.anchor))].filter((anchor) => anchor !== 'report');
+  return <div className="report-sparse-reading">
+    <section className="report-sparse-facts" aria-label={i18nText('Reports.workspace.recordedFacts')}>
+      <h3>{i18nText(hasRecords ? 'Reports.workspace.recordedFacts' : 'Reports.workspace.noRecords')}</h3>
+      {content.narrativeSections.length > 0 ? content.narrativeSections.map((section) => <div key={section.id}>
+        <h4>{section.title}</h4>
+        <HoverEditable text={section.narrative} canEdit={canEdit} onSave={(narrative) => onContentUpdate?.({ ...content,
+          narrativeSections: content.narrativeSections.map((item) => item.id === section.id ? { ...item, narrative } : item),
+        })}>{(text) => <p>{text}</p>}</HoverEditable>
+      </div>) : recorded.map((section) => <div key={section.id}>
+        <h4>{section.title}</h4><p>{section.body}</p>
+      </div>)}
+      {hasRecords && recorded.length === 0 && content.narrativeSections.length === 0 && <p>{i18nText('Reports.workspace.recordUnavailable')}</p>}
+      <p className="report-sparse-context">{i18nText(hasRecords ? 'Reports.workspace.sparseContext' : 'Reports.workspace.emptyContext')}</p>
+    </section>
+    <section className="report-sparse-notes">
+      {noteAnchors.map((anchor) => <NoteAnchor key={anchor} anchor={anchor} content={content} canEdit={canEdit} allowCompose={false} onChange={(next) => onContentUpdate?.(next)} />)}
+      <NoteAnchor anchor="report" content={content} canEdit={canEdit} onChange={(next) => onContentUpdate?.(next)} />
+    </section>
+    {content.actionItems.length > 0 && <details data-report-export="when-open" className="report-record-details report-sparse-secondary">
+      <summary>{i18nText('Reports.workspace.pendingActions', { count: content.actionItems.length })}</summary>
+      <p className="report-sparse-context">{i18nText('Reports.workspace.pendingContext')}</p>
+      <div className="report-reading-actions">{content.actionItems.map((action) => <DestinationLink key={action.id} destination={{ id: '/advisor' }} intent={reportActionIntent(action)}>
+        <span>{action.text}</span><ArrowRight size={16} aria-hidden="true" />
+      </DestinationLink>)}</div>
+    </details>}
+    <details data-report-export="when-open" className="report-record-details report-sparse-secondary">
+      <summary>{i18nText('Reports.workspace.recordCoverage')}</summary>
+      {content.opening && <HoverEditable text={content.opening} canEdit={canEdit} onSave={(opening) => onContentUpdate?.({ ...content, opening })}>{(text) => <p>{text}</p>}</HoverEditable>}
+      {absent.length > 0 && <dl className="report-trend-lines">{absent.map((section) => <div key={section.id}><dt>{section.title}</dt><dd>{section.body}</dd></div>)}</dl>}
+      {content.trendSignals.length > 0 && <dl className="report-trend-lines">{content.trendSignals.map((signal) => <div key={signal.id}><dt>{signal.title}</dt><dd>{signal.summary}</dd></div>)}</dl>}
+      {content.closingMessage && content.closingMessage !== content.opening && <HoverEditable text={content.closingMessage} canEdit={canEdit} onSave={(closingMessage) => onContentUpdate?.({ ...content, closingMessage })}>{(text) => <p>{text}</p>}</HoverEditable>}
+      {content.milestoneReplay && <p>{content.milestoneReplay}</p>}
+      {content.highlights?.map((text) => <p key={text}>{text}</p>)}
+      {content.watchNext?.map((text) => <p key={text}>{text}</p>)}
+    </details>
+  </div>;
 }

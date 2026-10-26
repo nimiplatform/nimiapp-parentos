@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DestinationLink } from '../../app-shell/app-navigation.js';
 import {
@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   CircleDashed,
-  ExternalLink,
   RefreshCw,
 } from 'lucide-react';
 import { Button, Surface, buttonVariants, cn } from '@nimiplatform/kit/ui';
@@ -36,6 +35,7 @@ type ParentosAIFeatureStatus =
   | 'available'
   | 'unavailable'
   | 'needs-access'
+  | 'unknown'
   | 'needs-configuration'
   | 'not-supported';
 
@@ -68,6 +68,17 @@ function postureLabelKey(posture: ParentosNimiAccessPosture | null): string {
 }
 
 function postureRecoveryKey(posture: ParentosNimiAccessPosture): string {
+  switch (posture.reasonCode) {
+    case 'runtime-service-untrusted':
+      return 'AISettings.access.recovery.untrusted';
+    case 'runtime-unauthenticated':
+    case 'account-changed':
+      return 'AISettings.access.recovery.account';
+    case 'process-replaced':
+    case 'runtime-restarted':
+    case 'revoked':
+      return 'AISettings.access.recovery.session';
+  }
   switch (posture.state) {
     case 'bridge-absent':
       return 'AISettings.access.recovery.bridgeAbsent';
@@ -86,6 +97,8 @@ function featureStatusLabelKey(status: ParentosAIFeatureStatus): string {
       return 'AISettings.features.needsAccess';
     case 'needs-configuration':
       return 'AISettings.features.needsConfiguration';
+    case 'unknown':
+      return 'AISettings.features.unknown';
     case 'unavailable':
       return 'AISettings.features.unavailable';
     case 'not-supported':
@@ -105,25 +118,29 @@ export default function AiSettingsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [ownerHandoffPending, setOwnerHandoffPending] = useState(false);
   const [ownerHandoffFailure, setOwnerHandoffFailure] = useState<string | null>(null);
+  const refreshSequence = useRef(0);
 
   const refresh = useCallback(async () => {
+    const sequence = ++refreshSequence.current;
     setRefreshing(true);
     try {
       const [nextPosture, nextConfig] = await Promise.all([
         probeParentosNimiAccess(),
         readParentosAIConfig(),
       ]);
+      if (sequence !== refreshSequence.current) return;
       setPosture(nextPosture);
       setAiConfig((current) => nextConfig.state === 'unavailable' ? current : nextConfig.snapshot);
       setAiConfigReasonCode(nextConfig.state === 'ready' ? null : nextConfig.reasonCode);
       setAiConfigLoaded(true);
     } finally {
-      setRefreshing(false);
+      if (sequence === refreshSequence.current) setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
     void refresh();
+    return () => { refreshSequence.current += 1; };
   }, [refresh]);
 
   useEffect(() => {
@@ -163,6 +180,8 @@ export default function AiSettingsPage() {
   }, [ownerHandoffPending]);
 
   const postureReady = posture?.state === 'ready';
+  const configReadFailed = aiConfigLoaded && aiConfigReasonCode !== null && aiConfigReasonCode !== 'ai-config-not-found';
+  const configCurrent = aiConfigLoaded && !configReadFailed && !refreshing;
   const declaredCapabilities = aiConfig?.config?.capabilities ?? [];
   const editorCapabilities = aiConfig?.config?.capabilities
     ?? (aiConfigLoaded && (!aiConfigReasonCode || aiConfigReasonCode === 'ai-config-not-found') ? null : undefined);
@@ -172,8 +191,9 @@ export default function AiSettingsPage() {
 
   const featureStatus = (row: ParentosAIFeatureRow): ParentosAIFeatureStatus => {
     if (!row.supported || row.capabilityContract === null) return 'not-supported';
-    if (!posture || !aiConfigLoaded) return 'checking';
+    if (!posture || !aiConfigLoaded || refreshing) return 'checking';
     if (!postureReady) return 'needs-access';
+    if (configReadFailed) return 'unknown';
     if (!committedRoutes.has(row.capabilityContract)) return 'needs-configuration';
     return aiConfig && hasReadyParentosCapability(aiConfig, row.capabilityContract) ? 'available' : 'unavailable';
   };
@@ -249,7 +269,9 @@ export default function AiSettingsPage() {
                 <AlertCircle className="mt-0.5 shrink-0 text-[var(--nimi-status-warning)]" size={18} aria-hidden="true" />
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">
-                    {t('AISettings.access.recovery.title')}
+                    {t(posture.reasonCode === 'runtime-service-untrusted'
+                      ? 'AISettings.access.recovery.untrustedTitle'
+                      : 'AISettings.access.recovery.title')}
                   </p>
                   <p className="mt-1 text-[12px] leading-5 text-[var(--nimi-text-secondary)]">
                     {t(postureRecoveryKey(posture))}
@@ -259,13 +281,10 @@ export default function AiSettingsPage() {
                     tone="secondary"
                     size="sm"
                     className="mt-3"
-                    disabled={ownerHandoffPending}
-                    onClick={() => void openOwnerConfiguration()}
+                    disabled={refreshing}
+                    onClick={() => void refresh()}
                   >
-                    {t(ownerHandoffPending
-                      ? 'AISettings.declared.openingOwnerConfiguration'
-                      : 'AISettings.declared.openOwnerConfiguration')}
-                    <ExternalLink size={13} aria-hidden="true" />
+                    {t('AISettings.access.recovery.retry')}
                   </Button>
                 </div>
               </div>
@@ -276,6 +295,9 @@ export default function AiSettingsPage() {
                 <p className="mt-1 break-words text-xs leading-5 text-[var(--nimi-text-muted)]">
                   {posture.reasonCode} · {posture.actionHint}
                 </p>
+                {posture.reasonCode === 'runtime-service-untrusted' ? (
+                  <p className="mt-1 text-xs leading-5 text-[var(--nimi-text-muted)]">{t('AISettings.access.recovery.untrustedTechnical')}</p>
+                ) : null}
               </details>
             </div>
           ) : null}
@@ -284,9 +306,8 @@ export default function AiSettingsPage() {
         <Surface tone="card" material="solid" elevation="base" padding="lg" className="mb-5 parentos-radius-xl p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-[16px] font-bold text-[var(--nimi-text-primary)]">{i18nText('AISettings.declared.title')}</h2>
-            {aiConfigLoaded && declaredCapabilities.length > 0 ? (
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--nimi-status-success)_26%,transparent)] bg-[color-mix(in_srgb,var(--nimi-status-success)_9%,var(--nimi-surface-card))] px-3 py-1 text-[12px] font-semibold text-[var(--nimi-status-success)]">
-                <CheckCircle2 size={13} aria-hidden="true" />
+            {configCurrent && postureReady && declaredCapabilities.length > 0 ? (
+              <span className="inline-flex shrink-0 items-center rounded-full border border-[var(--nimi-border-subtle)] px-3 py-1 text-[12px] font-semibold text-[var(--nimi-text-muted)]">
                 {t('AISettings.declared.configuredCount', { count: declaredCapabilities.length })}
               </span>
             ) : null}
@@ -296,11 +317,12 @@ export default function AiSettingsPage() {
           </p>
           {!aiConfigLoaded || editorCapabilities !== undefined ? (
             <ParentosAIConfigEditor
-              snapshot={aiConfig}
+              snapshot={aiConfig && (!configCurrent || !postureReady) ? { ...aiConfig, effectiveSelections: [] } : aiConfig}
               capabilities={editorCapabilities}
               loading={!aiConfigLoaded}
-              disabled={!postureReady}
+              disabled={!postureReady || !configCurrent}
               onOverwriteResult={(result) => {
+                refreshSequence.current += 1;
                 setAiConfig({
                   config: result.config,
                   revision: result.revision,
@@ -312,7 +334,7 @@ export default function AiSettingsPage() {
               }}
             />
           ) : null}
-          {aiConfigLoaded ? (
+          {aiConfigLoaded && !configReadFailed ? (
             <div className="mt-4 flex flex-col gap-3 border-t border-[var(--nimi-border-subtle)] pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[12px] leading-5 text-[var(--nimi-text-muted)]">
                 {t('AISettings.declared.platformManaged')}
@@ -330,14 +352,18 @@ export default function AiSettingsPage() {
               </Button>
             </div>
           ) : null}
-          {aiConfigLoaded && aiConfigReasonCode && aiConfigReasonCode !== 'ai-config-not-found' ? (
+          {configReadFailed ? (
             <div className="mt-3 rounded-[var(--nimi-radius-md)] border border-[var(--nimi-border-subtle)] bg-[var(--nimi-surface-panel)] px-4 py-3" role="status">
               <p className="text-[13px] font-semibold text-[var(--nimi-text-primary)]">
                 {t('AISettings.declared.loadFailed')}
               </p>
               <p className="mt-1 text-[12px] leading-5 text-[var(--nimi-text-muted)]">
-                {t('AISettings.declared.loadFailedGuidance')}
+                {t(postureReady ? 'AISettings.declared.loadFailedGuidance' : 'AISettings.declared.waitingForAccess')}
               </p>
+              {aiConfig ? <p className="mt-1 text-[12px] leading-5 text-[var(--nimi-text-muted)]">{t('AISettings.declared.stale')}</p> : null}
+              <Button type="button" tone="secondary" size="sm" className="mt-3" disabled={refreshing} onClick={() => void refresh()}>
+                {t('AISettings.declared.retry')}
+              </Button>
               <details className="mt-2">
                 <summary className="cursor-pointer text-xs font-semibold text-[var(--nimi-text-muted)]">
                   {t('AISettings.access.technicalDetails')}

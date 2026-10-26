@@ -3,8 +3,8 @@ import { ParentosAiMascotStatic } from '../profile/parentos-ai-mascot-button.js'
 
 /**
  * The advisor's face is the same glass-orb mascot as the profile "AI 分析" card,
- * so the advisor reads as one persona across the app. Hero sizes float over a
- * mint / sky / violet aura with a ground shadow (styles.css `advisor-hero-*`).
+ * so the advisor reads as one persona across the app. Hero sizes retain the
+ * sphere highlights and float over a subtle ground shadow (styles.css `advisor-hero-*`).
  */
 export function AdvisorHeroMascot({ size = 104 }: { size?: number }) {
   return (

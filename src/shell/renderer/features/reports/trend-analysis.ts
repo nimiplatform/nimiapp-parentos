@@ -1,6 +1,7 @@
 import type { JournalEntryRow, MeasurementRow, SleepRecordRow } from '../../bridge/sqlite-bridge.js';
 import { GROWTH_STANDARDS, OBSERVATION_DIMENSIONS } from '../../knowledge-base/index.js';
 import { i18nText } from '../../i18n/index.js';
+import { reportMeasurementUnit } from './report-labels.js';
 
 
 export interface StructuredTrendSignal {
@@ -60,8 +61,8 @@ function buildMeasurementTrendSignals(
     const previous = sorted[latestIndex - 1];
     if (!previous) continue;
     const growthType = growthStandardById.get(typeId as typeof GROWTH_STANDARDS[number]['typeId']);
-    const label = growthType?.displayName ?? typeId;
-    const unit = growthType?.unit ?? '';
+    const label = growthType?.displayName ?? i18nText('Reports.structured.sections.growth');
+    const unit = reportMeasurementUnit(growthType?.unit);
     const delta = latestInPeriod.value - previous.value;
 
     signals.push({
@@ -127,6 +128,7 @@ function buildJournalVolumeSignal(
   };
 }
 
+// @nimi-authority: rule.parentos.advs.r007
 function buildJournalDimensionSignal(
   journalEntries: JournalEntryRow[],
   periodStart: string,
@@ -145,14 +147,14 @@ function buildJournalDimensionSignal(
 
   const [dimensionId, count] = topDimension;
   const dimension = observationDimensionById.get(dimensionId);
-  const label = dimension?.displayName ?? dimensionId;
+  const label = dimension?.displayName ?? i18nText('Reports.trend.journalDimension.title');
 
   return {
     id: 'journal-dimension',
     title: i18nText('Reports.trend.journalDimension.title'),
     summary: i18nText('Reports.trend.journalDimension.summary', { label, count }),
     evidence: [
-      i18nText('Reports.trend.journalDimension.dimensionIdEvidence', { dimensionId }),
+      i18nText('Reports.trend.journalDimension.dimensionEvidence', { label }),
       i18nText('Reports.trend.journalDimension.countEvidence', { count }),
     ],
     sources: [
@@ -199,8 +201,8 @@ export function buildMeasurementComparisons(
 
     results.push({
       typeId,
-      label: gs?.displayName ?? typeId,
-      unit: gs?.unit ?? '',
+      label: gs?.displayName ?? i18nText('Reports.structured.sections.growth'),
+      unit: reportMeasurementUnit(gs?.unit),
       currentValue: latestInPeriod.value,
       currentDate: latestInPeriod.measuredAt,
       previousValue: previous ? previous.value : null,

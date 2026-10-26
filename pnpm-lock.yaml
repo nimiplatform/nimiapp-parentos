@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@nimiplatform/kit':
         specifier: ^0.21.0
-        version: 0.21.0(@types/node@25.9.1)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(electron@44.7.0)(react-dom@19.2.6(react@19.2.6))(react-i18next@17.0.16(i18next@26.4.4(typescript@5.9.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(react@19.2.6)
+        version: 0.21.0(@types/node@25.9.1)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(electron@45.0.0)(react-dom@19.2.6(react@19.2.6))(react-i18next@17.0.16(i18next@26.4.4(typescript@5.9.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(react@19.2.6)
       '@nimiplatform/sdk':
         specifier: ^0.21.0
         version: 0.21.0(@grpc/grpc-js@1.14.5)
@@ -142,8 +142,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       electron:
-        specifier: ^44.5.1
-        version: 44.7.0
+        specifier: ^45.0.0
+        version: 45.0.0
       esbuild:
         specifier: 0.28.1
         version: 0.28.1
@@ -2234,8 +2234,8 @@ packages:
   dompurify@2.5.9:
     resolution: {integrity: sha512-i6mvVmWN4xo9LrhCOZrDgSs9noW6nOahbrmzjRbPF36YPyj5Ue5lgok0MHDWkG7xzpWFO2OYttXdzM7rJxHvNA==}
 
-  electron@44.7.0:
-    resolution: {integrity: sha512-aUq9/zLAAFYc+a9gy6cd0C3Y/N/RmovLCD8TV8LhIzNhuND6HEgsu96jJz9cbAxvckSPv+Trf2PKEjktoZgFkw==}
+  electron@45.0.0:
+    resolution: {integrity: sha512-yjz4uhMBcO6L5X7CWgRMobf2EMJPnb9j4zuf+nu/TU/6E4Sqfx7fn/a2eACo4qngjml/0JnsoZhxYroJLxLd2w==}
     engines: {node: '>= 22.12.0'}
     hasBin: true
 
@@ -4106,7 +4106,7 @@ snapshots:
   '@nimiplatform/kit-protected-local-win32-x64@0.21.0':
     optional: true
 
-  '@nimiplatform/kit@0.21.0(@types/node@25.9.1)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(electron@44.7.0)(react-dom@19.2.6(react@19.2.6))(react-i18next@17.0.16(i18next@26.4.4(typescript@5.9.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(react@19.2.6)':
+  '@nimiplatform/kit@0.21.0(@types/node@25.9.1)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(electron@45.0.0)(react-dom@19.2.6(react@19.2.6))(react-i18next@17.0.16(i18next@26.4.4(typescript@5.9.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(react@19.2.6)':
     dependencies:
       '@grpc/grpc-js': 1.14.5
       '@nimiplatform/sdk': 0.21.0(@grpc/grpc-js@1.14.5)
@@ -4136,7 +4136,7 @@ snapshots:
     optionalDependencies:
       '@nimiplatform/kit-protected-local-darwin-arm64': 0.21.0
       '@nimiplatform/kit-protected-local-win32-x64': 0.21.0
-      electron: 44.7.0
+      electron: 45.0.0
       react-dom: 19.2.6(react@19.2.6)
       react-i18next: 17.0.16(i18next@26.4.4(typescript@5.9.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3)
     transitivePeerDependencies:
@@ -5512,7 +5512,7 @@ snapshots:
   dompurify@2.5.9:
     optional: true
 
-  electron@44.7.0:
+  electron@45.0.0:
     dependencies:
       '@electron-internal/extract-zip': 1.0.4
       '@electron/get': 5.0.0

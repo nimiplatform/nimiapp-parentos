@@ -1,331 +1,68 @@
-import { useState } from 'react';
-import { Button, nimiToast, Surface } from '@nimiplatform/kit/ui';
-import { Check, FileImage, GraduationCap, LoaderCircle, Pencil, Printer } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Button, nimiToast } from '@nimiplatform/kit/ui';
+import { Download, FileImage, FileText, GraduationCap, Pencil } from 'lucide-react';
 import { describeError, logRendererEvent } from '../../infra/telemetry/renderer-log.js';
 import { i18nText } from '../../i18n/index.js';
 
-
-const SERIF = "var(--font-serif, 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', Georgia, serif)";
-const MONO = "var(--nimi-font-mono, 'JetBrains Mono', 'SF Mono', ui-monospace, monospace)";
-
-const FAMILY_PRESETS_STORAGE_KEY = 'parentos.reports.familyShareSelection.v1';
-
-interface FamilyPreset { id: string; name: string; initial: string; toneClass: string }
-
-const FAMILY_PRESETS: FamilyPreset[] = [
-  { id: 'dad', name: i18nText('Reports.actionBar.family.presets.dad.name'), initial: i18nText('Reports.actionBar.family.presets.dad.initial'), toneClass: 'report-family-avatar--dad' },
-  { id: 'mom', name: i18nText('Reports.actionBar.family.presets.mom.name'), initial: i18nText('Reports.actionBar.family.presets.mom.initial'), toneClass: 'report-family-avatar--mom' },
-  { id: 'grandma-m', name: i18nText('Reports.actionBar.family.presets.grandmaMaternal.name'), initial: i18nText('Reports.actionBar.family.presets.grandmaMaternal.initial'), toneClass: 'report-family-avatar--grandma-m' },
-  { id: 'grandpa-m', name: i18nText('Reports.actionBar.family.presets.grandpaMaternal.name'), initial: i18nText('Reports.actionBar.family.presets.grandpaMaternal.initial'), toneClass: 'report-family-avatar--grandpa-m' },
-  { id: 'grandma-p', name: i18nText('Reports.actionBar.family.presets.grandmaPaternal.name'), initial: i18nText('Reports.actionBar.family.presets.grandmaPaternal.initial'), toneClass: 'report-family-avatar--grandma-p' },
-  { id: 'grandpa-p', name: i18nText('Reports.actionBar.family.presets.grandpaPaternal.name'), initial: i18nText('Reports.actionBar.family.presets.grandpaPaternal.initial'), toneClass: 'report-family-avatar--grandpa-p' },
-];
-
-function loadFamilySelection(): Set<string> {
-  if (typeof localStorage === 'undefined') return new Set();
-  try {
-    const raw = localStorage.getItem(FAMILY_PRESETS_STORAGE_KEY);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw) as unknown;
-    if (!Array.isArray(arr)) return new Set();
-    return new Set(arr.filter((x): x is string => typeof x === 'string'));
-  } catch { return new Set(); }
-}
-
-function saveFamilySelection(sel: Set<string>): void {
-  if (typeof localStorage === 'undefined') return;
-  try { localStorage.setItem(FAMILY_PRESETS_STORAGE_KEY, JSON.stringify([...sel])); } catch { /* */ }
-}
-
-/* ── Family share row ────────────────────────────────────────── */
-
-interface FamilyShareRowProps {
-  onShareSelected: (names: string[]) => void;
-  selfRoleName?: string;
-}
-
-export function FamilyShareRow({ onShareSelected, selfRoleName }: FamilyShareRowProps) {
-  const [selected, setSelected] = useState<Set<string>>(() => loadFamilySelection());
-
-  const toggle = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      saveFamilySelection(next);
-      return next;
-    });
-  };
-
-  const trimmedSelf = (selfRoleName ?? '').trim();
-  const visiblePresets = FAMILY_PRESETS.filter((p) => p.name !== trimmedSelf);
-
-  const selectedNames = FAMILY_PRESETS
-    .filter((p) => p.name !== trimmedSelf && selected.has(p.id))
-    .map((p) => p.name);
-
-  return (
-    <Surface
-      className="report-family-share-row"
-      tone="card"
-      material="glass-thin"
-      elevation="base"
-      padding="none"
-    >
-      <div className="report-family-copy">
-        <div className="report-family-heading">{i18nText('Reports.actionBar.family.heading')}</div>
-        <div className="report-family-subtitle">{i18nText('Reports.actionBar.family.subtitle')}</div>
-      </div>
-      <div className="report-family-presets">
-        {visiblePresets.map((p) => {
-          const on = selected.has(p.id);
-          return (
-            <button
-              key={p.id}
-              onClick={() => toggle(p.id)}
-              aria-pressed={on}
-              className="report-family-preset-button"
-            >
-              <span className={`report-family-avatar ${p.toneClass}`}>{p.initial}</span>
-              <span>{p.name}</span>
-              {on ? (
-                <Check size={11} className="report-icon-accent" strokeWidth={2.5} />
-              ) : null}
-            </button>
-          );
-        })}
-        {visiblePresets.length === 0 ? (
-          <span className="report-empty-inline">
-            {i18nText('Reports.actionBar.family.empty')}
-          </span>
-        ) : null}
-      </div>
-      <Button
-        onClick={() => onShareSelected(selectedNames)}
-        disabled={selectedNames.length === 0}
-        tone="primary"
-        size="sm"
-        className="rounded-full"
-      >
-        {i18nText('Reports.actionBar.family.shareSelected')}
-      </Button>
-    </Surface>
-  );
-}
-
-/* ── Action cards (top row: professional + note) ─────────────── */
-
-interface ActionCardProps {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  onClick: () => void;
-  disabled?: boolean;
-  accent?: boolean;
-}
-
-function ActionCard({ icon, title, subtitle, onClick, disabled, accent }: ActionCardProps) {
-  return (
-    <Surface
-      as="button"
-      onClick={onClick}
-      disabled={disabled}
-      interactive={!disabled}
-      tone="card"
-      material="glass-thin"
-      elevation="base"
-      padding="none"
-      className="report-action-card"
-    >
-      <div className={`report-action-card-icon ${accent ? 'report-action-card-icon--accent' : ''}`}>
-        {icon}
-      </div>
-      <div className="report-action-card-copy">
-        <div className="report-action-card-title">
-          {title}
-        </div>
-        <div className="report-action-card-subtitle">
-          {subtitle}
-        </div>
-      </div>
-    </Surface>
-  );
-}
-
-/* ── Save panel (inline, below the action grid) ─────────────── */
-
-type SaveKind = 'pdf' | 'png';
-
-interface SavePanelButtonProps {
-  icon: React.ReactNode;
-  label: string;
-  help: string;
-  onClick: () => void;
-  busy?: boolean;
-  disabled?: boolean;
-}
-
-function SavePanelButton({ icon, label, help, onClick, busy, disabled }: SavePanelButtonProps) {
-  return (
-    <Surface
-      as="button"
-      onClick={onClick}
-      disabled={disabled || busy}
-      interactive={!busy && !disabled}
-      tone="card"
-      material="glass-thin"
-      elevation="base"
-      padding="none"
-      className="report-save-panel-button"
-    >
-      <div className="report-save-panel-icon">
-        {busy ? <LoaderCircle size={16} className="animate-spin" /> : icon}
-      </div>
-      <div className="report-save-panel-copy">
-        <div className="report-save-panel-label">{busy ? i18nText('Reports.actionBar.save.busy') : label}</div>
-        <div className="report-save-panel-help">{help}</div>
-      </div>
-    </Surface>
-  );
-}
-
-interface SavePanelProps {
-  onSavePdf: () => void;
-  onSaveImage: () => void;
-  busy: SaveKind | null;
-}
-
-function SavePanel({ onSavePdf, onSaveImage, busy }: SavePanelProps) {
-  return (
-    <div className="report-save-panel">
-      <div className="report-save-panel-heading">{i18nText('Reports.actionBar.save.heading')}</div>
-      <div className="report-save-panel-grid">
-        <SavePanelButton
-          icon={<Printer size={16} strokeWidth={1.8} />}
-          label={i18nText('Reports.actionBar.save.pdf')}
-          help={i18nText('Reports.actionBar.save.pdfHelp')}
-          onClick={onSavePdf}
-          busy={busy === 'pdf'}
-          disabled={busy !== null && busy !== 'pdf'}
-        />
-        <SavePanelButton
-          icon={<FileImage size={16} strokeWidth={1.8} />}
-          label={i18nText('Reports.actionBar.save.image')}
-          help={i18nText('Reports.actionBar.save.imageHelp')}
-          onClick={onSaveImage}
-          busy={busy === 'png'}
-          disabled={busy !== null && busy !== 'png'}
-        />
-      </div>
-    </div>
-  );
-}
-
-/* ── Main bar ────────────────────────────────────────────────── */
-
 interface ReportActionBarProps {
-  childName: string;
-  selfRoleName?: string;
-  onSavePdf: () => Promise<boolean | void> | boolean | void;
-  onSaveImage: () => Promise<boolean | void> | boolean | void;
-  onOpenProfessional: () => void;
+  onSavePdf: () => Promise<boolean>;
+  onSaveImage: () => Promise<boolean>;
+  onOpenProfessional?: () => void;
   onRequestFocusNoteComposer?: () => void;
 }
 
-export function ReportActionBar({
-  childName, selfRoleName, onSavePdf, onSaveImage, onOpenProfessional,
-  onRequestFocusNoteComposer,
-}: ReportActionBarProps) {
-  const [busy, setBusy] = useState<SaveKind | null>(null);
-
-  const handleFamilySelection = (names: string[]) => {
-    if (names.length === 0) {
-      nimiToast.warning(i18nText('Reports.actionBar.family.selectOne'));
-      return;
-    }
-    nimiToast.success(i18nText('Reports.actionBar.family.prepared', {
-      names: names.join(i18nText('Common.list.separator')),
-    }));
-  };
-
-  const runSave = async (kind: SaveKind, action: () => Promise<boolean | void> | boolean | void) => {
-    if (busy) return;
+// @nimi-authority: rule.parentos.advs.r009
+export function ReportActionBar({ onSavePdf, onSaveImage, onOpenProfessional, onRequestFocusNoteComposer }: ReportActionBarProps) {
+  const [busy, setBusy] = useState<'pdf' | 'png' | null>(null);
+  const saving = useRef(false);
+  const menu = useRef<HTMLDetailsElement>(null);
+  const runSave = async (kind: 'pdf' | 'png') => {
+    if (saving.current) return;
+    saving.current = true;
     setBusy(kind);
     try {
-      const saved = await action();
-      if (saved !== false) {
-        nimiToast.success(kind === 'pdf'
-          ? i18nText('Reports.actionBar.save.pdfSuccess')
-          : i18nText('Reports.actionBar.save.imageSuccess'));
+      const saved = await (kind === 'pdf' ? onSavePdf() : onSaveImage());
+      if (saved) {
+        nimiToast.success(i18nText(kind === 'pdf' ? 'Reports.actionBar.save.pdfSuccess' : 'Reports.actionBar.save.imageSuccess'));
+        menu.current?.removeAttribute('open');
       }
     } catch (error) {
-      // Tauri rejects can be string / Error / plain object — surface
-      // whatever we can so the user sees the actual failure instead of
-      // a generic failure placeholder.
-      let detail = '';
-      if (error instanceof Error) detail = error.message;
-      else if (typeof error === 'string') detail = error;
-      else if (error && typeof error === 'object') detail = JSON.stringify(error);
-      const prefix = kind === 'pdf'
-        ? i18nText('Reports.actionBar.save.pdfFailed')
-        : i18nText('Reports.actionBar.save.imageFailed');
-      nimiToast.danger(detail
-        ? i18nText('Reports.actionBar.save.failedWithDetail', { prefix, detail })
-        : i18nText('Reports.actionBar.save.retryLater', { prefix }));
-      logRendererEvent({
-        level: 'error',
-        area: 'reports',
-        message: 'action:save-failed',
-        details: { kind, ...describeError(error) },
-      });
+      const prefix = i18nText(kind === 'pdf' ? 'Reports.actionBar.save.pdfFailed' : 'Reports.actionBar.save.imageFailed');
+      nimiToast.danger(i18nText('Reports.actionBar.save.failedWithDetail', {
+        prefix, detail: error instanceof Error ? error.message : String(error),
+      }));
+      logRendererEvent({ level: 'error', area: 'reports', message: 'action:save-failed', details: { kind, ...describeError(error) } });
     } finally {
+      saving.current = false;
       setBusy(null);
     }
   };
 
-  const handleNote = () => {
-    if (onRequestFocusNoteComposer) onRequestFocusNoteComposer();
-    else nimiToast.info(i18nText('Reports.actionBar.note.hint'));
-  };
-
-  return (
-    <Surface
-      as="section"
-      tone="card"
-      material="glass-regular"
-      elevation="raised"
-      padding="none"
-      className="report-action-bar hide-on-print"
-    >
-      <FamilyShareRow onShareSelected={handleFamilySelection} selfRoleName={selfRoleName} />
-
-      <div className="report-action-grid report-action-grid--pair">
-        <div className="report-min-w-0">
-          <ActionCard
-            icon={<GraduationCap size={16} strokeWidth={1.8} />}
-            title={i18nText('Reports.actionBar.professional.title')}
-            subtitle={i18nText('Reports.actionBar.professional.subtitle')}
-            onClick={onOpenProfessional}
-          />
-        </div>
-        <div className="report-min-w-0">
-          <ActionCard
-            icon={<Pencil size={16} strokeWidth={1.8} />}
-            title={i18nText('Reports.actionBar.note.title')}
-            subtitle={i18nText('Reports.actionBar.note.subtitle', { childName })}
-            onClick={handleNote}
-          />
-        </div>
+  return <div className="report-toolbar hide-on-print">
+    {onOpenProfessional && <Button size="sm" tone="ghost" onClick={onOpenProfessional}>
+      <GraduationCap size={16} />{i18nText('Reports.workspace.professional')}
+    </Button>}
+    {onRequestFocusNoteComposer && <Button size="sm" tone="ghost" onClick={onRequestFocusNoteComposer}>
+      <Pencil size={15} />{i18nText('Reports.workspace.addNote')}
+    </Button>}
+    <details ref={menu} className="report-save-menu" onKeyDown={(event) => {
+      if (event.key === 'Escape') {
+        menu.current?.removeAttribute('open');
+        menu.current?.querySelector('summary')?.focus();
+      }
+    }} onBlur={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget)) menu.current?.removeAttribute('open');
+    }}>
+      <summary><Download size={15} />{i18nText('Reports.workspace.save')}</summary>
+      <div className="report-save-options">
+        <Button tone="ghost" fullWidth disabled={busy !== null} loading={busy === 'pdf'} onClick={() => void runSave('pdf')}>
+          <FileText size={16} />{i18nText('Reports.actionBar.save.pdf')}
+        </Button>
+        <Button tone="ghost" fullWidth disabled={busy !== null} loading={busy === 'png'} onClick={() => void runSave('png')}>
+          <FileImage size={16} />{i18nText('Reports.actionBar.save.image')}
+        </Button>
+        <p>{i18nText('Reports.workspace.saveHelp')}</p>
       </div>
-
-      <SavePanel
-        onSavePdf={() => void runSave('pdf', onSavePdf)}
-        onSaveImage={() => void runSave('png', onSaveImage)}
-        busy={busy}
-      />
-    </Surface>
-  );
+    </details>
+  </div>;
 }
-
-/* Keep some atoms exported so the Letter viewer can label its print-safe
- * hash of the data source without duplicating styles. */
-export { SERIF as REPORT_SERIF, MONO as REPORT_MONO };

@@ -5,6 +5,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { resetElectronViewport } from './lib/reset-electron-viewport.mjs';
 import { NIMI_STANDARD_SHELL_COMMANDS } from '@nimiplatform/kit/shell/capabilities';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
@@ -285,6 +286,7 @@ async function main() {
     });
     throw error;
   } finally {
+    await resetElectronViewport(page).catch(error => console.error('Viewport cleanup failed:', error));
     await browser?.close().catch(() => undefined);
     await terminateProcessTree(appProcess);
     if (rendererProcess) await terminateProcessTree(rendererProcess);

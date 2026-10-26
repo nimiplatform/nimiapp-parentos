@@ -670,29 +670,38 @@
       "description": "AI 能力由 Nimi 运行时提供；即使无法访问，本地数据也不受影响。",
       "technicalDetails": "技术详情",
       "recovery": {
-        "title": "让 AI 功能恢复可用",
-        "bridgeAbsent": "请从 Nimi 桌面端的「应用」中打开 ParentOS。连接成功后，支持的 AI 功能会自动恢复。",
-        "actionRequired": "请在 Nimi Desktop 查看 ParentOS 的访问状态与 AI 模型设置，完成提示的操作后回到这里重试。",
-        "unavailable": "请确认 Nimi 桌面端正在运行，再前往「应用 > ParentOS > AI 能力」检查配置；返回后刷新状态。"
+        "title": "Nimi 连接尚未就绪",
+        "bridgeAbsent": "请从 Nimi 的「应用」中打开成长底稿。连接后，可在本页选择模型并检查是否就绪。",
+        "actionRequired": "请在 Nimi 中查看成长底稿的访问状态，完成提示的操作后返回重试。连接恢复后可在本页配置模型。",
+        "unavailable": "暂时无法连接 Nimi。请确认 Nimi 正在运行，然后重试连接；若仍失败，请从 Nimi 重新打开成长底稿。",
+        "untrustedTitle": "Nimi 运行时校验未通过",
+        "untrusted": "尚未通过 Nimi 运行时的身份校验，当前无法读取或保存模型设置。请先从 Nimi 重新打开成长底稿；若仍失败，重启 Nimi 后再试。无需清除现有模型配置。",
+        "account": "请在 Nimi 中确认当前账号状态，再重新打开成长底稿。返回后重试连接。",
+        "session": "当前应用连接已失效。请从 Nimi 重新打开成长底稿，再检查连接和模型状态。",
+        "retry": "重试连接",
+        "untrustedTechnical": "开发环境：检查应用的 SDK、Kit 与 Nimi 原生载体是否来自匹配的构建。接口不匹配也会触发此校验错误，单纯更换模型或重启不会修复。"
       }
     },
     "declared": {
       "title": "AI 模型",
       "description": "为每项 AI 能力选择本地或云端模型。无论选择哪种，记录都保存在本机；选择云端模型时，请求所需的内容会经 Nimi 发送到你选择的云端服务来完成这次推理。",
-      "platformManaged": "此处与 Nimi 桌面端「应用 > ParentOS > AI 能力」编辑的是同一份配置，由 Nimi Runtime 保存。使用云端模型前，需先在 Nimi 桌面端配置云端连接器。",
-      "openOwnerConfiguration": "在 Nimi 中配置",
+      "platformManaged": "可直接在本页选择或更换模型；Nimi 的「应用 > ParentOS > AI 模型」也可编辑同一份设置。添加云端连接器或准备本机模型时，可前往 Nimi 管理。",
+      "openOwnerConfiguration": "在 Nimi 中管理",
       "openingOwnerConfiguration": "正在打开…",
       "loadFailed": "AI 配置读取失败",
-      "loadFailedGuidance": "恢复 Nimi 连接或在 Nimi 的「应用 > ParentOS > AI 能力」确认配置后，返回本页刷新。",
-      "ownerHandoffFailed": "未能自动打开 Nimi 配置页",
-      "ownerHandoffFallback": "请手动打开 Nimi 桌面端，进入「应用 > ParentOS > AI 能力」。",
-      "configuredCount": "已配置 {{count}} 项能力",
+      "loadFailedGuidance": "已连接 Nimi，但未能读取最新模型设置。请重试读取；读取成功前无法确认功能可用性，也不能保存更改。",
+      "ownerHandoffFailed": "未能打开 Nimi 管理页",
+      "ownerHandoffFallback": "请手动打开 Nimi，进入「应用 > ParentOS > AI 模型」。连接恢复后也可留在本页配置模型。",
+      "configuredCount": "已保存 {{count}} 项设置",
       "capabilities": {
         "textGenerate": "文本生成",
         "audioTranscribe": "语音转写",
         "audioSynthesize": "语音合成",
         "imageGenerate": "图像生成"
-      }
+      },
+      "waitingForAccess": "连接恢复后才能读取模型设置。现有配置未被清除；届时可直接在本页选择本地或云端模型。",
+      "stale": "保留的模型信息来自上次读取，仅供查看，暂不可编辑。",
+      "retry": "重新读取配置"
     },
     "modelConfig": {
       "back": "返回",
@@ -705,7 +714,7 @@
       "pickerSearch": "搜索模型",
       "pickerLoading": "正在加载模型…",
       "pickerEmpty": "当前能力没有可用模型。",
-      "configuredSummary": "模型配置已完成",
+      "configuredSummary": "模型已就绪",
       "emptySummary": "尚未选择模型",
       "route": "运行方式",
       "local": "本地",
@@ -759,7 +768,7 @@
       "saveFailed": "Runtime 无法保存成长底稿的 AI 配置。",
       "unsupportedCapability": "此能力暂不可用。",
       "notConfigured": "未配置",
-      "configured": "已配置",
+      "configured": "已就绪",
       "selectionRequired": "需要选择",
       "blocked": "受阻",
       "unavailable": "暂不可用",
@@ -769,17 +778,18 @@
       "capabilityDescription": {
         "textGenerate": "用于成长顾问、成长报告、日记标记和智能摘要。",
         "audioTranscribe": "把日记语音转成文字。"
-      }
+      },
+      "saved": "已保存"
     },
     "features": {
       "title": "功能可用性",
-      "description": "基于当前平台契约的功能状态。",
-      "configurationHint": "标为“在 Nimi 配置”的功能，请在 Nimi Desktop 中打开 ParentOS 的 AI 模型设置。",
+      "description": "根据当前连接、模型设置和运行状态显示。",
+      "configurationHint": "标为“尚未选择模型”的功能，可在上方“AI 模型”中设置。连接成功不代表模型已经就绪。",
       "checking": "检测中…",
       "available": "可用",
       "unavailable": "暂不可用",
-      "needsAccess": "连接 Nimi 后可用",
-      "needsConfiguration": "需在 Nimi 中配置",
+      "needsAccess": "连接未就绪，待确认",
+      "needsConfiguration": "尚未选择模型",
       "notSupported": "当前版本暂不支持",
       "notSupportedHint": "当前版本暂未开放图片理解能力配置，无法手动开启。",
       "routeLocal": "本地模型",
@@ -790,7 +800,8 @@
       "profileSummary": "档案智能摘要",
       "medicalInsights": "医疗事件智能分析",
       "ocrIntake": "报告图片识别",
-      "voiceTranscribe": "语音转写"
+      "voiceTranscribe": "语音转写",
+      "unknown": "配置未读取，待确认"
     },
     "runtime": {
       "imageInputUnsupported": "当前版本不支持图片或附件输入。"
@@ -1204,7 +1215,7 @@
       "summary": "第 {{round}} 次 · {{start}} 至 {{end}}",
       "unsynced": "提醒尚未完全同步到 Nimi，请重试。",
       "retryNow": "立即重试",
-      "sessionChanged": "与 Nimi 的会话已变化，提醒同步已停止。你仍可继续使用成长底稿，重新打开后恢复同步。",
+      "sessionChanged": "与 Nimi 的会话已变化，共享同步已停止。你仍可继续使用成长底稿。请在 Nimi Home 停止并重新启动 ParentOS，恢复同步。",
       "reopen": "重新打开",
       "focusUnavailable": "这条提醒已不可用。"
     }
@@ -4884,7 +4895,7 @@
       "action": {
         "overdueSuffix": "（逾期）"
       },
-      "subtitle": "仅基于本地结构化记录 · 生成于 {{date}} · 年龄 {{ageStart}} – {{ageEnd}}",
+      "subtitle": "根据已保存的记录整理 · 生成于 {{date}} · 年龄 {{ageStart}} – {{ageEnd}}",
       "reportType": {
         "monthly": "月度",
         "quarterly": "季度",
@@ -4915,7 +4926,8 @@
         "journalKeepsake": "其中 {{count}} 条标记为珍藏。",
         "journalVoiceMixed": "纯语音 {{voice}} 条，语音+文字 {{mixed}} 条。",
         "journalRecorders": "记录人分布：{{summary}}。",
-        "reminder": "{{title}}（{{status}}）"
+        "reminder": "{{title}}（{{status}}）",
+        "unnamedRecorder": "未命名记录人"
       },
       "reminderStatus": {
         "overdue": "逾期",
@@ -4932,7 +4944,7 @@
         "vaccines": "本地疫苗记录",
         "reminders": "本地提醒状态 + 提醒规则"
       },
-      "safetyNote": "生长、里程碑、疫苗与日常观察目前处于待评审状态，仅呈现结构化事实。本报告不提供诊断、排名或治疗建议。"
+      "safetyNote": "本报告仅整理已记录的生长、里程碑、疫苗与日常观察，不提供诊断、排名或治疗建议。"
     },
     "professionalSummary": {
       "sections": {
@@ -5091,7 +5103,7 @@
       "loading": "正在读取成长报告…",
       "loadError": "本地数据不符合当前报告要求，成长报告未能加载。",
       "accumulating": {
-        "issue": "LETTER № {{issueNo}}",
+        "issue": "成长来信 · 第 {{issueNo}} 期",
         "period": "{{start}} → {{end}} · 已积累 {{days}} 天",
         "title": "正在为{{childName}}积累本期成长报告",
         "subtitle": "记录满一个月后，将自动生成第一份成长报告",
@@ -5168,7 +5180,7 @@
         "monthRange": "{{start}}-{{end}} 月龄"
       },
       "legacyBanner": "这份报告由旧版格式生成（行文仍是对妈妈/记录者说话的口吻）。在下方「高级选项」中重新生成同一时段，即可切换为以 {{name}} 为主角的新版。",
-      "issue": "LETTER № {{issueNo}}",
+      "issue": "成长来信 · 第 {{issueNo}} 期",
       "aiWritten": "AI 撰写",
       "periodAgeSuffix": " · {{age}}",
       "periodMomentsSuffix": " · {{count}} 个瞬间",
@@ -5212,9 +5224,9 @@
       "journalDimension": {
         "title": "观察维度分布",
         "summary": "{{label}}是当前周期记录最多的观察维度，共 {{count}} 条。",
-        "dimensionIdEvidence": "维度 ID：{{dimensionId}}。",
         "countEvidence": "当前周期记录条数：{{count}}。",
-        "frameworkSource": "观察框架"
+        "frameworkSource": "观察框架",
+        "dimensionEvidence": "观察内容：{{label}}。"
       }
     },
     "professional": {
@@ -5248,6 +5260,38 @@
       "add": "追加我的备注",
       "placeholder": "记录你的补充观察、疑问，或希望医生留意的细节……",
       "saveNote": "保存备注"
+    },
+    "units": {
+      "years": "岁"
+    },
+    "workspace": {
+      "library": "报告目录",
+      "choosePeriod": "选择报告周期",
+      "accumulating": "本期积累中",
+      "latest": "最新月报",
+      "retry": "重新加载",
+      "readingPeriod": "{{start}} — {{end}}",
+      "save": "保存报告",
+      "saveHelp": "记录和备注完整保存；辅助说明与待办仅保存已展开的内容。保存后可自行发送给家人。",
+      "summary": "本期概览",
+      "details": "记录与变化",
+      "replay": "值得记住的瞬间",
+      "closing": "本期小结",
+      "notes": "我的补充",
+      "professional": "专业摘要",
+      "addNote": "补充记录",
+      "recordSummary": "查看本期记录摘要",
+      "professionalLocalIntro": "摘要来自本地记录，可逐条编辑或选择分享范围；未勾选的内容不会导出或复制。",
+      "recordedFacts": "本期记录",
+      "noRecords": "本期还没有成长记录",
+      "recordUnavailable": "本期有 1 条记录，已保存的报告未包含这条记录的明细。",
+      "sparseContext": "目前仅有这一条记录，暂不据此判断变化趋势。",
+      "emptyContext": "未记录不代表没有发生。这里仅整理已保存的事实。",
+      "pendingActions": "待办事项（{{count}}）",
+      "pendingContext": "来自已有提醒，并非根据本期记录得出的建议。",
+      "recordCoverage": "记录范围与报告说明",
+      "unrecordedDomains": "本期无新增记录的项目（{{count}}）",
+      "reminders": "待办与跟进"
     }
   },
   "Sleep": {
@@ -5666,5 +5710,15 @@
       "title": "与 Nimi 一起工作",
       "body": "ParentOS 负责本机的成长记录与使用体验；Nimi 提供 AI 能力、模型配置和访问授权。可在设置中查看当前能力状态与数据使用说明。"
     }
+  },
+  "ChildDirectory": {
+    "title": "ParentOS 孩子名单",
+    "disclosure": "将本家庭的完整孩子名单共享到当前 Nimi 账号，供 NimiDay 等 App 选择。仅包含孩子标识和名字，不含生日或健康资料。",
+    "idle": "正在准备共享名单。",
+    "syncing": "正在同步孩子名单…",
+    "synced": "孩子名单已同步到 Nimi。",
+    "failed": "孩子名单或已删除档案的提醒尚未同步完成。请检查 Nimi 连接后重试；若仍失败，请在 Nimi Home 停止并重新启动 ParentOS。",
+    "disconnected": "Nimi 连接已断开。请在 Nimi Home 停止并重新启动 ParentOS，恢复名单同步。",
+    "retry": "同步孩子名单"
   }
 }

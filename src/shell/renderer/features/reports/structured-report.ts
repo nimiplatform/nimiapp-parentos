@@ -11,6 +11,7 @@ import { GROWTH_STANDARDS, MILESTONE_CATALOG, REMINDER_RULES } from '../../knowl
 import { mapReminderStateRow, summarizeReminderProgression } from '../../engine/reminder-engine.js';
 import { buildStructuredTrendSignals, type StructuredTrendSignal } from './trend-analysis.js';
 import { i18nText, i18nTextForLanguage } from '../../i18n/index.js';
+import { reportMeasurementUnit } from './report-labels.js';
 
 
 export type GrowthReportType = 'monthly' | 'quarterly' | 'quarterly-letter' | 'custom';
@@ -240,8 +241,9 @@ function summarizeMeasurements(measurements: MeasurementRow[], start: string, en
     .sort((left, right) => left.typeId.localeCompare(right.typeId))
     .map((measurement) => {
       const standard = growthStandardById.get(measurement.typeId as typeof GROWTH_STANDARDS[number]['typeId']);
-      const label = standard?.displayName ?? measurement.typeId;
-      const unit = standard?.unit ? ` ${standard.unit}` : '';
+      const label = standard?.displayName ?? i18nText('Reports.structured.sections.growth');
+      const displayUnit = reportMeasurementUnit(standard?.unit);
+      const unit = displayUnit ? ` ${displayUnit}` : '';
       return i18nText('Reports.structured.lines.measurement', {
         label, value: measurement.value, unit, date: formatDate(measurement.measuredAt),
       });
@@ -254,7 +256,7 @@ function summarizeMilestones(milestones: MilestoneRecordRow[], start: string, en
 
   return achieved.map((item) => {
     const milestone = milestoneById.get(item.milestoneId);
-    const title = milestone?.title ?? item.milestoneId;
+    const title = milestone?.title ?? i18nText('Reports.structured.metrics.milestonesRecorded');
     const date = item.achievedAt ? formatDate(item.achievedAt) : i18nText('Reports.structured.lines.dateNotRecorded');
     return i18nText('Reports.structured.lines.milestone', { title, date });
   });
@@ -296,7 +298,7 @@ function summarizeJournalEntries(journalEntries: JournalEntryRow[], child: Child
   if (recorderCounts.size > 0) {
     const recorderNameById = new Map((child.recorderProfiles ?? []).map((item) => [item.id, item.name]));
     const recorderSummary = Array.from(recorderCounts.entries())
-      .map(([recorderId, count]) => `${recorderNameById.get(recorderId) ?? recorderId}: ${count}`)
+      .map(([recorderId, count]) => `${recorderNameById.get(recorderId) ?? i18nText('Reports.structured.lines.unnamedRecorder')}: ${count}`)
       .join(listSeparator());
     items.push(i18nText('Reports.structured.lines.journalRecorders', { summary: recorderSummary }));
   }
@@ -316,7 +318,7 @@ function openReminderStates(reminderStates: ReminderStateRow[]) {
 function summarizeReminders(reminderStates: ReminderStateRow[]) {
   return openReminderStates(reminderStates).map((item) => {
     const rule = reminderRuleById.get(item.ruleId);
-    const title = rule?.title ?? item.ruleId;
+    const title = rule?.title ?? i18nText('Reports.structured.metrics.openReminders');
     return i18nText('Reports.structured.lines.reminder', {
       title,
       status: i18nText(`Reports.structured.reminderStatus.${item.status}`),
@@ -385,6 +387,7 @@ function buildOverview(
   ];
 }
 
+// @nimi-authority: rule.parentos.advs.r007
 export function buildStructuredGrowthReport(snapshot: StructuredGrowthReportSnapshot): BuiltStructuredGrowthReport {
   const {
     child,
