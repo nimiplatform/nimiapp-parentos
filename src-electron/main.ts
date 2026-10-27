@@ -34,6 +34,9 @@ const IS_PRODUCTION_BUNDLE = typeof __NIMI_ELECTRON_PRODUCTION__ !== 'undefined'
 const currentFilePath = fileURLToPath(import.meta.url);
 const currentDir = path.dirname(currentFilePath);
 const appRoot = resolveAppRoot(currentDir);
+if (process.platform === 'win32') app.setAppUserModelId(`ai.nimi.${app.isPackaged ? '' : 'dev.'}apps.nimi.parentos`);
+// Native presentation is separate from metadata.icon artwork shown in Nimi Home.
+const nativeAppIconPath = path.join(appRoot, 'assets', 'native', process.platform === 'win32' ? 'windows.ico' : process.platform === 'darwin' ? 'macos.png' : 'app.png');
 const preloadPath = path.join(currentDir, 'preload.cjs');
 const rendererDistIndex = path.join(appRoot, 'dist', 'index.html');
 const rendererDistUrl = pathToFileURL(rendererDistIndex).toString();
@@ -56,6 +59,7 @@ registerNimiElectronAppAssetProtocolScheme(protocol);
 void app.whenReady().then(bootstrapElectron).catch(handleElectronStartupFailure);
 
 async function bootstrapElectron(): Promise<void> {
+  if (process.platform === 'darwin' && !app.isPackaged) app.dock?.setIcon(nativeAppIconPath);
   const storageRoots = resolveParentOSStorageRoots();
   bootLog(`bootstrap:storage:${storageRoots.projectionRef}`);
   const hostClient = createParentOSHostClient({ appRoot, storageRoots });
@@ -120,6 +124,7 @@ app.on('window-all-closed', () => {
 async function createMainWindow(): Promise<BrowserWindow> {
   bootLog('create-window:start');
   const window = new BrowserWindow({
+    icon: nativeAppIconPath,
     ...createNimiElectronAppChromeWindowOptions(process.platform),
     width: 1320,
     height: 900,

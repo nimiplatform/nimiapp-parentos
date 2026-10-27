@@ -6,7 +6,7 @@
   "private": true,
   "type": "module",
   "main": "dist-electron/main.js",
-  "packageManager": "pnpm@10.34.5",
+  "packageManager": "pnpm@10.34.7",
   "engines": {
     "node": ">=24.0.0",
     "pnpm": ">=10.0.0"
@@ -78,8 +78,8 @@
     "vite": "^8.3.3",
     "vitest": "^4.1.7",
     "yaml": "^2.9.0",
-    "@nimiplatform/app-tools": "^0.13.0",
-    "@nimiplatform/nimi-coding": "0.6.5"
+    "@nimiplatform/app-tools": "^0.14.0",
+    "@nimiplatform/nimi-coding": "0.7.0"
   },
   "dependencies": {
     "@protobuf-ts/runtime": "2.11.1",
@@ -111,8 +111,8 @@
     "three": "^0.184.0",
     "zod": "4.4.3",
     "zustand": "^5.0.13",
-    "@nimiplatform/sdk": "^0.21.0",
-    "@nimiplatform/kit": "^0.21.0"
+    "@nimiplatform/sdk": "^0.22.2",
+    "@nimiplatform/kit": "^0.22.1"
   },
   "license": "MIT"
 }

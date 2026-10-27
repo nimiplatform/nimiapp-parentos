@@ -104,7 +104,9 @@ try {
   await rm(sidecarRoot, { recursive: true, force: true });
   await mkdir(sidecarRoot, { recursive: true });
   await copyFile(path.join(appRoot, 'src-tauri', 'target', 'release', sidecarName), path.join(sidecarRoot, sidecarName));
+  await cp(path.join(appRoot, 'assets', 'native'), path.join(productionSourceRoot, 'assets', 'native'), { recursive: true });
   const packagePaths = await packager({
+    icon: path.join(appRoot, 'assets', 'native', MACOS_BUILD ? 'macos.icns' : 'windows.ico'),
     dir: productionSourceRoot,
     platform: NATIVE_PLATFORM,
     arch: NATIVE_ARCH,

@@ -12,7 +12,6 @@ local_development:
 metadata:
   summary: 记录孩子的成长与家庭观察，整理成长档案和阶段提醒。
   icon: src-tauri/icons/icon.png
-  readme: APP_GUIDE.md
   release_notes: RELEASE_NOTES.md
   author: Nimi Platform
   homepage_url: https://github.com/nimiplatform/nimiapp-parentos
