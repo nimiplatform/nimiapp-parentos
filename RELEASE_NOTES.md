@@ -1,3 +1,9 @@
+## 0.1.10 · Hosted Web release & platform baseline upgrade
+
+- Upgraded to public npm `@nimiplatform/app-tools@0.16.0-rc.10`, `@nimiplatform/sdk@0.24.0-rc.10`, and `@nimiplatform/kit@0.24.0-rc.16` with frozen registry lockfile.
+- Added hosted Web entry (`src/shell/renderer/main.web.tsx`, `vite.web.config.ts`, `public_slug: parentos`) with official Nimi browser sign-in, primary PC Runtime session management, and durable primary-PC Runtime app storage (`storage.assets`) for family profiles, observations, records, and media.
+- Retained the desktop Electron + Rust SQLite sidecar entry and existing PC Catalog version (`v0.1.9`).
+
 ## Current source — public platform packages
 
 The current source uses the published SDK 0.21.0, Kit/native 0.21.0, App Tools 0.13.0, and Nimi Coding 0.6.5. Dependencies resolve directly from public registries without local archive overrides. Run `pnpm install --frozen-lockfile` to install the locked versions. Earlier release checks below apply only to their recorded dependency combinations.

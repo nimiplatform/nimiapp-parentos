@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -26,16 +26,19 @@ describe('date/time picker field highlight', () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
   it('keeps the kit DatePicker field lit for as long as its panel is open', () => {
-    // The kit opens its panel two animation frames after the click. Run frames
-    // synchronously so the open state never races waitFor's timeout when the
-    // suite runs under load.
+    // The kit opens its panel two animation frames after the click. Schedule
+    // frames via fake timers so the rAF return binding settles before running.
+    vi.useFakeTimers();
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-      callback(0);
-      return 0;
+      return Number(setTimeout(() => callback(0), 0));
+    });
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+      clearTimeout(id);
     });
     const openSelector = kitDatePickerOpenSelector();
     render(<DatePicker value="2026-09-28" onChange={vi.fn()} />);
@@ -45,10 +48,12 @@ describe('date/time picker field highlight', () => {
     // Opening from the calendar icon never focuses the input, so the kit's
     // own :focus ring cannot light the field here.
     fireEvent.click(document.querySelector('svg.lucide-calendar')!);
+    act(() => { vi.runAllTimers(); });
     expect(input.matches(openSelector)).toBe(true);
     expect(document.activeElement).not.toBe(input);
 
     fireEvent.keyDown(document, { key: 'Escape' });
+    act(() => { vi.runAllTimers(); });
     expect(input.matches(openSelector)).toBe(false);
   });
 

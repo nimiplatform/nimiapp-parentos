@@ -2,7 +2,11 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Button, nimiToast } from '@nimiplatform/kit/ui';
 import { useAppStore } from '../../app-shell/app-store.js';
 import { getChildren } from '../../bridge/sqlite-bridge.js';
-import { getParentOSNimiClient, hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import {
+  getParentOSNimiClient,
+  hasParentOSNimiClient,
+  subscribeParentOSSessionInvalidated,
+} from '../../infra/parentos-nimi-client.js';
 import { i18nText } from '../../i18n/index.js';
 import { createChildDirectoryPublisher } from './child-directory.js';
 import { reconcileRemovedChildReminders } from '../reminders/reminder-activity.js';
@@ -35,12 +39,12 @@ export function ChildDirectoryBridge() {
       reconcileReminders: reconcileRemovedChildReminders,
     });
     publisher = instance;
-    const unsubscribe = window.parentOSHost?.onSessionInvalidated(() => {
+    const unsubscribe = subscribeParentOSSessionInvalidated(() => {
       instance.stop();
       publisher = null;
       report('disconnected');
     });
-    return () => { unsubscribe?.(); instance.stop(); if (publisher === instance) publisher = null; };
+    return () => { unsubscribe(); instance.stop(); if (publisher === instance) publisher = null; };
   }, []);
   useEffect(() => { void requestChildDirectorySync(); }, [children, familyId]);
   useEffect(() => {

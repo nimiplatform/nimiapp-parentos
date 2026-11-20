@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { NimiAccountControl } from '@nimiplatform/kit/auth/app';
 import { NimiAppChrome } from '@nimiplatform/kit/ui/app-chrome';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
@@ -12,23 +13,37 @@ import { ChildDirectoryBridge } from './features/settings/child-directory-bridge
 import { ReminderActivityBridge } from './features/reminders/reminder-activity-bridge.js';
 import { ParentOSNavigationProvider, useParentOSNavigation } from './app-shell/app-navigation.js';
 import { useAppStore } from './app-shell/app-store.js';
+import { isParentOSWebMode } from './infra/parentos-nimi-client.js';
 import appPackage from '../../../package.json';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: 1, staleTime: 5 * 60 * 1000 },
-  },
-});
+function createParentOSQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: 1, staleTime: 5 * 60 * 1000 },
+    },
+  });
+}
 
 function ParentOSFrame() {
   const owner = useParentOSNavigation(), { i18n } = useTranslation();
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const ready = useAppStore(state => state.bootstrapReady);
   const hasChild = useAppStore(state => state.children.some(child => child.childId === state.activeChildId));
+  const locale: 'zh' | 'en' = i18n.language.startsWith('zh') ? 'zh' : 'en';
+  const webMode = isParentOSWebMode();
   return <div className="flex h-full min-h-0 flex-col overflow-hidden">
-    <NimiAppChrome metadata={{ name: 'ParentOS', version: appPackage.version, license: appPackage.license }} locale={i18n.language.startsWith('zh') ? 'zh' : 'en'}
-      navigation={owner.navigation} navigationEnabled={ready}
-      sidebar={ready && hasChild ? { visible: sidebarVisible, onVisibleChange: setSidebarVisible } : undefined} />
+    <div className="flex shrink-0 items-center justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <NimiAppChrome metadata={{ name: 'ParentOS', version: appPackage.version, license: appPackage.license }} locale={locale}
+          navigation={owner.navigation} navigationEnabled={ready}
+          sidebar={ready && hasChild ? { visible: sidebarVisible, onVisibleChange: setSidebarVisible } : undefined} />
+      </div>
+      {webMode ? (
+        <div className="shrink-0 pr-3" data-testid="parentos-web-account-bar">
+          <NimiAccountControl language={locale} />
+        </div>
+      ) : null}
+    </div>
     <div className="relative min-h-0 flex-1 overflow-hidden [contain:layout]">
       <AppBootstrapBoundary><ReminderActivityBridge /><ChildDirectoryBridge /><ShellLayout sidebarVisible={sidebarVisible}>
         <div data-testid="parentos-app-routed-surface" className="h-full"><AppRoutes /></div>
@@ -38,6 +53,7 @@ function ParentOSFrame() {
 }
 
 export function App() {
+  const queryClient = useMemo(() => createParentOSQueryClient(), []);
   return (
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>

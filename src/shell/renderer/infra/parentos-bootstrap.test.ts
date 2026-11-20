@@ -18,6 +18,7 @@ vi.mock('../bridge/sqlite-bridge.js', () => ({
 vi.mock('../bridge/mappers.js', () => ({ mapChildRow: vi.fn((row) => row) }));
 vi.mock('./parentos-nimi-client.js', () => ({
   createParentOSNimiClient: vi.fn(() => null),
+  isParentOSWebMode: vi.fn(() => false),
   setParentOSNimiClient: vi.fn(),
 }));
 vi.mock('../i18n/app-language.js', () => ({

@@ -4,6 +4,7 @@ import { probeParentosNimiAccess } from './runtime-status.js';
 const status = vi.hoisted(() => vi.fn());
 vi.mock('./parentos-nimi-client.js', () => ({
   hasParentOSNimiClient: () => true,
+  getParentOSWebSession: () => null,
   getParentOSNimiClient: () => ({ auth: { status } }),
 }));
 

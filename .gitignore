@@ -1,7 +1,9 @@
 node_modules/
 .claude/worktrees/
 dist/
+dist-web/
 dist-electron/
+nimi-web-*.zip
 build/
 src-electron/dist/
 .DS_Store

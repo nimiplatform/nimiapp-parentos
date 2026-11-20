@@ -2,7 +2,11 @@ import { useEffect, useRef } from 'react';
 import { useParentOSNavigation } from '../../app-shell/app-navigation.js';
 import { nimiToast } from '@nimiplatform/kit/ui';
 import { useAppStore } from '../../app-shell/app-store.js';
-import { getParentOSNimiClient, hasParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import {
+  getParentOSNimiClient,
+  hasParentOSNimiClient,
+  subscribeParentOSSessionInvalidated,
+} from '../../infra/parentos-nimi-client.js';
 import { i18nText } from '../../i18n/index.js';
 import {
   beginReminderActivitySession,
@@ -43,7 +47,11 @@ export function ReminderActivityBridge() {
     let registration: ReturnType<typeof registerReminderOpenHandler> | null = null;
     // Client construction does not bind a session. Establish it through the
     // public Host surface before reminder publication or open registration.
-    void getParentOSNimiClient().auth.status().then(access => {
+    const client = getParentOSNimiClient();
+    const checkBound = 'auth' in client
+      ? client.auth.status()
+      : Promise.resolve({ sessionBound: true, reasonCode: 'ok' });
+    void checkBound.then(access => {
       if (stopped) return;
       if (!access.sessionBound) throw new Error(access.reasonCode);
       beginReminderActivitySession((childId) => useAppStore.getState().children.find((child) => child.childId === childId));
@@ -55,7 +63,7 @@ export function ReminderActivityBridge() {
     }).catch(() => {
       if (!stopped) nimiToast.warning(i18nText('Reminders.activity.sessionChanged'), { sticky: true });
     });
-    const stopWatching = window.parentOSHost?.onSessionInvalidated(() => {
+    const stopWatching = subscribeParentOSSessionInvalidated(() => {
       stopped = true;
       ownerRef.current.reset();
       endReminderActivitySession();
@@ -66,7 +74,7 @@ export function ReminderActivityBridge() {
     });
     return () => {
       stopped = true;
-      stopWatching?.();
+      stopWatching();
       void registration?.stop();
       endReminderActivitySession();
     };

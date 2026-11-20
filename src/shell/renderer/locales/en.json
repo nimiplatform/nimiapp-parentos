@@ -99,7 +99,8 @@
     },
     "account": {
       "unnamedUser": "Unnamed user",
-      "managedByDesktop": "Sign-in and account switching are managed by Nimi Desktop."
+      "managedByDesktop": "Sign-in and account switching are managed by Nimi Desktop.",
+      "connectedViaWeb": "Connected to your primary PC Runtime via this Web session. Reconnect anytime to read back saved records."
     },
     "language": {
       "title": "Interface language",
@@ -110,6 +111,7 @@
     "dataTransfer": {
       "title": "Data backup",
       "desc": "Back up the current local profiles, records, photos, voice recordings, and attachments. Restoring replaces the current local data.",
+      "webUnavailable": "Web records are saved directly in your bound primary PC Runtime app storage. Full .parentos desktop archive backup and restore are available in ParentOS Desktop.",
       "export": "Export backup",
       "import": "Restore backup",
       "exporting": "Exporting...",

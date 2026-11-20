@@ -16,12 +16,16 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
+import { NimiAccountControl } from '@nimiplatform/kit/auth/app';
 import { Surface, SegmentedControl, buttonVariants, cn, nimiToast } from '@nimiplatform/kit/ui';
 import { version } from '../../../../../package.json';
 import type { NimiCurrentUserDisplay } from '@nimiplatform/sdk/app';
 import { seedMockData, type SeedProgress } from '../../infra/mock-seed.js';
 import { exportAppData, importAppData } from '../../infra/data-transfer.js';
-import { getParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
+import {
+  getParentOSCurrentUser,
+  isParentOSWebMode,
+} from '../../infra/parentos-nimi-client.js';
 import { probeParentosNimiAccess } from '../../infra/runtime-status.js';
 import {
   APP_LANGUAGE_LABELS,
@@ -118,7 +122,7 @@ export default function SettingsPage() {
         return;
       }
       try {
-        const user = await getParentOSNimiClient().currentUser.get();
+        const user = await getParentOSCurrentUser();
         if (!cancelled) setCurrentUser(user);
       } catch {
         if (!cancelled) setCurrentUser(null);
@@ -226,10 +230,10 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-3xl px-6 pb-8 pt-[72px]">
         <h1 className="mb-6 text-2xl font-bold tracking-tight text-[var(--nimi-text-primary)]">{t('Settings.title')}</h1>
 
-        {currentUser ? (
-          <Surface tone="card" material="solid" elevation="base" padding="none" className="mb-6 flex items-center gap-4 parentos-radius-xl p-5">
+        {currentUser || isParentOSWebMode() ? (
+          <Surface tone="card" material="solid" elevation="base" padding="none" className="mb-6 flex flex-wrap items-center gap-4 parentos-radius-xl p-5">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--nimi-action-primary-bg)_14%,var(--nimi-surface-card))] text-[var(--nimi-action-primary-bg)]">
-              {currentUser.avatarUrl ? (
+              {currentUser?.avatarUrl ? (
                 <img src={currentUser.avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
                 <UserRound size={24} aria-hidden="true" />
@@ -237,15 +241,20 @@ export default function SettingsPage() {
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="truncate text-[17px] font-bold text-[var(--nimi-text-primary)]">
-                {currentUser.displayName || currentUser.handle || t('Settings.account.unnamedUser')}
+                {currentUser?.displayName || currentUser?.handle || t('Settings.account.unnamedUser')}
               </h3>
-              {currentUser.handle ? (
+              {currentUser?.handle ? (
                 <p className="mt-0.5 truncate text-[13px] text-[var(--nimi-text-muted)]">@{currentUser.handle}</p>
               ) : null}
               <p className="mt-1 text-[12px] leading-snug text-[var(--nimi-text-muted)]">
-                {t('Settings.account.managedByDesktop')}
+                {t(isParentOSWebMode() ? 'Settings.account.connectedViaWeb' : 'Settings.account.managedByDesktop')}
               </p>
             </div>
+            {isParentOSWebMode() ? (
+              <div className="ml-auto shrink-0">
+                <NimiAccountControl language={currentLanguage === 'zh' ? 'zh' : 'en'} />
+              </div>
+            ) : null}
           </Surface>
         ) : null}
 
@@ -305,31 +314,35 @@ export default function SettingsPage() {
                     : t('Settings.dataTransfer.title')}
                 </h3>
                 <p className="mt-0.5 whitespace-pre-line text-[13px] leading-snug text-[var(--nimi-text-muted)]">
-                  {transferStatus === 'done' || transferStatus === 'error'
-                    ? transferResult
-                    : t('Settings.dataTransfer.desc')}
+                  {isParentOSWebMode()
+                    ? t('Settings.dataTransfer.webUnavailable')
+                    : transferStatus === 'done' || transferStatus === 'error'
+                      ? transferResult
+                      : t('Settings.dataTransfer.desc')}
                 </p>
               </div>
-              <div className="ml-auto flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  onClick={handleExportData}
-                  disabled={transferBusy}
-                  className={cn(buttonVariants({ tone: 'primary', size: 'sm' }), 'gap-1.5 disabled:opacity-50')}
-                >
-                  <Download size={14} aria-hidden="true" />
-                  {transferStatus === 'exporting' ? t('Settings.dataTransfer.exporting') : t('Settings.dataTransfer.export')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleImportData}
-                  disabled={transferBusy}
-                  className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'gap-1.5 border border-[var(--nimi-border-subtle)] disabled:opacity-50')}
-                >
-                  <Upload size={14} aria-hidden="true" />
-                  {transferStatus === 'importing' ? t('Settings.dataTransfer.importing') : t('Settings.dataTransfer.import')}
-                </button>
-              </div>
+              {!isParentOSWebMode() ? (
+                <div className="ml-auto flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExportData}
+                    disabled={transferBusy}
+                    className={cn(buttonVariants({ tone: 'primary', size: 'sm' }), 'gap-1.5 disabled:opacity-50')}
+                  >
+                    <Download size={14} aria-hidden="true" />
+                    {transferStatus === 'exporting' ? t('Settings.dataTransfer.exporting') : t('Settings.dataTransfer.export')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImportData}
+                    disabled={transferBusy}
+                    className={cn(buttonVariants({ tone: 'ghost', size: 'sm' }), 'gap-1.5 border border-[var(--nimi-border-subtle)] disabled:opacity-50')}
+                  >
+                    <Upload size={14} aria-hidden="true" />
+                    {transferStatus === 'importing' ? t('Settings.dataTransfer.importing') : t('Settings.dataTransfer.import')}
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         </Surface>

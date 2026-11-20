@@ -15,6 +15,7 @@ export default defineConfig([
     '.claude/worktrees/**',
     'build/**',
     'dist/**',
+    'dist-web/**',
     'dist-electron/**',
     'dist-electron-package/**',
     'src-electron/dist/**',

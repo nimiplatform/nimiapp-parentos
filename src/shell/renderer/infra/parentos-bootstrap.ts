@@ -11,7 +11,11 @@ import { mapChildRow } from '../bridge/mappers.js';
 import { loadAndApplyPersistedAppLanguage } from '../i18n/app-language.js';
 import { REMINDER_RULES } from '../knowledge-base/index.js';
 import { describeError, logRendererEvent } from './telemetry/renderer-log.js';
-import { createParentOSNimiClient, setParentOSNimiClient } from './parentos-nimi-client.js';
+import {
+  createParentOSNimiClient,
+  isParentOSWebMode,
+  setParentOSNimiClient,
+} from './parentos-nimi-client.js';
 
 // ParentOS owns its SQLite, media, settings, and product commands. The native
 // host binds those surfaces to fixed OS app-data roots and the exact renderer;
@@ -20,6 +24,15 @@ const ACTIVE_CHILD_SETTING_KEYS = ['activeChildId', 'inspection:last-active-chil
 const ADMITTED_REMINDER_RULE_IDS = REMINDER_RULES.map((rule) => rule.ruleId);
 
 let bootstrapPromise: Promise<void> | null = null;
+
+export function resetParentOSBootstrapState(): void {
+  bootstrapPromise = null;
+  const store = useAppStore.getState();
+  store.setBootstrapReady(false);
+  store.setBootstrapError(null);
+  store.setBootstrapFailure(null);
+  store.clearLocalData();
+}
 
 export async function runParentOSBootstrap(options: { force?: boolean } = {}): Promise<void> {
   if (bootstrapPromise && !options.force) {
@@ -60,7 +73,9 @@ async function doRunParentOSBootstrap(): Promise<void> {
   store.clearLocalData();
   // Nimi access is established independently from app-owned data hydration:
   // client creation is side-effect free and never blocks local bootstrap.
-  setParentOSNimiClient(createParentOSNimiClient());
+  if (!isParentOSWebMode()) {
+    setParentOSNimiClient(createParentOSNimiClient());
+  }
 
   try {
     await loadLocalData();

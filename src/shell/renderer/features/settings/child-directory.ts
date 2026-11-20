@@ -1,4 +1,4 @@
-import type { NimiLocalAppClient } from '@nimiplatform/sdk/app';
+import type { ParentOSNimiClient } from '../../infra/parentos-nimi-client.js';
 import { catchLog } from '../../infra/telemetry/catch-log.js';
 
 export const CHILD_DIRECTORY_TYPE = 'nimi.parentos.child-directory.v1';
@@ -8,7 +8,7 @@ export type DirectoryChild = { readonly childId: string; readonly displayName: s
 // @nimi-authority: rule.parentos.prof.child-directory
 /** A complete snapshot, independently of active child and reminder eligibility. */
 export function createChildDirectoryPublisher(input: {
-  readonly client: NimiLocalAppClient;
+  readonly client: ParentOSNimiClient;
   readonly readChildren: () => Promise<readonly DirectoryChild[]>;
   readonly title: () => string;
   readonly report: (status: 'syncing' | 'synced' | 'failed') => void;
@@ -25,8 +25,10 @@ export function createChildDirectoryPublisher(input: {
       try {
         // Constructing the client is side-effect free. The public status call
         // lets the Host establish its session after launch or Runtime recovery.
-        const access = await input.client.auth.status();
-        if (!access.sessionBound) throw new Error(access.reasonCode);
+        if ('auth' in input.client) {
+          const access = await input.client.auth.status();
+          if (!access.sessionBound) throw new Error(access.reasonCode);
+        }
         if (stopped) return;
         const rows = await input.readChildren();
         const ids = new Set<string>();

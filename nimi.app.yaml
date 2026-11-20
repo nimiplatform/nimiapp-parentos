@@ -1,6 +1,7 @@
 app_id: nimi.parentos
+public_slug: parentos
 display_name: ParentOS
-version: 0.1.9
+version: 0.1.10
 profile: standalone
 manifest_role: submitted-input
 app_access:
@@ -9,6 +10,12 @@ app_access:
 local_development:
   electron:
     renderer_origin: http://127.0.0.1:1426
+  web:
+    command: pnpm run dev:web-renderer
+    local:
+      origin: https://127.0.0.1:4426
+      redirect_uri: https://127.0.0.1:4426/
+      client_id: nimi.parentos.web.dev
 metadata:
   summary: 记录孩子的成长与家庭观察，整理成长档案和阶段提醒。
   icon: src-tauri/icons/icon.png

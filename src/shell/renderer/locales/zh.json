@@ -99,7 +99,8 @@
     },
     "account": {
       "unnamedUser": "未命名用户",
-      "managedByDesktop": "登录和账户切换由 Nimi Desktop 统一管理。"
+      "managedByDesktop": "登录和账户切换由 Nimi Desktop 统一管理。",
+      "connectedViaWeb": "已通过浏览器会话连接至主 PC Runtime；退出后再次连接即可读回已保存的数据。"
     },
     "language": {
       "title": "界面语言",
@@ -110,6 +111,7 @@
     "dataTransfer": {
       "title": "数据备份",
       "desc": "备份当前本地档案的记录、照片、语音和附件；恢复会替换当前本机资料。",
+      "webUnavailable": "网页端数据直接保存在你绑定的主 PC Runtime 应用存储中；完整的 .parentos 桌面归档备份与恢复仅在 ParentOS 桌面端提供。",
       "export": "导出备份",
       "import": "恢复备份",
       "exporting": "导出中...",

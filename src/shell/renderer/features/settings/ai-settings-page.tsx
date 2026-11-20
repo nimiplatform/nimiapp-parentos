@@ -21,6 +21,7 @@ import {
   probeParentosNimiAccess,
   type ParentosNimiAccessPosture,
 } from '../../infra/runtime-status.js';
+import { isParentOSWebMode } from '../../infra/parentos-nimi-client.js';
 import { isParentosAISurfaceExecutable } from './parentos-ai-surface-policy.js';
 import { i18nText } from '../../i18n/index.js';
 
@@ -334,7 +335,7 @@ export default function AiSettingsPage() {
               }}
             />
           ) : null}
-          {aiConfigLoaded && !configReadFailed ? (
+          {aiConfigLoaded && !configReadFailed && !isParentOSWebMode() ? (
             <div className="mt-4 flex flex-col gap-3 border-t border-[var(--nimi-border-subtle)] pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[12px] leading-5 text-[var(--nimi-text-muted)]">
                 {t('AISettings.declared.platformManaged')}

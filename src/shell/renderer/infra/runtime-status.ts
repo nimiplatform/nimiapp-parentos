@@ -1,5 +1,6 @@
 import {
   getParentOSNimiClient,
+  getParentOSWebSession,
   hasParentOSNimiClient,
 } from './parentos-nimi-client.js';
 
@@ -48,11 +49,46 @@ function postureFromError(error: unknown): ParentosNimiAccessPosture {
 }
 
 export async function probeParentosNimiAccess(): Promise<ParentosNimiAccessPosture> {
+  const webSession = getParentOSWebSession();
+  if (webSession) {
+    const snapshot = webSession.getSnapshot();
+    if (snapshot.runtime.status === 'connected' && !snapshot.runtime.scope.signal.aborted) {
+      return {
+        state: 'ready',
+        reasonCode: 'ok',
+        actionHint: 'none',
+        retryable: false,
+      };
+    }
+    if (snapshot.identity.status !== 'signed-in') {
+      return {
+        state: 'action-required',
+        reasonCode: normalizeText(snapshot.issue?.reasonCode) || 'runtime-unauthenticated',
+        actionHint: normalizeText(snapshot.issue?.actionHint) || 'sign_in_nimi',
+        retryable: true,
+      };
+    }
+    return {
+      state: 'unavailable',
+      reasonCode: normalizeText(snapshot.issue?.reasonCode) || 'runtime-disconnected',
+      actionHint: normalizeText(snapshot.issue?.actionHint) || 'reconnect_primary_runtime',
+      retryable: true,
+    };
+  }
   if (!hasParentOSNimiClient()) {
     return BRIDGE_ABSENT_POSTURE;
   }
   try {
-    const session = await getParentOSNimiClient().auth.status();
+    const client = getParentOSNimiClient();
+    if (!('auth' in client)) {
+      return {
+        state: 'ready',
+        reasonCode: 'ok',
+        actionHint: 'none',
+        retryable: false,
+      };
+    }
+    const session = await client.auth.status();
     if (session.sessionBound) {
       return {
         state: 'ready',
