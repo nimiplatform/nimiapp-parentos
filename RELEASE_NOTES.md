@@ -1,8 +1,8 @@
-## 0.1.10 · Hosted Web release & platform baseline upgrade
+## 0.1.10 · Bilingual Storefront, native release alignment & platform baseline upgrade
 
-- Upgraded to public npm `@nimiplatform/app-tools@0.16.0-rc.10`, `@nimiplatform/sdk@0.24.0-rc.10`, and `@nimiplatform/kit@0.24.0-rc.16` with frozen registry lockfile.
-- Added hosted Web entry (`src/shell/renderer/main.web.tsx`, `vite.web.config.ts`, `public_slug: parentos`) with official Nimi browser sign-in, primary PC Runtime session management, and durable primary-PC Runtime app storage (`storage.assets`) for family profiles, observations, records, and media.
-- Retained the desktop Electron + Rust SQLite sidecar entry and existing PC Catalog version (`v0.1.9`).
+- Upgraded to public npm `@nimiplatform/app-tools@0.16.0-rc.12`, `@nimiplatform/sdk@0.24.0-rc.10`, and `@nimiplatform/kit@0.24.0-rc.16` with frozen registry lockfile and updated native release workflow.
+- Added complete bilingual Nimi App Storefront presentation (`lifestyle` category, Chinese/English user introductions `NIMI_APP.md` and `NIMI_APP.en.md`, tags, highlights, localized 16:9 cover artwork, and 5 localized product screenshots) packaged separately in the release's aggregated storefront media archive without increasing native installer size.
+- Aligns the native desktop release (`windows-x86_64`, `macos-aarch64` Electron + Rust SQLite sidecar) with the admitted hosted Web edition (`0.1.10`, `https://parentos.nimi.xyz/`).
 
 ## Current source — public platform packages
 

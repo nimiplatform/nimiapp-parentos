@@ -23,6 +23,91 @@ metadata:
   author: Nimi Platform
   homepage_url: https://github.com/nimiplatform/nimiapp-parentos
   support_url: https://github.com/nimiplatform/nimiapp-parentos/issues
+  storefront:
+    category: lifestyle
+    default_locale: zh
+    locales:
+      zh:
+        tags:
+          - 成长档案
+          - 生长曲线
+          - 阶段提醒
+          - 观察随记
+          - 本地隐私
+        highlights:
+          - title: 按月龄主动呈现阶段提醒
+            description: 结合规则引擎梳理疫苗、体检、里程碑、视力与口腔等阶段关注重点，并按所选养育模式调节呈现深度。
+          - title: 多孩成长档案与参考曲线
+            description: 集中管理身高体重生长参考曲线、视力、睡眠、户外目标、口腔与里程碑记录，清晰回看各阶段变化趋势。
+          - title: 日常观察随记与成长报告
+            description: 用文字、照片和录音转写留存日常闪光点，按周期整理结构化成长报告，建立属于家庭的长期成长底稿。
+          - title: 本机数据主权与可控 AI 路由
+            description: 成长记录保存在你的电脑本地且不做云同步；非诊断式成长顾问与语音转写按你在 AI 设置中选择的本地或云端模型运行。
+      en:
+        display_name: ParentOS
+        summary: Keep your child's growth journal and family observations, organized into health records, reference curves, and stage reminders.
+        introduction: NIMI_APP.en.md
+        tags:
+          - Child Growth
+          - Growth Curves
+          - Family Journal
+          - Stage Reminders
+          - Local-First
+        highlights:
+          - title: Age-Based Stage Reminders
+            description: Follow rule-driven cues for checkups, vaccines, milestones, vision, and dental care, paced by your chosen nurture mode.
+          - title: Unified Health & Growth Records
+            description: Track height, weight, WHO and China reference curves, vision, sleep, outdoor goals, dental, and milestones across multiple children.
+          - title: Observation Journal & Growth Reports
+            description: Capture everyday notes, photos, voice transcriptions, and periodic structured growth reports you can revisit anytime.
+          - title: Local-First Data & Chosen AI Route
+            description: Records stay on your PC without cloud sync. Run the non-diagnostic parenting advisor and transcription on Local or Cloud models.
+    media:
+      cover:
+        path: assets/storefront/cover-zh.webp
+        locales:
+          en: assets/storefront/cover-en.webp
+      gallery:
+        - id: profile-console
+          kind: image
+          path: assets/storefront/profile-console-zh.webp
+          locales:
+            en: assets/storefront/profile-console-en.webp
+          caption:
+            zh: 成长档案：集中整理多孩的生长、视力、睡眠、户外、口腔与里程碑等分领域记录
+            en: "Child profile console: organize growth, vision, sleep, outdoor, dental, and milestone records in one place"
+        - id: growth-summary
+          kind: image
+          path: assets/storefront/growth-summary-zh.webp
+          locales:
+            en: assets/storefront/growth-summary-en.webp
+          caption:
+            zh: 生长概览：清晰展示最新体格测量、百分位参考区间、年度增量与下次复测计划
+            en: "Growth overview: review latest height and weight measurements, reference percentile position, yearly gains, and upcoming rechecks"
+        - id: growth-curve
+          kind: image
+          path: assets/storefront/growth-curve-zh.webp
+          locales:
+            en: assets/storefront/growth-curve-en.webp
+          caption:
+            zh: 生长参考曲线：切换中国标准与 WHO 参考曲线，对照多次测量回看长期变化趋势
+            en: "Growth reference curves: switch between China and WHO reference standards to review multi-point trends over time"
+        - id: journal
+          kind: image
+          path: assets/storefront/journal-zh.webp
+          locales:
+            en: assets/storefront/journal-en.webp
+          caption:
+            zh: 成长随记：随时记录文字、照片与语音观察，标记珍藏瞬间与成长标签
+            en: "Growth journal: capture everyday notes, photos, voice transcriptions, and keepsake moments along a timeline"
+        - id: advisor
+          kind: image
+          path: assets/storefront/advisor-zh.webp
+          locales:
+            en: assets/storefront/advisor-en.webp
+          caption:
+            zh: 成长顾问：结合本地成长记录提供温和、非诊断式的日常养育参考与沟通思路
+            en: "Growth advisor: ask grounded parenting questions with gentle, non-diagnostic guidance based on local records"
 capability_contract_refs:
   - text.generate
   - audio.transcribe
