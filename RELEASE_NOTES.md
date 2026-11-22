@@ -1,9 +1,9 @@
-## 0.1.10 · Bilingual Storefront, native release alignment & platform baseline upgrade
+## 0.1.11 · Bilingual Storefront, pure-main bundle & Deflate `.nimiapp` release
 
 - Upgraded to public npm `@nimiplatform/app-tools@0.16.0-rc.14`, `@nimiplatform/sdk@0.24.0-rc.11`, and `@nimiplatform/kit@0.24.0-rc.18` with frozen registry lockfile and updated native release workflow.
 - Switched the Electron main process packaging to a pure single-file bundle without `node_modules` staging (shipping only the target platform's protected-local native binding and the Rust `parentos_host` sidecar) and enabled deterministic bounded Deflate `.nimiapp` compression.
-- Added complete bilingual Nimi App Storefront presentation (`lifestyle` category, Chinese/English user introductions `NIMI_APP.md` and `NIMI_APP.en.md`, tags, highlights, localized 16:9 cover artwork, and 5 localized product screenshots) packaged separately in the release's aggregated storefront media archive without increasing native installer size.
-- Aligns the native desktop release (`windows-x86_64`, `macos-aarch64` Electron + Rust SQLite sidecar) with the admitted hosted Web edition (`0.1.10`, `https://parentos.nimi.xyz/`).
+- Added complete bilingual Nimi App Storefront presentation (`lifestyle` category, Chinese/English user introductions `NIMI_APP.md` and `NIMI_APP.en.md`, tags, highlights, localized 16:9 cover artwork, and 5 localized product screenshots) packaged separately in the release's aggregated storefront media archive without increasing native installer size, with pinned LF line endings for byte-identical cross-platform presentation.
+- Aligns the native desktop release (`windows-x86_64`, `macos-aarch64` Electron + Rust SQLite sidecar) with the admitted hosted Web edition (`https://parentos.nimi.xyz/`).
 
 ## Current source — public platform packages
 
